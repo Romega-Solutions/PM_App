@@ -1,3 +1,4 @@
+import { Heart } from "lucide-react-native";
 import React from "react";
 import {
   Dimensions,
@@ -12,55 +13,67 @@ import {
 const { width } = Dimensions.get("window");
 const isSmallDevice = width < 375;
 
+// Use the same images as in index.tsx
 const matches = [
   {
     id: 1,
     name: "Maria",
     age: 25,
-    image: require("../../assets/couple1.png"),
+    image: require("../../assets/girl1.jpg"),
     location: "Manila",
   },
   {
     id: 2,
-    name: "Anna",
+    name: "Angel",
     age: 23,
-    image: require("../../assets/couple1.png"),
-    location: "Cebu",
+    image: require("../../assets/girl2.jpg"),
+    location: "Cebu City",
   },
   {
     id: 3,
-    name: "Sofia",
+    name: "Jessa",
     age: 27,
-    image: require("../../assets/couple1.png"),
+    image: require("../../assets/girl3.jpg"),
     location: "Davao",
   },
   {
     id: 4,
-    name: "Carmen",
+    name: "Kim",
     age: 24,
-    image: require("../../assets/couple1.png"),
-    location: "Iloilo",
+    image: require("../../assets/girl4.jpg"),
+    location: "Quezon City",
+  },
+  {
+    id: 5,
+    name: "Liza",
+    age: 26,
+    image: require("../../assets/girl5.jpg"),
+    location: "Baguio",
   },
 ];
 
 export default function Likes() {
   return (
-    <View style={{ flex: 1, backgroundColor: "#1a202c" }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1a202c" />
+    <View style={{ flex: 1, backgroundColor: "#422057" }}>
+      <StatusBar barStyle="light-content" backgroundColor="#422057" />
 
       {/* Header */}
       <View
         style={{
           paddingTop: (StatusBar.currentHeight || 44) + 10,
-          paddingHorizontal: 20,
+          paddingHorizontal: 24,
           paddingBottom: 20,
         }}
       >
         <Text
           style={{
             fontSize: isSmallDevice ? 28 : 32,
-            fontWeight: "bold",
-            color: "#fff",
+            fontWeight: "800",
+            color: "#F4376D",
+            letterSpacing: 1,
+            textShadowColor: "rgba(168, 85, 247, 0.7)",
+            textShadowOffset: { width: 0, height: 2 },
+            textShadowRadius: 4,
           }}
         >
           Your Matches
@@ -82,7 +95,7 @@ export default function Likes() {
           style={{
             flexDirection: "row",
             flexWrap: "wrap",
-            paddingHorizontal: 15,
+            paddingHorizontal: 12,
             justifyContent: "space-between",
           }}
         >
@@ -91,38 +104,64 @@ export default function Likes() {
               key={match.id}
               style={{
                 width: (width - 40) / 2,
-                marginBottom: 20,
-                backgroundColor: "rgba(255,255,255,0.05)",
-                borderRadius: 15,
+                marginBottom: 22,
+                backgroundColor: "rgba(255,255,255,0.08)",
+                borderRadius: 22,
                 overflow: "hidden",
+                borderWidth: 2,
+                borderColor: "rgba(244, 55, 109, 0.13)",
               }}
+              activeOpacity={0.88}
             >
               <Image
                 source={match.image}
                 style={{
                   width: "100%",
                   height: 200,
+                  backgroundColor: "#222",
                 }}
                 resizeMode="cover"
               />
-              <View style={{ padding: 15 }}>
-                <Text
+              <View style={{ padding: 16 }}>
+                <View
                   style={{
-                    color: "#fff",
-                    fontSize: 18,
-                    fontWeight: "bold",
-                    marginBottom: 5,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginBottom: 6,
                   }}
                 >
-                  {match.name}, {match.age}
-                </Text>
+                  <Text
+                    style={{
+                      color: "#fff",
+                      fontSize: 19,
+                      fontWeight: "800",
+                      marginRight: 6,
+                      textShadowColor: "rgba(168, 85, 247, 0.7)",
+                      textShadowOffset: { width: 0, height: 2 },
+                      textShadowRadius: 4,
+                    }}
+                  >
+                    {match.name}, {match.age}
+                  </Text>
+                  <Heart size={16} color="#F4376D" fill="#F4376D" />
+                </View>
                 <Text
                   style={{
-                    color: "rgba(255,255,255,0.7)",
-                    fontSize: 14,
+                    color: "#A855F7",
+                    fontSize: 15,
+                    fontWeight: "600",
+                    marginBottom: 2,
                   }}
                 >
                   📍 {match.location}
+                </Text>
+                <Text
+                  style={{
+                    color: "rgba(255,255,255,0.8)",
+                    fontSize: 13,
+                  }}
+                >
+                  Verified Filipino
                 </Text>
               </View>
             </TouchableOpacity>

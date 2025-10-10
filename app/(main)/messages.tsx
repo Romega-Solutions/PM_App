@@ -1,3 +1,4 @@
+import { MessageCircle, Search } from "lucide-react-native";
 import React from "react";
 import {
   Dimensions,
@@ -16,26 +17,32 @@ const isSmallDevice = width < 375;
 const activeUsers = [
   {
     id: 1,
-    name: "You",
-    image: require("../../assets/couple1.png"),
+    name: "Maria",
+    image: require("../../assets/girl1.jpg"),
     isOnline: true,
   },
   {
     id: 2,
-    name: "Jacob",
-    image: require("../../assets/couple1.png"),
+    name: "Angel",
+    image: require("../../assets/girl2.jpg"),
     isOnline: true,
   },
   {
     id: 3,
-    name: "Martin",
-    image: require("../../assets/couple1.png"),
+    name: "Jessa",
+    image: require("../../assets/girl3.jpg"),
     isOnline: true,
   },
   {
     id: 4,
-    name: "John",
-    image: require("../../assets/couple1.png"),
+    name: "Kim",
+    image: require("../../assets/girl4.jpg"),
+    isOnline: true,
+  },
+  {
+    id: 5,
+    name: "Liza",
+    image: require("../../assets/girl5.jpg"),
     isOnline: true,
   },
 ];
@@ -43,8 +50,8 @@ const activeUsers = [
 const conversations = [
   {
     id: 1,
-    name: "Jacob",
-    image: require("../../assets/couple1.png"),
+    name: "Maria",
+    image: require("../../assets/girl1.jpg"),
     lastMessage: "Typing...",
     time: "15 min",
     unread: 1,
@@ -52,8 +59,8 @@ const conversations = [
   },
   {
     id: 2,
-    name: "Martin",
-    image: require("../../assets/couple1.png"),
+    name: "Angel",
+    image: require("../../assets/girl2.jpg"),
     lastMessage: "You: Hey! What's up, long time...",
     time: "18 min",
     unread: 0,
@@ -61,8 +68,8 @@ const conversations = [
   },
   {
     id: 3,
-    name: "JCharley",
-    image: require("../../assets/couple1.png"),
+    name: "Jessa",
+    image: require("../../assets/girl3.jpg"),
     lastMessage: "👋",
     time: "24 min",
     unread: 2,
@@ -70,8 +77,8 @@ const conversations = [
   },
   {
     id: 4,
-    name: "Harry",
-    image: require("../../assets/couple1.png"),
+    name: "Kim",
+    image: require("../../assets/girl4.jpg"),
     lastMessage: "You: Great! I will write later...",
     time: "32 min",
     unread: 0,
@@ -79,8 +86,8 @@ const conversations = [
   },
   {
     id: 5,
-    name: "George",
-    image: require("../../assets/couple1.png"),
+    name: "Liza",
+    image: require("../../assets/girl5.jpg"),
     lastMessage: "You: Hi! How are you?",
     time: "33 min",
     unread: 0,
@@ -90,14 +97,14 @@ const conversations = [
 
 export default function Messages() {
   return (
-    <View style={{ flex: 1, backgroundColor: "#1a202c" }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1a202c" />
+    <View style={{ flex: 1, backgroundColor: "#422057" }}>
+      <StatusBar barStyle="light-content" backgroundColor="#422057" />
 
       {/* Header */}
       <View
         style={{
           paddingTop: (StatusBar.currentHeight || 44) + 10,
-          paddingHorizontal: 20,
+          paddingHorizontal: 24,
           paddingBottom: 20,
         }}
       >
@@ -112,14 +119,18 @@ export default function Messages() {
           <Text
             style={{
               fontSize: isSmallDevice ? 28 : 32,
-              fontWeight: "bold",
-              color: "#fff",
+              fontWeight: "800",
+              color: "#F4376D",
+              letterSpacing: 1,
+              textShadowColor: "rgba(168, 85, 247, 0.7)",
+              textShadowOffset: { width: 0, height: 2 },
+              textShadowRadius: 4,
             }}
           >
             Messages
           </Text>
           <TouchableOpacity>
-            <Text style={{ fontSize: 24, color: "#fff" }}>#</Text>
+            <MessageCircle size={28} color="#A855F7" />
           </TouchableOpacity>
         </View>
 
@@ -132,11 +143,14 @@ export default function Messages() {
             paddingVertical: 12,
             flexDirection: "row",
             alignItems: "center",
+            marginBottom: 8,
           }}
         >
-          <Text style={{ color: "rgba(255,255,255,0.5)", marginRight: 10 }}>
-            🔍
-          </Text>
+          <Search
+            size={20}
+            color="rgba(255,255,255,0.5)"
+            style={{ marginRight: 10 }}
+          />
           <TextInput
             placeholder="Search"
             placeholderTextColor="rgba(255,255,255,0.5)"
@@ -154,7 +168,7 @@ export default function Messages() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20 }}
+          contentContainerStyle={{ paddingHorizontal: 24 }}
         >
           {activeUsers.map((user) => (
             <TouchableOpacity
@@ -173,7 +187,7 @@ export default function Messages() {
                     overflow: "hidden",
                     borderWidth: 3,
                     borderColor:
-                      user.name === "You" ? "#F4376D" : "rgba(255,255,255,0.3)",
+                      user.name === "You" ? "#F4376D" : "rgba(168,85,247,0.3)",
                   }}
                 >
                   <Image
@@ -193,7 +207,7 @@ export default function Messages() {
                       borderRadius: 8,
                       backgroundColor: "#4ade80",
                       borderWidth: 2,
-                      borderColor: "#1a202c",
+                      borderColor: "#422057",
                     }}
                   />
                 )}
@@ -220,11 +234,11 @@ export default function Messages() {
             color: "#fff",
             fontSize: 18,
             fontWeight: "bold",
-            paddingHorizontal: 20,
+            paddingHorizontal: 24,
             marginBottom: 15,
           }}
         >
-          Messages
+          Conversations
         </Text>
 
         <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
@@ -234,9 +248,15 @@ export default function Messages() {
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                paddingHorizontal: 20,
+                paddingHorizontal: 24,
                 paddingVertical: 15,
+                backgroundColor: "rgba(255,255,255,0.07)",
+                marginBottom: 10,
+                borderRadius: 18,
+                borderWidth: 2,
+                borderColor: "rgba(168, 85, 247, 0.13)",
               }}
+              activeOpacity={0.85}
             >
               {/* Profile Image */}
               <View style={{ position: "relative", marginRight: 15 }}>
@@ -247,7 +267,7 @@ export default function Messages() {
                     borderRadius: 25,
                     overflow: "hidden",
                     borderWidth: 2,
-                    borderColor: "rgba(255,255,255,0.3)",
+                    borderColor: "rgba(168,85,247,0.3)",
                   }}
                 >
                   <Image
@@ -272,7 +292,7 @@ export default function Messages() {
                     style={{
                       color: "#fff",
                       fontSize: 16,
-                      fontWeight: "600",
+                      fontWeight: "700",
                     }}
                   >
                     {conversation.name}
@@ -318,6 +338,7 @@ export default function Messages() {
                         justifyContent: "center",
                         alignItems: "center",
                         paddingHorizontal: 6,
+                        marginLeft: 6,
                       }}
                     >
                       <Text
