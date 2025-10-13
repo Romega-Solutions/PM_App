@@ -1,7 +1,15 @@
+// src/components/ui/PrimaryButton.tsx
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronRight } from "lucide-react-native";
 import React from "react";
-import { DimensionValue, Platform, Text, TouchableOpacity } from "react-native";
+import {
+  ActivityIndicator,
+  DimensionValue,
+  Platform,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface PrimaryButtonProps {
   title: string;
@@ -14,11 +22,6 @@ interface PrimaryButtonProps {
   accessibilityHint?: string;
 }
 
-/**
- * PrimaryButton Component
- * Brand gradient button with pink to purple gradient (#EF3E78 to #8D69F6)
- * Used for primary CTAs and main actions
- */
 export default function PrimaryButton({
   title,
   onPress,
@@ -33,6 +36,8 @@ export default function PrimaryButton({
   const BORDER_RADIUS = Platform.select({ ios: 28, android: 26 });
   const FONT_SIZE = Platform.select({ ios: 18, android: 17 });
 
+  const isDisabled = disabled || loading;
+
   return (
     <TouchableOpacity
       style={{
@@ -43,17 +48,17 @@ export default function PrimaryButton({
         alignItems: "center",
         shadowColor: "#EF3E78",
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: Platform.select({ ios: 0.5, android: 0.4 }),
+        shadowOpacity: Platform.select({ ios: 0.5, android: 0.4 }) as number,
         shadowRadius: 20,
         elevation: 12,
-        width: width,
+        width,
         overflow: "hidden",
-        opacity: disabled || loading ? 0.6 : 1,
+        opacity: isDisabled ? 0.6 : 1,
       }}
       onPress={onPress}
       activeOpacity={0.85}
-      disabled={disabled || loading}
-      accessible={true}
+      disabled={isDisabled}
+      accessible
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || title}
       accessibilityHint={accessibilityHint}
@@ -70,24 +75,39 @@ export default function PrimaryButton({
           bottom: 0,
         }}
       />
-      <Text
+
+      {/* Content row */}
+      <View
         style={{
-          color: "#FFFFFF",
-          fontSize: FONT_SIZE,
-          fontFamily: "HelloParis",
-          fontWeight: "700",
-          marginRight: showChevron ? 8 : 0,
-          letterSpacing: Platform.select({ ios: 0.5, android: 0.3 }),
-          textShadowColor: "rgba(0, 0, 0, 0.3)",
-          textShadowOffset: { width: 0, height: 1 },
-          textShadowRadius: 3,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+          paddingHorizontal: 16,
         }}
       >
-        {loading ? "Loading..." : title}
-      </Text>
-      {showChevron && !loading && (
-        <ChevronRight size={24} color="#FFFFFF" strokeWidth={2.5} />
-      )}
+        {loading ? (
+          <ActivityIndicator size="small" color="#FFFFFF" />
+        ) : null}
+
+        <Text
+          style={{
+            color: "#FFFFFF",
+            fontSize: FONT_SIZE,
+            fontFamily: "DMSans-SemiBold", // Body/UI font per mapping
+            marginRight: showChevron && !loading ? 4 : 0,
+            letterSpacing: Platform.select({ ios: 0.5, android: 0.3 }),
+            textShadowColor: "rgba(0, 0, 0, 0.3)",
+            textShadowOffset: { width: 0, height: 1 },
+            textShadowRadius: 3,
+          }}
+        >
+          {loading ? "Loading..." : title}
+        </Text>
+
+        {showChevron && !loading ? (
+          <ChevronRight size={24} color="#FFFFFF" strokeWidth={2.5} />
+        ) : null}
+      </View>
     </TouchableOpacity>
   );
 }

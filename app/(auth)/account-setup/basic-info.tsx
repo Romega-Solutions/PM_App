@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { ChevronRight, User, Calendar, Users } from "lucide-react-native";
+import { Calendar, User, Users } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   Dimensions,
@@ -9,10 +9,11 @@ import {
   ScrollView,
   StatusBar,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import CustomTextInput from "../../../src/components/forms/CustomTextInput";
+import PrimaryButton from "../../../src/components/ui/PrimaryButton";
 
 const { width, height } = Dimensions.get("window");
 
@@ -26,7 +27,6 @@ export default function BasicInfo() {
   });
 
   const genderOptions = ["Woman", "Man", "Non-binary"];
-  const currentYear = new Date().getFullYear();
   const minAge = 18;
   const maxAge = 70;
 
@@ -49,8 +49,12 @@ export default function BasicInfo() {
 
   return (
     <View style={{ flex: 1 }}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+      />
+
       {/* Brand Gradient Background */}
       <LinearGradient
         colors={["#340839", "#8D69F6", "#EF3E78", "#340839"]}
@@ -68,51 +72,70 @@ export default function BasicInfo() {
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
-            paddingHorizontal: 32,
-            paddingTop: Platform.select({ ios: height * 0.08, android: height * 0.06 }),
-            paddingBottom: 40,
+            paddingHorizontal: 24, // Consistent with other screens
+            paddingTop: Platform.select({
+              ios: height * 0.08,
+              android: height * 0.06,
+            }),
+            paddingBottom: Platform.select({ ios: 40, android: 32 }),
           }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           {/* Header */}
           <View style={{ alignItems: "center", marginBottom: 40 }}>
             {/* Progress Indicator */}
-            <View style={{ flexDirection: "row", marginBottom: 32, gap: 8 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                marginBottom: 32,
+                gap: Platform.select({ ios: 8, android: 6 }),
+              }}
+            >
               {[1, 2, 3, 4, 5].map((step, index) => (
                 <View
                   key={step}
                   style={{
                     width: index === 0 ? 24 : 8,
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: index === 0 ? "#EF3E78" : "rgba(255, 255, 255, 0.3)",
+                    height: Platform.select({ ios: 8, android: 6 }),
+                    borderRadius: Platform.select({ ios: 4, android: 3 }),
+                    backgroundColor:
+                      index === 0 ? "#EF3E78" : "rgba(255, 255, 255, 0.3)",
                   }}
                 />
               ))}
             </View>
 
+            {/* Main heading - Using HelloParis for UI elements */}
             <Text
               style={{
-                fontSize: Math.min(width * 0.08, 32),
-                fontFamily: "PlayfairDisplay-Bold",
+                fontSize: Math.min(
+                  width * 0.08,
+                  Platform.select({ ios: 32, android: 30 })
+                ),
+                fontFamily: "HelloParis",
+                fontWeight: "700",
                 color: "#FFFFFF",
                 textAlign: "center",
                 marginBottom: 12,
                 textShadowColor: "rgba(0, 0, 0, 0.8)",
                 textShadowOffset: { width: 0, height: 3 },
                 textShadowRadius: 10,
+                letterSpacing: Platform.select({ ios: -0.5, android: -0.3 }),
               }}
             >
               Tell us about yourself
             </Text>
 
+            {/* Subtitle - Using PlayfairDisplay for body text */}
             <Text
               style={{
-                fontSize: 16,
-                fontFamily: "PlayfairDisplay-Regular",
+                fontSize: Platform.select({ ios: 16, android: 15 }),
+                fontFamily: "PlayfairDisplay",
+                fontWeight: "400",
                 color: "rgba(255, 255, 255, 0.8)",
                 textAlign: "center",
-                lineHeight: 24,
+                lineHeight: Platform.select({ ios: 24, android: 22 }),
               }}
             >
               Let's start with the basics
@@ -120,188 +143,134 @@ export default function BasicInfo() {
           </View>
 
           {/* Form Fields */}
-          <View style={{ gap: 24 }}>
-            {/* First Name */}
-            <View>
-              <Text style={{
-                fontSize: 16,
-                fontFamily: "PlayfairDisplay-SemiBold",
-                color: "#FFFFFF",
-                marginBottom: 8,
-                textShadowColor: "rgba(0, 0, 0, 0.5)",
-                textShadowOffset: { width: 0, height: 1 },
-                textShadowRadius: 3,
-              }}>
-                First Name
-              </Text>
-              <View style={{
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-                borderRadius: 16,
-                borderWidth: 1.5,
-                borderColor: formData.firstName ? "#EF3E78" : "rgba(255, 255, 255, 0.3)",
-                paddingHorizontal: 20,
-                paddingVertical: 16,
-                flexDirection: "row",
-                alignItems: "center",
-              }}>
-                <User size={20} color="rgba(255, 255, 255, 0.7)" style={{ marginRight: 12 }} />
-                <TextInput
-                  value={formData.firstName}
-                  onChangeText={(text) => setFormData({ ...formData, firstName: text })}
-                  placeholder="Enter your first name"
-                  placeholderTextColor="rgba(255, 255, 255, 0.5)"
-                  style={{
-                    flex: 1,
-                    fontSize: 16,
-                    fontFamily: "PlayfairDisplay-Regular",
-                    color: "#FFFFFF",
-                  }}
-                  autoCapitalize="words"
-                  maxLength={50}
-                />
-              </View>
-            </View>
+          <View style={{ gap: Platform.select({ ios: 20, android: 18 }) }}>
+            {/* First Name - Using CustomTextInput */}
+            <CustomTextInput
+              label="First Name"
+              value={formData.firstName}
+              onChangeText={(text) =>
+                setFormData({ ...formData, firstName: text })
+              }
+              placeholder="Enter your first name"
+              LeftIcon={User}
+              autoCapitalize="words"
+              autoComplete="given-name"
+            />
 
-            {/* Last Name */}
-            <View>
-              <Text style={{
-                fontSize: 16,
-                fontFamily: "PlayfairDisplay-SemiBold",
-                color: "#FFFFFF",
-                marginBottom: 8,
-                textShadowColor: "rgba(0, 0, 0, 0.5)",
-                textShadowOffset: { width: 0, height: 1 },
-                textShadowRadius: 3,
-              }}>
-                Last Name
-              </Text>
-              <View style={{
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-                borderRadius: 16,
-                borderWidth: 1.5,
-                borderColor: formData.lastName ? "#EF3E78" : "rgba(255, 255, 255, 0.3)",
-                paddingHorizontal: 20,
-                paddingVertical: 16,
-                flexDirection: "row",
-                alignItems: "center",
-              }}>
-                <User size={20} color="rgba(255, 255, 255, 0.7)" style={{ marginRight: 12 }} />
-                <TextInput
-                  value={formData.lastName}
-                  onChangeText={(text) => setFormData({ ...formData, lastName: text })}
-                  placeholder="Enter your last name"
-                  placeholderTextColor="rgba(255, 255, 255, 0.5)"
-                  style={{
-                    flex: 1,
-                    fontSize: 16,
-                    fontFamily: "PlayfairDisplay-Regular",
-                    color: "#FFFFFF",
-                  }}
-                  autoCapitalize="words"
-                  maxLength={50}
-                />
-              </View>
-            </View>
+            {/* Last Name - Using CustomTextInput */}
+            <CustomTextInput
+              label="Last Name"
+              value={formData.lastName}
+              onChangeText={(text) =>
+                setFormData({ ...formData, lastName: text })
+              }
+              placeholder="Enter your last name"
+              LeftIcon={User}
+              autoCapitalize="words"
+              autoComplete="family-name"
+            />
 
-            {/* Age */}
-            <View>
-              <Text style={{
-                fontSize: 16,
-                fontFamily: "PlayfairDisplay-SemiBold",
-                color: "#FFFFFF",
-                marginBottom: 8,
-                textShadowColor: "rgba(0, 0, 0, 0.5)",
-                textShadowOffset: { width: 0, height: 1 },
-                textShadowRadius: 3,
-              }}>
-                Age
-              </Text>
-              <View style={{
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-                borderRadius: 16,
-                borderWidth: 1.5,
-                borderColor: formData.age ? "#EF3E78" : "rgba(255, 255, 255, 0.3)",
-                paddingHorizontal: 20,
-                paddingVertical: 16,
-                flexDirection: "row",
-                alignItems: "center",
-              }}>
-                <Calendar size={20} color="rgba(255, 255, 255, 0.7)" style={{ marginRight: 12 }} />
-                <TextInput
-                  value={formData.age}
-                  onChangeText={(text) => setFormData({ ...formData, age: text })}
-                  placeholder={`${minAge} - ${maxAge} years old`}
-                  placeholderTextColor="rgba(255, 255, 255, 0.5)"
-                  style={{
-                    flex: 1,
-                    fontSize: 16,
-                    fontFamily: "PlayfairDisplay-Regular",
-                    color: "#FFFFFF",
-                  }}
-                  keyboardType="numeric"
-                  maxLength={2}
-                />
-              </View>
-            </View>
+            {/* Age - Using CustomTextInput */}
+            <CustomTextInput
+              label="Age"
+              value={formData.age}
+              onChangeText={(text) => setFormData({ ...formData, age: text })}
+              placeholder={`${minAge} - ${maxAge} years old`}
+              LeftIcon={Calendar}
+              keyboardType="numeric"
+            />
 
-            {/* Gender */}
+            {/* Gender Selection */}
             <View>
-              <Text style={{
-                fontSize: 16,
-                fontFamily: "PlayfairDisplay-SemiBold",
-                color: "#FFFFFF",
-                marginBottom: 12,
-                textShadowColor: "rgba(0, 0, 0, 0.5)",
-                textShadowOffset: { width: 0, height: 1 },
-                textShadowRadius: 3,
-              }}>
+              {/* Gender label - Using HelloParis for UI labels */}
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontFamily: "HelloParis",
+                  fontWeight: "500",
+                  color: "#FFFFFF",
+                  marginBottom: 10,
+                  letterSpacing: 0.3,
+                }}
+              >
                 Gender
               </Text>
-              <View style={{ gap: 12 }}>
+
+              <View style={{ gap: Platform.select({ ios: 12, android: 10 }) }}>
                 {genderOptions.map((option) => (
                   <TouchableOpacity
                     key={option}
                     onPress={() => setFormData({ ...formData, gender: option })}
                     style={{
-                      backgroundColor: formData.gender === option 
-                        ? "rgba(239, 62, 120, 0.2)" 
-                        : "rgba(255, 255, 255, 0.1)",
+                      backgroundColor:
+                        formData.gender === option
+                          ? "rgba(239, 62, 120, 0.15)"
+                          : "rgba(255, 255, 255, 0.08)",
                       borderRadius: 16,
-                      borderWidth: 1.5,
-                      borderColor: formData.gender === option 
-                        ? "#EF3E78" 
-                        : "rgba(255, 255, 255, 0.3)",
-                      paddingHorizontal: 20,
-                      paddingVertical: 16,
+                      borderWidth: 2,
+                      borderColor:
+                        formData.gender === option
+                          ? "#EF3E78"
+                          : "rgba(141, 105, 246, 0.25)",
+                      paddingHorizontal: 18,
+                      paddingVertical: Platform.select({
+                        ios: 18,
+                        android: 16,
+                      }),
                       flexDirection: "row",
                       alignItems: "center",
+                      minHeight: Platform.select({ ios: 56, android: 52 }),
                     }}
                     activeOpacity={0.8}
+                    accessible={true}
+                    accessibilityRole="radio"
+                    accessibilityState={{
+                      selected: formData.gender === option,
+                    }}
+                    accessibilityLabel={`Select ${option} as gender`}
                   >
-                    <Users size={20} color="rgba(255, 255, 255, 0.7)" style={{ marginRight: 12 }} />
-                    <Text style={{
-                      fontSize: 16,
-                      fontFamily: "PlayfairDisplay-Regular",
-                      color: "#FFFFFF",
-                      flex: 1,
-                    }}>
+                    <Users
+                      size={20}
+                      color="rgba(239, 62, 120, 0.7)"
+                      style={{ marginRight: 12 }}
+                    />
+                    {/* Option text - Using PlayfairDisplay for body text */}
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        fontFamily: "PlayfairDisplay",
+                        fontWeight: "400",
+                        color: "#FFFFFF",
+                        flex: 1,
+                      }}
+                    >
                       {option}
                     </Text>
                     {formData.gender === option && (
-                      <View style={{
-                        width: 20,
-                        height: 20,
-                        borderRadius: 10,
-                        backgroundColor: "#EF3E78",
-                        justifyContent: "center",
-                        alignItems: "center",
-                      }}>
-                        <View style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: 4,
-                          backgroundColor: "#FFFFFF",
-                        }} />
+                      <View
+                        style={{
+                          width: Platform.select({ ios: 20, android: 18 }),
+                          height: Platform.select({ ios: 20, android: 18 }),
+                          borderRadius: Platform.select({
+                            ios: 10,
+                            android: 9,
+                          }),
+                          backgroundColor: "#EF3E78",
+                          justifyContent: "center",
+                          alignItems: "center",
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: Platform.select({ ios: 8, android: 7 }),
+                            height: Platform.select({ ios: 8, android: 7 }),
+                            borderRadius: Platform.select({
+                              ios: 4,
+                              android: 3.5,
+                            }),
+                            backgroundColor: "#FFFFFF",
+                          }}
+                        />
                       </View>
                     )}
                   </TouchableOpacity>
@@ -311,55 +280,20 @@ export default function BasicInfo() {
           </View>
         </ScrollView>
 
-        {/* Continue Button */}
-        <View style={{ paddingHorizontal: 32, paddingBottom: 40 }}>
-          <TouchableOpacity
-            style={{
-              borderRadius: 28,
-              paddingVertical: 18,
-              paddingHorizontal: 32,
-              flexDirection: "row",
-              justifyContent: "center",
-              alignItems: "center",
-              shadowColor: "#EF3E78",
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: isFormValid() ? 0.5 : 0.2,
-              shadowRadius: 20,
-              elevation: 12,
-              width: "100%",
-              minHeight: 56,
-              opacity: isFormValid() ? 1 : 0.6,
-            }}
+        {/* Continue Button - Using PrimaryButton */}
+        <View
+          style={{
+            paddingHorizontal: 24,
+            paddingBottom: Platform.select({ ios: 40, android: 32 }),
+          }}
+        >
+          <PrimaryButton
+            title="Continue"
             onPress={handleNext}
             disabled={!isFormValid()}
-            activeOpacity={0.85}
-          >
-            <LinearGradient
-              colors={isFormValid() ? ["#EF3E78", "#8D69F6"] : ["#666", "#999"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                top: 0,
-                bottom: 0,
-                borderRadius: 28,
-              }}
-            />
-            <Text style={{
-              color: "#FFFFFF",
-              fontSize: 18,
-              fontFamily: "PlayfairDisplay-SemiBold",
-              fontWeight: "600",
-              marginRight: 8,
-              letterSpacing: 0.5,
-              zIndex: 1,
-            }}>
-              Continue
-            </Text>
-            <ChevronRight size={24} color="#FFFFFF" strokeWidth={2.5} style={{ zIndex: 1 }} />
-          </TouchableOpacity>
+            accessibilityLabel="Continue to next step"
+            accessibilityHint="Proceeds to profile photos setup"
+          />
         </View>
       </KeyboardAvoidingView>
     </View>

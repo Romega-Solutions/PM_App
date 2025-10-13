@@ -1,13 +1,23 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { Redirect } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, StatusBar, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+
+const { width, height } = Dimensions.get("window");
 
 export default function Index() {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowSplash(false), 1800); // 1.8 seconds
+    const timer = setTimeout(() => setShowSplash(false), 1800); // 1.8s
     return () => clearTimeout(timer);
   }, []);
 
@@ -24,86 +34,64 @@ export default function Index() {
           colors={["#340839", "#8D69F6"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
+          style={styles.gradient}
         >
-          {/* Logo with Glow Effect */}
-          <View
-            style={{
-              shadowColor: "#EF3E78",
-              shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: 0.6,
-              shadowRadius: 30,
-              elevation: 15,
-              marginBottom: 32,
-            }}
-          >
+          <View style={styles.logoWrap}>
             <Image
               source={require("../assets/logo-no-bg.png")}
-              style={{
-                width: 140,
-                height: 140,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.4,
-                shadowRadius: 12,
-              }}
+              style={{ width: 140, height: 140 }}
               resizeMode="contain"
             />
           </View>
 
-          {/* App Name with Gradient Text Effect */}
-          <Text
-            style={{
-              color: "#FFFFFF",
-              fontSize: 42,
-              fontFamily: "PlayfairDisplay-Bold",
-              fontWeight: "800",
-              letterSpacing: 1.5,
-              textShadowColor: "rgba(239, 62, 120, 0.8)",
-              textShadowOffset: { width: 0, height: 3 },
-              textShadowRadius: 8,
-              marginBottom: 24,
-              textAlign: "center",
-            }}
-          >
-            PinayMate
-          </Text>
+          <Text style={styles.brandText}>PinayMate</Text>
 
-          {/* Tagline */}
-          <Text
-            style={{
-              color: "rgba(255, 255, 255, 0.85)",
-              fontSize: 16,
-              fontFamily: "PlayfairDisplay-Regular",
-              letterSpacing: 0.8,
-              textAlign: "center",
-              marginBottom: 32,
-              paddingHorizontal: 40,
-              textShadowColor: "rgba(0, 0, 0, 0.3)",
-              textShadowOffset: { width: 0, height: 1 },
-              textShadowRadius: 3,
-            }}
-          >
-            Elite Filipino Dating
-          </Text>
+          <Text style={styles.tagline}>Elite Filipino Dating</Text>
 
-          {/* Loading Indicator */}
           <ActivityIndicator
             size="large"
             color="#EF3E78"
-            style={{
-              transform: [{ scale: 1.2 }],
-            }}
+            style={{ transform: [{ scale: 1.15 }] }}
           />
         </LinearGradient>
       </View>
     );
   }
 
-  // Redirect to welcome screen inside (auth) group
   return <Redirect href="/(auth)/welcome" />;
 }
+
+const styles = StyleSheet.create({
+  gradient: { flex: 1, justifyContent: "center", alignItems: "center" },
+  logoWrap: {
+    shadowColor: "#EF3E78",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 30,
+    elevation: 15,
+    marginBottom: 28,
+  },
+  // Use the exact loaded font key below
+  brandText: {
+    color: "#FFFFFF",
+    fontSize: 40,
+    fontFamily: "HelloParis-Bold", // <- use exact key registered in _layout.tsx
+    letterSpacing: 1.2,
+    textShadowColor: "rgba(239, 62, 120, 0.85)",
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 8,
+    marginBottom: 18,
+    textAlign: "center",
+  },
+  // Tagline uses Lora regular (exact key is "Lora")
+  tagline: {
+    color: "rgba(255,255,255,0.88)",
+    fontSize: 15,
+    fontFamily: "Lora",
+    fontWeight: "500", // this uses the Lora-Medium file you loaded
+    letterSpacing: 0.6,
+    textAlign: "center",
+    marginBottom: 28,
+    paddingHorizontal: 40,
+  },
+});

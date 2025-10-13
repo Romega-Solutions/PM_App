@@ -9,33 +9,32 @@ export default function MainLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: "#422057", // Deep purple like welcome.tsx
-          borderTopWidth: 1.5,
-          borderTopColor: "rgba(168, 85, 247, 0.18)", // Soft purple border
-          paddingBottom: Platform.OS === "ios" ? 22 : 14,
-          paddingTop: 12,
-          height: Platform.OS === "ios" ? 92 : 76,
-          shadowColor: "#A855F7",
-          shadowOffset: { width: 0, height: -6 },
-          shadowOpacity: 0.18,
+          backgroundColor: "#340839", // Deep purple matching brand gradient
+          borderTopWidth: 0,
+          paddingBottom: Platform.OS === "ios" ? 28 : 12,
+          paddingTop: Platform.OS === "ios" ? 12 : 8,
+          height: Platform.OS === "ios" ? 88 : 68,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.3,
           shadowRadius: 12,
-          elevation: 10,
+          elevation: 16,
+          position: "relative",
         },
-        tabBarActiveTintColor: "#F4376D", // Pink
-        tabBarInactiveTintColor: "rgba(255, 255, 255, 0.7)",
+        tabBarActiveTintColor: "#EF3E78", // Brand pink
+        tabBarInactiveTintColor: "rgba(255, 255, 255, 0.5)",
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: "700",
-          marginTop: 4,
-          letterSpacing: 0.3,
-          color: "#FFFFFF",
-          textShadowColor: "rgba(168, 85, 247, 0.7)",
-          textShadowOffset: { width: 0, height: 1 },
-          textShadowRadius: 2,
+          fontSize: Platform.OS === "ios" ? 11 : 10,
+          fontFamily: "HelloParis",
+          fontWeight: "600",
+          marginTop: Platform.OS === "ios" ? 6 : 4,
+          letterSpacing: 0.2,
         },
         tabBarItemStyle: {
-          paddingVertical: 4,
+          paddingVertical: Platform.OS === "ios" ? 6 : 4,
+          gap: Platform.OS === "ios" ? 4 : 2,
         },
+        tabBarHideOnKeyboard: Platform.OS === "android",
       }}
     >
       <Tabs.Screen
@@ -48,22 +47,25 @@ export default function MainLayout() {
                 alignItems: "center",
                 justifyContent: "center",
                 backgroundColor: focused
-                  ? "rgba(244, 55, 109, 0.13)"
-                  : "rgba(168, 85, 247, 0.08)",
-                borderRadius: 14,
-                width: 50,
-                height: 34,
-                marginTop: 2,
+                  ? "rgba(239, 62, 120, 0.2)"
+                  : "transparent",
+                borderRadius: 16,
+                width: Platform.OS === "ios" ? 56 : 52,
+                height: Platform.OS === "ios" ? 36 : 34,
                 borderWidth: focused ? 2 : 0,
-                borderColor: focused ? "#F4376D" : "transparent",
-                shadowColor: focused ? "#F4376D" : "#A855F7",
+                borderColor: focused ? "#EF3E78" : "transparent",
+                shadowColor: focused ? "#EF3E78" : "transparent",
                 shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: focused ? 0.18 : 0.1,
-                shadowRadius: 4,
-                elevation: focused ? 6 : 2,
+                shadowOpacity: focused ? 0.4 : 0,
+                shadowRadius: 8,
+                elevation: focused ? 4 : 0,
               }}
             >
-              <Home size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+              <Home
+                size={Platform.OS === "ios" ? 24 : 22}
+                color={color}
+                strokeWidth={focused ? 2.5 : 2}
+              />
             </View>
           ),
         }}
@@ -79,23 +81,22 @@ export default function MainLayout() {
                 alignItems: "center",
                 justifyContent: "center",
                 backgroundColor: focused
-                  ? "rgba(244, 55, 109, 0.13)"
-                  : "rgba(168, 85, 247, 0.08)",
-                borderRadius: 14,
-                width: 50,
-                height: 34,
-                marginTop: 2,
+                  ? "rgba(239, 62, 120, 0.2)"
+                  : "transparent",
+                borderRadius: 16,
+                width: Platform.OS === "ios" ? 56 : 52,
+                height: Platform.OS === "ios" ? 36 : 34,
                 borderWidth: focused ? 2 : 0,
-                borderColor: focused ? "#F4376D" : "transparent",
-                shadowColor: focused ? "#F4376D" : "#A855F7",
+                borderColor: focused ? "#EF3E78" : "transparent",
+                shadowColor: focused ? "#EF3E78" : "transparent",
                 shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: focused ? 0.18 : 0.1,
-                shadowRadius: 4,
-                elevation: focused ? 6 : 2,
+                shadowOpacity: focused ? 0.4 : 0,
+                shadowRadius: 8,
+                elevation: focused ? 4 : 0,
               }}
             >
               <Heart
-                size={24}
+                size={Platform.OS === "ios" ? 24 : 22}
                 color={color}
                 strokeWidth={focused ? 2.5 : 2}
                 fill={focused ? color : "transparent"}
@@ -115,45 +116,56 @@ export default function MainLayout() {
                 alignItems: "center",
                 justifyContent: "center",
                 backgroundColor: focused
-                  ? "rgba(244, 55, 109, 0.13)"
-                  : "rgba(168, 85, 247, 0.08)",
-                borderRadius: 14,
-                width: 50,
-                height: 34,
-                marginTop: 2,
+                  ? "rgba(239, 62, 120, 0.2)"
+                  : "transparent",
+                borderRadius: 16,
+                width: Platform.OS === "ios" ? 56 : 52,
+                height: Platform.OS === "ios" ? 36 : 34,
                 borderWidth: focused ? 2 : 0,
-                borderColor: focused ? "#F4376D" : "transparent",
-                shadowColor: focused ? "#F4376D" : "#A855F7",
+                borderColor: focused ? "#EF3E78" : "transparent",
+                shadowColor: focused ? "#EF3E78" : "transparent",
                 shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: focused ? 0.18 : 0.1,
-                shadowRadius: 4,
-                elevation: focused ? 6 : 2,
+                shadowOpacity: focused ? 0.4 : 0,
+                shadowRadius: 8,
+                elevation: focused ? 4 : 0,
                 position: "relative",
               }}
             >
               <MessageCircle
-                size={24}
+                size={Platform.OS === "ios" ? 24 : 22}
                 color={color}
                 strokeWidth={focused ? 2.5 : 2}
               />
-              {/* Notification badge example */}
+              {/* Notification badge - uncomment when needed */}
               {/* 
               <View
                 style={{
                   position: "absolute",
-                  top: -2,
-                  right: 8,
-                  backgroundColor: "#F4376D",
-                  borderRadius: 8,
-                  minWidth: 16,
-                  height: 16,
+                  top: -4,
+                  right: Platform.OS === "ios" ? 4 : 2,
+                  backgroundColor: "#EF3E78",
+                  borderRadius: 10,
+                  minWidth: 18,
+                  height: 18,
                   justifyContent: "center",
                   alignItems: "center",
                   borderWidth: 2,
-                  borderColor: "#422057",
+                  borderColor: "#340839",
+                  shadowColor: "#EF3E78",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.6,
+                  shadowRadius: 4,
+                  elevation: 4,
                 }}
               >
-                <Text style={{ color: "white", fontSize: 10, fontWeight: "bold" }}>
+                <Text 
+                  style={{ 
+                    color: "#FFFFFF", 
+                    fontSize: 10, 
+                    fontWeight: "700",
+                    fontFamily: "HelloParis",
+                  }}
+                >
                   3
                 </Text>
               </View>
@@ -173,22 +185,25 @@ export default function MainLayout() {
                 alignItems: "center",
                 justifyContent: "center",
                 backgroundColor: focused
-                  ? "rgba(244, 55, 109, 0.13)"
-                  : "rgba(168, 85, 247, 0.08)",
-                borderRadius: 14,
-                width: 50,
-                height: 34,
-                marginTop: 2,
+                  ? "rgba(239, 62, 120, 0.2)"
+                  : "transparent",
+                borderRadius: 16,
+                width: Platform.OS === "ios" ? 56 : 52,
+                height: Platform.OS === "ios" ? 36 : 34,
                 borderWidth: focused ? 2 : 0,
-                borderColor: focused ? "#F4376D" : "transparent",
-                shadowColor: focused ? "#F4376D" : "#A855F7",
+                borderColor: focused ? "#EF3E78" : "transparent",
+                shadowColor: focused ? "#EF3E78" : "transparent",
                 shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: focused ? 0.18 : 0.1,
-                shadowRadius: 4,
-                elevation: focused ? 6 : 2,
+                shadowOpacity: focused ? 0.4 : 0,
+                shadowRadius: 8,
+                elevation: focused ? 4 : 0,
               }}
             >
-              <User size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+              <User
+                size={Platform.OS === "ios" ? 24 : 22}
+                color={color}
+                strokeWidth={focused ? 2.5 : 2}
+              />
             </View>
           ),
         }}

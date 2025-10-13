@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { ChevronRight, Clock, Mail } from "lucide-react-native";
+import { Clock, Mail } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Dimensions,
@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import SecondaryButton from "../../src/components/ui/SecondaryButton";
 
 const { width, height } = Dimensions.get("window");
 
@@ -163,10 +164,12 @@ export default function VerifyEmail() {
 
         {/* Main Content */}
         <View style={{ alignItems: "center", marginBottom: 50 }}>
+          {/* Main heading - Using HelloParis for UI elements */}
           <Text
             style={{
               fontSize: Math.min(width * 0.08, 32),
-              fontFamily: "PlayfairDisplay-Bold",
+              fontFamily: "HelloParis",
+              fontWeight: "700",
               color: "#FFFFFF",
               textAlign: "center",
               marginBottom: 16,
@@ -179,10 +182,12 @@ export default function VerifyEmail() {
             Check Your Email
           </Text>
 
+          {/* Description text - Using PlayfairDisplay for body text */}
           <Text
             style={{
               fontSize: Math.min(width * 0.045, 18),
-              fontFamily: "PlayfairDisplay-Regular",
+              fontFamily: "PlayfairDisplay",
+              fontWeight: "400",
               color: "rgba(255, 255, 255, 0.9)",
               textAlign: "center",
               lineHeight: 26,
@@ -215,7 +220,8 @@ export default function VerifyEmail() {
                 style={{
                   color: "rgba(255, 255, 255, 0.7)",
                   fontSize: 14,
-                  fontFamily: "PlayfairDisplay-Regular",
+                  fontFamily: "PlayfairDisplay",
+                  fontWeight: "400",
                   marginLeft: 8,
                 }}
               >
@@ -225,24 +231,23 @@ export default function VerifyEmail() {
           )}
         </View>
 
-        {/* Action Buttons */}
+        {/* Action Buttons - Using Custom Components */}
         <View style={{ width: "100%", gap: 16 }}>
-          {/* Open Email App Button */}
+          {/* Open Email App Button - Using PrimaryButton with custom content */}
           <TouchableOpacity
             style={{
-              borderRadius: 28,
-              paddingVertical: 18,
-              paddingHorizontal: 32,
+              borderRadius: Platform.select({ ios: 28, android: 26 }),
+              height: Platform.select({ ios: 56, android: 52 }),
               flexDirection: "row",
               justifyContent: "center",
               alignItems: "center",
               shadowColor: "#EF3E78",
               shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.5,
+              shadowOpacity: Platform.select({ ios: 0.5, android: 0.4 }),
               shadowRadius: 20,
               elevation: 12,
               width: "100%",
-              minHeight: 56,
+              overflow: "hidden",
             }}
             onPress={openEmailApp}
             activeOpacity={0.85}
@@ -261,85 +266,43 @@ export default function VerifyEmail() {
                 right: 0,
                 top: 0,
                 bottom: 0,
-                borderRadius: 28,
               }}
             />
             <Mail
               size={20}
               color="#FFFFFF"
               strokeWidth={2.5}
-              style={{ marginRight: 8, zIndex: 1 }}
+              style={{ marginRight: 8 }}
             />
             <Text
               style={{
                 color: "#FFFFFF",
-                fontSize: 18,
-                fontFamily: "PlayfairDisplay-SemiBold",
-                fontWeight: "600",
-                marginRight: 8,
-                letterSpacing: 0.5,
+                fontSize: Platform.select({ ios: 18, android: 17 }),
+                fontFamily: "HelloParis",
+                fontWeight: "700",
+                letterSpacing: Platform.select({ ios: 0.5, android: 0.3 }),
                 textShadowColor: "rgba(0, 0, 0, 0.3)",
                 textShadowOffset: { width: 0, height: 1 },
                 textShadowRadius: 3,
-                zIndex: 1,
               }}
             >
               Open Email App
             </Text>
-            <ChevronRight
-              size={20}
-              color="#FFFFFF"
-              strokeWidth={2.5}
-              style={{ zIndex: 1 }}
-            />
           </TouchableOpacity>
 
-          {/* Resend Email Button */}
-          <TouchableOpacity
-            style={{
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-              borderRadius: 28,
-              paddingVertical: 18,
-              paddingHorizontal: 32,
-              borderWidth: 1.5,
-              borderColor: "rgba(255, 255, 255, 0.3)",
-              justifyContent: "center",
-              alignItems: "center",
-              width: "100%",
-              minHeight: 56,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.2,
-              shadowRadius: 12,
-              elevation: 6,
-            }}
+          {/* Resend Email Button - Using SecondaryButton */}
+          <SecondaryButton
+            title="Resend Email"
+            variant="white"
             onPress={() => {
               // Handle resend email logic here
               console.log("Resend email");
             }}
-            activeOpacity={0.8}
-            accessible={true}
-            accessibilityRole="button"
             accessibilityLabel="Resend Verification Email"
             accessibilityHint="Sends another verification email"
-          >
-            <Text
-              style={{
-                color: "#FFFFFF",
-                fontSize: 18,
-                fontFamily: "PlayfairDisplay-SemiBold",
-                fontWeight: "600",
-                letterSpacing: 0.5,
-                textShadowColor: "rgba(0, 0, 0, 0.5)",
-                textShadowOffset: { width: 0, height: 1 },
-                textShadowRadius: 3,
-              }}
-            >
-              Resend Email
-            </Text>
-          </TouchableOpacity>
+          />
 
-          {/* Back to Sign In */}
+          {/* Back to Sign In - Text Link */}
           <TouchableOpacity
             style={{
               paddingVertical: 16,
@@ -352,11 +315,13 @@ export default function VerifyEmail() {
             accessibilityRole="button"
             accessibilityLabel="Back to Sign In"
           >
+            {/* Link text - Using PlayfairDisplay for body text */}
             <Text
               style={{
                 color: "rgba(255, 255, 255, 0.7)",
                 fontSize: 16,
-                fontFamily: "PlayfairDisplay-Regular",
+                fontFamily: "PlayfairDisplay",
+                fontWeight: "400",
                 textDecorationLine: "underline",
               }}
             >

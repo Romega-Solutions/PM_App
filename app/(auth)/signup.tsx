@@ -1,3 +1,4 @@
+// app/(auth)/signup.tsx
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
@@ -17,6 +18,7 @@ import {
   Platform,
   ScrollView,
   StatusBar,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -38,32 +40,25 @@ export default function SignUp() {
     password: "",
     confirmPassword: "",
   });
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [showConfirmPassword, setShowConfirmPassword] =
-    useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSignUp = (): void => {
     if (!formData.firstName || !formData.email || !formData.password) {
       Alert.alert("Missing Information", "Please fill in all fields");
       return;
     }
-
     if (formData.password !== formData.confirmPassword) {
       Alert.alert("Password Mismatch", "Passwords don't match");
       return;
     }
-
     // TODO: Sign up with Supabase
     router.push("/(auth)/verify-email");
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#340839" }}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#340839"
-        translucent={false}
-      />
+      <StatusBar barStyle="light-content" backgroundColor="#340839" />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -79,31 +74,14 @@ export default function SignUp() {
           <LinearGradient
             colors={["#340839", "rgba(141, 105, 246, 0.15)", "#340839"]}
             locations={[0, 0.5, 1]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              bottom: 0,
-            }}
+            style={StyleSheet.absoluteFill}
           />
 
           {/* Back Button */}
           <TouchableOpacity
-            style={{
-              position: "absolute",
-              top: Platform.select({ ios: 16, android: 12 }),
-              left: 20,
-              zIndex: 10,
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
+            style={styles.backBtn}
             onPress={() => router.back()}
-            accessible={true}
+            accessible
             accessibilityRole="button"
             accessibilityLabel="Go back"
           >
@@ -111,75 +89,28 @@ export default function SignUp() {
           </TouchableOpacity>
 
           {/* Header with Logo */}
-          <View
-            style={{
-              paddingTop: Platform.select({ ios: 60, android: 50 }),
-              paddingHorizontal: 24,
-              alignItems: "center",
-              marginBottom: 32,
-            }}
-          >
-            {/* Logo */}
-            <View
-              style={{
-                width: 100,
-                height: 100,
-                justifyContent: "center",
-                alignItems: "center",
-                marginBottom: 24,
-                shadowColor: "#EF3E78",
-                shadowOffset: { width: 0, height: 0 },
-                shadowOpacity: 0.5,
-                shadowRadius: 25,
-                elevation: 15,
-              }}
-            >
+          <View style={styles.headerWrap}>
+            <View style={styles.logoWrap}>
               <Image
                 source={require("../../assets/logo-no-bg.png")}
-                style={{
-                  width: 100,
-                  height: 100,
-                }}
+                style={{ width: 100, height: 100 }}
                 resizeMode="contain"
+                accessible
+                accessibilityLabel="PinayMate logo"
               />
             </View>
 
-            {/* Welcome Text - Using Hello Paris for main heading */}
-            <Text
-              style={{
-                fontSize: 36,
-                fontFamily: "HelloParis",
-                fontWeight: "700",
-                color: "#FFFFFF",
-                textAlign: "center",
-                marginBottom: 12,
-                textShadowColor: "rgba(239, 62, 120, 0.6)",
-                textShadowOffset: { width: 0, height: 2 },
-                textShadowRadius: 8,
-                letterSpacing: -0.5,
-              }}
-            >
-              Join PinayMate
-            </Text>
+            {/* Title - HelloParis (title) */}
+            <Text style={[styles.title, styles.fontTitle]}>Join PinayMate</Text>
 
-            {/* Subtitle - Using Playfair for body text */}
-            <Text
-              style={{
-                fontSize: 16,
-                fontFamily: "PlayfairDisplay",
-                fontWeight: "400",
-                color: "rgba(255, 255, 255, 0.85)",
-                textAlign: "center",
-                lineHeight: 24,
-              }}
-            >
+            {/* Head - Lora (head) */}
+            <Text style={[styles.head, styles.fontHead]}>
               Find your perfect Filipino match today
             </Text>
           </View>
 
-          {/* Form Container */}
+          {/* Form */}
           <View style={{ paddingHorizontal: 24, paddingBottom: 40 }}>
-            {/* First Name Field */}
             <CustomTextInput
               label="First Name"
               value={formData.firstName}
@@ -191,7 +122,6 @@ export default function SignUp() {
               autoComplete="name-given"
             />
 
-            {/* Email Field */}
             <CustomTextInput
               label="Email Address"
               value={formData.email}
@@ -205,7 +135,6 @@ export default function SignUp() {
               autoComplete="email"
             />
 
-            {/* Password Field */}
             <CustomTextInput
               label="Password"
               value={formData.password}
@@ -220,7 +149,6 @@ export default function SignUp() {
               autoComplete="password-new"
             />
 
-            {/* Confirm Password Field */}
             <View style={{ marginBottom: 28 }}>
               <CustomTextInput
                 label="Confirm Password"
@@ -239,25 +167,12 @@ export default function SignUp() {
               />
             </View>
 
-            {/* Create Account Button - Brand Gradient */}
+            {/* Create Account Button - gradient, body font */}
             <TouchableOpacity
-              style={{
-                borderRadius: Platform.select({ ios: 28, android: 26 }),
-                height: Platform.select({ ios: 56, android: 52 }),
-                marginBottom: 24,
-                flexDirection: "row",
-                justifyContent: "center",
-                alignItems: "center",
-                shadowColor: "#EF3E78",
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: Platform.select({ ios: 0.5, android: 0.4 }),
-                shadowRadius: 20,
-                elevation: 12,
-                overflow: "hidden",
-              }}
+              style={styles.createBtn}
               onPress={handleSignUp}
               activeOpacity={0.85}
-              accessible={true}
+              accessible
               accessibilityRole="button"
               accessibilityLabel="Create your account"
             >
@@ -265,135 +180,51 @@ export default function SignUp() {
                 colors={["#EF3E78", "#8D69F6"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                }}
+                style={StyleSheet.absoluteFill}
               />
-              {/* Button text - Using Hello Paris for UI elements */}
-              <Text
-                style={{
-                  color: "#FFFFFF",
-                  fontSize: 18,
-                  fontFamily: "HelloParis",
-                  fontWeight: "700",
-                  marginRight: 8,
-                  letterSpacing: 0.5,
-                  textShadowColor: "rgba(0, 0, 0, 0.3)",
-                  textShadowOffset: { width: 0, height: 1 },
-                  textShadowRadius: 3,
-                }}
-              >
+              <Text style={[styles.createBtnText, styles.fontBodySemibold]}>
                 Create Account
               </Text>
               <ChevronRight size={22} color="#FFFFFF" strokeWidth={2.5} />
             </TouchableOpacity>
 
             {/* Divider */}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 24,
-              }}
-            >
-              <View
-                style={{
-                  flex: 1,
-                  height: 1,
-                  backgroundColor: "rgba(255, 255, 255, 0.15)",
-                }}
-              />
-              {/* Divider text - Using Playfair for body text */}
-              <Text
-                style={{
-                  color: "rgba(255, 255, 255, 0.5)",
-                  marginHorizontal: 16,
-                  fontSize: 13,
-                  fontFamily: "PlayfairDisplay",
-                  fontWeight: "400",
-                }}
-              >
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              {/* Head label - Lora */}
+              <Text style={[styles.dividerText, styles.fontHeadMedium]}>
                 Or continue with
               </Text>
-              <View
-                style={{
-                  flex: 1,
-                  height: 1,
-                  backgroundColor: "rgba(255, 255, 255, 0.15)",
-                }}
-              />
+              <View style={styles.dividerLine} />
             </View>
 
             {/* Google Sign Up */}
             <TouchableOpacity
-              style={{
-                backgroundColor: "rgba(141, 105, 246, 0.12)",
-                borderRadius: Platform.select({ ios: 28, android: 26 }),
-                height: Platform.select({ ios: 56, android: 52 }),
-                borderWidth: Platform.select({ ios: 1.5, android: 2 }),
-                borderColor: "rgba(141, 105, 246, 0.3)",
-                marginBottom: 32,
-                justifyContent: "center",
-                alignItems: "center",
-                shadowColor: "#8D69F6",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.15,
-                shadowRadius: 8,
-                elevation: 4,
-              }}
+              style={styles.googleBtn}
               activeOpacity={0.8}
-              accessible={true}
+              accessible
               accessibilityRole="button"
               accessibilityLabel="Sign up with Google"
             >
-              {/* Google button text - Using Hello Paris for UI elements */}
-              <Text
-                style={{
-                  color: "#FFFFFF",
-                  fontSize: 16,
-                  fontFamily: "HelloParis",
-                  fontWeight: "500",
-                  letterSpacing: 0.3,
-                }}
-              >
+              <Text style={[styles.googleBtnText, styles.fontBodySemibold]}>
                 🌐 Continue with Google
               </Text>
             </TouchableOpacity>
 
             {/* Sign In Link */}
             <View style={{ alignItems: "center", paddingBottom: 20 }}>
-              {/* Supporting text - Using Playfair for body text */}
-              <Text
-                style={{
-                  color: "rgba(255, 255, 255, 0.6)",
-                  fontSize: 14,
-                  fontFamily: "PlayfairDisplay",
-                  fontWeight: "400",
-                  marginBottom: 10,
-                }}
-              >
+              {/* Body - DMSans */}
+              <Text style={[styles.supportText, styles.fontBody]}>
                 Already finding love with us?
               </Text>
               <TouchableOpacity
                 onPress={() => router.push("/(auth)/signin")}
-                accessible={true}
+                accessible
                 accessibilityRole="button"
                 accessibilityLabel="Sign in to existing account"
               >
-                {/* Link text - Using Hello Paris for UI elements */}
-                <Text
-                  style={{
-                    color: "#EF3E78",
-                    fontSize: 16,
-                    fontFamily: "HelloParis",
-                    fontWeight: "600",
-                    letterSpacing: 0.3,
-                  }}
-                >
+                {/* Body CTA - DMSans Semibold */}
+                <Text style={[styles.linkCta, styles.fontBodySemibold]}>
                   Sign In
                 </Text>
               </TouchableOpacity>
@@ -404,3 +235,142 @@ export default function SignUp() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  backBtn: {
+    position: "absolute",
+    top: Platform.select({ ios: 16, android: 12 }),
+    left: 20,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerWrap: {
+    paddingTop: Platform.select({ ios: 60, android: 50 }),
+    paddingHorizontal: 24,
+    alignItems: "center",
+    marginBottom: 32,
+  },
+  logoWrap: {
+    width: 100,
+    height: 100,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+    shadowColor: "#EF3E78",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 25,
+    elevation: 15,
+  },
+
+  // Title (HelloParis)
+  title: {
+    fontSize: 36,
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginBottom: 12,
+    textShadowColor: "rgba(239, 62, 120, 0.6)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+    letterSpacing: -0.5,
+  },
+
+  // Head (Lora)
+  head: {
+    fontSize: 16,
+    color: "rgba(255, 255, 255, 0.9)",
+    textAlign: "center",
+    lineHeight: 24,
+  },
+
+  // Buttons and links
+  createBtn: {
+    borderRadius: Platform.select({ ios: 28, android: 26 }),
+    height: Platform.select({ ios: 56, android: 52 }),
+    marginBottom: 24,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    shadowColor: "#EF3E78",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: Platform.select({ ios: 0.5, android: 0.4 }) as number,
+    shadowRadius: 20,
+    elevation: 12,
+    overflow: "hidden",
+  },
+  createBtnText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    marginRight: 4,
+    letterSpacing: 0.5,
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+  },
+  dividerText: {
+    color: "rgba(255, 255, 255, 0.6)",
+    marginHorizontal: 16,
+    fontSize: 13,
+  },
+
+  googleBtn: {
+    backgroundColor: "rgba(141, 105, 246, 0.12)",
+    borderRadius: Platform.select({ ios: 28, android: 26 }),
+    height: Platform.select({ ios: 56, android: 52 }),
+    borderWidth: Platform.select({ ios: 1.5, android: 2 }),
+    borderColor: "rgba(141, 105, 246, 0.3)",
+    marginBottom: 32,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#8D69F6",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  googleBtnText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    letterSpacing: 0.3,
+  },
+
+  supportText: {
+    color: "rgba(255, 255, 255, 0.7)",
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  linkCta: {
+    color: "#EF3E78",
+    fontSize: 16,
+    letterSpacing: 0.3,
+  },
+
+  // Font helpers that match expo-font registrations
+  // Title = HelloParis
+  fontTitle: { fontFamily: "HelloParis-Bold" },
+
+  // Head = Lora
+  fontHead: { fontFamily: "Lora-Regular" },
+  fontHeadMedium: { fontFamily: "Lora-Medium" },
+
+  // Body = DMSans
+  fontBody: { fontFamily: "DMSans-Regular" },
+  fontBodySemibold: { fontFamily: "DMSans-SemiBold" },
+});

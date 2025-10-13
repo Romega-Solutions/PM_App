@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { CheckCircle, ChevronRight } from "lucide-react-native";
+import { CheckCircle } from "lucide-react-native";
 import React, { useEffect } from "react";
 import {
   Dimensions,
@@ -8,9 +8,9 @@ import {
   Platform,
   StatusBar,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
+import PrimaryButton from "../../src/components/ui/PrimaryButton";
 
 const { width, height } = Dimensions.get("window");
 
@@ -24,7 +24,7 @@ export default function VerificationSuccess() {
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [router]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -70,8 +70,8 @@ export default function VerificationSuccess() {
         {/* Logo */}
         <View
           style={{
-            width: 100,
-            height: 100,
+            width: 150,
+            height: 150,
             justifyContent: "center",
             alignItems: "center",
             marginBottom: 40,
@@ -84,36 +84,38 @@ export default function VerificationSuccess() {
         >
           <Image
             source={require("../../assets/logo-no-bg.png")}
-            style={{ width: 100, height: 100 }}
+            style={{ width: 150, height: 150 }}
             resizeMode="contain"
           />
         </View>
 
-        {/* Success Animation */}
+        {/* Success Check Icon with Glow */}
         <View
           style={{
             backgroundColor: "rgba(34, 197, 94, 0.15)",
             borderRadius: 50,
             padding: 24,
-            marginBottom: 40,
-            borderWidth: 3,
-            borderColor: "rgba(34, 197, 94, 0.4)",
+            marginBottom: 32,
+            borderWidth: 2,
+            borderColor: "rgba(34, 197, 94, 0.3)",
             shadowColor: "#22c55e",
             shadowOffset: { width: 0, height: 0 },
             shadowOpacity: 0.8,
-            shadowRadius: 25,
-            elevation: 15,
+            shadowRadius: 20,
+            elevation: 12,
           }}
         >
-          <CheckCircle size={56} color="#22c55e" fill="#22c55e" />
+          <CheckCircle size={48} color="#22c55e" strokeWidth={2} />
         </View>
 
         {/* Success Message */}
         <View style={{ alignItems: "center", marginBottom: 50 }}>
+          {/* Main heading - Using HelloParis for UI elements */}
           <Text
             style={{
               fontSize: Math.min(width * 0.08, 32),
-              fontFamily: "PlayfairDisplay-Bold",
+              fontFamily: "HelloParis",
+              fontWeight: "700",
               color: "#FFFFFF",
               textAlign: "center",
               marginBottom: 16,
@@ -126,10 +128,12 @@ export default function VerificationSuccess() {
             Verified Successfully!
           </Text>
 
+          {/* Description text - Using PlayfairDisplay for body text */}
           <Text
             style={{
               fontSize: Math.min(width * 0.045, 18),
-              fontFamily: "PlayfairDisplay-Regular",
+              fontFamily: "PlayfairDisplay",
+              fontWeight: "400",
               color: "rgba(255, 255, 255, 0.9)",
               textAlign: "center",
               lineHeight: 26,
@@ -143,76 +147,23 @@ export default function VerificationSuccess() {
           </Text>
         </View>
 
-        {/* Continue Button */}
-        <View style={{ width: "100%" }}>
-          <TouchableOpacity
-            style={{
-              borderRadius: 28,
-              paddingVertical: 20,
-              paddingHorizontal: 32,
-              flexDirection: "row",
-              justifyContent: "center",
-              alignItems: "center",
-              shadowColor: "#EF3E78",
-              shadowOffset: { width: 0, height: 10 },
-              shadowOpacity: 0.5,
-              shadowRadius: 25,
-              elevation: 15,
-              width: "100%",
-              minHeight: 60,
-            }}
+        {/* Continue Button - Using PrimaryButton */}
+        <View style={{ width: "100%", gap: 16 }}>
+          <PrimaryButton
+            title="Continue Setup"
             onPress={() => router.push("/(auth)/account-setup/basic-info")}
-            activeOpacity={0.85}
-            accessible={true}
-            accessibilityRole="button"
             accessibilityLabel="Continue to Profile Setup"
             accessibilityHint="Proceeds to account setup flow"
-          >
-            <LinearGradient
-              colors={["#EF3E78", "#8D69F6"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                top: 0,
-                bottom: 0,
-                borderRadius: 28,
-              }}
-            />
-            <Text
-              style={{
-                color: "#FFFFFF",
-                fontSize: 19,
-                fontFamily: "PlayfairDisplay-SemiBold",
-                fontWeight: "600",
-                marginRight: 8,
-                letterSpacing: 0.5,
-                textShadowColor: "rgba(0, 0, 0, 0.3)",
-                textShadowOffset: { width: 0, height: 1 },
-                textShadowRadius: 3,
-                zIndex: 1,
-              }}
-            >
-              Continue Setup
-            </Text>
-            <ChevronRight
-              size={24}
-              color="#FFFFFF"
-              strokeWidth={2.5}
-              style={{ zIndex: 1 }}
-            />
-          </TouchableOpacity>
+          />
 
-          {/* Auto-advance notice */}
+          {/* Auto-advance notice - Using PlayfairDisplay for body text */}
           <Text
             style={{
               color: "rgba(255, 255, 255, 0.6)",
               fontSize: 14,
-              fontFamily: "PlayfairDisplay-Regular",
+              fontFamily: "PlayfairDisplay",
+              fontWeight: "400",
               textAlign: "center",
-              marginTop: 16,
             }}
           >
             Automatically continuing in 3 seconds...

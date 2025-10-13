@@ -1,18 +1,19 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { ChevronRight, MapPin, Search, Navigation } from "lucide-react-native";
+import { MapPin, Navigation, Search } from "lucide-react-native";
 import React, { useState } from "react";
 import {
+  Alert,
   Dimensions,
   Platform,
   ScrollView,
   StatusBar,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-  Alert,
 } from "react-native";
+import CustomTextInput from "../../../src/components/forms/CustomTextInput";
+import PrimaryButton from "../../../src/components/ui/PrimaryButton";
 
 const { width, height } = Dimensions.get("window");
 
@@ -78,50 +79,66 @@ export default function Location() {
         contentContainerStyle={{
           flexGrow: 1,
           paddingHorizontal: 32,
-          paddingTop: Platform.select({ ios: height * 0.08, android: height * 0.06 }),
-          paddingBottom: 40,
+          paddingTop: Platform.select({ 
+            ios: height * 0.08, 
+            android: height * 0.06 
+          }),
+          paddingBottom: Platform.select({ ios: 40, android: 32 }),
         }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Header */}
         <View style={{ alignItems: "center", marginBottom: 40 }}>
           {/* Progress Indicator */}
-          <View style={{ flexDirection: "row", marginBottom: 32, gap: 8 }}>
+          <View style={{ 
+            flexDirection: "row", 
+            marginBottom: 32, 
+            gap: Platform.select({ ios: 8, android: 6 })
+          }}>
             {[1, 2, 3, 4, 5].map((step, index) => (
               <View
                 key={step}
                 style={{
                   width: index === 2 ? 24 : 8,
-                  height: 8,
-                  borderRadius: 4,
+                  height: Platform.select({ ios: 8, android: 6 }),
+                  borderRadius: Platform.select({ ios: 4, android: 3 }),
                   backgroundColor: index <= 2 ? "#EF3E78" : "rgba(255, 255, 255, 0.3)",
                 }}
               />
             ))}
           </View>
 
+          {/* Main heading - Using HelloParis for UI elements */}
           <Text
             style={{
-              fontSize: Math.min(width * 0.08, 32),
-              fontFamily: "PlayfairDisplay-Bold",
+              fontSize: Math.min(
+                width * 0.08, 
+                Platform.select({ ios: 32, android: 30 })
+              ),
+              fontFamily: "HelloParis",
+              fontWeight: "700",
               color: "#FFFFFF",
               textAlign: "center",
               marginBottom: 12,
               textShadowColor: "rgba(0, 0, 0, 0.8)",
               textShadowOffset: { width: 0, height: 3 },
               textShadowRadius: 10,
+              letterSpacing: Platform.select({ ios: -0.5, android: -0.3 }),
             }}
           >
             Where are you located?
           </Text>
 
+          {/* Subtitle - Using PlayfairDisplay for body text */}
           <Text
             style={{
-              fontSize: 16,
-              fontFamily: "PlayfairDisplay-Regular",
+              fontSize: Platform.select({ ios: 16, android: 15 }),
+              fontFamily: "PlayfairDisplay",
+              fontWeight: "400",
               color: "rgba(255, 255, 255, 0.8)",
               textAlign: "center",
-              lineHeight: 24,
+              lineHeight: Platform.select({ ios: 24, android: 22 }),
               paddingHorizontal: 20,
             }}
           >
@@ -134,25 +151,32 @@ export default function Location() {
           onPress={handleUseCurrentLocation}
           style={{
             backgroundColor: useCurrentLocation 
-              ? "rgba(239, 62, 120, 0.2)" 
-              : "rgba(255, 255, 255, 0.1)",
+              ? "rgba(239, 62, 120, 0.15)" 
+              : "rgba(255, 255, 255, 0.08)",
             borderRadius: 16,
-            borderWidth: 1.5,
+            borderWidth: 2,
             borderColor: useCurrentLocation 
               ? "#EF3E78" 
-              : "rgba(255, 255, 255, 0.3)",
-            paddingHorizontal: 20,
-            paddingVertical: 16,
+              : "rgba(141, 105, 246, 0.25)",
+            paddingHorizontal: 18,
+            paddingVertical: Platform.select({ ios: 18, android: 16 }),
             flexDirection: "row",
             alignItems: "center",
             marginBottom: 24,
+            minHeight: Platform.select({ ios: 56, android: 52 }),
           }}
           activeOpacity={0.8}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Use current location"
+          accessibilityHint="Automatically detects your current location"
         >
           <Navigation size={20} color="#EF3E78" style={{ marginRight: 12 }} />
+          {/* Location button text - Using PlayfairDisplay for body text */}
           <Text style={{
             fontSize: 16,
-            fontFamily: "PlayfairDisplay-SemiBold",
+            fontFamily: "PlayfairDisplay",
+            fontWeight: "400",
             color: "#FFFFFF",
             flex: 1,
           }}>
@@ -160,17 +184,17 @@ export default function Location() {
           </Text>
           {useCurrentLocation && (
             <View style={{
-              width: 20,
-              height: 20,
-              borderRadius: 10,
+              width: Platform.select({ ios: 20, android: 18 }),
+              height: Platform.select({ ios: 20, android: 18 }),
+              borderRadius: Platform.select({ ios: 10, android: 9 }),
               backgroundColor: "#EF3E78",
               justifyContent: "center",
               alignItems: "center",
             }}>
               <View style={{
-                width: 8,
-                height: 8,
-                borderRadius: 4,
+                width: Platform.select({ ios: 8, android: 7 }),
+                height: Platform.select({ ios: 8, android: 7 }),
+                borderRadius: Platform.select({ ios: 4, android: 3.5 }),
                 backgroundColor: "#FFFFFF",
               }} />
             </View>
@@ -181,56 +205,55 @@ export default function Location() {
         <View style={{
           flexDirection: "row",
           alignItems: "center",
-          marginVertical: 24,
+          marginVertical: Platform.select({ ios: 24, android: 20 }),
         }}>
-          <View style={{ flex: 1, height: 1, backgroundColor: "rgba(255, 255, 255, 0.3)" }} />
+          <View style={{ 
+            flex: 1, 
+            height: 1, 
+            backgroundColor: "rgba(255, 255, 255, 0.3)" 
+          }} />
+          {/* Divider text - Using PlayfairDisplay for body text */}
           <Text style={{
             color: "rgba(255, 255, 255, 0.6)",
-            fontSize: 14,
-            fontFamily: "PlayfairDisplay-Regular",
+            fontSize: Platform.select({ ios: 14, android: 13 }),
+            fontFamily: "PlayfairDisplay",
+            fontWeight: "400",
             marginHorizontal: 16,
           }}>
             or search for a city
           </Text>
-          <View style={{ flex: 1, height: 1, backgroundColor: "rgba(255, 255, 255, 0.3)" }} />
+          <View style={{ 
+            flex: 1, 
+            height: 1, 
+            backgroundColor: "rgba(255, 255, 255, 0.3)" 
+          }} />
         </View>
 
-        {/* Search Input */}
-        <View style={{
-          backgroundColor: "rgba(255, 255, 255, 0.1)",
-          borderRadius: 16,
-          borderWidth: 1.5,
-          borderColor: "rgba(255, 255, 255, 0.3)",
-          paddingHorizontal: 20,
-          paddingVertical: 16,
-          flexDirection: "row",
-          alignItems: "center",
-          marginBottom: 20,
-        }}>
-          <Search size={20} color="rgba(255, 255, 255, 0.7)" style={{ marginRight: 12 }} />
-          <TextInput
+        {/* Search Input - Using CustomTextInput */}
+        <View style={{ marginBottom: Platform.select({ ios: 20, android: 18 }) }}>
+          <CustomTextInput
+            label="Search Location"
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search for your city..."
-            placeholderTextColor="rgba(255, 255, 255, 0.5)"
-            style={{
-              flex: 1,
-              fontSize: 16,
-              fontFamily: "PlayfairDisplay-Regular",
-              color: "#FFFFFF",
-            }}
+            LeftIcon={Search}
+            autoCapitalize="words"
+            autoComplete="street-address"
           />
         </View>
 
         {/* Location Results */}
-        <View style={{ gap: 12, marginBottom: 40 }}>
+        <View style={{ 
+          gap: Platform.select({ ios: 12, android: 10 }), 
+          marginBottom: Platform.select({ ios: 40, android: 32 })
+        }}>
           {filteredLocations.slice(0, 8).map((location, index) => (
             <TouchableOpacity
               key={index}
               onPress={() => handleLocationSelect(location)}
               style={{
                 backgroundColor: selectedLocation === location 
-                  ? "rgba(239, 62, 120, 0.2)" 
+                  ? "rgba(239, 62, 120, 0.15)" 
                   : "rgba(255, 255, 255, 0.08)",
                 borderRadius: 12,
                 borderWidth: 1,
@@ -238,16 +261,27 @@ export default function Location() {
                   ? "#EF3E78" 
                   : "rgba(255, 255, 255, 0.2)",
                 paddingHorizontal: 16,
-                paddingVertical: 14,
+                paddingVertical: Platform.select({ ios: 14, android: 12 }),
                 flexDirection: "row",
                 alignItems: "center",
+                minHeight: Platform.select({ ios: 48, android: 44 }),
               }}
               activeOpacity={0.8}
+              accessible={true}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: selectedLocation === location }}
+              accessibilityLabel={`Select ${location} as your location`}
             >
-              <MapPin size={18} color="rgba(255, 255, 255, 0.7)" style={{ marginRight: 12 }} />
+              <MapPin 
+                size={18} 
+                color="rgba(255, 255, 255, 0.7)" 
+                style={{ marginRight: 12 }} 
+              />
+              {/* Location name - Using PlayfairDisplay for body text */}
               <Text style={{
-                fontSize: 15,
-                fontFamily: "PlayfairDisplay-Regular",
+                fontSize: Platform.select({ ios: 15, android: 14 }),
+                fontFamily: "PlayfairDisplay",
+                fontWeight: "400",
                 color: "#FFFFFF",
                 flex: 1,
               }}>
@@ -255,17 +289,17 @@ export default function Location() {
               </Text>
               {selectedLocation === location && (
                 <View style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: 9,
+                  width: Platform.select({ ios: 18, android: 16 }),
+                  height: Platform.select({ ios: 18, android: 16 }),
+                  borderRadius: Platform.select({ ios: 9, android: 8 }),
                   backgroundColor: "#EF3E78",
                   justifyContent: "center",
                   alignItems: "center",
                 }}>
                   <View style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: 3,
+                    width: Platform.select({ ios: 6, android: 5 }),
+                    height: Platform.select({ ios: 6, android: 5 }),
+                    borderRadius: Platform.select({ ios: 3, android: 2.5 }),
                     backgroundColor: "#FFFFFF",
                   }} />
                 </View>
@@ -275,55 +309,18 @@ export default function Location() {
         </View>
       </ScrollView>
 
-      {/* Continue Button */}
-      <View style={{ paddingHorizontal: 32, paddingBottom: 40 }}>
-        <TouchableOpacity
-          style={{
-            borderRadius: 28,
-            paddingVertical: 18,
-            paddingHorizontal: 32,
-            flexDirection: "row",
-            justifyContent: "center",
-            alignItems: "center",
-            shadowColor: "#EF3E78",
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: isFormValid() ? 0.5 : 0.2,
-            shadowRadius: 20,
-            elevation: 12,
-            width: "100%",
-            minHeight: 56,
-            opacity: isFormValid() ? 1 : 0.6,
-          }}
+      {/* Continue Button - Using PrimaryButton */}
+      <View style={{ 
+        paddingHorizontal: 32, 
+        paddingBottom: Platform.select({ ios: 40, android: 32 })
+      }}>
+        <PrimaryButton
+          title="Continue"
           onPress={handleNext}
           disabled={!isFormValid()}
-          activeOpacity={0.85}
-        >
-          <LinearGradient
-            colors={isFormValid() ? ["#EF3E78", "#8D69F6"] : ["#666", "#999"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              bottom: 0,
-              borderRadius: 28,
-            }}
-          />
-          <Text style={{
-            color: "#FFFFFF",
-            fontSize: 18,
-            fontFamily: "PlayfairDisplay-SemiBold",
-            fontWeight: "600",
-            marginRight: 8,
-            letterSpacing: 0.5,
-            zIndex: 1,
-          }}>
-            Continue
-          </Text>
-          <ChevronRight size={24} color="#FFFFFF" strokeWidth={2.5} style={{ zIndex: 1 }} />
-        </TouchableOpacity>
+          accessibilityLabel="Continue to preferences"
+          accessibilityHint="Proceeds to dating preferences setup"
+        />
       </View>
     </View>
   );

@@ -1,16 +1,18 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { ChevronRight, Eye, Heart, MapPin, User } from "lucide-react-native";
+import { Eye, Heart, MapPin, Sparkles, User } from "lucide-react-native";
 import React from "react";
 import {
   Dimensions,
+  Image,
   Platform,
   ScrollView,
   StatusBar,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
+import PrimaryButton from "../../../src/components/ui/PrimaryButton";
+import SecondaryButton from "../../../src/components/ui/SecondaryButton";
 
 const { width, height } = Dimensions.get("window");
 
@@ -39,7 +41,6 @@ export default function WelcomeComplete() {
     router.replace("/(main)");
   };
 
-  // ...rest of the existing code remains the same...
   return (
     <View style={{ flex: 1 }}>
       <StatusBar
@@ -65,74 +66,108 @@ export default function WelcomeComplete() {
             ios: height * 0.08,
             android: height * 0.06,
           }),
-          paddingBottom: 40,
+          paddingBottom: Platform.select({ ios: 40, android: 32 }),
         }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        {/* Success Header */}
-        <View style={{ alignItems: "center", marginBottom: 40 }}>
-          {/* Completion Animation */}
+        {/* Logo Header */}
+        <View style={{ alignItems: "center", marginBottom: 32 }}>
           <View
             style={{
-              backgroundColor: "rgba(34, 197, 94, 0.15)",
-              borderRadius: 60,
-              padding: 24,
-              marginBottom: 32,
-              borderWidth: 3,
-              borderColor: "rgba(34, 197, 94, 0.4)",
-              shadowColor: "#22c55e",
+              width: 120,
+              height: 120,
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: 24,
+              shadowColor: "#EF3E78",
               shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: 0.6,
-              shadowRadius: 20,
+              shadowOpacity: 0.7,
+              shadowRadius: 30,
               elevation: 15,
             }}
           >
-            <Heart size={48} color="#22c55e" fill="#22c55e" />
+            <Image
+              source={require("../../../assets/logo-no-bg.png")}
+              style={{ width: 120, height: 120 }}
+              resizeMode="contain"
+            />
           </View>
 
-          <Text
-            style={{
-              fontSize: Math.min(width * 0.08, 34),
-              fontFamily: "PlayfairDisplay-Bold",
-              color: "#FFFFFF",
-              textAlign: "center",
-              marginBottom: 12,
-              textShadowColor: "rgba(0, 0, 0, 0.8)",
-              textShadowOffset: { width: 0, height: 3 },
-              textShadowRadius: 10,
-            }}
-          >
-            Welcome to PinayMate!
-          </Text>
+          {/* Welcome Message */}
+          <View style={{ alignItems: "center", marginBottom: 16 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 8,
+              }}
+            >
+              <Sparkles
+                size={24}
+                color="#FFD700"
+                fill="#FFD700"
+                style={{ marginRight: 8 }}
+              />
+              <Text
+                style={{
+                  fontSize: Math.min(
+                    width * 0.08,
+                    Platform.select({ ios: 32, android: 30 })
+                  ),
+                  fontFamily: "HelloParis",
+                  fontWeight: "700",
+                  color: "#FFFFFF",
+                  textAlign: "center",
+                  textShadowColor: "rgba(0, 0, 0, 0.8)",
+                  textShadowOffset: { width: 0, height: 3 },
+                  textShadowRadius: 10,
+                  letterSpacing: Platform.select({
+                    ios: -0.5,
+                    android: -0.3,
+                  }),
+                }}
+              >
+                Welcome, {userData.firstName}!
+              </Text>
+              <Sparkles
+                size={24}
+                color="#FFD700"
+                fill="#FFD700"
+                style={{ marginLeft: 8 }}
+              />
+            </View>
 
-          <Text
-            style={{
-              fontSize: 16,
-              fontFamily: "PlayfairDisplay-Regular",
-              color: "rgba(255, 255, 255, 0.9)",
-              textAlign: "center",
-              lineHeight: 24,
-              paddingHorizontal: 20,
-            }}
-          >
-            Your profile is complete! Here's what we know about you:
-          </Text>
+            <Text
+              style={{
+                fontSize: Platform.select({ ios: 16, android: 15 }),
+                fontFamily: "PlayfairDisplay",
+                fontWeight: "400",
+                color: "rgba(255, 255, 255, 0.9)",
+                textAlign: "center",
+                lineHeight: Platform.select({ ios: 24, android: 22 }),
+                paddingHorizontal: 20,
+              }}
+            >
+              Your profile is complete and ready to shine!
+            </Text>
+          </View>
         </View>
 
         {/* Profile Summary Card */}
         <View
           style={{
-            backgroundColor: "rgba(255, 255, 255, 0.12)",
-            borderRadius: 20,
-            padding: 24,
-            marginBottom: 32,
-            borderWidth: 1,
-            borderColor: "rgba(255, 255, 255, 0.2)",
+            backgroundColor: "rgba(255, 255, 255, 0.15)",
+            borderRadius: 24,
+            padding: Platform.select({ ios: 28, android: 24 }),
+            marginBottom: Platform.select({ ios: 24, android: 20 }),
+            borderWidth: 1.5,
+            borderColor: "rgba(255, 255, 255, 0.25)",
             shadowColor: "#000",
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.2,
-            shadowRadius: 16,
-            elevation: 8,
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: Platform.select({ ios: 0.3, android: 0.25 }),
+            shadowRadius: 20,
+            elevation: 10,
           }}
         >
           {/* Profile Header */}
@@ -140,34 +175,47 @@ export default function WelcomeComplete() {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              marginBottom: 20,
-              paddingBottom: 16,
+              marginBottom: Platform.select({ ios: 24, android: 20 }),
+              paddingBottom: Platform.select({ ios: 20, android: 18 }),
               borderBottomWidth: 1,
-              borderBottomColor: "rgba(255, 255, 255, 0.2)",
+              borderBottomColor: "rgba(255, 255, 255, 0.25)",
             }}
           >
             <View
               style={{
-                width: 60,
-                height: 60,
-                borderRadius: 30,
-                backgroundColor: "rgba(239, 62, 120, 0.2)",
+                width: Platform.select({ ios: 70, android: 66 }),
+                height: Platform.select({ ios: 70, android: 66 }),
+                borderRadius: Platform.select({ ios: 35, android: 33 }),
+                backgroundColor: "rgba(239, 62, 120, 0.25)",
                 justifyContent: "center",
                 alignItems: "center",
-                marginRight: 16,
-                borderWidth: 2,
+                marginRight: Platform.select({ ios: 18, android: 16 }),
+                borderWidth: 3,
                 borderColor: "#EF3E78",
+                shadowColor: "#EF3E78",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.5,
+                shadowRadius: 12,
+                elevation: 8,
               }}
             >
-              <User size={28} color="#EF3E78" />
+              <User
+                size={Platform.select({ ios: 32, android: 30 })}
+                color="#EF3E78"
+                strokeWidth={2.5}
+              />
             </View>
             <View style={{ flex: 1 }}>
               <Text
                 style={{
-                  fontSize: 22,
-                  fontFamily: "PlayfairDisplay-Bold",
+                  fontSize: Platform.select({ ios: 24, android: 22 }),
+                  fontFamily: "HelloParis",
+                  fontWeight: "700",
                   color: "#FFFFFF",
-                  marginBottom: 4,
+                  marginBottom: 6,
+                  textShadowColor: "rgba(0, 0, 0, 0.5)",
+                  textShadowOffset: { width: 0, height: 2 },
+                  textShadowRadius: 4,
                 }}
               >
                 {userData.firstName} {userData.lastName}
@@ -175,9 +223,10 @@ export default function WelcomeComplete() {
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <Text
                   style={{
-                    fontSize: 16,
-                    fontFamily: "PlayfairDisplay-Regular",
-                    color: "rgba(255, 255, 255, 0.8)",
+                    fontSize: Platform.select({ ios: 16, android: 15 }),
+                    fontFamily: "PlayfairDisplay",
+                    fontWeight: "400",
+                    color: "rgba(255, 255, 255, 0.85)",
                   }}
                 >
                   {userData.age} years old
@@ -186,17 +235,27 @@ export default function WelcomeComplete() {
                   <View
                     style={{
                       backgroundColor: "#22c55e",
-                      borderRadius: 8,
-                      paddingHorizontal: 6,
-                      paddingVertical: 2,
-                      marginLeft: 8,
+                      borderRadius: Platform.select({ ios: 10, android: 9 }),
+                      paddingHorizontal: Platform.select({
+                        ios: 8,
+                        android: 7,
+                      }),
+                      paddingVertical: Platform.select({ ios: 3, android: 2 }),
+                      marginLeft: Platform.select({ ios: 10, android: 9 }),
+                      shadowColor: "#22c55e",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.5,
+                      shadowRadius: 6,
+                      elevation: 4,
                     }}
                   >
                     <Text
                       style={{
-                        fontSize: 10,
-                        fontFamily: "PlayfairDisplay-SemiBold",
+                        fontSize: Platform.select({ ios: 11, android: 10 }),
+                        fontFamily: "HelloParis",
+                        fontWeight: "700",
                         color: "#FFFFFF",
+                        letterSpacing: 0.5,
                       }}
                     >
                       VERIFIED
@@ -208,18 +267,35 @@ export default function WelcomeComplete() {
           </View>
 
           {/* Profile Details */}
-          <View style={{ gap: 16 }}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MapPin
-                size={18}
-                color="#EF3E78"
-                style={{ marginRight: 12, width: 20 }}
-              />
+          <View style={{ gap: Platform.select({ ios: 18, android: 16 }) }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "rgba(255, 255, 255, 0.08)",
+                padding: Platform.select({ ios: 14, android: 12 }),
+                borderRadius: 12,
+              }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: "rgba(239, 62, 120, 0.2)",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginRight: 12,
+                }}
+              >
+                <MapPin size={18} color="#EF3E78" strokeWidth={2.5} />
+              </View>
               <Text
                 style={{
-                  fontSize: 15,
-                  fontFamily: "PlayfairDisplay-Regular",
-                  color: "rgba(255, 255, 255, 0.9)",
+                  fontSize: Platform.select({ ios: 15, android: 14 }),
+                  fontFamily: "PlayfairDisplay",
+                  fontWeight: "500",
+                  color: "rgba(255, 255, 255, 0.95)",
                   flex: 1,
                 }}
               >
@@ -227,17 +303,34 @@ export default function WelcomeComplete() {
               </Text>
             </View>
 
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Heart
-                size={18}
-                color="#EF3E78"
-                style={{ marginRight: 12, width: 20 }}
-              />
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "rgba(255, 255, 255, 0.08)",
+                padding: Platform.select({ ios: 14, android: 12 }),
+                borderRadius: 12,
+              }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: "rgba(239, 62, 120, 0.2)",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginRight: 12,
+                }}
+              >
+                <Heart size={18} color="#EF3E78" strokeWidth={2.5} />
+              </View>
               <Text
                 style={{
-                  fontSize: 15,
-                  fontFamily: "PlayfairDisplay-Regular",
-                  color: "rgba(255, 255, 255, 0.9)",
+                  fontSize: Platform.select({ ios: 15, android: 14 }),
+                  fontFamily: "PlayfairDisplay",
+                  fontWeight: "500",
+                  color: "rgba(255, 255, 255, 0.95)",
                   flex: 1,
                 }}
               >
@@ -246,17 +339,34 @@ export default function WelcomeComplete() {
               </Text>
             </View>
 
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Eye
-                size={18}
-                color="#EF3E78"
-                style={{ marginRight: 12, width: 20 }}
-              />
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "rgba(255, 255, 255, 0.08)",
+                padding: Platform.select({ ios: 14, android: 12 }),
+                borderRadius: 12,
+              }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: "rgba(239, 62, 120, 0.2)",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginRight: 12,
+                }}
+              >
+                <Eye size={18} color="#EF3E78" strokeWidth={2.5} />
+              </View>
               <Text
                 style={{
-                  fontSize: 15,
-                  fontFamily: "PlayfairDisplay-Regular",
-                  color: "rgba(255, 255, 255, 0.9)",
+                  fontSize: Platform.select({ ios: 15, android: 14 }),
+                  fontFamily: "PlayfairDisplay",
+                  fontWeight: "500",
+                  color: "rgba(255, 255, 255, 0.95)",
                   flex: 1,
                 }}
               >
@@ -266,35 +376,45 @@ export default function WelcomeComplete() {
           </View>
         </View>
 
-        {/* Success Message */}
+        {/* Success Message Banner */}
         <View
           style={{
-            backgroundColor: "rgba(34, 197, 94, 0.1)",
-            borderRadius: 16,
-            padding: 20,
-            marginBottom: 32,
-            borderWidth: 1,
-            borderColor: "rgba(34, 197, 94, 0.3)",
+            backgroundColor: "rgba(34, 197, 94, 0.15)",
+            borderRadius: 18,
+            padding: Platform.select({ ios: 20, android: 18 }),
+            marginBottom: Platform.select({ ios: 28, android: 24 }),
+            borderWidth: 1.5,
+            borderColor: "rgba(34, 197, 94, 0.4)",
+            shadowColor: "#22c55e",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 12,
+            elevation: 6,
           }}
         >
           <Text
             style={{
-              fontSize: 16,
-              fontFamily: "PlayfairDisplay-SemiBold",
+              fontSize: Platform.select({ ios: 17, android: 16 }),
+              fontFamily: "HelloParis",
+              fontWeight: "700",
               color: "#FFFFFF",
               textAlign: "center",
-              marginBottom: 8,
+              marginBottom: Platform.select({ ios: 8, android: 7 }),
+              textShadowColor: "rgba(0, 0, 0, 0.4)",
+              textShadowOffset: { width: 0, height: 1 },
+              textShadowRadius: 3,
             }}
           >
             🎉 Profile Complete!
           </Text>
           <Text
             style={{
-              fontSize: 14,
-              fontFamily: "PlayfairDisplay-Regular",
-              color: "rgba(255, 255, 255, 0.8)",
+              fontSize: Platform.select({ ios: 14, android: 13 }),
+              fontFamily: "PlayfairDisplay",
+              fontWeight: "400",
+              color: "rgba(255, 255, 255, 0.9)",
               textAlign: "center",
-              lineHeight: 20,
+              lineHeight: Platform.select({ ios: 21, android: 19 }),
             }}
           >
             You're all set to start connecting with amazing Filipino singles
@@ -304,111 +424,42 @@ export default function WelcomeComplete() {
       </ScrollView>
 
       {/* Action Buttons */}
-      <View style={{ paddingHorizontal: 32, paddingBottom: 40, gap: 16 }}>
-        {/* Start Dating - Primary CTA */}
-        <TouchableOpacity
-          style={{
-            borderRadius: 28,
-            paddingVertical: 20,
-            paddingHorizontal: 32,
-            flexDirection: "row",
-            justifyContent: "center",
-            alignItems: "center",
-            shadowColor: "#EF3E78",
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.6,
-            shadowRadius: 25,
-            elevation: 15,
-            width: "100%",
-            minHeight: 60,
-          }}
+      <View
+        style={{
+          paddingHorizontal: 32,
+          paddingBottom: Platform.select({ ios: 40, android: 32 }),
+          gap: Platform.select({ ios: 16, android: 14 }),
+          backgroundColor: "rgba(52, 8, 57, 0.6)",
+          paddingTop: Platform.select({ ios: 24, android: 20 }),
+          borderTopWidth: 1,
+          borderTopColor: "rgba(255, 255, 255, 0.1)",
+        }}
+      >
+        <PrimaryButton
+          title="Start Dating"
           onPress={handleStartDating}
-          activeOpacity={0.85}
-        >
-          <LinearGradient
-            colors={["#EF3E78", "#8D69F6"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              bottom: 0,
-              borderRadius: 28,
-            }}
-          />
-          <Heart
-            size={22}
-            color="#FFFFFF"
-            fill="#FFFFFF"
-            style={{ marginRight: 8, zIndex: 1 }}
-          />
-          <Text
-            style={{
-              color: "#FFFFFF",
-              fontSize: 19,
-              fontFamily: "PlayfairDisplay-Bold",
-              fontWeight: "700",
-              marginRight: 8,
-              letterSpacing: 0.5,
-              zIndex: 1,
-            }}
-          >
-            Start Dating
-          </Text>
-          <ChevronRight
-            size={24}
-            color="#FFFFFF"
-            strokeWidth={2.5}
-            style={{ zIndex: 1 }}
-          />
-        </TouchableOpacity>
+          accessibilityLabel="Start dating on PinayMate"
+          accessibilityHint="Begin browsing and matching with other users"
+          icon={<Heart size={20} color="#FFFFFF" fill="#FFFFFF" />}
+        />
 
-        {/* Explore App - Secondary CTA */}
-        <TouchableOpacity
-          style={{
-            backgroundColor: "rgba(255, 255, 255, 0.12)",
-            borderRadius: 28,
-            paddingVertical: 18,
-            paddingHorizontal: 32,
-            borderWidth: 1.5,
-            borderColor: "rgba(255, 255, 255, 0.3)",
-            justifyContent: "center",
-            alignItems: "center",
-            width: "100%",
-            minHeight: 56,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 0.2,
-            shadowRadius: 12,
-            elevation: 6,
-          }}
+        <SecondaryButton
+          title="Explore the App First"
+          variant="white"
           onPress={handleExploreApp}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={{
-              color: "#FFFFFF",
-              fontSize: 18,
-              fontFamily: "PlayfairDisplay-SemiBold",
-              fontWeight: "600",
-              letterSpacing: 0.5,
-            }}
-          >
-            Explore the App First
-          </Text>
-        </TouchableOpacity>
+          accessibilityLabel="Explore app features first"
+          accessibilityHint="Browse the app without starting to match"
+        />
 
-        {/* Stats Preview */}
         <Text
           style={{
-            fontSize: 13,
-            fontFamily: "PlayfairDisplay-Regular",
-            color: "rgba(255, 255, 255, 0.6)",
+            fontSize: Platform.select({ ios: 13, android: 12 }),
+            fontFamily: "PlayfairDisplay",
+            fontWeight: "400",
+            color: "rgba(255, 255, 255, 0.7)",
             textAlign: "center",
-            marginTop: 16,
-            lineHeight: 18,
+            marginTop: Platform.select({ ios: 12, android: 10 }),
+            lineHeight: Platform.select({ ios: 18, android: 16 }),
           }}
         >
           Join 50,000+ verified Filipino singles{"\n"}

@@ -1,18 +1,21 @@
+// src/components/forms/CustomTextInput.tsx
 import { LucideIcon } from "lucide-react-native";
-import React from "react";
+import React, { useState } from "react";
 import {
   KeyboardTypeOptions,
+  NativeSyntheticEvent,
   Platform,
+  StyleSheet,
   Text,
   TextInput,
+  TextInputFocusEventData,
   TextInputProps,
+  TextStyle,
   TouchableOpacity,
   View,
+  ViewStyle,
 } from "react-native";
 
-/**
- * CustomTextInput Component Props Interface
- */
 interface CustomTextInputProps
   extends Omit<
     TextInputProps,
@@ -69,18 +72,14 @@ interface CustomTextInputProps
     | "username"
     | "off";
   error?: string;
+
+  // Optional style overrides
+  containerStyle?: ViewStyle;
+  labelStyle?: TextStyle;
+  inputStyle?: TextStyle;
+  errorStyle?: TextStyle;
 }
 
-/**
- * CustomTextInput Component
- * A reusable text input with icon support and consistent styling
- *
- * Best practices applied:
- * - Touch target: 44-48px (iOS/Android guidelines)
- * - Icon size: 20-24px
- * - Font size: 16px (prevents zoom on iOS)
- * - Padding: 16px horizontal, 12-14px vertical
- */
 export default function CustomTextInput({
   label,
   value,
@@ -94,49 +93,52 @@ export default function CustomTextInput({
   autoCapitalize = "sentences",
   autoComplete,
   error,
+  containerStyle,
+  labelStyle,
+  inputStyle,
+  errorStyle,
+  onFocus,
+  onBlur,
   ...props
 }: CustomTextInputProps) {
-  const hasValue = value && value.length > 0;
+  const [focused, setFocused] = useState(false);
+  const hasValue = !!value?.length;
+
+  const handleFocus = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+    setFocused(true);
+    onFocus?.(e);
+  };
+
+  const handleBlur = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+    setFocused(false);
+    onBlur?.(e);
+  };
+
+  const borderColor = error
+    ? "#D52C4D"
+    : focused
+      ? "#EF3E78"
+      : hasValue
+        ? "rgba(239, 62, 120, 0.5)"
+        : "rgba(141, 105, 246, 0.25)";
 
   return (
-    <View style={{ marginBottom: 20 }}>
-      {/* Label - Using Hello Paris for UI labels */}
-      {label && (
-        <Text
-          style={{
-            fontSize: 15,
-            fontFamily: "HelloParis",
-            fontWeight: "500",
-            color: "#FFFFFF",
-            marginBottom: 10,
-            letterSpacing: 0.3,
-          }}
-        >
-          {label}
-        </Text>
-      )}
+    <View style={[styles.container, containerStyle]}>
+      {/* Label - body font by default */}
+      {label ? <Text style={[styles.label, labelStyle]}>{label}</Text> : null}
 
-      {/* Input Container */}
+      {/* Input container */}
       <View style={{ position: "relative" }}>
         <TextInput
-          style={{
-            backgroundColor: "rgba(255, 255, 255, 0.08)",
-            borderRadius: 16,
-            paddingVertical: Platform.select({ ios: 18, android: 16 }),
-            paddingLeft: LeftIcon ? 52 : 18,
-            paddingRight: RightIcon ? 52 : 18,
-            fontSize: 16,
-            fontFamily: "PlayfairDisplay",
-            fontWeight: "400",
-            color: "#FFFFFF",
-            borderWidth: 2,
-            borderColor: error
-              ? "#D52C4D" // error.600
-              : hasValue
-                ? "rgba(239, 62, 120, 0.5)" // amihan.500 with opacity
-                : "rgba(141, 105, 246, 0.25)", // dalisay.500 with opacity
-            minHeight: Platform.select({ ios: 56, android: 52 }),
-          }}
+          style={[
+            styles.input,
+            {
+              paddingLeft: LeftIcon ? 52 : 18,
+              paddingRight: RightIcon ? 52 : 18,
+              borderColor,
+            },
+            inputStyle,
+          ]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
@@ -145,69 +147,90 @@ export default function CustomTextInput({
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           autoComplete={autoComplete}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          selectionColor="rgba(141, 105, 246, 0.9)"
           {...props}
         />
 
-        {/* Left Icon */}
-        {LeftIcon && (
-          <View
-            style={{
-              position: "absolute",
-              left: 18,
-              top: 0,
-              bottom: 0,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
+        {/* Left icon */}
+        {LeftIcon ? (
+          <View style={styles.leftIconWrap}>
             <LeftIcon
               size={20}
               color="rgba(239, 62, 120, 0.7)"
               strokeWidth={2}
             />
           </View>
-        )}
+        ) : null}
 
-        {/* Right Icon/Button */}
-        {RightIcon && (
+        {/* Right icon */}
+        {RightIcon ? (
           <TouchableOpacity
             onPress={onRightIconPress}
-            style={{
-              position: "absolute",
-              right: 18,
-              top: 0,
-              bottom: 0,
-              justifyContent: "center",
-              alignItems: "center",
-              padding: 4,
-            }}
-            accessible={true}
+            style={styles.rightIconWrap}
+            accessible
             accessibilityRole="button"
+            accessibilityLabel="Toggle input option"
           >
             <RightIcon
               size={20}
-              color="rgba(255, 255, 255, 0.6)"
+              color="rgba(255, 255, 255, 0.7)"
               strokeWidth={2}
             />
           </TouchableOpacity>
-        )}
+        ) : null}
       </View>
 
-      {/* Error Message */}
-      {error && (
-        <Text
-          style={{
-            fontSize: 13,
-            fontFamily: "PlayfairDisplay",
-            fontWeight: "400",
-            color: "#D52C4D",
-            marginTop: 6,
-            marginLeft: 4,
-          }}
-        >
-          {error}
-        </Text>
-      )}
+      {/* Error text - body font */}
+      {error ? <Text style={[styles.error, errorStyle]}>{error}</Text> : null}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { marginBottom: 20 },
+  // Body/UI font for labels
+  label: {
+    fontSize: 15,
+    color: "#FFFFFF",
+    marginBottom: 10,
+    letterSpacing: 0.3,
+    fontFamily: "DMSans-SemiBold",
+  },
+  // Input text uses body font
+  input: {
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderRadius: 16,
+    paddingVertical: Platform.select({ ios: 18, android: 16 }),
+    fontSize: 16,
+    color: "#FFFFFF",
+    borderWidth: 2,
+    minHeight: Platform.select({ ios: 56, android: 52 }),
+    fontFamily: "DMSans-Regular",
+  },
+  leftIconWrap: {
+    position: "absolute",
+    left: 18,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  rightIconWrap: {
+    position: "absolute",
+    right: 18,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 4,
+  },
+  error: {
+    fontSize: 13,
+    color: "#D52C4D",
+    marginTop: 6,
+    marginLeft: 4,
+    fontFamily: "DMSans-Regular",
+  },
+});

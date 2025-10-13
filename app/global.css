@@ -2,144 +2,326 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Custom Font Faces ─────────────────────── */
+/* ─── Font Faces (mobile / Expo)
+   Using TTF files in assets/fonts (exact filenames confirmed)
+   Logo: HelloParis (HelloParisSans-*.ttf)
+   Headers: Lora (Lora-*.ttf)
+   Body/UI: DMSans (DMSans-*.ttf)
+------------------------------------------------------------ */
 
-/* Hello Paris Sans Font Family */
+/* Hello Paris (Logo / Display) */
 @font-face {
   font-family: "HelloParis";
-  src: url("../assets/fonts/Hello Paris Sans ExtraLight.ttf") format("truetype");
+  src: url("../assets/fonts/hello-paris-sans/HelloParisSans-ExtraLight.ttf")
+    format("truetype");
   font-weight: 200;
   font-style: normal;
+  font-display: swap;
 }
-
 @font-face {
   font-family: "HelloParis";
-  src: url("../assets/fonts/Hello Paris Sans Light.ttf") format("truetype");
+  src: url("../assets/fonts/hello-paris-sans/HelloParisSans-Light.ttf")
+    format("truetype");
   font-weight: 300;
   font-style: normal;
+  font-display: swap;
 }
-
 @font-face {
   font-family: "HelloParis";
-  src: url("../assets/fonts/Hello Paris Sans Regular.ttf") format("truetype");
+  src: url("../assets/fonts/hello-paris-sans/HelloParisSans-Regular.ttf")
+    format("truetype");
   font-weight: 400;
   font-style: normal;
+  font-display: swap;
 }
-
 @font-face {
   font-family: "HelloParis";
-  src: url("../assets/fonts/Hello Paris Sans Medium.ttf") format("truetype");
-  font-weight: 500;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "HelloParis";
-  src: url("../assets/fonts/Hello Paris Sans Bold.ttf") format("truetype");
-  font-weight: 700;
-  font-style: normal;
-}
-
-/* Playfair Display Font Family */
-@font-face {
-  font-family: "PlayfairDisplay";
-  src: url("../assets/fonts/PlayfairDisplay-Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "PlayfairDisplay";
-  src: url("../assets/fonts/PlayfairDisplay-Italic.ttf") format("truetype");
-  font-weight: 400;
-  font-style: italic;
-}
-
-@font-face {
-  font-family: "PlayfairDisplay";
-  src: url("../assets/fonts/PlayfairDisplay-Medium.ttf") format("truetype");
-  font-weight: 500;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "PlayfairDisplay";
-  src: url("../assets/fonts/PlayfairDisplay-MediumItalic.ttf")
+  src: url("../assets/fonts/hello-paris-sans/HelloParisSans-Medium.ttf")
     format("truetype");
   font-weight: 500;
-  font-style: italic;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HelloParis";
+  src: url("../assets/fonts/hello-paris-sans/HelloParisSans-Bold.ttf")
+    format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
 }
 
+/* Lora (Headers) */
 @font-face {
-  font-family: "PlayfairDisplay";
-  src: url("../assets/fonts/PlayfairDisplay-SemiBold.ttf") format("truetype");
+  font-family: "Lora";
+  src: url("../assets/fonts/lora/Lora-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Lora";
+  src: url("../assets/fonts/lora/Lora-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Lora";
+  src: url("../assets/fonts/lora/Lora-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Lora";
+  src: url("../assets/fonts/lora/Lora-MediumItalic.ttf") format("truetype");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Lora";
+  src: url("../assets/fonts/lora/Lora-SemiBold.ttf") format("truetype");
   font-weight: 600;
   font-style: normal;
+  font-display: swap;
 }
-
 @font-face {
-  font-family: "PlayfairDisplay";
-  src: url("../assets/fonts/PlayfairDisplay-SemiBoldItalic.ttf")
-    format("truetype");
+  font-family: "Lora";
+  src: url("../assets/fonts/lora/Lora-SemiBoldItalic.ttf") format("truetype");
   font-weight: 600;
   font-style: italic;
+  font-display: swap;
 }
-
 @font-face {
-  font-family: "PlayfairDisplay";
-  src: url("../assets/fonts/PlayfairDisplay-Bold.ttf") format("truetype");
+  font-family: "Lora";
+  src: url("../assets/fonts/lora/Lora-Bold.ttf") format("truetype");
   font-weight: 700;
   font-style: normal;
+  font-display: swap;
 }
-
 @font-face {
-  font-family: "PlayfairDisplay";
-  src: url("../assets/fonts/PlayfairDisplay-BoldItalic.ttf") format("truetype");
+  font-family: "Lora";
+  src: url("../assets/fonts/lora/Lora-BoldItalic.ttf") format("truetype");
   font-weight: 700;
   font-style: italic;
+  font-display: swap;
 }
 
+/* DM Sans (Body / UI) - all available weights included */
 @font-face {
-  font-family: "PlayfairDisplay";
-  src: url("../assets/fonts/PlayfairDisplay-ExtraBold.ttf") format("truetype");
+  font-family: "DMSans";
+  src: url("../assets/fonts/dm-sans/DMSans-ExtraLight.ttf") format("truetype");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DMSans";
+  src: url("../assets/fonts/dm-sans/DMSans-Thin.ttf") format("truetype");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DMSans";
+  src: url("../assets/fonts/dm-sans/DMSans-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DMSans";
+  src: url("../assets/fonts/dm-sans/DMSans-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DMSans";
+  src: url("../assets/fonts/dm-sans/DMSans-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DMSans";
+  src: url("../assets/fonts/dm-sans/DMSans-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DMSans";
+  src: url("../assets/fonts/dm-sans/DMSans-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DMSans";
+  src: url("../assets/fonts/dm-sans/DMSans-ExtraBold.ttf") format("truetype");
   font-weight: 800;
   font-style: normal;
+  font-display: swap;
 }
-
 @font-face {
-  font-family: "PlayfairDisplay";
-  src: url("../assets/fonts/PlayfairDisplay-ExtraBoldItalic.ttf")
-    format("truetype");
-  font-weight: 800;
-  font-style: italic;
-}
-
-@font-face {
-  font-family: "PlayfairDisplay";
-  src: url("../assets/fonts/PlayfairDisplay-Black.ttf") format("truetype");
+  font-family: "DMSans";
+  src: url("../assets/fonts/dm-sans/DMSans-Black.ttf") format("truetype");
   font-weight: 900;
   font-style: normal;
+  font-display: swap;
 }
 
-@font-face {
-  font-family: "PlayfairDisplay";
-  src: url("../assets/fonts/PlayfairDisplay-BlackItalic.ttf") format("truetype");
-  font-weight: 900;
-  font-style: italic;
-}
-
-/* ─── Base Typography Styles ─────────────────── */
+/* ─────────────────────────────────────────────────────────────────────
+   Base typography mapping (follows your principles)
+   Logo: HelloParis
+   Headers: Lora
+   Body/UI: DMSans
+-------------------------------------------------------------------- */
 @layer base {
+  /* Body / UI */
   body {
-    @apply font-playfair text-neutral-900;
+    font-family:
+      "DMSans",
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      "Helvetica Neue",
+      Arial,
+      "Noto Sans",
+      "Apple Color Emoji",
+      "Segoe UI Emoji",
+      "Segoe UI Symbol";
+    font-weight: 400;
   }
 
+  /* All headings use Lora by default */
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
-    @apply font-hello-paris;
+    font-family: "Lora", Georgia, "Times New Roman", serif;
+    font-weight: 600;
+    line-height: 1.08;
   }
+
+  /* Logo / brand elements */
+  .logo,
+  .brand-text,
+  .nav-brand {
+    font-family: "HelloParis", "Lora", Georgia, serif;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   Utility classes for convenience (use with NativeWind / web)
+   font-logo   -> HelloParis
+   font-header -> Lora
+   font-body   -> DMSans
+-------------------------------------------------------------------- */
+
+.font-logo {
+  font-family: "HelloParis", serif !important;
+}
+.font-logo-200 {
+  font-family: "HelloParis", serif !important;
+  font-weight: 200 !important;
+}
+.font-logo-300 {
+  font-family: "HelloParis", serif !important;
+  font-weight: 300 !important;
+}
+.font-logo-400 {
+  font-family: "HelloParis", serif !important;
+  font-weight: 400 !important;
+}
+.font-logo-500 {
+  font-family: "HelloParis", serif !important;
+  font-weight: 500 !important;
+}
+.font-logo-700 {
+  font-family: "HelloParis", serif !important;
+  font-weight: 700 !important;
+}
+
+.font-header {
+  font-family: "Lora", serif !important;
+}
+.font-header-400 {
+  font-family: "Lora", serif !important;
+  font-weight: 400 !important;
+}
+.font-header-500 {
+  font-family: "Lora", serif !important;
+  font-weight: 500 !important;
+}
+.font-header-600 {
+  font-family: "Lora", serif !important;
+  font-weight: 600 !important;
+}
+.font-header-700 {
+  font-family: "Lora", serif !important;
+  font-weight: 700 !important;
+}
+
+.font-body {
+  font-family:
+    "DMSans",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial !important;
+}
+.font-body-100 {
+  font-family: "DMSans", sans-serif !important;
+  font-weight: 100 !important;
+}
+.font-body-200 {
+  font-family: "DMSans", sans-serif !important;
+  font-weight: 200 !important;
+}
+.font-body-300 {
+  font-family: "DMSans", sans-serif !important;
+  font-weight: 300 !important;
+}
+.font-body-400 {
+  font-family: "DMSans", sans-serif !important;
+  font-weight: 400 !important;
+}
+.font-body-500 {
+  font-family: "DMSans", sans-serif !important;
+  font-weight: 500 !important;
+}
+.font-body-600 {
+  font-family: "DMSans", sans-serif !important;
+  font-weight: 600 !important;
+}
+.font-body-700 {
+  font-family: "DMSans", sans-serif !important;
+  font-weight: 700 !important;
+}
+.font-body-800 {
+  font-family: "DMSans", sans-serif !important;
+  font-weight: 800 !important;
+}
+.font-body-900 {
+  font-family: "DMSans", sans-serif !important;
+  font-weight: 900 !important;
+}
+
+/* Small helper to ensure text-rendering is crisp on mobile */
+html,
+body,
+#root {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

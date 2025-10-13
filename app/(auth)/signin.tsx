@@ -1,3 +1,4 @@
+// app/(auth)/signin.tsx
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Eye, EyeOff, Lock, Mail } from "lucide-react-native";
@@ -9,6 +10,7 @@ import {
   Platform,
   ScrollView,
   StatusBar,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -35,18 +37,13 @@ export default function SignIn() {
       Alert.alert("Missing Information", "Please fill in all fields");
       return;
     }
-
     // TODO: Sign in with Supabase
     router.push("/(main)");
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#340839" }}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#340839"
-        translucent={false}
-      />
+      <StatusBar barStyle="light-content" backgroundColor="#340839" />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -60,37 +57,16 @@ export default function SignIn() {
         >
           {/* Background Gradient */}
           <LinearGradient
-            colors={[
-              "#340839", // Deep purple
-              "rgba(141, 105, 246, 0.15)", // Subtle purple tint
-              "#340839", // Back to deep purple
-            ]}
+            colors={["#340839", "rgba(141, 105, 246, 0.15)", "#340839"]}
             locations={[0, 0.5, 1]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              bottom: 0,
-            }}
+            style={StyleSheet.absoluteFill}
           />
 
           {/* Back Button */}
           <TouchableOpacity
-            style={{
-              position: "absolute",
-              top: Platform.select({ ios: 16, android: 12 }),
-              left: 20,
-              zIndex: 10,
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
+            style={styles.backBtn}
             onPress={() => router.back()}
-            accessible={true}
+            accessible
             accessibilityRole="button"
             accessibilityLabel="Go back"
           >
@@ -98,75 +74,28 @@ export default function SignIn() {
           </TouchableOpacity>
 
           {/* Header with Logo */}
-          <View
-            style={{
-              paddingTop: Platform.select({ ios: 60, android: 50 }),
-              paddingHorizontal: 24,
-              alignItems: "center",
-              marginBottom: 40,
-            }}
-          >
-            {/* Logo */}
-            <View
-              style={{
-                width: 100,
-                height: 100,
-                justifyContent: "center",
-                alignItems: "center",
-                marginBottom: 24,
-                shadowColor: "#EF3E78",
-                shadowOffset: { width: 0, height: 0 },
-                shadowOpacity: 0.5,
-                shadowRadius: 25,
-                elevation: 15,
-              }}
-            >
+          <View style={styles.headerWrap}>
+            <View style={styles.logoWrap}>
               <Image
                 source={require("../../assets/logo-no-bg.png")}
-                style={{
-                  width: 100,
-                  height: 100,
-                }}
+                style={{ width: 100, height: 100 }}
                 resizeMode="contain"
+                accessible
+                accessibilityLabel="PinayMate logo"
               />
             </View>
 
-            {/* Welcome Text - Using HelloParis for main heading */}
-            <Text
-              style={{
-                fontSize: 36,
-                fontFamily: "HelloParis",
-                fontWeight: "700",
-                color: "#FFFFFF",
-                textAlign: "center",
-                marginBottom: 12,
-                textShadowColor: "rgba(239, 62, 120, 0.6)",
-                textShadowOffset: { width: 0, height: 2 },
-                textShadowRadius: 8,
-                letterSpacing: -0.5,
-              }}
-            >
-              Welcome Back
-            </Text>
+            {/* Title - HelloParis (title) */}
+            <Text style={[styles.title, styles.fontTitle]}>Welcome Back</Text>
 
-            {/* Subtitle - Using PlayfairDisplay for body text */}
-            <Text
-              style={{
-                fontSize: 16,
-                fontFamily: "PlayfairDisplay",
-                fontWeight: "400",
-                color: "rgba(255, 255, 255, 0.85)",
-                textAlign: "center",
-                lineHeight: 24,
-              }}
-            >
+            {/* Head - Lora (head) */}
+            <Text style={[styles.head, styles.fontHead]}>
               Continue your journey to find love
             </Text>
           </View>
 
-          {/* Form Container */}
+          {/* Form */}
           <View style={{ paddingHorizontal: 24, paddingBottom: 40 }}>
-            {/* Email Field - Using CustomTextInput */}
             <CustomTextInput
               label="Email Address"
               value={formData.email}
@@ -180,7 +109,6 @@ export default function SignIn() {
               autoComplete="email"
             />
 
-            {/* Password Field - Using CustomTextInput */}
             <CustomTextInput
               label="Password"
               value={formData.password}
@@ -195,29 +123,19 @@ export default function SignIn() {
               autoComplete="current-password"
             />
 
-            {/* Forgot Password */}
+            {/* Forgot Password - DMSans (body) */}
             <TouchableOpacity
               style={{ alignSelf: "flex-end", marginBottom: 28, padding: 4 }}
               onPress={() => router.push("/(auth)/forgot-password")}
-              accessible={true}
+              accessible
               accessibilityRole="button"
               accessibilityLabel="Forgot password"
             >
-              {/* Link text - Using HelloParis for UI elements */}
-              <Text
-                style={{
-                  color: "#EF3E78",
-                  fontSize: 14,
-                  fontFamily: "HelloParis",
-                  fontWeight: "600",
-                  letterSpacing: 0.2,
-                }}
-              >
+              <Text style={[styles.forgotLink, styles.fontBodySemibold]}>
                 Forgot Password?
               </Text>
             </TouchableOpacity>
 
-            {/* Sign In Button - Using PrimaryButton */}
             <PrimaryButton
               title="Sign In"
               onPress={handleSignIn}
@@ -225,42 +143,16 @@ export default function SignIn() {
             />
 
             {/* Divider */}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginVertical: 24,
-              }}
-            >
-              <View
-                style={{
-                  flex: 1,
-                  height: 1,
-                  backgroundColor: "rgba(255, 255, 255, 0.15)",
-                }}
-              />
-              {/* Divider text - Using PlayfairDisplay for body text */}
-              <Text
-                style={{
-                  color: "rgba(255, 255, 255, 0.5)",
-                  marginHorizontal: 16,
-                  fontSize: 13,
-                  fontFamily: "PlayfairDisplay",
-                  fontWeight: "400",
-                }}
-              >
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              {/* Head label - Lora */}
+              <Text style={[styles.dividerText, styles.fontHeadMedium]}>
                 Or continue with
               </Text>
-              <View
-                style={{
-                  flex: 1,
-                  height: 1,
-                  backgroundColor: "rgba(255, 255, 255, 0.15)",
-                }}
-              />
+              <View style={styles.dividerLine} />
             </View>
 
-            {/* Google Sign In - Using SecondaryButton */}
+            {/* Google Sign In */}
             <SecondaryButton
               title="🌐 Continue with Google"
               variant="purple"
@@ -273,34 +165,18 @@ export default function SignIn() {
 
             {/* Sign Up Link */}
             <View style={{ alignItems: "center", paddingVertical: 32 }}>
-              {/* Supporting text - Using PlayfairDisplay for body text */}
-              <Text
-                style={{
-                  color: "rgba(255, 255, 255, 0.6)",
-                  fontSize: 14,
-                  fontFamily: "PlayfairDisplay",
-                  fontWeight: "400",
-                  marginBottom: 10,
-                }}
-              >
+              {/* Body - DMSans */}
+              <Text style={[styles.supportText, styles.fontBody]}>
                 New to PinayMate?
               </Text>
               <TouchableOpacity
                 onPress={() => router.push("/(auth)/signup")}
-                accessible={true}
+                accessible
                 accessibilityRole="button"
                 accessibilityLabel="Create a new account"
               >
-                {/* Link text - Using HelloParis for UI elements */}
-                <Text
-                  style={{
-                    color: "#EF3E78",
-                    fontSize: 16,
-                    fontFamily: "HelloParis",
-                    fontWeight: "600",
-                    letterSpacing: 0.3,
-                  }}
-                >
+                {/* Body CTA - DMSans Semibold */}
+                <Text style={[styles.ctaLink, styles.fontBodySemibold]}>
                   Create Account
                 </Text>
               </TouchableOpacity>
@@ -311,3 +187,100 @@ export default function SignIn() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  backBtn: {
+    position: "absolute",
+    top: Platform.select({ ios: 16, android: 12 }),
+    left: 20,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerWrap: {
+    paddingTop: Platform.select({ ios: 60, android: 50 }),
+    paddingHorizontal: 24,
+    alignItems: "center",
+    marginBottom: 40,
+  },
+  logoWrap: {
+    width: 100,
+    height: 100,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+    shadowColor: "#EF3E78",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 25,
+    elevation: 15,
+  },
+
+  // Title
+  title: {
+    fontSize: 36,
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginBottom: 12,
+    textShadowColor: "rgba(239, 62, 120, 0.6)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+    letterSpacing: -0.5,
+  },
+
+  // Head
+  head: {
+    fontSize: 16,
+    color: "rgba(255, 255, 255, 0.9)",
+    textAlign: "center",
+    lineHeight: 24,
+  },
+
+  // Body texts
+  forgotLink: {
+    color: "#EF3E78",
+    fontSize: 14,
+    letterSpacing: 0.2,
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+  },
+  dividerText: {
+    color: "rgba(255, 255, 255, 0.6)",
+    marginHorizontal: 16,
+    fontSize: 13,
+  },
+  supportText: {
+    color: "rgba(255, 255, 255, 0.7)",
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  ctaLink: {
+    color: "#EF3E78",
+    fontSize: 16,
+    letterSpacing: 0.3,
+  },
+
+  // Font helpers that match expo-font registrations
+  // Title = HelloParis
+  fontTitle: { fontFamily: "HelloParis-Bold" },
+
+  // Head = Lora
+  fontHead: { fontFamily: "Lora-SemiBold" },
+  fontHeadMedium: { fontFamily: "Lora-Medium" },
+
+  // Body = DMSans
+  fontBody: { fontFamily: "DMSans-Regular" },
+  fontBodySemibold: { fontFamily: "DMSans-SemiBold" },
+});
