@@ -1,44 +1,122 @@
+// app/(auth)/account-setup/location.tsx
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { MapPin, Navigation, Search } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StatusBar,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CustomTextInput from "../../../src/components/forms/CustomTextInput";
 import PrimaryButton from "../../../src/components/ui/PrimaryButton";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
+
+// Brand Colors
+const BRAND_BG = "#0F0814";
+const ACCENT_PURPLE = "#8D69F6";
+const ACCENT_PINK = "#EF3E78";
+const WHITE = "#FFFFFF";
+const SURFACE = "rgba(255,255,255,0.08)";
+const SURFACE_BORDER = "rgba(141,105,246,0.25)";
+const ICON_BG = "rgba(141,105,246,0.12)";
+
+// Responsive Typography
+const TITLE_SIZE = Math.min(width * 0.08, 32);
+const SUBTITLE_SIZE = 15;
+
+interface LocationItemProps {
+  location: string;
+  selected: boolean;
+  onSelect: () => void;
+  isCurrentLocation?: boolean;
+}
+
+const LocationItem: React.FC<LocationItemProps> = ({
+  location,
+  selected,
+  onSelect,
+  isCurrentLocation = false,
+}) => (
+  <TouchableOpacity
+    onPress={onSelect}
+    style={[styles.locationRow, selected && styles.locationRowActive]}
+    activeOpacity={0.9}
+    accessibilityRole="radio"
+    accessibilityState={{ selected }}
+    accessibilityLabel={`Select ${location} as your location`}
+  >
+    <View style={styles.locationIconBox}>
+      {isCurrentLocation ? (
+        <Navigation
+          size={18}
+          color={selected ? ACCENT_PINK : ACCENT_PURPLE}
+          strokeWidth={2.5}
+        />
+      ) : (
+        <MapPin
+          size={18}
+          color={selected ? ACCENT_PINK : ACCENT_PURPLE}
+          strokeWidth={2.5}
+        />
+      )}
+    </View>
+
+    <Text style={[styles.locationText, selected && styles.locationTextActive]}>
+      {location}
+    </Text>
+
+    <View style={[styles.radio, selected && styles.radioActive]}>
+      {selected && <View style={styles.radioDot} />}
+    </View>
+  </TouchableOpacity>
+);
 
 export default function Location() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [useCurrentLocation, setUseCurrentLocation] = useState(false);
 
   // Sample locations for demo
-  const sampleLocations = [
-    "Manila, Philippines",
-    "Cebu City, Philippines",
-    "Davao City, Philippines",
-    "Quezon City, Philippines",
-    "Los Angeles, CA, USA",
-    "New York, NY, USA",
-    "Toronto, ON, Canada",
-    "London, UK",
-    "Sydney, Australia",
-  ];
-
-  const filteredLocations = sampleLocations.filter(location =>
-    location.toLowerCase().includes(searchQuery.toLowerCase())
+  const sampleLocations = useMemo(
+    () => [
+      "Manila, Philippines",
+      "Cebu City, Philippines",
+      "Davao City, Philippines",
+      "Quezon City, Philippines",
+      "Makati, Philippines",
+      "Taguig, Philippines",
+      "Pasig, Philippines",
+      "Caloocan, Philippines",
+      "Los Angeles, CA, USA",
+      "New York, NY, USA",
+      "Toronto, ON, Canada",
+      "London, UK",
+      "Sydney, Australia",
+      "Tokyo, Japan",
+      "Singapore",
+      "Hong Kong",
+    ],
+    []
   );
+
+  const filteredLocations = searchQuery.trim()
+    ? sampleLocations.filter((loc) =>
+        loc.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : sampleLocations;
 
   const handleLocationSelect = (location: string) => {
     setSelectedLocation(location);
@@ -48,280 +126,384 @@ export default function Location() {
   const handleUseCurrentLocation = () => {
     setUseCurrentLocation(true);
     setSelectedLocation("Current Location");
-    // In real app, would request location permission and get coordinates
-    Alert.alert("Location Access", "Using your current location for better matches nearby.");
+
+    // TODO: Integrate expo-location for real geolocation
+    Alert.alert(
+      "Location Access",
+      "We'll use your current location to find matches nearby.",
+      [{ text: "OK" }]
+    );
   };
 
-  const isFormValid = () => {
-    return selectedLocation !== "" || useCurrentLocation;
-  };
+  const isFormValid = () => selectedLocation !== "" || useCurrentLocation;
 
   const handleNext = () => {
     if (isFormValid()) {
+      // Format location data for algorithm
+      const formattedLocation = {
+        locationType: useCurrentLocation ? "current" : "manual",
+        locationName: selectedLocation,
+        coordinates: useCurrentLocation ? null : null, // TODO: Add geocoding
+        timestamp: new Date().toISOString(),
+      };
+
+      console.log("Formatted location data:", formattedLocation);
       router.push("/(auth)/account-setup/preferences");
     }
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      
-      {/* Brand Gradient Background */}
+    <View style={styles.root}>
+      {/* Status Bar Configuration */}
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={BRAND_BG}
+        translucent={false}
+      />
+      {Platform.OS === "ios" && (
+        <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+      )}
+
+      {/* Background Gradient */}
       <LinearGradient
-        colors={["#340839", "#8D69F6", "#EF3E78", "#340839"]}
-        locations={[0, 0.4, 0.7, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+        locations={[0, 0.3, 0.7, 1]}
+        style={StyleSheet.absoluteFill}
       />
 
-      <ScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingHorizontal: 32,
-          paddingTop: Platform.select({ 
-            ios: height * 0.08, 
-            android: height * 0.06 
-          }),
-          paddingBottom: Platform.select({ ios: 40, android: 32 }),
-        }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardView}
       >
-        {/* Header */}
-        <View style={{ alignItems: "center", marginBottom: 40 }}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: Math.max(insets.bottom + 24, 40) },
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Progress Indicator */}
-          <View style={{ 
-            flexDirection: "row", 
-            marginBottom: 32, 
-            gap: Platform.select({ ios: 8, android: 6 })
-          }}>
-            {[1, 2, 3, 4, 5].map((step, index) => (
-              <View
-                key={step}
-                style={{
-                  width: index === 2 ? 24 : 8,
-                  height: Platform.select({ ios: 8, android: 6 }),
-                  borderRadius: Platform.select({ ios: 4, android: 3 }),
-                  backgroundColor: index <= 2 ? "#EF3E78" : "rgba(255, 255, 255, 0.3)",
-                }}
-              />
-            ))}
+          <View style={styles.progressSection}>
+            <View style={styles.progressBar}>
+              {[1, 2, 3, 4, 5].map((step, idx) => (
+                <View
+                  key={step}
+                  style={[
+                    styles.progressDot,
+                    idx === 2 && styles.progressDotActive,
+                  ]}
+                />
+              ))}
+            </View>
+
+            {/* Header */}
+            <View style={styles.headerContainer}>
+              <Text style={styles.title}>Where are you located?</Text>
+            </View>
+
+            <Text style={styles.subtitle}>
+              This helps us find matches near you
+            </Text>
           </View>
 
-          {/* Main heading - Using HelloParis for UI elements */}
-          <Text
-            style={{
-              fontSize: Math.min(
-                width * 0.08, 
-                Platform.select({ ios: 32, android: 30 })
-              ),
-              fontFamily: "HelloParis",
-              fontWeight: "700",
-              color: "#FFFFFF",
-              textAlign: "center",
-              marginBottom: 12,
-              textShadowColor: "rgba(0, 0, 0, 0.8)",
-              textShadowOffset: { width: 0, height: 3 },
-              textShadowRadius: 10,
-              letterSpacing: Platform.select({ ios: -0.5, android: -0.3 }),
-            }}
-          >
-            Where are you located?
-          </Text>
-
-          {/* Subtitle - Using PlayfairDisplay for body text */}
-          <Text
-            style={{
-              fontSize: Platform.select({ ios: 16, android: 15 }),
-              fontFamily: "PlayfairDisplay",
-              fontWeight: "400",
-              color: "rgba(255, 255, 255, 0.8)",
-              textAlign: "center",
-              lineHeight: Platform.select({ ios: 24, android: 22 }),
-              paddingHorizontal: 20,
-            }}
-          >
-            This helps us find matches near you
-          </Text>
-        </View>
-
-        {/* Current Location Button */}
-        <TouchableOpacity
-          onPress={handleUseCurrentLocation}
-          style={{
-            backgroundColor: useCurrentLocation 
-              ? "rgba(239, 62, 120, 0.15)" 
-              : "rgba(255, 255, 255, 0.08)",
-            borderRadius: 16,
-            borderWidth: 2,
-            borderColor: useCurrentLocation 
-              ? "#EF3E78" 
-              : "rgba(141, 105, 246, 0.25)",
-            paddingHorizontal: 18,
-            paddingVertical: Platform.select({ ios: 18, android: 16 }),
-            flexDirection: "row",
-            alignItems: "center",
-            marginBottom: 24,
-            minHeight: Platform.select({ ios: 56, android: 52 }),
-          }}
-          activeOpacity={0.8}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Use current location"
-          accessibilityHint="Automatically detects your current location"
-        >
-          <Navigation size={20} color="#EF3E78" style={{ marginRight: 12 }} />
-          {/* Location button text - Using PlayfairDisplay for body text */}
-          <Text style={{
-            fontSize: 16,
-            fontFamily: "PlayfairDisplay",
-            fontWeight: "400",
-            color: "#FFFFFF",
-            flex: 1,
-          }}>
-            Use Current Location
-          </Text>
-          {useCurrentLocation && (
-            <View style={{
-              width: Platform.select({ ios: 20, android: 18 }),
-              height: Platform.select({ ios: 20, android: 18 }),
-              borderRadius: Platform.select({ ios: 10, android: 9 }),
-              backgroundColor: "#EF3E78",
-              justifyContent: "center",
-              alignItems: "center",
-            }}>
-              <View style={{
-                width: Platform.select({ ios: 8, android: 7 }),
-                height: Platform.select({ ios: 8, android: 7 }),
-                borderRadius: Platform.select({ ios: 4, android: 3.5 }),
-                backgroundColor: "#FFFFFF",
-              }} />
+          {/* Form Container */}
+          <View style={styles.formContainer}>
+            {/* Current Location Button */}
+            <View style={styles.section}>
+              <LocationItem
+                location="Use Current Location"
+                selected={useCurrentLocation}
+                onSelect={handleUseCurrentLocation}
+                isCurrentLocation={true}
+              />
             </View>
-          )}
-        </TouchableOpacity>
 
-        {/* Divider */}
-        <View style={{
-          flexDirection: "row",
-          alignItems: "center",
-          marginVertical: Platform.select({ ios: 24, android: 20 }),
-        }}>
-          <View style={{ 
-            flex: 1, 
-            height: 1, 
-            backgroundColor: "rgba(255, 255, 255, 0.3)" 
-          }} />
-          {/* Divider text - Using PlayfairDisplay for body text */}
-          <Text style={{
-            color: "rgba(255, 255, 255, 0.6)",
-            fontSize: Platform.select({ ios: 14, android: 13 }),
-            fontFamily: "PlayfairDisplay",
-            fontWeight: "400",
-            marginHorizontal: 16,
-          }}>
-            or search for a city
-          </Text>
-          <View style={{ 
-            flex: 1, 
-            height: 1, 
-            backgroundColor: "rgba(255, 255, 255, 0.3)" 
-          }} />
-        </View>
+            {/* Divider */}
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or search for a city</Text>
+              <View style={styles.dividerLine} />
+            </View>
 
-        {/* Search Input - Using CustomTextInput */}
-        <View style={{ marginBottom: Platform.select({ ios: 20, android: 18 }) }}>
-          <CustomTextInput
-            label="Search Location"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Search for your city..."
-            LeftIcon={Search}
-            autoCapitalize="words"
-            autoComplete="street-address"
+            {/* Search Input */}
+            <View style={styles.section}>
+              <CustomTextInput
+                label="Search Location"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="Type your city name..."
+                LeftIcon={Search}
+                autoCapitalize="words"
+                autoComplete="off"
+              />
+            </View>
+
+            {/* Location Results */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Popular locations</Text>
+              <View style={styles.locationsGroup}>
+                {filteredLocations.slice(0, 10).map((loc, idx) => (
+                  <LocationItem
+                    key={`${loc}-${idx}`}
+                    location={loc}
+                    selected={selectedLocation === loc}
+                    onSelect={() => handleLocationSelect(loc)}
+                  />
+                ))}
+
+                {filteredLocations.length === 0 && (
+                  <View style={styles.emptyState}>
+                    <MapPin
+                      size={32}
+                      color="rgba(255, 255, 255, 0.3)"
+                      strokeWidth={1.5}
+                    />
+                    <Text style={styles.emptyText}>No locations found</Text>
+                    <Text style={styles.emptySubtext}>
+                      Try a different search term
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Footer CTA */}
+        <View
+          style={[
+            styles.footer,
+            { paddingBottom: Math.max(insets.bottom + 16, 32) },
+          ]}
+        >
+          <PrimaryButton
+            title="Continue"
+            onPress={handleNext}
+            disabled={!isFormValid()}
+            accessibilityLabel="Continue to preferences"
+            accessibilityHint="Proceeds to dating preferences setup"
           />
         </View>
-
-        {/* Location Results */}
-        <View style={{ 
-          gap: Platform.select({ ios: 12, android: 10 }), 
-          marginBottom: Platform.select({ ios: 40, android: 32 })
-        }}>
-          {filteredLocations.slice(0, 8).map((location, index) => (
-            <TouchableOpacity
-              key={index}
-              onPress={() => handleLocationSelect(location)}
-              style={{
-                backgroundColor: selectedLocation === location 
-                  ? "rgba(239, 62, 120, 0.15)" 
-                  : "rgba(255, 255, 255, 0.08)",
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: selectedLocation === location 
-                  ? "#EF3E78" 
-                  : "rgba(255, 255, 255, 0.2)",
-                paddingHorizontal: 16,
-                paddingVertical: Platform.select({ ios: 14, android: 12 }),
-                flexDirection: "row",
-                alignItems: "center",
-                minHeight: Platform.select({ ios: 48, android: 44 }),
-              }}
-              activeOpacity={0.8}
-              accessible={true}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: selectedLocation === location }}
-              accessibilityLabel={`Select ${location} as your location`}
-            >
-              <MapPin 
-                size={18} 
-                color="rgba(255, 255, 255, 0.7)" 
-                style={{ marginRight: 12 }} 
-              />
-              {/* Location name - Using PlayfairDisplay for body text */}
-              <Text style={{
-                fontSize: Platform.select({ ios: 15, android: 14 }),
-                fontFamily: "PlayfairDisplay",
-                fontWeight: "400",
-                color: "#FFFFFF",
-                flex: 1,
-              }}>
-                {location}
-              </Text>
-              {selectedLocation === location && (
-                <View style={{
-                  width: Platform.select({ ios: 18, android: 16 }),
-                  height: Platform.select({ ios: 18, android: 16 }),
-                  borderRadius: Platform.select({ ios: 9, android: 8 }),
-                  backgroundColor: "#EF3E78",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}>
-                  <View style={{
-                    width: Platform.select({ ios: 6, android: 5 }),
-                    height: Platform.select({ ios: 6, android: 5 }),
-                    borderRadius: Platform.select({ ios: 3, android: 2.5 }),
-                    backgroundColor: "#FFFFFF",
-                  }} />
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-
-      {/* Continue Button - Using PrimaryButton */}
-      <View style={{ 
-        paddingHorizontal: 32, 
-        paddingBottom: Platform.select({ ios: 40, android: 32 })
-      }}>
-        <PrimaryButton
-          title="Continue"
-          onPress={handleNext}
-          disabled={!isFormValid()}
-          accessibilityLabel="Continue to preferences"
-          accessibilityHint="Proceeds to dating preferences setup"
-        />
-      </View>
+      </KeyboardAvoidingView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: BRAND_BG,
+  },
+
+  keyboardView: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === "ios" ? 32 : 24,
+  },
+
+  // Progress Section
+  progressSection: {
+    alignItems: "center",
+    marginBottom: 32,
+  },
+  progressBar: {
+    flexDirection: "row",
+    marginBottom: 28,
+    gap: 8,
+  },
+  progressDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+  },
+  progressDotActive: {
+    width: 28,
+    backgroundColor: ACCENT_PINK,
+  },
+
+  // Header
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 12,
+  },
+  title: {
+    fontSize: TITLE_SIZE,
+    fontFamily: "Lora-Bold",
+    color: WHITE,
+    textAlign: "center",
+    letterSpacing: 0.4,
+    ...Platform.select({
+      ios: {
+        textShadowColor: "rgba(0, 0, 0, 0.3)",
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 4,
+      },
+    }),
+  },
+  subtitle: {
+    fontSize: SUBTITLE_SIZE,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255, 255, 255, 0.85)",
+    textAlign: "center",
+    lineHeight: 22,
+    paddingHorizontal: 20,
+    letterSpacing: 0.2,
+  },
+
+  // Form
+  formContainer: {
+    gap: 24,
+  },
+
+  // Section
+  section: {
+    gap: 12,
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontFamily: "DMSans-SemiBold",
+    color: "rgba(255, 255, 255, 0.85)",
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+
+  // Divider
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 4,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+  },
+  dividerText: {
+    fontSize: 13,
+    fontFamily: "DMSans-Medium",
+    color: "rgba(255, 255, 255, 0.6)",
+    marginHorizontal: 16,
+    letterSpacing: 0.2,
+  },
+
+  // Locations Group
+  locationsGroup: {
+    gap: 10,
+  },
+
+  // Location Row
+  locationRow: {
+    backgroundColor: SURFACE,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: SURFACE_BORDER,
+    paddingHorizontal: 16,
+    paddingVertical: Platform.OS === "ios" ? 16 : 14,
+    minHeight: Platform.OS === "ios" ? 60 : 56,
+    flexDirection: "row",
+    alignItems: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
+  },
+  locationRowActive: {
+    backgroundColor: "rgba(239, 62, 120, 0.12)",
+    borderColor: ACCENT_PINK,
+    ...Platform.select({
+      ios: {
+        shadowColor: ACCENT_PINK,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  locationIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: ICON_BG,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+  locationText: {
+    flex: 1,
+    color: WHITE,
+    fontSize: 16,
+    fontFamily: "DMSans-Medium",
+    letterSpacing: 0.2,
+  },
+  locationTextActive: {
+    fontFamily: "DMSans-Bold",
+  },
+
+  // Radio Button
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: "rgba(255, 255, 255, 0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  radioActive: {
+    borderColor: ACCENT_PINK,
+  },
+  radioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: ACCENT_PINK,
+  },
+
+  // Empty State
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  emptyText: {
+    fontSize: 16,
+    fontFamily: "DMSans-SemiBold",
+    color: "rgba(255, 255, 255, 0.7)",
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255, 255, 255, 0.5)",
+    textAlign: "center",
+  },
+
+  // Footer
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    backgroundColor: "rgba(15, 8, 20, 0.95)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(141, 105, 246, 0.15)",
+  },
+});

@@ -3,7 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
   ArrowLeft,
-  ChevronRight,
+  Chrome,
   Eye,
   EyeOff,
   Lock,
@@ -13,6 +13,7 @@ import {
 import React, { useState } from "react";
 import {
   Alert,
+  Dimensions,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -23,7 +24,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CustomTextInput from "../../src/components/forms/CustomTextInput";
+import PrimaryButton from "../../src/components/ui/PrimaryButton";
 
 interface FormData {
   firstName: string;
@@ -32,8 +35,12 @@ interface FormData {
   confirmPassword: string;
 }
 
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+
 export default function SignUp() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
     email: "",
@@ -56,9 +63,27 @@ export default function SignUp() {
     router.push("/(auth)/verify-email");
   };
 
+  const handleGoogle = () => {
+    // TODO: Google sign up
+    console.log("Google Sign Up");
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: "#340839" }}>
-      <StatusBar barStyle="light-content" backgroundColor="#340839" />
+      <StatusBar
+        translucent
+        barStyle="light-content"
+        backgroundColor="transparent"
+      />
+
+      {/* Full-screen brand gradient */}
+      <LinearGradient
+        colors={["#340839", "rgba(141, 105, 246, 0.15)", "#340839"]}
+        locations={[0, 0.5, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -66,28 +91,15 @@ export default function SignUp() {
       >
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{
+            minHeight: SCREEN_HEIGHT + insets.top + insets.bottom,
+            paddingTop: insets.top + 60,
+            paddingBottom: insets.bottom + 32,
+            flexGrow: 1,
+          }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Background Gradient */}
-          <LinearGradient
-            colors={["#340839", "rgba(141, 105, 246, 0.15)", "#340839"]}
-            locations={[0, 0.5, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-
-          {/* Back Button */}
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => router.back()}
-            accessible
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-          >
-            <ArrowLeft size={24} color="#FFFFFF" strokeWidth={2.5} />
-          </TouchableOpacity>
-
           {/* Header with Logo */}
           <View style={styles.headerWrap}>
             <View style={styles.logoWrap}>
@@ -100,17 +112,23 @@ export default function SignUp() {
               />
             </View>
 
-            {/* Title - HelloParis (title) */}
-            <Text style={[styles.title, styles.fontTitle]}>Join PinayMate</Text>
+            {/* Title - Lora */}
+            <Text
+              style={[styles.title, { fontFamily: "Lora", fontWeight: "600" }]}
+            >
+              Join PinayMate
+            </Text>
 
-            {/* Head - Lora (head) */}
-            <Text style={[styles.head, styles.fontHead]}>
+            {/* Subhead - Lora */}
+            <Text
+              style={[styles.head, { fontFamily: "Lora", fontWeight: "500" }]}
+            >
               Find your perfect Filipino match today
             </Text>
           </View>
 
           {/* Form */}
-          <View style={{ paddingHorizontal: 24, paddingBottom: 40 }}>
+          <View style={{ paddingHorizontal: 24, paddingBottom: 16 }}>
             <CustomTextInput
               label="First Name"
               value={formData.firstName}
@@ -167,54 +185,59 @@ export default function SignUp() {
               />
             </View>
 
-            {/* Create Account Button - gradient, body font */}
-            <TouchableOpacity
-              style={styles.createBtn}
+            {/* Primary CTA - DMSans 700 to match Sign In */}
+            <PrimaryButton
+              title="Create Account"
               onPress={handleSignUp}
-              activeOpacity={0.85}
-              accessible
-              accessibilityRole="button"
               accessibilityLabel="Create your account"
-            >
-              <LinearGradient
-                colors={["#EF3E78", "#8D69F6"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={StyleSheet.absoluteFill}
-              />
-              <Text style={[styles.createBtnText, styles.fontBodySemibold]}>
-                Create Account
-              </Text>
-              <ChevronRight size={22} color="#FFFFFF" strokeWidth={2.5} />
-            </TouchableOpacity>
+            />
 
             {/* Divider */}
             <View style={styles.dividerRow}>
               <View style={styles.dividerLine} />
-              {/* Head label - Lora */}
-              <Text style={[styles.dividerText, styles.fontHeadMedium]}>
+              <Text
+                style={[
+                  styles.dividerText,
+                  { fontFamily: "Lora", fontWeight: "500" },
+                ]}
+              >
                 Or continue with
               </Text>
               <View style={styles.dividerLine} />
             </View>
 
-            {/* Google Sign Up */}
+            {/* Google Button (Lucide Chrome icon, Google-style) */}
             <TouchableOpacity
               style={styles.googleBtn}
-              activeOpacity={0.8}
-              accessible
+              onPress={handleGoogle}
+              activeOpacity={0.85}
               accessibilityRole="button"
               accessibilityLabel="Sign up with Google"
             >
-              <Text style={[styles.googleBtnText, styles.fontBodySemibold]}>
-                🌐 Continue with Google
+              <Chrome
+                size={18}
+                color="#4285F4"
+                strokeWidth={2.4}
+                style={{ marginRight: 10 }}
+              />
+              <Text
+                style={[
+                  styles.googleBtnText,
+                  { fontFamily: "DMSans", fontWeight: "700" },
+                ]}
+              >
+                Continue with Google
               </Text>
             </TouchableOpacity>
 
             {/* Sign In Link */}
-            <View style={{ alignItems: "center", paddingBottom: 20 }}>
-              {/* Body - DMSans */}
-              <Text style={[styles.supportText, styles.fontBody]}>
+            <View style={{ alignItems: "center", paddingVertical: 20 }}>
+              <Text
+                style={[
+                  styles.supportText,
+                  { fontFamily: "DMSans", fontWeight: "400" },
+                ]}
+              >
                 Already finding love with us?
               </Text>
               <TouchableOpacity
@@ -223,8 +246,12 @@ export default function SignUp() {
                 accessibilityRole="button"
                 accessibilityLabel="Sign in to existing account"
               >
-                {/* Body CTA - DMSans Semibold */}
-                <Text style={[styles.linkCta, styles.fontBodySemibold]}>
+                <Text
+                  style={[
+                    styles.linkCta,
+                    { fontFamily: "DMSans", fontWeight: "700" },
+                  ]}
+                >
                   Sign In
                 </Text>
               </TouchableOpacity>
@@ -232,6 +259,17 @@ export default function SignUp() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Back Button overlay padded by safe area */}
+      <TouchableOpacity
+        style={[styles.backBtn, { top: insets.top + 12, left: 16 }]}
+        onPress={() => router.back()}
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+      >
+        <ArrowLeft size={24} color="#FFFFFF" strokeWidth={2.5} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -239,21 +277,18 @@ export default function SignUp() {
 const styles = StyleSheet.create({
   backBtn: {
     position: "absolute",
-    top: Platform.select({ ios: 16, android: 12 }),
-    left: 20,
     zIndex: 10,
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
     justifyContent: "center",
     alignItems: "center",
   },
   headerWrap: {
-    paddingTop: Platform.select({ ios: 60, android: 50 }),
-    paddingHorizontal: 24,
     alignItems: "center",
     marginBottom: 32,
+    paddingHorizontal: 24,
   },
   logoWrap: {
     width: 100,
@@ -268,7 +303,7 @@ const styles = StyleSheet.create({
     elevation: 15,
   },
 
-  // Title (HelloParis)
+  // Title (Lora)
   title: {
     fontSize: 36,
     color: "#FFFFFF",
@@ -280,7 +315,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
 
-  // Head (Lora)
+  // Subhead (Lora)
   head: {
     fontSize: 16,
     color: "rgba(255, 255, 255, 0.9)",
@@ -288,36 +323,11 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
 
-  // Buttons and links
-  createBtn: {
-    borderRadius: Platform.select({ ios: 28, android: 26 }),
-    height: Platform.select({ ios: 56, android: 52 }),
-    marginBottom: 24,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-    shadowColor: "#EF3E78",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: Platform.select({ ios: 0.5, android: 0.4 }) as number,
-    shadowRadius: 20,
-    elevation: 12,
-    overflow: "hidden",
-  },
-  createBtnText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    marginRight: 4,
-    letterSpacing: 0.5,
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-
   dividerRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 24,
+    marginTop: 20,
+    marginBottom: 16, // tighter to Google button
   },
   dividerLine: {
     flex: 1,
@@ -330,47 +340,37 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
+  // Google button (white, bordered)
   googleBtn: {
-    backgroundColor: "rgba(141, 105, 246, 0.12)",
+    backgroundColor: "#FFFFFF",
     borderRadius: Platform.select({ ios: 28, android: 26 }),
     height: Platform.select({ ios: 56, android: 52 }),
-    borderWidth: Platform.select({ ios: 1.5, android: 2 }),
-    borderColor: "rgba(141, 105, 246, 0.3)",
-    marginBottom: 32,
-    justifyContent: "center",
+    flexDirection: "row",
     alignItems: "center",
-    shadowColor: "#8D69F6",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.08)",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 3,
+    marginBottom: 16, // tightened spacing below
   },
   googleBtnText: {
-    color: "#FFFFFF",
+    color: "#1F2937",
     fontSize: 16,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
 
   supportText: {
     color: "rgba(255, 255, 255, 0.7)",
     fontSize: 14,
-    marginBottom: 10,
   },
   linkCta: {
     color: "#EF3E78",
     fontSize: 16,
     letterSpacing: 0.3,
   },
-
-  // Font helpers that match expo-font registrations
-  // Title = HelloParis
-  fontTitle: { fontFamily: "HelloParis-Bold" },
-
-  // Head = Lora
-  fontHead: { fontFamily: "Lora-Regular" },
-  fontHeadMedium: { fontFamily: "Lora-Medium" },
-
-  // Body = DMSans
-  fontBody: { fontFamily: "DMSans-Regular" },
-  fontBodySemibold: { fontFamily: "DMSans-SemiBold" },
 });

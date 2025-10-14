@@ -1,8 +1,11 @@
+// app/(auth)/verify-email.tsx
+import { useFonts } from "expo-font";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { Clock, Mail } from "lucide-react-native";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   Image,
   Linking,
@@ -18,94 +21,119 @@ const { width, height } = Dimensions.get("window");
 
 export default function VerifyEmail() {
   const router = useRouter();
+
+  // brand fonts
+  const [fontsLoaded] = useFonts({
+    HelloParis: require("../../assets/fonts/hello-paris-sans/HelloParisSans-Bold.ttf"),
+    Lora: require("../../assets/fonts/lora/Lora-SemiBold.ttf"),
+    DMSans: require("../../assets/fonts/dm-sans/DMSans-Regular.ttf"),
+  });
+
   const [countdown, setCountdown] = useState(6);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    // Auto-advance after 6 seconds for demonstration
-    timerRef.current = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          // Clear the timer before navigation
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-          }
-          // Use setTimeout to navigate on next tick
-          setTimeout(() => {
-            router.push("/(auth)/verification-success");
-          }, 0);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000) as any;
+  // guards and timers
+  const didNavigate = useRef(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // Cleanup function
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
+  const clearTicker = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  const goNext = useCallback(() => {
+    if (didNavigate.current) return;
+    didNavigate.current = true;
+    clearTicker();
+    router.replace("/(auth)/verification-success");
   }, [router]);
 
+  // start ticker
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) return 0; // do not navigate here
+        return prev - 1;
+      });
+    }, 1000);
+
+    return clearTicker; // cleanup on unmount or remount
+  }, []);
+
+  // navigate once when countdown hits 0
+  useEffect(() => {
+    if (countdown === 0) {
+      goNext();
+    }
+  }, [countdown, goNext]);
+
   const openEmailApp = async () => {
+    // pause while switching apps
+    clearTicker();
+
     try {
-      // Try to open Gmail app first
-      const gmailURL = Platform.select({
-        ios: "googlegmail://",
-        android: "com.google.android.gm",
-      });
-
-      if (gmailURL) {
-        const canOpen = await Linking.canOpenURL(gmailURL);
-        if (canOpen) {
-          await Linking.openURL(gmailURL);
-          return;
-        }
+      const gmailScheme = "googlegmail://";
+      if (await Linking.canOpenURL(gmailScheme)) {
+        await Linking.openURL(gmailScheme);
+        return;
       }
-
-      // Fallback to web Gmail
+      const mailto = "mailto:";
+      if (await Linking.canOpenURL(mailto)) {
+        await Linking.openURL(mailto);
+        return;
+      }
       await Linking.openURL("https://mail.google.com");
-    } catch (error) {
-      // Final fallback to device's default email app
-      const emailURL = Platform.select({
-        ios: "message://",
-        android: "mailto:",
-      });
-      if (emailURL) {
-        await Linking.openURL(emailURL);
+    } catch {
+      // ignore
+    } finally {
+      // resume ticker if we have not navigated
+      if (!didNavigate.current && !intervalRef.current) {
+        intervalRef.current = setInterval(() => {
+          setCountdown((prev) => {
+            if (prev <= 1) return 0;
+            return prev - 1;
+          });
+        }, 1000);
       }
     }
   };
+
+  const handleBackToSignIn = () => {
+    clearTicker();
+    router.replace("/(auth)/signin");
+  };
+
+  if (!fontsLoaded) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#340839",
+        }}
+      >
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>
       <StatusBar
         barStyle="light-content"
         backgroundColor="transparent"
-        translucent={true}
+        translucent
       />
 
       {/* Brand Gradient Background */}
       <LinearGradient
-        colors={[
-          "#340839", // Deep purple at top
-          "#8D69F6", // Purple in middle
-          "#EF3E78", // Pink accent
-          "#340839", // Deep purple at bottom
-        ]}
+        colors={["#340839", "#8D69F6", "#EF3E78", "#340839"]}
         locations={[0, 0.4, 0.7, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-        }}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
       {/* Content Container */}
@@ -164,12 +192,12 @@ export default function VerifyEmail() {
 
         {/* Main Content */}
         <View style={{ alignItems: "center", marginBottom: 50 }}>
-          {/* Main heading - Using HelloParis for UI elements */}
+          {/* Heading - Lora */}
           <Text
             style={{
               fontSize: Math.min(width * 0.08, 32),
-              fontFamily: "HelloParis",
-              fontWeight: "700",
+              fontFamily: "Lora",
+              fontWeight: "600",
               color: "#FFFFFF",
               textAlign: "center",
               marginBottom: 16,
@@ -182,11 +210,11 @@ export default function VerifyEmail() {
             Check Your Email
           </Text>
 
-          {/* Description text - Using PlayfairDisplay for body text */}
+          {/* Body - DMSans */}
           <Text
             style={{
               fontSize: Math.min(width * 0.045, 18),
-              fontFamily: "PlayfairDisplay",
+              fontFamily: "DMSans",
               fontWeight: "400",
               color: "rgba(255, 255, 255, 0.9)",
               textAlign: "center",
@@ -198,11 +226,11 @@ export default function VerifyEmail() {
               textShadowRadius: 6,
             }}
           >
-            We've sent a verification link to your email address.{"\n"}
-            Click the link to verify your account.
+            We sent a verification link to your email address.
+            {"\n"}Tap the link to verify your account.
           </Text>
 
-          {/* Countdown Timer */}
+          {/* Countdown chip */}
           {countdown > 0 && (
             <View
               style={{
@@ -220,20 +248,20 @@ export default function VerifyEmail() {
                 style={{
                   color: "rgba(255, 255, 255, 0.7)",
                   fontSize: 14,
-                  fontFamily: "PlayfairDisplay",
+                  fontFamily: "DMSans",
                   fontWeight: "400",
                   marginLeft: 8,
                 }}
               >
-                Auto-advancing in {countdown}s
+                Auto advancing in {countdown}s
               </Text>
             </View>
           )}
         </View>
 
-        {/* Action Buttons - Using Custom Components */}
+        {/* Actions */}
         <View style={{ width: "100%", gap: 16 }}>
-          {/* Open Email App Button - Using PrimaryButton with custom content */}
+          {/* Open Email App */}
           <TouchableOpacity
             style={{
               borderRadius: Platform.select({ ios: 28, android: 26 }),
@@ -242,7 +270,7 @@ export default function VerifyEmail() {
               justifyContent: "center",
               alignItems: "center",
               shadowColor: "#EF3E78",
-              shadowOffset: { width: 0, height: 8 },
+              shadowOffset: { width: 0, height: 8 }, // fixed syntax here
               shadowOpacity: Platform.select({ ios: 0.5, android: 0.4 }),
               shadowRadius: 20,
               elevation: 12,
@@ -251,7 +279,6 @@ export default function VerifyEmail() {
             }}
             onPress={openEmailApp}
             activeOpacity={0.85}
-            accessible={true}
             accessibilityRole="button"
             accessibilityLabel="Open Email App"
             accessibilityHint="Opens your email application"
@@ -278,7 +305,7 @@ export default function VerifyEmail() {
               style={{
                 color: "#FFFFFF",
                 fontSize: Platform.select({ ios: 18, android: 17 }),
-                fontFamily: "HelloParis",
+                fontFamily: "DMSans",
                 fontWeight: "700",
                 letterSpacing: Platform.select({ ios: 0.5, android: 0.3 }),
                 textShadowColor: "rgba(0, 0, 0, 0.3)",
@@ -290,37 +317,44 @@ export default function VerifyEmail() {
             </Text>
           </TouchableOpacity>
 
-          {/* Resend Email Button - Using SecondaryButton */}
+          {/* Resend Email */}
           <SecondaryButton
             title="Resend Email"
             variant="white"
             onPress={() => {
-              // Handle resend email logic here
-              console.log("Resend email");
+              // TODO: call resend API here
+              clearTicker();
+              setCountdown(6);
+              if (!didNavigate.current && !intervalRef.current) {
+                intervalRef.current = setInterval(() => {
+                  setCountdown((prev) => {
+                    if (prev <= 1) return 0;
+                    return prev - 1;
+                  });
+                }, 1000);
+              }
             }}
             accessibilityLabel="Resend Verification Email"
             accessibilityHint="Sends another verification email"
           />
 
-          {/* Back to Sign In - Text Link */}
+          {/* Back to Sign In */}
           <TouchableOpacity
             style={{
               paddingVertical: 16,
               justifyContent: "center",
               alignItems: "center",
             }}
-            onPress={() => router.push("/(auth)/signin")}
+            onPress={handleBackToSignIn}
             activeOpacity={0.7}
-            accessible={true}
             accessibilityRole="button"
             accessibilityLabel="Back to Sign In"
           >
-            {/* Link text - Using PlayfairDisplay for body text */}
             <Text
               style={{
                 color: "rgba(255, 255, 255, 0.7)",
                 fontSize: 16,
-                fontFamily: "PlayfairDisplay",
+                fontFamily: "DMSans",
                 fontWeight: "400",
                 textDecorationLine: "underline",
               }}

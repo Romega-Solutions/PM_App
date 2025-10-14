@@ -1,6 +1,15 @@
+// app/(auth)/welcome-complete.tsx
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { Eye, Heart, MapPin, Sparkles, User } from "lucide-react-native";
+import {
+  Camera,
+  Eye,
+  Heart,
+  MapPin,
+  ShieldCheck,
+  Sparkles,
+  User,
+} from "lucide-react-native";
 import React from "react";
 import {
   Dimensions,
@@ -8,19 +17,64 @@ import {
   Platform,
   ScrollView,
   StatusBar,
+  StyleSheet,
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PrimaryButton from "../../../src/components/ui/PrimaryButton";
 import SecondaryButton from "../../../src/components/ui/SecondaryButton";
 
 const { width, height } = Dimensions.get("window");
 
+// Brand Colors
+const BRAND_BG = "#0F0814";
+const ACCENT_PURPLE = "#8D69F6";
+const ACCENT_PINK = "#EF3E78";
+const SUCCESS_GREEN = "#10B981";
+const GOLD = "#F59E0B";
+const WHITE = "#FFFFFF";
+const SURFACE = "rgba(255,255,255,0.12)";
+const SURFACE_BORDER = "rgba(141,105,246,0.25)";
+
+// Responsive sizing
+const LOGO_SIZE = Math.min(width * 0.32, 130);
+const AVATAR_SIZE = Platform.OS === "ios" ? 70 : 66;
+
+interface UserData {
+  firstName: string;
+  lastName: string;
+  age: number;
+  location: string;
+  interestedIn: string;
+  relationship: string;
+  photos: number;
+  verified: boolean;
+}
+
+interface ProfileDetailItemProps {
+  icon: React.ReactNode;
+  text: string;
+}
+
+const ProfileDetailItem: React.FC<ProfileDetailItemProps> = ({
+  icon,
+  text,
+}) => (
+  <View style={styles.detailItem}>
+    <View style={styles.detailIconBox}>{icon}</View>
+    <Text style={styles.detailText} numberOfLines={2}>
+      {text}
+    </Text>
+  </View>
+);
+
 export default function WelcomeComplete() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   // Sample user data - in real app this would come from previous steps/database
-  const userData = {
+  const userData: UserData = {
     firstName: "Maria",
     lastName: "Santos",
     age: 26,
@@ -32,234 +86,99 @@ export default function WelcomeComplete() {
   };
 
   const handleStartDating = () => {
-    // Navigate to main app (dating flow)
-    router.replace("/(main)");
+    router.replace("/(tabs)");
   };
 
   const handleExploreApp = () => {
-    // Navigate to main app (exploration mode)
-    router.replace("/(main)");
+    router.replace("/(tabs)");
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
+        backgroundColor={BRAND_BG}
+        translucent={false}
       />
+      {Platform.OS === "ios" && (
+        <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+      )}
 
-      {/* Brand Gradient Background */}
+      {/* Background Gradient */}
       <LinearGradient
-        colors={["#340839", "#8D69F6", "#EF3E78", "#340839"]}
-        locations={[0, 0.4, 0.7, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+        locations={[0, 0.3, 0.7, 1]}
+        style={StyleSheet.absoluteFill}
       />
 
       <ScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingHorizontal: 32,
-          paddingTop: Platform.select({
-            ios: height * 0.08,
-            android: height * 0.06,
-          }),
-          paddingBottom: Platform.select({ ios: 40, android: 32 }),
-        }}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom + 24, 40) },
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
         {/* Logo Header */}
-        <View style={{ alignItems: "center", marginBottom: 32 }}>
-          <View
-            style={{
-              width: 120,
-              height: 120,
-              justifyContent: "center",
-              alignItems: "center",
-              marginBottom: 24,
-              shadowColor: "#EF3E78",
-              shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: 0.7,
-              shadowRadius: 30,
-              elevation: 15,
-            }}
-          >
+        <View style={styles.logoSection}>
+          <View style={styles.logoContainer}>
             <Image
               source={require("../../../assets/logo-no-bg.png")}
-              style={{ width: 120, height: 120 }}
+              style={[styles.logo, { width: LOGO_SIZE, height: LOGO_SIZE }]}
               resizeMode="contain"
             />
           </View>
 
           {/* Welcome Message */}
-          <View style={{ alignItems: "center", marginBottom: 16 }}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 8,
-              }}
-            >
-              <Sparkles
-                size={24}
-                color="#FFD700"
-                fill="#FFD700"
-                style={{ marginRight: 8 }}
-              />
-              <Text
-                style={{
-                  fontSize: Math.min(
-                    width * 0.08,
-                    Platform.select({ ios: 32, android: 30 })
-                  ),
-                  fontFamily: "HelloParis",
-                  fontWeight: "700",
-                  color: "#FFFFFF",
-                  textAlign: "center",
-                  textShadowColor: "rgba(0, 0, 0, 0.8)",
-                  textShadowOffset: { width: 0, height: 3 },
-                  textShadowRadius: 10,
-                  letterSpacing: Platform.select({
-                    ios: -0.5,
-                    android: -0.3,
-                  }),
-                }}
-              >
+          <View style={styles.welcomeContainer}>
+            <View style={styles.welcomeHeader}>
+              <Sparkles size={24} color={GOLD} fill={GOLD} />
+              <Text style={styles.welcomeTitle}>
                 Welcome, {userData.firstName}!
               </Text>
-              <Sparkles
-                size={24}
-                color="#FFD700"
-                fill="#FFD700"
-                style={{ marginLeft: 8 }}
-              />
+              <Sparkles size={24} color={GOLD} fill={GOLD} />
             </View>
 
-            <Text
-              style={{
-                fontSize: Platform.select({ ios: 16, android: 15 }),
-                fontFamily: "PlayfairDisplay",
-                fontWeight: "400",
-                color: "rgba(255, 255, 255, 0.9)",
-                textAlign: "center",
-                lineHeight: Platform.select({ ios: 24, android: 22 }),
-                paddingHorizontal: 20,
-              }}
-            >
+            <Text style={styles.welcomeSubtitle}>
               Your profile is complete and ready to shine!
             </Text>
           </View>
         </View>
 
         {/* Profile Summary Card */}
-        <View
-          style={{
-            backgroundColor: "rgba(255, 255, 255, 0.15)",
-            borderRadius: 24,
-            padding: Platform.select({ ios: 28, android: 24 }),
-            marginBottom: Platform.select({ ios: 24, android: 20 }),
-            borderWidth: 1.5,
-            borderColor: "rgba(255, 255, 255, 0.25)",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: Platform.select({ ios: 0.3, android: 0.25 }),
-            shadowRadius: 20,
-            elevation: 10,
-          }}
-        >
+        <View style={styles.profileCard}>
           {/* Profile Header */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginBottom: Platform.select({ ios: 24, android: 20 }),
-              paddingBottom: Platform.select({ ios: 20, android: 18 }),
-              borderBottomWidth: 1,
-              borderBottomColor: "rgba(255, 255, 255, 0.25)",
-            }}
-          >
-            <View
-              style={{
-                width: Platform.select({ ios: 70, android: 66 }),
-                height: Platform.select({ ios: 70, android: 66 }),
-                borderRadius: Platform.select({ ios: 35, android: 33 }),
-                backgroundColor: "rgba(239, 62, 120, 0.25)",
-                justifyContent: "center",
-                alignItems: "center",
-                marginRight: Platform.select({ ios: 18, android: 16 }),
-                borderWidth: 3,
-                borderColor: "#EF3E78",
-                shadowColor: "#EF3E78",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.5,
-                shadowRadius: 12,
-                elevation: 8,
-              }}
-            >
-              <User
-                size={Platform.select({ ios: 32, android: 30 })}
-                color="#EF3E78"
-                strokeWidth={2.5}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: Platform.select({ ios: 24, android: 22 }),
-                  fontFamily: "HelloParis",
-                  fontWeight: "700",
-                  color: "#FFFFFF",
-                  marginBottom: 6,
-                  textShadowColor: "rgba(0, 0, 0, 0.5)",
-                  textShadowOffset: { width: 0, height: 2 },
-                  textShadowRadius: 4,
-                }}
+          <View style={styles.profileHeader}>
+            <View style={styles.avatarContainer}>
+              <View
+                style={[
+                  styles.avatar,
+                  {
+                    width: AVATAR_SIZE,
+                    height: AVATAR_SIZE,
+                    borderRadius: AVATAR_SIZE / 2,
+                  },
+                ]}
               >
+                <User size={32} color={ACCENT_PINK} strokeWidth={2.5} />
+              </View>
+              {userData.photos > 0 && (
+                <View style={styles.photoBadge}>
+                  <Camera size={12} color={WHITE} strokeWidth={2.5} />
+                </View>
+              )}
+            </View>
+
+            <View style={styles.profileHeaderInfo}>
+              <Text style={styles.profileName}>
                 {userData.firstName} {userData.lastName}
               </Text>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text
-                  style={{
-                    fontSize: Platform.select({ ios: 16, android: 15 }),
-                    fontFamily: "PlayfairDisplay",
-                    fontWeight: "400",
-                    color: "rgba(255, 255, 255, 0.85)",
-                  }}
-                >
-                  {userData.age} years old
-                </Text>
+              <View style={styles.profileAgeRow}>
+                <Text style={styles.profileAge}>{userData.age} years old</Text>
                 {userData.verified && (
-                  <View
-                    style={{
-                      backgroundColor: "#22c55e",
-                      borderRadius: Platform.select({ ios: 10, android: 9 }),
-                      paddingHorizontal: Platform.select({
-                        ios: 8,
-                        android: 7,
-                      }),
-                      paddingVertical: Platform.select({ ios: 3, android: 2 }),
-                      marginLeft: Platform.select({ ios: 10, android: 9 }),
-                      shadowColor: "#22c55e",
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.5,
-                      shadowRadius: 6,
-                      elevation: 4,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: Platform.select({ ios: 11, android: 10 }),
-                        fontFamily: "HelloParis",
-                        fontWeight: "700",
-                        color: "#FFFFFF",
-                        letterSpacing: 0.5,
-                      }}
-                    >
-                      VERIFIED
-                    </Text>
+                  <View style={styles.verifiedBadge}>
+                    <ShieldCheck size={12} color={WHITE} strokeWidth={2.5} />
+                    <Text style={styles.verifiedText}>VERIFIED</Text>
                   </View>
                 )}
               </View>
@@ -267,180 +186,60 @@ export default function WelcomeComplete() {
           </View>
 
           {/* Profile Details */}
-          <View style={{ gap: Platform.select({ ios: 18, android: 16 }) }}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: "rgba(255, 255, 255, 0.08)",
-                padding: Platform.select({ ios: 14, android: 12 }),
-                borderRadius: 12,
-              }}
-            >
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: "rgba(239, 62, 120, 0.2)",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginRight: 12,
-                }}
-              >
-                <MapPin size={18} color="#EF3E78" strokeWidth={2.5} />
-              </View>
-              <Text
-                style={{
-                  fontSize: Platform.select({ ios: 15, android: 14 }),
-                  fontFamily: "PlayfairDisplay",
-                  fontWeight: "500",
-                  color: "rgba(255, 255, 255, 0.95)",
-                  flex: 1,
-                }}
-              >
-                {userData.location}
-              </Text>
-            </View>
+          <View style={styles.detailsContainer}>
+            <ProfileDetailItem
+              icon={<MapPin size={18} color={ACCENT_PINK} strokeWidth={2.5} />}
+              text={userData.location}
+            />
 
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: "rgba(255, 255, 255, 0.08)",
-                padding: Platform.select({ ios: 14, android: 12 }),
-                borderRadius: 12,
-              }}
-            >
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: "rgba(239, 62, 120, 0.2)",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginRight: 12,
-                }}
-              >
-                <Heart size={18} color="#EF3E78" strokeWidth={2.5} />
-              </View>
-              <Text
-                style={{
-                  fontSize: Platform.select({ ios: 15, android: 14 }),
-                  fontFamily: "PlayfairDisplay",
-                  fontWeight: "500",
-                  color: "rgba(255, 255, 255, 0.95)",
-                  flex: 1,
-                }}
-              >
-                Looking for {userData.interestedIn.toLowerCase()} •{" "}
-                {userData.relationship}
-              </Text>
-            </View>
+            <ProfileDetailItem
+              icon={<Heart size={18} color={ACCENT_PINK} strokeWidth={2.5} />}
+              text={`Looking for ${userData.interestedIn.toLowerCase()} • ${userData.relationship}`}
+            />
 
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: "rgba(255, 255, 255, 0.08)",
-                padding: Platform.select({ ios: 14, android: 12 }),
-                borderRadius: 12,
-              }}
-            >
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: "rgba(239, 62, 120, 0.2)",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginRight: 12,
-                }}
-              >
-                <Eye size={18} color="#EF3E78" strokeWidth={2.5} />
-              </View>
-              <Text
-                style={{
-                  fontSize: Platform.select({ ios: 15, android: 14 }),
-                  fontFamily: "PlayfairDisplay",
-                  fontWeight: "500",
-                  color: "rgba(255, 255, 255, 0.95)",
-                  flex: 1,
-                }}
-              >
-                {userData.photos} photos uploaded
-              </Text>
-            </View>
+            <ProfileDetailItem
+              icon={<Eye size={18} color={ACCENT_PINK} strokeWidth={2.5} />}
+              text={`${userData.photos} photo${userData.photos !== 1 ? "s" : ""} uploaded`}
+            />
           </View>
         </View>
 
-        {/* Success Message Banner */}
-        <View
-          style={{
-            backgroundColor: "rgba(34, 197, 94, 0.15)",
-            borderRadius: 18,
-            padding: Platform.select({ ios: 20, android: 18 }),
-            marginBottom: Platform.select({ ios: 28, android: 24 }),
-            borderWidth: 1.5,
-            borderColor: "rgba(34, 197, 94, 0.4)",
-            shadowColor: "#22c55e",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
-            shadowRadius: 12,
-            elevation: 6,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: Platform.select({ ios: 17, android: 16 }),
-              fontFamily: "HelloParis",
-              fontWeight: "700",
-              color: "#FFFFFF",
-              textAlign: "center",
-              marginBottom: Platform.select({ ios: 8, android: 7 }),
-              textShadowColor: "rgba(0, 0, 0, 0.4)",
-              textShadowOffset: { width: 0, height: 1 },
-              textShadowRadius: 3,
-            }}
-          >
-            🎉 Profile Complete!
+        {/* Success Banner */}
+        <View style={styles.successBanner}>
+          <Sparkles size={20} color={SUCCESS_GREEN} fill={SUCCESS_GREEN} />
+          <View style={styles.successTextContainer}>
+            <Text style={styles.successTitle}>Profile Complete!</Text>
+            <Text style={styles.successSubtitle}>
+              You're all set to start connecting with amazing Filipino singles
+              worldwide!
+            </Text>
+          </View>
+        </View>
+
+        {/* Stats */}
+        <View style={styles.statsContainer}>
+          <Text style={styles.statsText}>
+            Join 50,000+ verified Filipino singles
           </Text>
-          <Text
-            style={{
-              fontSize: Platform.select({ ios: 14, android: 13 }),
-              fontFamily: "PlayfairDisplay",
-              fontWeight: "400",
-              color: "rgba(255, 255, 255, 0.9)",
-              textAlign: "center",
-              lineHeight: Platform.select({ ios: 21, android: 19 }),
-            }}
-          >
-            You're all set to start connecting with amazing Filipino singles
-            worldwide!
+          <Text style={styles.statsSubtext}>
+            Ready to find meaningful connections
           </Text>
         </View>
       </ScrollView>
 
       {/* Action Buttons */}
       <View
-        style={{
-          paddingHorizontal: 32,
-          paddingBottom: Platform.select({ ios: 40, android: 32 }),
-          gap: Platform.select({ ios: 16, android: 14 }),
-          backgroundColor: "rgba(52, 8, 57, 0.6)",
-          paddingTop: Platform.select({ ios: 24, android: 20 }),
-          borderTopWidth: 1,
-          borderTopColor: "rgba(255, 255, 255, 0.1)",
-        }}
+        style={[
+          styles.buttonContainer,
+          { paddingBottom: Math.max(insets.bottom + 16, 32) },
+        ]}
       >
         <PrimaryButton
           title="Start Dating"
           onPress={handleStartDating}
           accessibilityLabel="Start dating on PinayMate"
           accessibilityHint="Begin browsing and matching with other users"
-          icon={<Heart size={20} color="#FFFFFF" fill="#FFFFFF" />}
+          icon={<Heart size={20} color={WHITE} fill={WHITE} strokeWidth={2} />}
         />
 
         <SecondaryButton
@@ -450,22 +249,293 @@ export default function WelcomeComplete() {
           accessibilityLabel="Explore app features first"
           accessibilityHint="Browse the app without starting to match"
         />
-
-        <Text
-          style={{
-            fontSize: Platform.select({ ios: 13, android: 12 }),
-            fontFamily: "PlayfairDisplay",
-            fontWeight: "400",
-            color: "rgba(255, 255, 255, 0.7)",
-            textAlign: "center",
-            marginTop: Platform.select({ ios: 12, android: 10 }),
-            lineHeight: Platform.select({ ios: 18, android: 16 }),
-          }}
-        >
-          Join 50,000+ verified Filipino singles{"\n"}
-          Ready to find meaningful connections
-        </Text>
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: BRAND_BG,
+  },
+
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === "ios" ? 32 : 24,
+  },
+
+  // Logo Section
+  logoSection: {
+    alignItems: "center",
+    marginBottom: 32,
+  },
+  logoContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: ACCENT_PINK,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 30,
+      },
+      android: {
+        elevation: 12,
+      },
+    }),
+  },
+  logo: {
+    // Dynamic size applied inline
+  },
+
+  // Welcome
+  welcomeContainer: {
+    alignItems: "center",
+  },
+  welcomeHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 12,
+  },
+  welcomeTitle: {
+    fontSize: Platform.OS === "ios" ? 32 : 30,
+    fontFamily: "Lora-Bold",
+    color: WHITE,
+    textAlign: "center",
+    letterSpacing: 0.4,
+    ...Platform.select({
+      ios: {
+        textShadowColor: "rgba(0, 0, 0, 0.6)",
+        textShadowOffset: { width: 0, height: 3 },
+        textShadowRadius: 10,
+      },
+    }),
+  },
+  welcomeSubtitle: {
+    fontSize: 16,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255, 255, 255, 0.85)",
+    textAlign: "center",
+    lineHeight: 24,
+    paddingHorizontal: 20,
+    letterSpacing: 0.2,
+  },
+
+  // Profile Card
+  profileCard: {
+    backgroundColor: SURFACE,
+    borderRadius: 24,
+    padding: Platform.OS === "ios" ? 24 : 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: SURFACE_BORDER,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+
+  // Profile Header
+  profileHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 24,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.15)",
+  },
+  avatarContainer: {
+    position: "relative",
+    marginRight: 16,
+  },
+  avatar: {
+    backgroundColor: "rgba(239, 62, 120, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 3,
+    borderColor: ACCENT_PINK,
+    ...Platform.select({
+      ios: {
+        shadowColor: ACCENT_PINK,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.5,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  photoBadge: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: ACCENT_PURPLE,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: BRAND_BG,
+  },
+  profileHeaderInfo: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: Platform.OS === "ios" ? 24 : 22,
+    fontFamily: "Lora-Bold",
+    color: WHITE,
+    marginBottom: 6,
+    letterSpacing: 0.3,
+  },
+  profileAgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  profileAge: {
+    fontSize: 15,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255, 255, 255, 0.8)",
+    letterSpacing: 0.2,
+  },
+  verifiedBadge: {
+    backgroundColor: SUCCESS_GREEN,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: SUCCESS_GREEN,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.4,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  verifiedText: {
+    fontSize: 10,
+    fontFamily: "DMSans-Bold",
+    color: WHITE,
+    letterSpacing: 0.5,
+  },
+
+  // Details
+  detailsContainer: {
+    gap: 14,
+  },
+  detailItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    padding: 14,
+    borderRadius: 14,
+  },
+  detailIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(239, 62, 120, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 14,
+  },
+  detailText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "DMSans-Medium",
+    color: "rgba(255, 255, 255, 0.9)",
+    letterSpacing: 0.2,
+    lineHeight: 20,
+  },
+
+  // Success Banner
+  successBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "rgba(16, 185, 129, 0.15)",
+    borderRadius: 18,
+    padding: Platform.OS === "ios" ? 20 : 18,
+    marginBottom: 24,
+    borderWidth: 1.5,
+    borderColor: "rgba(16, 185, 129, 0.3)",
+    gap: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: SUCCESS_GREEN,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  successTextContainer: {
+    flex: 1,
+  },
+  successTitle: {
+    fontSize: 16,
+    fontFamily: "Lora-Bold",
+    color: WHITE,
+    marginBottom: 6,
+    letterSpacing: 0.3,
+  },
+  successSubtitle: {
+    fontSize: 13,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255, 255, 255, 0.85)",
+    lineHeight: 19,
+    letterSpacing: 0.2,
+  },
+
+  // Stats
+  statsContainer: {
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  statsText: {
+    fontSize: 14,
+    fontFamily: "DMSans-SemiBold",
+    color: ACCENT_PURPLE,
+    textAlign: "center",
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  statsSubtext: {
+    fontSize: 13,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255, 255, 255, 0.65)",
+    textAlign: "center",
+    letterSpacing: 0.2,
+  },
+
+  // Buttons
+  buttonContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    gap: 14,
+    backgroundColor: "rgba(15, 8, 20, 0.95)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(141, 105, 246, 0.15)",
+  },
+});

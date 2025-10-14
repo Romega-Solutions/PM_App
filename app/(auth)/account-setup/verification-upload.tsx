@@ -1,3 +1,4 @@
+// app/(auth)/account-setup/verification-upload.tsx
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -12,19 +13,55 @@ import React, { useState } from "react";
 import {
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StatusBar,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PrimaryButton from "../../../src/components/ui/PrimaryButton";
 import SecondaryButton from "../../../src/components/ui/SecondaryButton";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
-// Placeholder component for verification processing
+// Brand system (match basic-info.tsx)
+const BRAND_BG = "#0F0814";
+const ACCENT_PURPLE = "#8D69F6";
+const ACCENT_PINK = "#EF3E78";
+const WHITE = "#FFFFFF";
+const SURFACE = "rgba(255,255,255,0.08)";
+const SURFACE_BORDER = "rgba(141,105,246,0.25)";
+const ICON_BG = "rgba(141,105,246,0.12)";
+
+// Responsive type
+const TITLE_SIZE = Math.min(width * 0.08, 32);
+const SUBTITLE_SIZE = 15;
+const STEP_TITLE = Math.min(width * 0.045, 18);
+const STEP_DESC = 14;
+
+// Card chrome
+const STEP_PAD_V = Platform.OS === "ios" ? 16 : 14;
+const STEP_MIN_H = Platform.OS === "ios" ? 60 : 56;
+const ICON_BOX = Math.min(Math.max(width * 0.11, 36), 42);
+
+// Dynamic container style (must be outside StyleSheet.create)
+const getStepContainerActive = (accent: string) => ({
+  backgroundColor: "rgba(255,255,255,0.06)",
+  borderRadius: 16,
+  borderWidth: 1.5,
+  borderColor: accent,
+  paddingHorizontal: 16,
+  paddingVertical: STEP_PAD_V,
+  minHeight: STEP_MIN_H,
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Processing Card (restyled to match basic-info containers)
+// ────────────────────────────────────────────────────────────────────────────
 const VerificationProcessingCard = ({
   type,
   status,
@@ -36,125 +73,59 @@ const VerificationProcessingCard = ({
   title: string;
   description: string;
 }) => {
-  const getStatusColor = () => {
+  const statusMeta = (() => {
     switch (status) {
       case "verified":
-        return "#22c55e";
+        return { color: "#22C55E", text: "Verified" };
       case "processing":
-        return "#f59e0b";
+        return { color: "#F59E0B", text: "Processing" };
       case "rejected":
-        return "#ef4444";
+        return { color: "#EF4444", text: "Needs review" };
       default:
-        return "#EF3E78";
+        return { color: ACCENT_PINK, text: "Pending" };
     }
-  };
+  })();
 
-  const getStatusIcon = () => {
-    switch (status) {
-      case "verified":
-        return <CheckCircle size={20} color="#FFFFFF" />;
-      case "processing":
-        return <Clock size={20} color="#FFFFFF" />;
-      case "rejected":
-        return <FileText size={20} color="#FFFFFF" />;
-      default:
-        return type === "selfie" ? (
-          <Camera size={20} color="#FFFFFF" />
-        ) : (
-          <FileText size={20} color="#FFFFFF" />
-        );
-    }
-  };
-
-  const getStatusText = () => {
-    switch (status) {
-      case "verified":
-        return "Verified ✓";
-      case "processing":
-        return "Processing...";
-      case "rejected":
-        return "Needs review";
-      default:
-        return "Pending";
-    }
-  };
+  const Icon =
+    status === "verified"
+      ? CheckCircle
+      : status === "processing"
+        ? Clock
+        : type === "selfie"
+          ? Camera
+          : FileText;
 
   return (
-    <View
-      style={{
-        backgroundColor:
-          status === "verified"
-            ? "rgba(34, 197, 94, 0.1)"
-            : "rgba(255, 255, 255, 0.1)",
-        borderRadius: 16,
-        borderWidth: 2,
-        borderColor:
-          status === "verified" ? "#22c55e" : "rgba(255, 255, 255, 0.3)",
-        padding: Platform.select({ ios: 20, android: 18 }),
-      }}
-    >
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          marginBottom: Platform.select({ ios: 12, android: 10 }),
-        }}
-      >
-        <View
-          style={{
-            backgroundColor: getStatusColor(),
-            borderRadius: Platform.select({ ios: 20, android: 18 }),
-            padding: Platform.select({ ios: 8, android: 7 }),
-            marginRight: 12,
-          }}
-        >
-          {getStatusIcon()}
+    <View style={getStepContainerActive(statusMeta.color)}>
+      <View style={styles.stepHeader}>
+        <View style={[styles.iconBox, { backgroundColor: ICON_BG }]}>
+          <Icon size={20} color={statusMeta.color} />
         </View>
-        <View style={{ flex: 1 }}>
-          {/* Card title - Using HelloParis for UI elements */}
-          <Text
-            style={{
-              fontSize: Platform.select({ ios: 18, android: 17 }),
-              fontFamily: "HelloParis",
-              fontWeight: "600",
-              color: "#FFFFFF",
-              marginBottom: 4,
-            }}
-          >
-            {title}
-          </Text>
-          {/* Status text - Using PlayfairDisplay for body text */}
-          <Text
-            style={{
-              fontSize: Platform.select({ ios: 12, android: 11 }),
-              fontFamily: "PlayfairDisplay",
-              fontWeight: "400",
-              color: getStatusColor(),
-            }}
-          >
-            {getStatusText()}
+        <Text style={styles.stepTitle} numberOfLines={1}>
+          {title}
+        </Text>
+        <View style={[styles.statusPill, { borderColor: statusMeta.color }]}>
+          <View
+            style={[styles.statusDot, { backgroundColor: statusMeta.color }]}
+          />
+          <Text style={[styles.statusText, { color: statusMeta.color }]}>
+            {statusMeta.text}
           </Text>
         </View>
       </View>
-      {/* Description - Using PlayfairDisplay for body text */}
-      <Text
-        style={{
-          fontSize: Platform.select({ ios: 14, android: 13 }),
-          fontFamily: "PlayfairDisplay",
-          fontWeight: "400",
-          color: "rgba(255, 255, 255, 0.8)",
-          lineHeight: Platform.select({ ios: 20, android: 18 }),
-          marginLeft: 44,
-        }}
-      >
-        {description}
-      </Text>
+
+      <Text style={styles.stepDesc}>{description}</Text>
     </View>
   );
 };
 
+// ────────────────────────────────────────────────────────────────────────────
+// Screen
+// ────────────────────────────────────────────────────────────────────────────
 export default function VerificationUpload() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+
   const [verificationPhoto, setVerificationPhoto] = useState<string>("");
   const [idDocument, setIdDocument] = useState<string>("");
   const [selfieStatus, setSelfieStatus] = useState<
@@ -166,64 +137,43 @@ export default function VerificationUpload() {
 
   const takeVerificationPhoto = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-
     if (permissionResult.granted === false) {
-      Alert.alert(
-        "Permission Required",
-        "Permission to access camera is required!"
-      );
+      Alert.alert("Permission required", "Camera access is required.");
       return;
     }
-
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [3, 4],
       quality: 0.9,
     });
-
     if (!result.canceled) {
       setVerificationPhoto(result.assets[0].uri);
       setSelfieStatus("processing");
-
-      // Simulate processing time
-      setTimeout(() => {
-        setSelfieStatus("verified");
-      }, 2000);
+      setTimeout(() => setSelfieStatus("verified"), 2000);
     }
   };
 
   const uploadIdDocument = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
-
     if (permissionResult.granted === false) {
-      Alert.alert(
-        "Permission Required",
-        "Permission to access gallery is required!"
-      );
+      Alert.alert("Permission required", "Gallery access is required.");
       return;
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 0.9,
     });
-
     if (!result.canceled) {
       setIdDocument(result.assets[0].uri);
       setDocumentStatus("processing");
-
-      // Simulate processing time
-      setTimeout(() => {
-        setDocumentStatus("verified");
-      }, 3000);
+      setTimeout(() => setDocumentStatus("verified"), 3000);
     }
   };
 
-  const isFormValid = () => {
-    return selfieStatus === "verified" && documentStatus === "verified";
-  };
+  const isFormValid = () =>
+    selfieStatus === "verified" && documentStatus === "verified";
 
   const handleNext = () => {
     if (isFormValid()) {
@@ -233,324 +183,320 @@ export default function VerificationUpload() {
 
   const handleSkip = () => {
     Alert.alert(
-      "Skip Verification?",
-      "You can verify your account later in settings. Verified profiles get more matches.",
+      "Skip verification",
+      "You can verify later in Settings. Verified profiles receive more visibility.",
       [
         {
           text: "Skip for now",
           onPress: () => router.push("/(auth)/account-setup/welcome-complete"),
         },
-        { text: "Continue Setup", style: "cancel" },
+        { text: "Continue setup", style: "cancel" },
       ]
     );
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.root}>
+      {/* Status Bar to brand color (same as basic-info) */}
       <StatusBar
         barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
+        backgroundColor={BRAND_BG}
+        translucent={false}
       />
+      {Platform.OS === "ios" && (
+        <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+      )}
 
-      {/* Brand Gradient Background */}
+      {/* Background gradient (same recipe as basic-info) */}
       <LinearGradient
-        colors={["#340839", "#8D69F6", "#EF3E78", "#340839"]}
-        locations={[0, 0.4, 0.7, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+        locations={[0, 0.3, 0.7, 1]}
+        style={StyleSheet.absoluteFillObject}
       />
 
-      <ScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingHorizontal: 32,
-          paddingTop: Platform.select({
-            ios: height * 0.08,
-            android: height * 0.06,
-          }),
-          paddingBottom: Platform.select({ ios: 40, android: 32 }),
-        }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
-        {/* Header */}
-        <View style={{ alignItems: "center", marginBottom: 40 }}>
-          {/* Progress Indicator */}
-          <View
-            style={{
-              flexDirection: "row",
-              marginBottom: 32,
-              gap: Platform.select({ ios: 8, android: 6 }),
-            }}
-          >
-            {[1, 2, 3, 4, 5].map((step, index) => (
-              <View
-                key={step}
-                style={{
-                  width: index === 4 ? 24 : 8,
-                  height: Platform.select({ ios: 8, android: 6 }),
-                  borderRadius: Platform.select({ ios: 4, android: 3 }),
-                  backgroundColor:
-                    index <= 4 ? "#EF3E78" : "rgba(255, 255, 255, 0.3)",
-                }}
-              />
-            ))}
-          </View>
-
-          {/* Shield Icon with Glow */}
-          <View
-            style={{
-              backgroundColor: "rgba(239, 62, 120, 0.15)",
-              borderRadius: 50,
-              padding: 24,
-              marginBottom: 32,
-              borderWidth: 2,
-              borderColor: "rgba(239, 62, 120, 0.3)",
-              shadowColor: "#EF3E78",
-              shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: 0.8,
-              shadowRadius: 20,
-              elevation: 12,
-            }}
-          >
-            <Shield size={48} color="#EF3E78" strokeWidth={2} />
-          </View>
-
-          {/* Main heading - Using HelloParis for UI elements */}
-          <Text
-            style={{
-              fontSize: Math.min(
-                width * 0.08,
-                Platform.select({ ios: 32, android: 30 })
-              ),
-              fontFamily: "HelloParis",
-              fontWeight: "700",
-              color: "#FFFFFF",
-              textAlign: "center",
-              marginBottom: 12,
-              textShadowColor: "rgba(0, 0, 0, 0.8)",
-              textShadowOffset: { width: 0, height: 3 },
-              textShadowRadius: 10,
-              letterSpacing: Platform.select({ ios: -0.5, android: -0.3 }),
-            }}
-          >
-            Verify your identity
-          </Text>
-
-          {/* Subtitle - Using PlayfairDisplay for body text */}
-          <Text
-            style={{
-              fontSize: Platform.select({ ios: 16, android: 15 }),
-              fontFamily: "PlayfairDisplay",
-              fontWeight: "400",
-              color: "rgba(255, 255, 255, 0.8)",
-              textAlign: "center",
-              lineHeight: Platform.select({ ios: 24, android: 22 }),
-              paddingHorizontal: 20,
-            }}
-          >
-            Help keep our community safe.{"\n"}Verified profiles get 3x more
-            matches!
-          </Text>
-        </View>
-
-        {/* Verification Steps */}
-        <View style={{ gap: Platform.select({ ios: 24, android: 20 }) }}>
-          {/* Step 1: Verification Photo */}
-          {!verificationPhoto ? (
-            <TouchableOpacity
-              onPress={takeVerificationPhoto}
-              style={{
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-                borderRadius: 16,
-                borderWidth: 2,
-                borderColor: "rgba(255, 255, 255, 0.3)",
-                padding: Platform.select({ ios: 20, android: 18 }),
-              }}
-              activeOpacity={0.8}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Take verification selfie"
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginBottom: Platform.select({ ios: 12, android: 10 }),
-                }}
-              >
-                <View
-                  style={{
-                    backgroundColor: "#EF3E78",
-                    borderRadius: Platform.select({ ios: 20, android: 18 }),
-                    padding: Platform.select({ ios: 8, android: 7 }),
-                    marginRight: 12,
-                  }}
-                >
-                  <Camera size={20} color="#FFFFFF" />
-                </View>
-                {/* Step title - Using HelloParis for UI elements */}
-                <Text
-                  style={{
-                    fontSize: Platform.select({ ios: 18, android: 17 }),
-                    fontFamily: "HelloParis",
-                    fontWeight: "600",
-                    color: "#FFFFFF",
-                    flex: 1,
-                  }}
-                >
-                  Take a verification selfie
-                </Text>
-              </View>
-              {/* Step description - Using PlayfairDisplay for body text */}
-              <Text
-                style={{
-                  fontSize: Platform.select({ ios: 14, android: 13 }),
-                  fontFamily: "PlayfairDisplay",
-                  fontWeight: "400",
-                  color: "rgba(255, 255, 255, 0.8)",
-                  lineHeight: Platform.select({ ios: 20, android: 18 }),
-                  marginLeft: 44,
-                }}
-              >
-                Hold up a peace sign and look directly at the camera
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <VerificationProcessingCard
-              type="selfie"
-              status={selfieStatus}
-              title="Verification Selfie"
-              description="Hold up a peace sign and look directly at the camera"
-            />
-          )}
-
-          {/* Step 2: ID Document */}
-          {!idDocument ? (
-            <TouchableOpacity
-              onPress={uploadIdDocument}
-              style={{
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-                borderRadius: 16,
-                borderWidth: 2,
-                borderColor: "rgba(255, 255, 255, 0.3)",
-                padding: Platform.select({ ios: 20, android: 18 }),
-              }}
-              activeOpacity={0.8}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Upload ID document"
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginBottom: Platform.select({ ios: 12, android: 10 }),
-                }}
-              >
-                <View
-                  style={{
-                    backgroundColor: "#EF3E78",
-                    borderRadius: Platform.select({ ios: 20, android: 18 }),
-                    padding: Platform.select({ ios: 8, android: 7 }),
-                    marginRight: 12,
-                  }}
-                >
-                  <FileText size={20} color="#FFFFFF" />
-                </View>
-                {/* Step title - Using HelloParis for UI elements */}
-                <Text
-                  style={{
-                    fontSize: Platform.select({ ios: 18, android: 17 }),
-                    fontFamily: "HelloParis",
-                    fontWeight: "600",
-                    color: "#FFFFFF",
-                    flex: 1,
-                  }}
-                >
-                  Upload ID document
-                </Text>
-              </View>
-              {/* Step description - Using PlayfairDisplay for body text */}
-              <Text
-                style={{
-                  fontSize: Platform.select({ ios: 14, android: 13 }),
-                  fontFamily: "PlayfairDisplay",
-                  fontWeight: "400",
-                  color: "rgba(255, 255, 255, 0.8)",
-                  lineHeight: Platform.select({ ios: 20, android: 18 }),
-                  marginLeft: 44,
-                }}
-              >
-                Driver's license, passport, or government ID
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <VerificationProcessingCard
-              type="document"
-              status={documentStatus}
-              title="ID Document"
-              description="Driver's license, passport, or government ID"
-            />
-          )}
-        </View>
-
-        {/* Privacy Notice */}
-        <View
-          style={{
-            backgroundColor: "rgba(255, 255, 255, 0.08)",
-            borderRadius: 12,
-            padding: Platform.select({ ios: 16, android: 14 }),
-            marginTop: Platform.select({ ios: 32, android: 28 }),
-            borderWidth: 1,
-            borderColor: "rgba(255, 255, 255, 0.2)",
-          }}
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: Math.max(insets.bottom + 24, 40) },
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* Privacy notice - Using PlayfairDisplay for body text */}
-          <Text
-            style={{
-              fontSize: Platform.select({ ios: 14, android: 13 }),
-              fontFamily: "PlayfairDisplay",
-              fontWeight: "400",
-              color: "rgba(255, 255, 255, 0.8)",
-              lineHeight: Platform.select({ ios: 20, android: 18 }),
-              textAlign: "center",
-            }}
-          >
-            🔒 Your documents are encrypted and only used for verification. They
-            will not be shared with other users.
-          </Text>
+          {/* Progress and header */}
+          <View style={styles.progressSection}>
+            <View style={styles.progressBar}>
+              {[1, 2, 3, 4, 5].map((step, idx) => (
+                <View
+                  key={step}
+                  style={[
+                    styles.progressDot,
+                    idx === 4 && styles.progressDotActive,
+                  ]} // step 5 active
+                />
+              ))}
+            </View>
+
+            <View style={styles.headerContainer}>
+              <Shield size={28} color={ACCENT_PINK} />
+              <Text style={styles.title}>Verify your identity</Text>
+            </View>
+
+            <Text style={styles.subtitle}>
+              Help keep the community safe. Verified accounts gain more trust.
+            </Text>
+          </View>
+
+          {/* Steps */}
+          <View style={{ gap: 16 }}>
+            {/* Step 1: Selfie */}
+            {!verificationPhoto ? (
+              <TouchableOpacity
+                onPress={takeVerificationPhoto}
+                activeOpacity={0.9}
+                accessibilityRole="button"
+                accessibilityLabel="Take verification selfie"
+                style={styles.stepContainer}
+              >
+                <View style={styles.stepHeader}>
+                  <View style={[styles.iconBox, { backgroundColor: ICON_BG }]}>
+                    <Camera size={20} color={ACCENT_PURPLE} />
+                  </View>
+                  <Text style={styles.stepTitle} numberOfLines={1}>
+                    Take a verification selfie
+                  </Text>
+                </View>
+                <Text style={styles.stepDesc}>
+                  Face the camera with good lighting. Keep your face centered.
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <VerificationProcessingCard
+                type="selfie"
+                status={selfieStatus}
+                title="Verification selfie"
+                description="We are checking the image quality and authenticity."
+              />
+            )}
+
+            {/* Step 2: Document */}
+            {!idDocument ? (
+              <TouchableOpacity
+                onPress={uploadIdDocument}
+                activeOpacity={0.9}
+                accessibilityRole="button"
+                accessibilityLabel="Upload ID document"
+                style={styles.stepContainer}
+              >
+                <View style={styles.stepHeader}>
+                  <View style={[styles.iconBox, { backgroundColor: ICON_BG }]}>
+                    <FileText size={20} color={ACCENT_PURPLE} />
+                  </View>
+                  <Text style={styles.stepTitle} numberOfLines={1}>
+                    Upload an ID document
+                  </Text>
+                </View>
+                <Text style={styles.stepDesc}>
+                  Driver’s license, passport, or any valid government ID.
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <VerificationProcessingCard
+                type="document"
+                status={documentStatus}
+                title="ID document"
+                description="We are validating the document information."
+              />
+            )}
+          </View>
+
+          {/* Privacy note */}
+          <View style={styles.helperContainer}>
+            <View style={styles.helperRow}>
+              <Shield size={16} color={"rgba(255,255,255,0.85)"} />
+              <Text style={styles.helperText}>
+                Your files are encrypted and used only for verification. They
+                are not shared with other users.
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Footer CTAs (match basic-info footer) */}
+        <View
+          style={[
+            styles.footer,
+            { paddingBottom: Math.max(insets.bottom + 16, 32) },
+          ]}
+        >
+          <PrimaryButton
+            title="Complete Setup"
+            onPress={handleNext}
+            disabled={!isFormValid()}
+            accessibilityLabel="Complete account setup"
+            accessibilityHint="Finishes the verification process"
+          />
+          <View style={{ height: 10 }} />
+          <SecondaryButton
+            title="Skip for now"
+            variant="ghost"
+            onPress={handleSkip}
+            accessibilityLabel="Skip verification"
+            accessibilityHint="Continues without verification"
+          />
         </View>
-      </ScrollView>
-
-      {/* Action Buttons - Using Custom Components */}
-      <View
-        style={{
-          paddingHorizontal: 32,
-          paddingBottom: Platform.select({ ios: 40, android: 32 }),
-          gap: Platform.select({ ios: 12, android: 10 }),
-        }}
-      >
-        {/* Continue Button - Using PrimaryButton */}
-        <PrimaryButton
-          title="Complete Setup"
-          onPress={handleNext}
-          disabled={!isFormValid()}
-          accessibilityLabel="Complete account setup"
-          accessibilityHint="Finishes the verification process"
-        />
-
-        {/* Skip Button - Using SecondaryButton */}
-        <SecondaryButton
-          title="Skip for now"
-          variant="ghost"
-          onPress={handleSkip}
-          accessibilityLabel="Skip verification"
-          accessibilityHint="Continues without verification"
-        />
-      </View>
+      </KeyboardAvoidingView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: BRAND_BG },
+
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === "ios" ? 32 : 24,
+  },
+
+  // Progress
+  progressSection: {
+    alignItems: "center",
+    marginBottom: 28,
+  },
+  progressBar: {
+    flexDirection: "row",
+    marginBottom: 24,
+    gap: 8,
+  },
+  progressDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(255,255,255,0.25)",
+  },
+  progressDotActive: {
+    width: 28,
+    backgroundColor: ACCENT_PINK,
+  },
+
+  // Header
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 10,
+  },
+  title: {
+    fontSize: TITLE_SIZE,
+    fontFamily: "Lora-Bold",
+    color: WHITE,
+    letterSpacing: 0.4,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: SUBTITLE_SIZE,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255,255,255,0.85)",
+    textAlign: "center",
+    lineHeight: 22,
+    paddingHorizontal: 20,
+    letterSpacing: 0.2,
+  },
+
+  // Step containers
+  stepContainer: {
+    backgroundColor: SURFACE,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: SURFACE_BORDER,
+    paddingHorizontal: 16,
+    paddingVertical: STEP_PAD_V,
+    minHeight: STEP_MIN_H,
+  },
+  stepHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  iconBox: {
+    width: ICON_BOX,
+    height: ICON_BOX,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+    backgroundColor: ICON_BG,
+  },
+  stepTitle: {
+    flex: 1,
+    fontSize: STEP_TITLE,
+    fontFamily: "DMSans-SemiBold",
+    color: WHITE,
+    letterSpacing: 0.2,
+  },
+  stepDesc: {
+    marginLeft: ICON_BOX + 12,
+    fontSize: STEP_DESC,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255,255,255,0.85)",
+    lineHeight: 20,
+  },
+
+  // Status pill
+  statusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1.5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginLeft: 12,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+  },
+  statusText: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 12,
+  },
+
+  // Helper
+  helperContainer: {
+    marginTop: 20,
+    paddingHorizontal: 8,
+  },
+  helperRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 12,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  helperText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255,255,255,0.85)",
+    lineHeight: 19,
+    letterSpacing: 0.2,
+  },
+
+  // Footer
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    backgroundColor: "rgba(15, 8, 20, 0.95)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(141, 105, 246, 0.15)",
+  },
+});

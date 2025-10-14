@@ -1,7 +1,13 @@
+// app/(auth)/account-setup/profile-photos.tsx
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { Image as ImageIcon, Plus, X } from "lucide-react-native";
+import {
+  Camera,
+  CheckCircle2,
+  Image as ImageIcon,
+  X,
+} from "lucide-react-native";
 import React, { useState } from "react";
 import {
   Alert,
@@ -10,89 +16,100 @@ import {
   Platform,
   ScrollView,
   StatusBar,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PrimaryButton from "../../../src/components/ui/PrimaryButton";
 
 const { width, height } = Dimensions.get("window");
 
+// Brand Colors
+const BRAND_BG = "#0F0814";
+const ACCENT_PURPLE = "#8D69F6";
+const ACCENT_PINK = "#EF3E78";
+const SUCCESS_GREEN = "#10B981";
+const WHITE = "#FFFFFF";
+const SURFACE = "rgba(255,255,255,0.08)";
+const SURFACE_BORDER = "rgba(141,105,246,0.25)";
+
+// Responsive Typography
+const TITLE_SIZE = Math.min(width * 0.08, 32);
+const SUBTITLE_SIZE = 15;
+
+// Card dimensions
+const CARD_WIDTH = width - 48;
+const CARD_HEIGHT = Math.round(CARD_WIDTH * 1.25);
+
 export default function ProfilePhotos() {
   const router = useRouter();
-  const [photos, setPhotos] = useState<string[]>([]);
-  const maxPhotos = 6;
+  const insets = useSafeAreaInsets();
 
-  const pickImage = async () => {
-    if (photos.length >= maxPhotos) {
-      Alert.alert(
-        "Maximum Photos",
-        `You can only upload up to ${maxPhotos} photos.`
-      );
-      return;
-    }
+  const [photo, setPhoto] = useState<string | null>(null);
 
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (permissionResult.granted === false) {
+  const requestGallery = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
       Alert.alert(
         "Permission Required",
-        "Permission to access camera roll is required!"
+        "Allow photo library access to continue."
       );
-      return;
+      return null;
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 5],
-      quality: 0.8,
+      quality: 0.85,
     });
-
-    if (!result.canceled) {
-      setPhotos([...photos, result.assets[0].uri]);
-    }
+    if (!result.canceled) return result.assets[0].uri;
+    return null;
   };
 
-  const takePhoto = async () => {
-    if (photos.length >= maxPhotos) {
-      Alert.alert(
-        "Maximum Photos",
-        `You can only upload up to ${maxPhotos} photos.`
-      );
-      return;
+  const requestCamera = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permission Required", "Allow camera access to continue.");
+      return null;
     }
-
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-
-    if (permissionResult.granted === false) {
-      Alert.alert(
-        "Permission Required",
-        "Permission to access camera is required!"
-      );
-      return;
-    }
-
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 5],
-      quality: 0.8,
+      quality: 0.85,
     });
-
-    if (!result.canceled) {
-      setPhotos([...photos, result.assets[0].uri]);
-    }
+    if (!result.canceled) return result.assets[0].uri;
+    return null;
   };
 
-  const removePhoto = (index: number) => {
-    const newPhotos = photos.filter((_, i) => i !== index);
-    setPhotos(newPhotos);
+  const addOrReplacePhoto = () => {
+    Alert.alert(
+      photo ? "Replace Photo" : "Add Photo",
+      "Choose how you would like to add a photo",
+      [
+        {
+          text: "Camera",
+          onPress: async () => {
+            const uri = await requestCamera();
+            if (uri) setPhoto(uri);
+          },
+        },
+        {
+          text: "Gallery",
+          onPress: async () => {
+            const uri = await requestGallery();
+            if (uri) setPhoto(uri);
+          },
+        },
+        { text: "Cancel", style: "cancel" },
+      ]
+    );
   };
 
-  const isFormValid = () => {
-    return photos.length >= 2; // Minimum 2 photos required
-  };
+  const removePhoto = () => setPhoto(null);
+
+  const isFormValid = () => !!photo;
 
   const handleNext = () => {
     if (isFormValid()) {
@@ -100,303 +117,145 @@ export default function ProfilePhotos() {
     }
   };
 
-  const renderPhotoSlot = (index: number) => {
-    const hasPhoto = photos[index];
-
-    return (
-      <TouchableOpacity
-        key={index}
-        onPress={
-          hasPhoto
-            ? undefined
-            : () => {
-                Alert.alert(
-                  "Add Photo",
-                  "Choose how you'd like to add a photo",
-                  [
-                    { text: "Camera", onPress: takePhoto },
-                    { text: "Gallery", onPress: pickImage },
-                    { text: "Cancel", style: "cancel" },
-                  ]
-                );
-              }
-        }
-        style={{
-          width: (width - 80) / 2,
-          height: ((width - 80) / 2) * 1.25,
-          backgroundColor: hasPhoto
-            ? "transparent"
-            : "rgba(255, 255, 255, 0.1)",
-          borderRadius: 16,
-          borderWidth: 2,
-          borderColor: hasPhoto ? "#EF3E78" : "rgba(255, 255, 255, 0.3)",
-          borderStyle: hasPhoto ? "solid" : "dashed",
-          justifyContent: "center",
-          alignItems: "center",
-          overflow: "hidden",
-          position: "relative",
-        }}
-        activeOpacity={0.8}
-        accessible={true}
-        accessibilityRole="button"
-        accessibilityLabel={
-          hasPhoto ? `Photo ${index + 1}` : `Add photo ${index + 1}`
-        }
-      >
-        {hasPhoto ? (
-          <>
-            <Image
-              source={{ uri: photos[index] }}
-              style={{ width: "100%", height: "100%", borderRadius: 14 }}
-              resizeMode="cover"
-            />
-            <TouchableOpacity
-              onPress={() => removePhoto(index)}
-              style={{
-                position: "absolute",
-                top: 8,
-                right: 8,
-                backgroundColor: "rgba(0, 0, 0, 0.6)",
-                borderRadius: 12,
-                width: Platform.select({ ios: 24, android: 22 }),
-                height: Platform.select({ ios: 24, android: 22 }),
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel={`Remove photo ${index + 1}`}
-            >
-              <X size={16} color="#FFFFFF" />
-            </TouchableOpacity>
-            {index === 0 && (
-              <View
-                style={{
-                  position: "absolute",
-                  bottom: 8,
-                  left: 8,
-                  backgroundColor: "#EF3E78",
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
-                  borderRadius: 8,
-                }}
-              >
-                {/* Main photo label - Using HelloParis for UI elements */}
-                <Text
-                  style={{
-                    color: "#FFFFFF",
-                    fontSize: 10,
-                    fontFamily: "HelloParis",
-                    fontWeight: "600",
-                  }}
-                >
-                  MAIN
-                </Text>
-              </View>
-            )}
-          </>
-        ) : (
-          <View style={{ alignItems: "center" }}>
-            <Plus
-              size={Platform.select({ ios: 32, android: 30 })}
-              color="rgba(255, 255, 255, 0.6)"
-              strokeWidth={1.5}
-            />
-            {/* Photo slot label - Using PlayfairDisplay for body text */}
-            <Text
-              style={{
-                color: "rgba(255, 255, 255, 0.6)",
-                fontSize: Platform.select({ ios: 12, android: 11 }),
-                fontFamily: "PlayfairDisplay",
-                fontWeight: "400",
-                marginTop: 8,
-                textAlign: "center",
-              }}
-            >
-              {index === 0 ? "Main Photo" : `Photo ${index + 1}`}
-            </Text>
-          </View>
-        )}
-      </TouchableOpacity>
-    );
-  };
-
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.root}>
+      {/* Status Bar Configuration */}
       <StatusBar
         barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
+        backgroundColor={BRAND_BG}
+        translucent={false}
       />
+      {Platform.OS === "ios" && (
+        <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+      )}
 
-      {/* Brand Gradient Background */}
+      {/* Background Gradient */}
       <LinearGradient
-        colors={["#340839", "#8D69F6", "#EF3E78", "#340839"]}
-        locations={[0, 0.4, 0.7, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+        locations={[0, 0.3, 0.7, 1]}
+        style={StyleSheet.absoluteFill}
       />
 
       <ScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingHorizontal: 32,
-          paddingTop: Platform.select({
-            ios: height * 0.08,
-            android: height * 0.06,
-          }),
-          paddingBottom: Platform.select({ ios: 40, android: 32 }),
-        }}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom + 24, 40) },
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
-        <View style={{ alignItems: "center", marginBottom: 40 }}>
-          {/* Progress Indicator */}
-          <View
-            style={{
-              flexDirection: "row",
-              marginBottom: 32,
-              gap: Platform.select({ ios: 8, android: 6 }),
-            }}
-          >
-            {[1, 2, 3, 4, 5].map((step, index) => (
+        {/* Progress Section */}
+        <View style={styles.progressSection}>
+          <View style={styles.progressBar}>
+            {[1, 2, 3, 4, 5].map((step, idx) => (
               <View
                 key={step}
-                style={{
-                  width: index === 1 ? 24 : 8,
-                  height: Platform.select({ ios: 8, android: 6 }),
-                  borderRadius: Platform.select({ ios: 4, android: 3 }),
-                  backgroundColor:
-                    index <= 1 ? "#EF3E78" : "rgba(255, 255, 255, 0.3)",
-                }}
+                style={[
+                  styles.progressDot,
+                  idx <= 1 && styles.progressDotActive,
+                  idx === 1 && styles.progressDotCurrent,
+                ]}
               />
             ))}
           </View>
 
-          {/* Main heading - Using HelloParis for UI elements */}
-          <Text
-            style={{
-              fontSize: Math.min(
-                width * 0.08,
-                Platform.select({ ios: 32, android: 30 })
-              ),
-              fontFamily: "HelloParis",
-              fontWeight: "700",
-              color: "#FFFFFF",
-              textAlign: "center",
-              marginBottom: 12,
-              textShadowColor: "rgba(0, 0, 0, 0.8)",
-              textShadowOffset: { width: 0, height: 3 },
-              textShadowRadius: 10,
-              letterSpacing: Platform.select({ ios: -0.5, android: -0.3 }),
-            }}
-          >
-            Add your photos
-          </Text>
-
-          {/* Subtitle - Using PlayfairDisplay for body text */}
-          <Text
-            style={{
-              fontSize: Platform.select({ ios: 16, android: 15 }),
-              fontFamily: "PlayfairDisplay",
-              fontWeight: "400",
-              color: "rgba(255, 255, 255, 0.8)",
-              textAlign: "center",
-              lineHeight: Platform.select({ ios: 24, android: 22 }),
-              paddingHorizontal: 20,
-            }}
-          >
-            Upload at least 2 photos to continue.{"\n"}Your first photo will be
-            your main photo.
-          </Text>
-        </View>
-
-        {/* Photo Grid */}
-        <View
-          style={{
-            flexDirection: "row",
-            flexWrap: "wrap",
-            justifyContent: "space-between",
-            gap: Platform.select({ ios: 16, android: 14 }),
-            marginBottom: Platform.select({ ios: 32, android: 28 }),
-          }}
-        >
-          {Array.from({ length: maxPhotos }, (_, index) =>
-            renderPhotoSlot(index)
-          )}
-        </View>
-
-        {/* Photo Tips */}
-        <View
-          style={{
-            backgroundColor: "rgba(255, 255, 255, 0.1)",
-            borderRadius: 16,
-            padding: Platform.select({ ios: 20, android: 18 }),
-            borderWidth: 1,
-            borderColor: "rgba(255, 255, 255, 0.2)",
-            marginBottom: Platform.select({ ios: 32, android: 28 }),
-          }}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginBottom: Platform.select({ ios: 12, android: 10 }),
-            }}
-          >
-            <ImageIcon size={20} color="#EF3E78" style={{ marginRight: 8 }} />
-            {/* Tips heading - Using HelloParis for UI elements */}
-            <Text
-              style={{
-                fontSize: Platform.select({ ios: 16, android: 15 }),
-                fontFamily: "HelloParis",
-                fontWeight: "600",
-                color: "#FFFFFF",
-              }}
-            >
-              Photo Tips
-            </Text>
+          {/* Header */}
+          <View style={styles.headerContainer}>
+            <Text style={styles.title}>Add your photo</Text>
           </View>
-          {/* Tips content - Using PlayfairDisplay for body text */}
-          <Text
-            style={{
-              fontSize: Platform.select({ ios: 14, android: 13 }),
-              fontFamily: "PlayfairDisplay",
-              fontWeight: "400",
-              color: "rgba(255, 255, 255, 0.8)",
-              lineHeight: Platform.select({ ios: 20, android: 18 }),
-            }}
-          >
-            • Use clear, recent photos of yourself{"\n"}• Smile and make eye
-            contact with the camera{"\n"}• Include variety: close-ups and full
-            body shots{"\n"}• Avoid group photos or heavy filters
+
+          <Text style={styles.subtitle}>
+            Upload at least one clear and recent photo of yourself
           </Text>
         </View>
 
-        {/* Photo Count - Using PlayfairDisplay for body text */}
-        <Text
-          style={{
-            fontSize: Platform.select({ ios: 14, android: 13 }),
-            fontFamily: "PlayfairDisplay",
-            fontWeight: "400",
-            color: "rgba(255, 255, 255, 0.7)",
-            textAlign: "center",
-            marginBottom: Platform.select({ ios: 20, android: 18 }),
-          }}
+        {/* Photo Card */}
+        <TouchableOpacity
+          onPress={addOrReplacePhoto}
+          activeOpacity={0.9}
+          style={[styles.photoCard, photo && styles.photoCardFilled]}
+          accessibilityRole="button"
+          accessibilityLabel={photo ? "Replace photo" : "Add photo"}
         >
-          {photos.length} of {maxPhotos} photos added
-          {photos.length < 2 && ` • ${2 - photos.length} more required`}
-        </Text>
+          {photo ? (
+            <>
+              <Image
+                source={{ uri: photo }}
+                style={styles.photoImage}
+                resizeMode="cover"
+              />
+
+              {/* Remove Button */}
+              <TouchableOpacity
+                onPress={removePhoto}
+                accessibilityRole="button"
+                accessibilityLabel="Remove photo"
+                style={styles.removeBtn}
+                activeOpacity={0.85}
+              >
+                <X size={16} color={WHITE} strokeWidth={2.5} />
+              </TouchableOpacity>
+
+              {/* Profile Photo Tag */}
+              <View style={styles.profileTag}>
+                <CheckCircle2 size={12} color={WHITE} strokeWidth={2.5} />
+                <Text style={styles.profileTagText}>PROFILE PHOTO</Text>
+              </View>
+            </>
+          ) : (
+            <View style={styles.emptyState}>
+              <View style={styles.iconContainer}>
+                <Camera size={40} color={ACCENT_PINK} strokeWidth={2} />
+              </View>
+              <Text style={styles.emptyStateTitle}>Add Your Photo</Text>
+              <Text style={styles.emptyStateSubtitle}>
+                Tap to upload from gallery or camera
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {/* Photo Counter */}
+        <View style={styles.counterContainer}>
+          <View style={styles.counterBadge}>
+            <Text style={styles.counterText}>{photo ? "1" : "0"} / 1</Text>
+          </View>
+          <Text style={styles.counterLabel}>
+            photo{photo ? " " : "s "}added
+          </Text>
+        </View>
+
+        {/* Tips Section */}
+        <View style={styles.tipsContainer}>
+          <View style={styles.tipsHeader}>
+            <View style={styles.tipsIconBox}>
+              <ImageIcon size={18} color={ACCENT_PINK} strokeWidth={2.5} />
+            </View>
+            <Text style={styles.tipsTitle}>Photo Tips</Text>
+          </View>
+
+          <View style={styles.tipsList}>
+            <TipItem text="Use a clear, recent photo of yourself" />
+            <TipItem text="Good lighting and a friendly smile help" />
+            <TipItem text="Avoid heavy filters or sunglasses" />
+          </View>
+        </View>
+
+        {/* Security Note */}
+        <View style={styles.securityNote}>
+          <Text style={styles.securityText}>
+            Your photo will be reviewed to ensure it meets our community
+            guidelines
+          </Text>
+        </View>
       </ScrollView>
 
-      {/* Continue Button - Using PrimaryButton */}
+      {/* Footer CTA */}
       <View
-        style={{
-          paddingHorizontal: 32,
-          paddingBottom: Platform.select({ ios: 40, android: 32 }),
-        }}
+        style={[
+          styles.footer,
+          { paddingBottom: Math.max(insets.bottom + 16, 32) },
+        ]}
       >
         <PrimaryButton
           title="Continue"
@@ -409,3 +268,307 @@ export default function ProfilePhotos() {
     </View>
   );
 }
+
+interface TipItemProps {
+  text: string;
+}
+
+const TipItem: React.FC<TipItemProps> = ({ text }) => (
+  <View style={styles.tipItem}>
+    <View style={styles.tipDot} />
+    <Text style={styles.tipText}>{text}</Text>
+  </View>
+);
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: BRAND_BG,
+  },
+
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === "ios" ? 32 : 24,
+  },
+
+  // Progress Section
+  progressSection: {
+    alignItems: "center",
+    marginBottom: 32,
+  },
+  progressBar: {
+    flexDirection: "row",
+    marginBottom: 28,
+    gap: 8,
+  },
+  progressDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+  },
+  progressDotActive: {
+    backgroundColor: ACCENT_PINK,
+  },
+  progressDotCurrent: {
+    width: 28,
+  },
+
+  // Header
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 12,
+  },
+  title: {
+    fontSize: TITLE_SIZE,
+    fontFamily: "Lora-Bold",
+    color: WHITE,
+    textAlign: "center",
+    letterSpacing: 0.4,
+    ...Platform.select({
+      ios: {
+        textShadowColor: "rgba(0, 0, 0, 0.6)",
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 6,
+      },
+    }),
+  },
+  subtitle: {
+    fontSize: SUBTITLE_SIZE,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255, 255, 255, 0.85)",
+    textAlign: "center",
+    lineHeight: 22,
+    paddingHorizontal: 20,
+    letterSpacing: 0.2,
+  },
+
+  // Photo Card
+  photoCard: {
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    alignSelf: "center",
+    borderRadius: 20,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: SURFACE_BORDER,
+    backgroundColor: SURFACE,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+    overflow: "hidden",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  photoCardFilled: {
+    borderStyle: "solid",
+    borderColor: ACCENT_PINK,
+    ...Platform.select({
+      ios: {
+        shadowColor: ACCENT_PINK,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  photoImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 18,
+  },
+
+  // Empty State
+  emptyState: {
+    alignItems: "center",
+    paddingHorizontal: 40,
+  },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(239, 62, 120, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: "rgba(239, 62, 120, 0.3)",
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontFamily: "Lora-Bold",
+    color: WHITE,
+    marginBottom: 8,
+    letterSpacing: 0.3,
+  },
+  emptyStateSubtitle: {
+    fontSize: 14,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255, 255, 255, 0.7)",
+    textAlign: "center",
+    lineHeight: 20,
+    letterSpacing: 0.2,
+  },
+
+  // Buttons on Photo
+  removeBtn: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    borderRadius: 12,
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+  },
+  profileTag: {
+    position: "absolute",
+    bottom: 12,
+    left: 12,
+    backgroundColor: SUCCESS_GREEN,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    ...Platform.select({
+      ios: {
+        shadowColor: SUCCESS_GREEN,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.4,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  profileTagText: {
+    color: WHITE,
+    fontSize: 10,
+    fontFamily: "DMSans-Bold",
+    letterSpacing: 0.5,
+  },
+
+  // Counter
+  counterContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+    gap: 8,
+  },
+  counterBadge: {
+    backgroundColor: ACCENT_PINK,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  counterText: {
+    fontSize: 14,
+    fontFamily: "DMSans-Bold",
+    color: WHITE,
+    letterSpacing: 0.3,
+  },
+  counterLabel: {
+    fontSize: 14,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255, 255, 255, 0.7)",
+    letterSpacing: 0.2,
+  },
+
+  // Tips
+  tipsContainer: {
+    backgroundColor: "rgba(141, 105, 246, 0.12)",
+    borderRadius: 18,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "rgba(141, 105, 246, 0.25)",
+    marginBottom: 20,
+  },
+  tipsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    gap: 10,
+  },
+  tipsIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "rgba(239, 62, 120, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  tipsTitle: {
+    fontSize: 16,
+    fontFamily: "Lora-Bold",
+    color: WHITE,
+    letterSpacing: 0.3,
+  },
+  tipsList: {
+    gap: 12,
+  },
+  tipItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  tipDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: ACCENT_PINK,
+    marginTop: 7,
+  },
+  tipText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255, 255, 255, 0.9)",
+    lineHeight: 20,
+    letterSpacing: 0.2,
+  },
+
+  // Security Note
+  securityNote: {
+    marginBottom: 16,
+    paddingHorizontal: 8,
+  },
+  securityText: {
+    fontSize: 13,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255, 255, 255, 0.65)",
+    textAlign: "center",
+    lineHeight: 19,
+    letterSpacing: 0.2,
+  },
+
+  // Footer
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    backgroundColor: "rgba(15, 8, 20, 0.95)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(141, 105, 246, 0.15)",
+  },
+});

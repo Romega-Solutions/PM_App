@@ -5,6 +5,7 @@ import { ArrowLeft, Eye, EyeOff, Lock, Mail } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   Alert,
+  Dimensions,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -15,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CustomTextInput from "../../src/components/forms/CustomTextInput";
 import PrimaryButton from "../../src/components/ui/PrimaryButton";
 import SecondaryButton from "../../src/components/ui/SecondaryButton";
@@ -24,8 +26,12 @@ interface FormData {
   password: string;
 }
 
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+
 export default function SignIn() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+
   const [formData, setFormData] = useState<FormData>({
     email: "",
     password: "",
@@ -43,7 +49,20 @@ export default function SignIn() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#340839" }}>
-      <StatusBar barStyle="light-content" backgroundColor="#340839" />
+      <StatusBar
+        translucent
+        barStyle="light-content"
+        backgroundColor="transparent"
+      />
+
+      {/* Full-screen brand gradient */}
+      <LinearGradient
+        colors={["#340839", "rgba(141, 105, 246, 0.15)", "#340839"]}
+        locations={[0, 0.5, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -51,28 +70,16 @@ export default function SignIn() {
       >
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{
+            // Ensures full-bleed height with safe areas respected
+            minHeight: SCREEN_HEIGHT + insets.top + insets.bottom,
+            paddingTop: insets.top + 60, // room for header under the status bar
+            paddingBottom: insets.bottom + 32,
+            flexGrow: 1,
+          }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Background Gradient */}
-          <LinearGradient
-            colors={["#340839", "rgba(141, 105, 246, 0.15)", "#340839"]}
-            locations={[0, 0.5, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-
-          {/* Back Button */}
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => router.back()}
-            accessible
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-          >
-            <ArrowLeft size={24} color="#FFFFFF" strokeWidth={2.5} />
-          </TouchableOpacity>
-
           {/* Header with Logo */}
           <View style={styles.headerWrap}>
             <View style={styles.logoWrap}>
@@ -85,17 +92,23 @@ export default function SignIn() {
               />
             </View>
 
-            {/* Title - HelloParis (title) */}
-            <Text style={[styles.title, styles.fontTitle]}>Welcome Back</Text>
+            {/* Title - Lora (headers) */}
+            <Text
+              style={[styles.title, { fontFamily: "Lora", fontWeight: "600" }]}
+            >
+              Welcome Back
+            </Text>
 
-            {/* Head - Lora (head) */}
-            <Text style={[styles.head, styles.fontHead]}>
+            {/* Head - Lora */}
+            <Text
+              style={[styles.head, { fontFamily: "Lora", fontWeight: "500" }]}
+            >
               Continue your journey to find love
             </Text>
           </View>
 
           {/* Form */}
-          <View style={{ paddingHorizontal: 24, paddingBottom: 40 }}>
+          <View style={{ paddingHorizontal: 24, paddingBottom: 16 }}>
             <CustomTextInput
               label="Email Address"
               value={formData.email}
@@ -123,7 +136,7 @@ export default function SignIn() {
               autoComplete="current-password"
             />
 
-            {/* Forgot Password - DMSans (body) */}
+            {/* Forgot Password - DMSans */}
             <TouchableOpacity
               style={{ alignSelf: "flex-end", marginBottom: 28, padding: 4 }}
               onPress={() => router.push("/(auth)/forgot-password")}
@@ -131,7 +144,12 @@ export default function SignIn() {
               accessibilityRole="button"
               accessibilityLabel="Forgot password"
             >
-              <Text style={[styles.forgotLink, styles.fontBodySemibold]}>
+              <Text
+                style={[
+                  styles.forgotLink,
+                  { fontFamily: "DMSans", fontWeight: "600" },
+                ]}
+              >
                 Forgot Password?
               </Text>
             </TouchableOpacity>
@@ -146,7 +164,12 @@ export default function SignIn() {
             <View style={styles.dividerRow}>
               <View style={styles.dividerLine} />
               {/* Head label - Lora */}
-              <Text style={[styles.dividerText, styles.fontHeadMedium]}>
+              <Text
+                style={[
+                  styles.dividerText,
+                  { fontFamily: "Lora", fontWeight: "500" },
+                ]}
+              >
                 Or continue with
               </Text>
               <View style={styles.dividerLine} />
@@ -166,7 +189,12 @@ export default function SignIn() {
             {/* Sign Up Link */}
             <View style={{ alignItems: "center", paddingVertical: 32 }}>
               {/* Body - DMSans */}
-              <Text style={[styles.supportText, styles.fontBody]}>
+              <Text
+                style={[
+                  styles.supportText,
+                  { fontFamily: "DMSans", fontWeight: "400" },
+                ]}
+              >
                 New to PinayMate?
               </Text>
               <TouchableOpacity
@@ -176,7 +204,12 @@ export default function SignIn() {
                 accessibilityLabel="Create a new account"
               >
                 {/* Body CTA - DMSans Semibold */}
-                <Text style={[styles.ctaLink, styles.fontBodySemibold]}>
+                <Text
+                  style={[
+                    styles.ctaLink,
+                    { fontFamily: "DMSans", fontWeight: "700" },
+                  ]}
+                >
                   Create Account
                 </Text>
               </TouchableOpacity>
@@ -184,6 +217,23 @@ export default function SignIn() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Back Button overlay, padded by safe-area so it isn't cut */}
+      <TouchableOpacity
+        style={[
+          styles.backBtn,
+          {
+            top: insets.top + 12,
+            left: 16,
+          },
+        ]}
+        onPress={() => router.back()}
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+      >
+        <ArrowLeft size={24} color="#FFFFFF" strokeWidth={2.5} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -191,21 +241,18 @@ export default function SignIn() {
 const styles = StyleSheet.create({
   backBtn: {
     position: "absolute",
-    top: Platform.select({ ios: 16, android: 12 }),
-    left: 20,
     zIndex: 10,
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
     justifyContent: "center",
     alignItems: "center",
   },
   headerWrap: {
-    paddingTop: Platform.select({ ios: 60, android: 50 }),
-    paddingHorizontal: 24,
     alignItems: "center",
     marginBottom: 40,
+    paddingHorizontal: 24,
   },
   logoWrap: {
     width: 100,
@@ -220,7 +267,7 @@ const styles = StyleSheet.create({
     elevation: 15,
   },
 
-  // Title
+  // Title (Lora)
   title: {
     fontSize: 36,
     color: "#FFFFFF",
@@ -232,7 +279,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
 
-  // Head
+  // Head (Lora)
   head: {
     fontSize: 16,
     color: "rgba(255, 255, 255, 0.9)",
@@ -240,7 +287,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
 
-  // Body texts
+  // Body texts (DMSans)
   forgotLink: {
     color: "#EF3E78",
     fontSize: 14,
@@ -271,16 +318,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 0.3,
   },
-
-  // Font helpers that match expo-font registrations
-  // Title = HelloParis
-  fontTitle: { fontFamily: "HelloParis-Bold" },
-
-  // Head = Lora
-  fontHead: { fontFamily: "Lora-SemiBold" },
-  fontHeadMedium: { fontFamily: "Lora-Medium" },
-
-  // Body = DMSans
-  fontBody: { fontFamily: "DMSans-Regular" },
-  fontBodySemibold: { fontFamily: "DMSans-SemiBold" },
 });

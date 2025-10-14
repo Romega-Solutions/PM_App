@@ -1,42 +1,108 @@
+// app/(auth)/account-setup/basic-info.tsx
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { Calendar, User, Users } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StatusBar,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CustomTextInput from "../../../src/components/forms/CustomTextInput";
 import PrimaryButton from "../../../src/components/ui/PrimaryButton";
 
 const { width, height } = Dimensions.get("window");
 
+// Brand Colors
+const BRAND_BG = "#0F0814";
+const ACCENT_PURPLE = "#8D69F6";
+const ACCENT_PINK = "#EF3E78";
+const WHITE = "#FFFFFF";
+const SURFACE = "rgba(255,255,255,0.08)";
+const SURFACE_BORDER = "rgba(141,105,246,0.25)";
+const ICON_BG = "rgba(141,105,246,0.12)";
+
+// Responsive Typography
+const TITLE_SIZE = Math.min(width * 0.08, 32);
+const SUBTITLE_SIZE = 15;
+
+interface FormData {
+  firstName: string;
+  lastName: string;
+  age: string;
+  gender: string;
+}
+
+interface GenderOptionProps {
+  option: string;
+  selected: boolean;
+  onSelect: () => void;
+}
+
+const GenderOption: React.FC<GenderOptionProps> = ({
+  option,
+  selected,
+  onSelect,
+}) => (
+  <TouchableOpacity
+    onPress={onSelect}
+    style={[styles.optionRow, selected && styles.optionRowActive]}
+    activeOpacity={0.9}
+    accessibilityRole="radio"
+    accessibilityState={{ selected }}
+    accessibilityLabel={`Select ${option} as gender`}
+  >
+    <View style={styles.optionIconBox}>
+      <Users
+        size={18}
+        color={selected ? ACCENT_PINK : ACCENT_PURPLE}
+        strokeWidth={2.5}
+      />
+    </View>
+
+    <Text
+      style={[styles.optionText, selected && styles.optionTextActive]}
+      numberOfLines={1}
+    >
+      {option}
+    </Text>
+
+    <View style={[styles.radio, selected && styles.radioActive]}>
+      {selected && <View style={styles.radioDot} />}
+    </View>
+  </TouchableOpacity>
+);
+
 export default function BasicInfo() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
+  const insets = useSafeAreaInsets();
+
+  const [formData, setFormData] = useState<FormData>({
     firstName: "",
     lastName: "",
     age: "",
     gender: "",
   });
 
-  const genderOptions = ["Woman", "Man", "Non-binary"];
+  const genderOptions = useMemo(() => ["Woman", "Man", "Non-binary"], []);
   const minAge = 18;
   const maxAge = 70;
 
   const isFormValid = () => {
-    const age = parseInt(formData.age);
+    const ageNum = parseInt(formData.age, 10);
     return (
-      formData.firstName.length >= 2 &&
-      formData.lastName.length >= 2 &&
-      age >= minAge &&
-      age <= maxAge &&
+      formData.firstName.trim().length >= 2 &&
+      formData.lastName.trim().length >= 2 &&
+      !Number.isNaN(ageNum) &&
+      ageNum >= minAge &&
+      ageNum <= maxAge &&
       formData.gender !== ""
     );
   };
@@ -48,108 +114,67 @@ export default function BasicInfo() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.root}>
+      {/* Status Bar Configuration */}
       <StatusBar
         barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
+        backgroundColor={BRAND_BG}
+        translucent={false}
       />
+      {Platform.OS === "ios" && (
+        <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+      )}
 
-      {/* Brand Gradient Background */}
+      {/* Background Gradient */}
       <LinearGradient
-        colors={["#340839", "#8D69F6", "#EF3E78", "#340839"]}
-        locations={[0, 0.4, 0.7, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+        locations={[0, 0.3, 0.7, 1]}
+        style={StyleSheet.absoluteFill}
       />
 
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+        style={styles.keyboardView}
       >
         <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingHorizontal: 24, // Consistent with other screens
-            paddingTop: Platform.select({
-              ios: height * 0.08,
-              android: height * 0.06,
-            }),
-            paddingBottom: Platform.select({ ios: 40, android: 32 }),
-          }}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: Math.max(insets.bottom + 24, 40) },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header */}
-          <View style={{ alignItems: "center", marginBottom: 40 }}>
-            {/* Progress Indicator */}
-            <View
-              style={{
-                flexDirection: "row",
-                marginBottom: 32,
-                gap: Platform.select({ ios: 8, android: 6 }),
-              }}
-            >
-              {[1, 2, 3, 4, 5].map((step, index) => (
+          {/* Progress Indicator */}
+          <View style={styles.progressSection}>
+            <View style={styles.progressBar}>
+              {[1, 2, 3, 4, 5].map((step, idx) => (
                 <View
                   key={step}
-                  style={{
-                    width: index === 0 ? 24 : 8,
-                    height: Platform.select({ ios: 8, android: 6 }),
-                    borderRadius: Platform.select({ ios: 4, android: 3 }),
-                    backgroundColor:
-                      index === 0 ? "#EF3E78" : "rgba(255, 255, 255, 0.3)",
-                  }}
+                  style={[
+                    styles.progressDot,
+                    idx === 0 && styles.progressDotActive,
+                  ]}
                 />
               ))}
             </View>
 
-            {/* Main heading - Using HelloParis for UI elements */}
-            <Text
-              style={{
-                fontSize: Math.min(
-                  width * 0.08,
-                  Platform.select({ ios: 32, android: 30 })
-                ),
-                fontFamily: "HelloParis",
-                fontWeight: "700",
-                color: "#FFFFFF",
-                textAlign: "center",
-                marginBottom: 12,
-                textShadowColor: "rgba(0, 0, 0, 0.8)",
-                textShadowOffset: { width: 0, height: 3 },
-                textShadowRadius: 10,
-                letterSpacing: Platform.select({ ios: -0.5, android: -0.3 }),
-              }}
-            >
-              Tell us about yourself
-            </Text>
+            {/* Header */}
+            <View style={styles.headerContainer}>
+              <Text style={styles.title}>Tell us about yourself</Text>
+            </View>
 
-            {/* Subtitle - Using PlayfairDisplay for body text */}
-            <Text
-              style={{
-                fontSize: Platform.select({ ios: 16, android: 15 }),
-                fontFamily: "PlayfairDisplay",
-                fontWeight: "400",
-                color: "rgba(255, 255, 255, 0.8)",
-                textAlign: "center",
-                lineHeight: Platform.select({ ios: 24, android: 22 }),
-              }}
-            >
-              Let's start with the basics
+            <Text style={styles.subtitle}>
+              Let's start with the basics to create your profile
             </Text>
           </View>
 
           {/* Form Fields */}
-          <View style={{ gap: Platform.select({ ios: 20, android: 18 }) }}>
-            {/* First Name - Using CustomTextInput */}
+          <View style={styles.formContainer}>
             <CustomTextInput
               label="First Name"
               value={formData.firstName}
               onChangeText={(text) =>
-                setFormData({ ...formData, firstName: text })
+                setFormData((p) => ({ ...p, firstName: text }))
               }
               placeholder="Enter your first name"
               LeftIcon={User}
@@ -157,12 +182,11 @@ export default function BasicInfo() {
               autoComplete="given-name"
             />
 
-            {/* Last Name - Using CustomTextInput */}
             <CustomTextInput
               label="Last Name"
               value={formData.lastName}
               onChangeText={(text) =>
-                setFormData({ ...formData, lastName: text })
+                setFormData((p) => ({ ...p, lastName: text }))
               }
               placeholder="Enter your last name"
               LeftIcon={User}
@@ -170,122 +194,53 @@ export default function BasicInfo() {
               autoComplete="family-name"
             />
 
-            {/* Age - Using CustomTextInput */}
             <CustomTextInput
               label="Age"
               value={formData.age}
-              onChangeText={(text) => setFormData({ ...formData, age: text })}
+              onChangeText={(text) => {
+                const clean = text.replace(/[^0-9]/g, "");
+                setFormData((p) => ({ ...p, age: clean }));
+              }}
               placeholder={`${minAge} - ${maxAge} years old`}
               LeftIcon={Calendar}
-              keyboardType="numeric"
+              keyboardType="number-pad"
+              maxLength={2}
             />
 
             {/* Gender Selection */}
-            <View>
-              {/* Gender label - Using HelloParis for UI labels */}
-              <Text
-                style={{
-                  fontSize: 15,
-                  fontFamily: "HelloParis",
-                  fontWeight: "500",
-                  color: "#FFFFFF",
-                  marginBottom: 10,
-                  letterSpacing: 0.3,
-                }}
-              >
-                Gender
-              </Text>
+            <View style={styles.genderSection}>
+              <Text style={styles.genderLabel}>Gender</Text>
 
-              <View style={{ gap: Platform.select({ ios: 12, android: 10 }) }}>
+              <View style={styles.genderOptions}>
                 {genderOptions.map((option) => (
-                  <TouchableOpacity
+                  <GenderOption
                     key={option}
-                    onPress={() => setFormData({ ...formData, gender: option })}
-                    style={{
-                      backgroundColor:
-                        formData.gender === option
-                          ? "rgba(239, 62, 120, 0.15)"
-                          : "rgba(255, 255, 255, 0.08)",
-                      borderRadius: 16,
-                      borderWidth: 2,
-                      borderColor:
-                        formData.gender === option
-                          ? "#EF3E78"
-                          : "rgba(141, 105, 246, 0.25)",
-                      paddingHorizontal: 18,
-                      paddingVertical: Platform.select({
-                        ios: 18,
-                        android: 16,
-                      }),
-                      flexDirection: "row",
-                      alignItems: "center",
-                      minHeight: Platform.select({ ios: 56, android: 52 }),
-                    }}
-                    activeOpacity={0.8}
-                    accessible={true}
-                    accessibilityRole="radio"
-                    accessibilityState={{
-                      selected: formData.gender === option,
-                    }}
-                    accessibilityLabel={`Select ${option} as gender`}
-                  >
-                    <Users
-                      size={20}
-                      color="rgba(239, 62, 120, 0.7)"
-                      style={{ marginRight: 12 }}
-                    />
-                    {/* Option text - Using PlayfairDisplay for body text */}
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        fontFamily: "PlayfairDisplay",
-                        fontWeight: "400",
-                        color: "#FFFFFF",
-                        flex: 1,
-                      }}
-                    >
-                      {option}
-                    </Text>
-                    {formData.gender === option && (
-                      <View
-                        style={{
-                          width: Platform.select({ ios: 20, android: 18 }),
-                          height: Platform.select({ ios: 20, android: 18 }),
-                          borderRadius: Platform.select({
-                            ios: 10,
-                            android: 9,
-                          }),
-                          backgroundColor: "#EF3E78",
-                          justifyContent: "center",
-                          alignItems: "center",
-                        }}
-                      >
-                        <View
-                          style={{
-                            width: Platform.select({ ios: 8, android: 7 }),
-                            height: Platform.select({ ios: 8, android: 7 }),
-                            borderRadius: Platform.select({
-                              ios: 4,
-                              android: 3.5,
-                            }),
-                            backgroundColor: "#FFFFFF",
-                          }}
-                        />
-                      </View>
-                    )}
-                  </TouchableOpacity>
+                    option={option}
+                    selected={formData.gender === option}
+                    onSelect={() =>
+                      setFormData((p) => ({ ...p, gender: option }))
+                    }
+                  />
                 ))}
               </View>
             </View>
           </View>
+
+          {/* Helper Text */}
+          <View style={styles.helperContainer}>
+            <Text style={styles.helperText}>
+              Your information is secure and will only be visible according to
+              your privacy settings
+            </Text>
+          </View>
         </ScrollView>
 
-        {/* Continue Button - Using PrimaryButton */}
+        {/* Footer CTA */}
         <View
-          style={{
-            paddingHorizontal: 24,
-            paddingBottom: Platform.select({ ios: 40, android: 32 }),
-          }}
+          style={[
+            styles.footer,
+            { paddingBottom: Math.max(insets.bottom + 16, 32) },
+          ]}
         >
           <PrimaryButton
             title="Continue"
@@ -299,3 +254,219 @@ export default function BasicInfo() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: BRAND_BG,
+  },
+
+  keyboardView: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === "ios" ? 32 : 24,
+  },
+
+  // Progress Section
+  progressSection: {
+    alignItems: "center",
+    marginBottom: 32,
+  },
+  progressBar: {
+    flexDirection: "row",
+    marginBottom: 28,
+    gap: 8,
+  },
+  progressDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+  },
+  progressDotActive: {
+    width: 28,
+    backgroundColor: ACCENT_PINK,
+  },
+
+  // Header
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 12,
+  },
+  title: {
+    fontSize: TITLE_SIZE,
+    fontFamily: "Lora-Bold",
+    color: WHITE,
+    textAlign: "center",
+    letterSpacing: 0.4,
+    ...Platform.select({
+      ios: {
+        textShadowColor: "rgba(0, 0, 0, 0.6)",
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 6,
+      },
+    }),
+  },
+  subtitle: {
+    fontSize: SUBTITLE_SIZE,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255, 255, 255, 0.85)",
+    textAlign: "center",
+    lineHeight: 22,
+    paddingHorizontal: 20,
+    letterSpacing: 0.2,
+  },
+
+  // Form
+  formContainer: {
+    gap: 20,
+  },
+
+  // Gender Section
+  genderSection: {
+    marginTop: 4,
+  },
+  genderLabel: {
+    fontSize: 14,
+    fontFamily: "DMSans-SemiBold",
+    color: "rgba(255, 255, 255, 0.95)",
+    marginBottom: 12,
+    letterSpacing: 0.3,
+  },
+  genderOptions: {
+    gap: 12,
+  },
+
+  // Gender Option
+  optionRow: {
+    backgroundColor: SURFACE,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: SURFACE_BORDER,
+    paddingHorizontal: 16,
+    paddingVertical: Platform.OS === "ios" ? 16 : 14,
+    minHeight: Platform.OS === "ios" ? 60 : 56,
+    flexDirection: "row",
+    alignItems: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
+  },
+  optionRowActive: {
+    backgroundColor: "rgba(239, 62, 120, 0.12)",
+    borderColor: ACCENT_PINK,
+    ...Platform.select({
+      ios: {
+        shadowColor: ACCENT_PINK,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  optionIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: ICON_BG,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+  optionText: {
+    flex: 1,
+    color: WHITE,
+    fontSize: 16,
+    fontFamily: "DMSans-Medium",
+    letterSpacing: 0.2,
+  },
+  optionTextActive: {
+    fontFamily: "DMSans-Bold",
+  },
+
+  // Radio Button
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: "rgba(255, 255, 255, 0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  radioActive: {
+    borderColor: ACCENT_PINK,
+  },
+  radioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: ACCENT_PINK,
+  },
+
+  // Helper Text
+  helperContainer: {
+    marginTop: 20,
+    paddingHorizontal: 8,
+  },
+  helperText: {
+    fontSize: 13,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255, 255, 255, 0.65)",
+    textAlign: "center",
+    lineHeight: 19,
+    letterSpacing: 0.2,
+  },
+
+  // Footer
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    backgroundColor: "rgba(15, 8, 20, 0.95)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(141, 105, 246, 0.15)",
+  },
+
+  // Back Button
+  backBtn: {
+    position: "absolute",
+    zIndex: 10,
+    left: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+});
