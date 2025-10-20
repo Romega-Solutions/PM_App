@@ -1,20 +1,26 @@
-// src/components/forms/CustomTextInput.tsx
+import { colors, semanticColors, theme } from "@/src/theme";
 import { LucideIcon } from "lucide-react-native";
 import React, { useState } from "react";
 import {
+  Dimensions,
   KeyboardTypeOptions,
-  NativeSyntheticEvent,
   Platform,
   StyleSheet,
   Text,
   TextInput,
-  TextInputFocusEventData,
   TextInputProps,
   TextStyle,
   TouchableOpacity,
   View,
   ViewStyle,
 } from "react-native";
+
+const { width } = Dimensions.get("window");
+
+// Responsive scaling
+const scale = (size: number) => (width / 375) * size;
+const moderateScale = (size: number, factor = 0.5) =>
+  size + (scale(size) - size) * factor;
 
 interface CustomTextInputProps
   extends Omit<
@@ -104,27 +110,29 @@ export default function CustomTextInput({
   const [focused, setFocused] = useState(false);
   const hasValue = !!value?.length;
 
-  const handleFocus = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+  // Fixed: Remove type annotations to let TypeScript infer
+  const handleFocus = (e: any) => {
     setFocused(true);
     onFocus?.(e);
   };
 
-  const handleBlur = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+  const handleBlur = (e: any) => {
     setFocused(false);
     onBlur?.(e);
   };
 
+  // Dynamic border color using theme
   const borderColor = error
-    ? "#D52C4D"
+    ? semanticColors.error
     : focused
-      ? "#EF3E78"
+      ? semanticColors.primary
       : hasValue
-        ? "rgba(239, 62, 120, 0.5)"
-        : "rgba(141, 105, 246, 0.25)";
+        ? `${semanticColors.primary}80` // 50% opacity
+        : `${semanticColors.secondary}40`; // 25% opacity
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {/* Label - body font by default */}
+      {/* Label */}
       {label ? <Text style={[styles.label, labelStyle]}>{label}</Text> : null}
 
       {/* Input container */}
@@ -133,8 +141,8 @@ export default function CustomTextInput({
           style={[
             styles.input,
             {
-              paddingLeft: LeftIcon ? 52 : 18,
-              paddingRight: RightIcon ? 52 : 18,
+              paddingLeft: LeftIcon ? moderateScale(52) : moderateScale(18),
+              paddingRight: RightIcon ? moderateScale(52) : moderateScale(18),
               borderColor,
             },
             inputStyle,
@@ -142,14 +150,14 @@ export default function CustomTextInput({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="rgba(255, 255, 255, 0.4)"
+          placeholderTextColor={`${colors.neutral.white}66`} // 40% opacity
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           autoComplete={autoComplete}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          selectionColor="rgba(141, 105, 246, 0.9)"
+          selectionColor={`${semanticColors.secondary}E6`} // 90% opacity
           {...props}
         />
 
@@ -157,8 +165,8 @@ export default function CustomTextInput({
         {LeftIcon ? (
           <View style={styles.leftIconWrap}>
             <LeftIcon
-              size={20}
-              color="rgba(239, 62, 120, 0.7)"
+              size={moderateScale(20)}
+              color={`${semanticColors.primary}B3`} // 70% opacity
               strokeWidth={2}
             />
           </View>
@@ -174,63 +182,78 @@ export default function CustomTextInput({
             accessibilityLabel="Toggle input option"
           >
             <RightIcon
-              size={20}
-              color="rgba(255, 255, 255, 0.7)"
+              size={moderateScale(20)}
+              color={`${colors.neutral.white}B3`} // 70% opacity
               strokeWidth={2}
             />
           </TouchableOpacity>
         ) : null}
       </View>
 
-      {/* Error text - body font */}
+      {/* Error text */}
       {error ? <Text style={[styles.error, errorStyle]}>{error}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { marginBottom: 20 },
-  // Body/UI font for labels
+  container: {
+    marginBottom: theme.spacing.lg,
+  },
+
   label: {
-    fontSize: 15,
-    color: "#FFFFFF",
-    marginBottom: 10,
-    letterSpacing: 0.3,
-    fontFamily: "DMSans-SemiBold",
+    fontSize: moderateScale(15),
+    color: colors.neutral.white,
+    marginBottom: theme.spacing.sm,
+    letterSpacing: Platform.select({ ios: 0.3, android: 0.2, web: 0.3 }),
+    fontFamily: theme.fontFamilies.body.semiBold,
   },
-  // Input text uses body font
+
   input: {
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderRadius: 16,
-    paddingVertical: Platform.select({ ios: 18, android: 16 }),
-    fontSize: 16,
-    color: "#FFFFFF",
-    borderWidth: 2,
-    minHeight: Platform.select({ ios: 56, android: 52 }),
-    fontFamily: "DMSans-Regular",
+    backgroundColor: `${colors.neutral.white}14`, // 8% opacity
+    borderRadius: moderateScale(16),
+    paddingVertical: Platform.select({
+      ios: moderateScale(18),
+      android: moderateScale(16),
+      web: moderateScale(16),
+    }),
+    fontSize: moderateScale(16),
+    color: colors.neutral.white,
+    borderWidth: Platform.select({ ios: 2, android: 2, web: 1.5 }),
+    minHeight: Platform.select({
+      ios: moderateScale(56),
+      android: moderateScale(52),
+      web: moderateScale(52),
+    }),
+    fontFamily: theme.fontFamilies.body.regular,
+    letterSpacing: Platform.select({ ios: 0.2, android: 0.15, web: 0.2 }),
   },
+
   leftIconWrap: {
     position: "absolute",
-    left: 18,
+    left: moderateScale(18),
     top: 0,
     bottom: 0,
     justifyContent: "center",
     alignItems: "center",
   },
+
   rightIconWrap: {
     position: "absolute",
-    right: 18,
+    right: moderateScale(18),
     top: 0,
     bottom: 0,
     justifyContent: "center",
     alignItems: "center",
-    padding: 4,
+    padding: moderateScale(4),
   },
+
   error: {
-    fontSize: 13,
-    color: "#D52C4D",
-    marginTop: 6,
-    marginLeft: 4,
-    fontFamily: "DMSans-Regular",
+    fontSize: moderateScale(13),
+    color: semanticColors.error,
+    marginTop: theme.spacing.xs,
+    marginLeft: moderateScale(4),
+    fontFamily: theme.fontFamilies.body.regular,
+    letterSpacing: Platform.select({ ios: 0.2, android: 0.15, web: 0.2 }),
   },
 });

@@ -86,11 +86,11 @@ export default function WelcomeComplete() {
   };
 
   const handleStartDating = () => {
-    router.replace("/(tabs)");
+    router.replace("/(main)");
   };
 
   const handleExploreApp = () => {
-    router.replace("/(tabs)");
+    router.replace("/(main)");
   };
 
   return (

@@ -1,3 +1,4 @@
+import { colors, semanticColors, theme } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { Redirect } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -5,6 +6,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
+  Platform,
   StatusBar,
   StyleSheet,
   Text,
@@ -13,45 +15,53 @@ import {
 
 const { width, height } = Dimensions.get("window");
 
+// Responsive sizing helper
+const scale = (size: number) => (width / 375) * size; // Based on iPhone X width
+const verticalScale = (size: number) => (height / 812) * size; // Based on iPhone X height
+
 export default function Index() {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowSplash(false), 1800); // 1.8s
+    const timer = setTimeout(() => setShowSplash(false), 1800);
     return () => clearTimeout(timer);
   }, []);
 
   if (showSplash) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#340839" }}>
+      <View style={styles.container}>
         <StatusBar
           barStyle="light-content"
-          backgroundColor="#340839"
+          backgroundColor={colors.dalisay[950]}
           translucent={false}
         />
 
         <LinearGradient
-          colors={["#340839", "#8D69F6"]}
+          colors={[colors.dalisay[950], colors.dalisay[500]]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradient}
         >
+          {/* Logo Container */}
           <View style={styles.logoWrap}>
             <Image
               source={require("../assets/logo-no-bg.png")}
-              style={{ width: 140, height: 140 }}
+              style={styles.logo}
               resizeMode="contain"
             />
           </View>
 
+          {/* Brand Name */}
           <Text style={styles.brandText}>PinayMate</Text>
 
+          {/* Tagline */}
           <Text style={styles.tagline}>Elite Filipino Dating</Text>
 
+          {/* Loading Indicator */}
           <ActivityIndicator
             size="large"
-            color="#EF3E78"
-            style={{ transform: [{ scale: 1.15 }] }}
+            color={semanticColors.primary}
+            style={styles.loader}
           />
         </LinearGradient>
       </View>
@@ -62,36 +72,56 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1, justifyContent: "center", alignItems: "center" },
+  container: {
+    flex: 1,
+    backgroundColor: colors.dalisay[950],
+  },
+
+  gradient: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing.lg,
+  },
+
   logoWrap: {
-    shadowColor: "#EF3E78",
+    shadowColor: semanticColors.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 30,
     elevation: 15,
-    marginBottom: 28,
+    marginBottom: verticalScale(28),
   },
-  // Use the exact loaded font key below
+
+  logo: {
+    width: scale(140),
+    height: scale(140),
+  },
+
   brandText: {
-    color: "#FFFFFF",
-    fontSize: 40,
-    fontFamily: "HelloParis-Bold", // <- use exact key registered in _layout.tsx
+    color: colors.neutral.white,
+    fontSize: scale(40),
+    fontFamily: theme.fontFamilies.logo.bold,
     letterSpacing: 1.2,
-    textShadowColor: "rgba(239, 62, 120, 0.85)",
+    textShadowColor: `${semanticColors.primary}D9`, // 85% opacity
     textShadowOffset: { width: 0, height: 3 },
     textShadowRadius: 8,
-    marginBottom: 18,
+    marginBottom: verticalScale(18),
     textAlign: "center",
   },
-  // Tagline uses Lora regular (exact key is "Lora")
+
   tagline: {
-    color: "rgba(255,255,255,0.88)",
-    fontSize: 15,
-    fontFamily: "Lora",
-    fontWeight: "500", // this uses the Lora-Medium file you loaded
+    color: colors.neutral.white,
+    opacity: 0.88,
+    fontSize: scale(15),
+    fontFamily: theme.fontFamilies.header.medium,
     letterSpacing: 0.6,
     textAlign: "center",
-    marginBottom: 28,
-    paddingHorizontal: 40,
+    marginBottom: verticalScale(28),
+    paddingHorizontal: theme.spacing.xl,
+  },
+
+  loader: {
+    transform: [{ scale: Platform.OS === "ios" ? 1.15 : 1.3 }],
   },
 });

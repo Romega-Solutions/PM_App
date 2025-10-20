@@ -1,8 +1,10 @@
+import { semanticColors } from "@/src/theme";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { View } from "react-native";
 import "./global.css";
 
 SplashScreen.preventAutoHideAsync();
@@ -26,7 +28,7 @@ export default function RootLayout() {
     "Lora-Bold": require("../assets/fonts/lora/Lora-Bold.ttf"),
     "Lora-BoldItalic": require("../assets/fonts/lora/Lora-BoldItalic.ttf"),
 
-    // DM Sans (Body / UI) - all weights present
+    // DM Sans (Body / UI)
     "DMSans-Thin": require("../assets/fonts/dm-sans/DMSans-Thin.ttf"),
     "DMSans-ExtraLight": require("../assets/fonts/dm-sans/DMSans-ExtraLight.ttf"),
     "DMSans-Light": require("../assets/fonts/dm-sans/DMSans-Light.ttf"),
@@ -44,21 +46,28 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
-  // keep splash visible until fonts load (or an error occurs)
   if (!fontsLoaded && !fontError) {
     return null;
   }
 
   return (
-    <>
-      <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false }}>
+    <View style={{ flex: 1, backgroundColor: semanticColors.background }}>
+      <StatusBar style="dark" backgroundColor={semanticColors.background} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: {
+            backgroundColor: semanticColors.background,
+          },
+          animation: "slide_from_right",
+        }}
+      >
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)/welcome" />
         <Stack.Screen name="(auth)/signin" />
         <Stack.Screen name="(auth)/signup" />
         <Stack.Screen name="(main)" />
       </Stack>
-    </>
+    </View>
   );
 }
