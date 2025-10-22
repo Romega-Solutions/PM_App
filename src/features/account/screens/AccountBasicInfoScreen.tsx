@@ -1,3 +1,4 @@
+// ...existing code...
 import AccountHeader from "@/src/components/account/AccountHeader";
 import AccountProgress from "@/src/components/account/AccountProgress";
 import GenderOption from "@/src/components/account/GenderOption";
@@ -18,6 +19,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAccountBasicInfo } from "../hooks/useAccountBasicInfo";
+// ...existing code...
 
 export default function AccountBasicInfoScreen() {
   const router = useRouter();
@@ -74,7 +76,7 @@ export default function AccountBasicInfoScreen() {
         <ScrollView
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingBottom: Math.max(insets.bottom + 24, 40) },
+            { paddingBottom: Math.max(insets.bottom + 16, 32) },
           ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -159,7 +161,7 @@ export default function AccountBasicInfoScreen() {
         <View
           style={[
             styles.footer,
-            { paddingBottom: Math.max(insets.bottom + 16, 32) },
+            { paddingBottom: Math.max(insets.bottom + 12, 20) },
           ]}
         >
           <PrimaryButton
@@ -174,46 +176,48 @@ export default function AccountBasicInfoScreen() {
   );
 }
 
+// reduced spacing values for tighter layout
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.dalisay[950] },
   keyboardView: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: Platform.OS === "ios" ? theme.spacing.xl : theme.spacing.lg,
+    paddingHorizontal: theme.spacing.md, // reduced from lg
+    paddingTop: Platform.OS === "ios" ? theme.spacing.lg : theme.spacing.md, // reduced
   },
-  top: { alignItems: "center", marginBottom: theme.spacing.lg },
-  formContainer: { gap: theme.spacing.lg },
-  genderSection: { marginTop: 8 },
+  top: { alignItems: "center", marginBottom: theme.spacing.md }, // reduced
+  formContainer: { gap: theme.spacing.sm }, // reduced gap
+  genderSection: { marginTop: theme.spacing.sm }, // reduced
   genderLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: theme.fontFamilies.body.semiBold,
     color: "rgba(255,255,255,0.95)",
-    marginBottom: theme.spacing.sm,
+    marginBottom: theme.spacing.xs ?? 6,
   },
   genderOptionsColumn: {
-    gap: theme.spacing.md,
+    gap: theme.spacing.sm,
     flexDirection: "column",
   },
-  helperContainer: { marginTop: 20, paddingHorizontal: 4 },
+  helperContainer: { marginTop: theme.spacing.sm, paddingHorizontal: 2 },
   helperText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: theme.fontFamilies.body.regular,
     color: "rgba(255,255,255,0.65)",
     textAlign: "center",
-    lineHeight: 19,
+    lineHeight: 18,
   },
   footer: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md, // reduced
+    paddingTop: theme.spacing.sm,
     backgroundColor: "rgba(15, 8, 20, 0.95)",
     borderTopWidth: 1,
-    borderTopColor: "rgba(141, 105, 246, 0.08)",
+    borderTopColor: "rgba(141, 105, 246, 0.06)", // lighter border
   },
   fieldError: {
-    marginTop: theme.spacing.sm,
+    marginTop: theme.spacing.xs ?? 6,
     color: theme.colors.amihan?.[500] ?? "#EF3E78",
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: theme.fontFamilies.body.regular,
   },
 });
+// ...existing code...
