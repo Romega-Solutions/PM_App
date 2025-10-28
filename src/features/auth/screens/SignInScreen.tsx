@@ -2,6 +2,7 @@ import AuthHeader from "@/src/components/auth/AuthHeader";
 import AuthLayout from "@/src/components/auth/AuthLayout";
 import SignUpPrompt from "@/src/components/auth/SignUpPrompt";
 import SocialSignInButton from "@/src/components/auth/SocialSignInButton";
+import TestAccountsHelper from "@/src/components/dev/TestAccountsHelper";
 import CustomTextInput from "@/src/components/forms/CustomTextInput";
 import FormDivider from "@/src/components/forms/FormDivider";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
@@ -82,6 +83,27 @@ export default function SignInScreen() {
     }
   };
 
+  // Handle test account selection
+  const handleTestAccountSelect = async (
+    testEmail: string,
+    testPassword: string
+  ) => {
+    setEmail(testEmail);
+    setPassword(testPassword);
+    setEmailError("");
+    setPasswordError("");
+
+    // Auto sign in with test account
+    try {
+      await signIn(testEmail, testPassword);
+    } catch (error) {
+      Alert.alert(
+        "Sign In Failed",
+        error instanceof Error ? error.message : "An error occurred"
+      );
+    }
+  };
+
   // Handle Google sign in (placeholder)
   const handleGoogleSignIn = async () => {
     Alert.alert("Coming Soon", "Google sign-in will be available soon!");
@@ -103,6 +125,9 @@ export default function SignInScreen() {
 
       {/* Form Container */}
       <View style={styles.formContainer}>
+        {/* Test Accounts Helper - Only visible in development */}
+        <TestAccountsHelper onSelectAccount={handleTestAccountSelect} />
+
         {/* Email Input */}
         <CustomTextInput
           label="Email"

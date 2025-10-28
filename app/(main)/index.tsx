@@ -1,8 +1,11 @@
 // app/(tabs)/index.tsx
+import { accountApi } from "@/src/features/account/api/accountApi";
+import { UserType } from "@/src/features/auth/api/authApi";
 import { LinearGradient } from "expo-linear-gradient";
 import { Heart, Info, MapPin, Sparkles, Star, X } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   Image,
   Platform,
@@ -25,8 +28,22 @@ const VERIFIED_GREEN = "#10B981";
 const SUPER_LIKE_GOLD = "#F59E0B";
 const WHITE = "#FFFFFF";
 
-// Sample user data
-const users = [
+// Profile type
+type Profile = {
+  id: string;
+  name: string;
+  age: number;
+  location: string;
+  distance: string;
+  image: any;
+  verified: boolean;
+  interests: string[];
+  bio: string;
+  gender: "female" | "male";
+};
+
+// Filipina profiles (for foreign men)
+const filipinaProfiles: Profile[] = [
   {
     id: "1",
     name: "Maria",
@@ -37,6 +54,7 @@ const users = [
     verified: true,
     interests: ["Travel", "Photography", "Food"],
     bio: "Love traveling and exploring new cultures. Looking for genuine connections and meaningful conversations.",
+    gender: "female",
   },
   {
     id: "2",
@@ -48,6 +66,7 @@ const users = [
     verified: true,
     interests: ["Photography", "Adventure", "Music"],
     bio: "Passionate about photography and adventure. Let's create memories together!",
+    gender: "female",
   },
   {
     id: "3",
@@ -59,6 +78,7 @@ const users = [
     verified: true,
     interests: ["Reading", "Coffee", "Art"],
     bio: "Coffee lover and bookworm. Seeking someone who shares my love for deep conversations.",
+    gender: "female",
   },
   {
     id: "4",
@@ -70,6 +90,7 @@ const users = [
     verified: true,
     interests: ["Fitness", "Cooking", "Yoga"],
     bio: "Fitness enthusiast and foodie. Balance is key in life and relationships.",
+    gender: "female",
   },
   {
     id: "5",
@@ -81,6 +102,7 @@ const users = [
     verified: true,
     interests: ["Art", "Nature", "Painting"],
     bio: "Artist and nature lover. Looking for someone to share beautiful moments with.",
+    gender: "female",
   },
   {
     id: "6",
@@ -92,6 +114,7 @@ const users = [
     verified: true,
     interests: ["Fashion", "Brunch", "Movies"],
     bio: "City girl who loves brunch spots and weekend films.",
+    gender: "female",
   },
   {
     id: "7",
@@ -103,6 +126,7 @@ const users = [
     verified: true,
     interests: ["Cycling", "Street Food", "Karaoke"],
     bio: "Weekday hustler, weekend rider. Food trips and karaoke nights are my thing.",
+    gender: "female",
   },
   {
     id: "8",
@@ -114,83 +138,95 @@ const users = [
     verified: true,
     interests: ["Startups", "Coffee", "Podcasts"],
     bio: "Tech and coffee keep me going. Down for cafe hopping and good talks.",
+    gender: "female",
   },
+];
+
+// Male profiles (for filipinas)
+const maleProfiles: Profile[] = [
   {
     id: "9",
-    name: "Erika",
-    age: 26,
-    location: "Parañaque, Philippines",
-    distance: "9 km away",
+    name: "James",
+    age: 28,
+    location: "New York, USA",
+    distance: "12,500 km away",
     image: require("../../assets/girls/ai9.jpg"),
     verified: true,
-    interests: ["Pets", "Beach", "Photography"],
-    bio: "Dog mom who loves beach sunsets and candid photos.",
+    interests: ["Travel", "Business", "Fitness"],
+    bio: "Entrepreneur who loves exploring new cultures. Looking for meaningful connections.",
+    gender: "male",
   },
   {
     id: "10",
-    name: "Faith",
-    age: 23,
-    location: "Iloilo City, Philippines",
-    distance: "460 km away",
+    name: "Michael",
+    age: 32,
+    location: "London, UK",
+    distance: "10,800 km away",
     image: require("../../assets/girls/ai10.jpg"),
     verified: true,
-    interests: ["Baking", "Travel", "Plants"],
-    bio: "Home baker and plant lover. Let’s swap recipes and stories.",
+    interests: ["Photography", "Adventure", "Cooking"],
+    bio: "Adventure seeker and food enthusiast. Let's explore the world together.",
+    gender: "male",
   },
   {
     id: "11",
-    name: "Grace",
-    age: 27,
-    location: "Cagayan de Oro, Philippines",
-    distance: "780 km away",
+    name: "David",
+    age: 30,
+    location: "Sydney, Australia",
+    distance: "6,200 km away",
     image: require("../../assets/girls/ai11.jpg"),
     verified: true,
-    interests: ["Hiking", "Cooking", "Jazz"],
-    bio: "Mountains by day, jazz by night. Looking for good company.",
+    interests: ["Surfing", "Music", "Beach"],
+    bio: "Beach lover and music fan. Looking for someone to share sunny days with.",
+    gender: "male",
   },
   {
     id: "12",
-    name: "Hannah",
-    age: 24,
-    location: "Bacolod, Philippines",
-    distance: "500 km away",
+    name: "Robert",
+    age: 35,
+    location: "Toronto, Canada",
+    distance: "13,000 km away",
     image: require("../../assets/girls/ai12.png"),
     verified: true,
-    interests: ["Volunteering", "Books", "Tea"],
-    bio: "Soft spot for stories and community work. Calm but fun.",
+    interests: ["Technology", "Reading", "Hiking"],
+    bio: "Tech professional who loves the outdoors. Seeking genuine connections.",
+    gender: "male",
   },
   {
     id: "13",
-    name: "Irene",
-    age: 22,
-    location: "Cavite, Philippines",
-    distance: "28 km away",
+    name: "Thomas",
+    age: 29,
+    location: "Berlin, Germany",
+    distance: "10,500 km away",
     image: require("../../assets/girls/ai13.png"),
     verified: true,
-    interests: ["Makeup", "Vlogging", "Fitness"],
-    bio: "Gym sessions and quick vlogs. Let’s keep it real.",
+    interests: ["Art", "Coffee", "Museums"],
+    bio: "Art lover and coffee enthusiast. Let's discover new places together.",
+    gender: "male",
   },
   {
     id: "14",
-    name: "Joy",
-    age: 26,
-    location: "Laguna, Philippines",
-    distance: "35 km away",
+    name: "Christopher",
+    age: 31,
+    location: "Dubai, UAE",
+    distance: "6,800 km away",
     image: require("../../assets/girls/ai14.png"),
     verified: true,
-    interests: ["Travel", "Board Games", "Music"],
-    bio: "Game nights and road trips keep me happy.",
+    interests: ["Business", "Travel", "Luxury"],
+    bio: "Business professional who enjoys the finer things. Looking for a partner.",
+    gender: "male",
   },
   {
     id: "15",
-    name: "Kaye",
-    age: 23,
-    location: "Pampanga, Philippines",
-    distance: "75 km away",
+    name: "Daniel",
+    age: 27,
+    location: "Singapore",
+    distance: "2,400 km away",
     image: require("../../assets/girls/ai15.png"),
     verified: true,
-    interests: ["Cooking", "Photography", "Yoga"],
-    bio: "Cooking with a camera nearby. Into mindful mornings.",
+    interests: ["Finance", "Fitness", "Food"],
+    bio: "Finance professional who loves staying active and trying new restaurants.",
+    gender: "male",
   },
 ];
 
@@ -198,23 +234,72 @@ export default function Home() {
   const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showInfo, setShowInfo] = useState(false);
+  const [userType, setUserType] = useState<UserType | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const user = users[currentIndex];
+  // Fetch user type on mount
+  useEffect(() => {
+    const fetchUserType = async () => {
+      try {
+        const basicInfo = await accountApi.getBasicInfo();
+        setUserType(basicInfo?.userType ?? null);
+      } catch (error) {
+        console.error("Failed to fetch user type:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserType();
+  }, []);
+
+  // Select profiles based on user type
+  const profiles = getProfilesForUserType(userType);
+  const user = profiles[currentIndex];
 
   const handleLike = () => {
-    setCurrentIndex((prev) => (prev + 1) % users.length);
+    setCurrentIndex((prev) => (prev + 1) % profiles.length);
     setShowInfo(false);
   };
 
   const handlePass = () => {
-    setCurrentIndex((prev) => (prev + 1) % users.length);
+    setCurrentIndex((prev) => (prev + 1) % profiles.length);
     setShowInfo(false);
   };
 
   const handleSuperLike = () => {
-    setCurrentIndex((prev) => (prev + 1) % users.length);
+    setCurrentIndex((prev) => (prev + 1) % profiles.length);
     setShowInfo(false);
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <View style={[styles.root, styles.centerContent]}>
+        <LinearGradient
+          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+          locations={[0, 0.3, 0.7, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        <ActivityIndicator size="large" color={ACCENT_PINK} />
+        <Text style={styles.loadingText}>Loading profiles...</Text>
+      </View>
+    );
+  }
+
+  // No profiles available
+  if (profiles.length === 0) {
+    return (
+      <View style={[styles.root, styles.centerContent]}>
+        <LinearGradient
+          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+          locations={[0, 0.3, 0.7, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        <Text style={styles.emptyText}>No profiles available</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -375,10 +460,52 @@ export default function Home() {
   );
 }
 
+/**
+ * Returns appropriate profiles based on user type
+ * - Foreigners see Filipina profiles
+ * - Filipinas see male (foreigner) profiles
+ * - Default fallback to Filipina profiles
+ */
+function getProfilesForUserType(userType: string | null): Profile[] {
+  if (!userType) {
+    return filipinaProfiles; // Default fallback
+  }
+
+  // Foreigners see Filipina profiles
+  if (userType === "foreigner") {
+    return filipinaProfiles;
+  }
+
+  // Filipinas see male profiles
+  if (userType === "filipina") {
+    return maleProfiles;
+  }
+
+  // Default fallback
+  return filipinaProfiles;
+}
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: BRAND_BG,
+  },
+  centerContent: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "rgba(255,255,255,0.85)",
+    fontFamily: "DMSans-Medium",
+  },
+  emptyText: {
+    fontSize: 18,
+    color: "rgba(255,255,255,0.7)",
+    fontFamily: "DMSans-Medium",
+    textAlign: "center",
+    paddingHorizontal: 40,
   },
 
   // Header

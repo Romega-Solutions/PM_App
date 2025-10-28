@@ -1,8 +1,10 @@
 // app/(tabs)/likes.tsx
+import { accountApi } from "@/src/features/account/api/accountApi";
 import { LinearGradient } from "expo-linear-gradient";
 import { Heart, MapPin, MessageCircle, Sparkles, X } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   Image,
   Platform,
@@ -31,8 +33,20 @@ const CARD_WIDTH = (width - 48) / 2; // 2 columns with padding
 const CARD_HEIGHT = CARD_WIDTH * 1.4;
 const IMAGE_HEIGHT = CARD_WIDTH * 0.85;
 
-// Match data - updated to use all 15 AI images
-const matches = [
+// Match type
+type Match = {
+  id: number;
+  name: string;
+  age: number;
+  image: any;
+  location: string;
+  verified: boolean;
+  mutual: boolean;
+  gender: "female" | "male";
+};
+
+// Filipina matches (for foreigners to see)
+const filipinaMatches: Match[] = [
   {
     id: 1,
     name: "Maria",
@@ -41,6 +55,7 @@ const matches = [
     location: "Manila",
     verified: true,
     mutual: true,
+    gender: "female",
   },
   {
     id: 2,
@@ -50,6 +65,7 @@ const matches = [
     location: "Cebu City",
     verified: true,
     mutual: false,
+    gender: "female",
   },
   {
     id: 3,
@@ -59,6 +75,7 @@ const matches = [
     location: "Davao",
     verified: false,
     mutual: true,
+    gender: "female",
   },
   {
     id: 4,
@@ -68,6 +85,7 @@ const matches = [
     location: "Quezon City",
     verified: true,
     mutual: false,
+    gender: "female",
   },
   {
     id: 5,
@@ -77,6 +95,7 @@ const matches = [
     location: "Baguio",
     verified: true,
     mutual: true,
+    gender: "female",
   },
   {
     id: 6,
@@ -86,6 +105,7 @@ const matches = [
     location: "Makati",
     verified: true,
     mutual: false,
+    gender: "female",
   },
   {
     id: 7,
@@ -95,6 +115,7 @@ const matches = [
     location: "Pasig",
     verified: true,
     mutual: true,
+    gender: "female",
   },
   {
     id: 8,
@@ -104,74 +125,86 @@ const matches = [
     location: "Taguig",
     verified: true,
     mutual: false,
+    gender: "female",
   },
+];
+
+// Male matches (for filipinas to see)
+const maleMatches: Match[] = [
   {
     id: 9,
-    name: "Erika",
-    age: 26,
+    name: "James",
+    age: 28,
     image: require("../../assets/girls/ai9.jpg"),
-    location: "Parañaque",
+    location: "New York, USA",
     verified: true,
     mutual: true,
+    gender: "male",
   },
   {
     id: 10,
-    name: "Faith",
-    age: 23,
+    name: "Michael",
+    age: 32,
     image: require("../../assets/girls/ai10.jpg"),
-    location: "Iloilo City",
+    location: "London, UK",
     verified: true,
     mutual: false,
+    gender: "male",
   },
   {
     id: 11,
-    name: "Grace",
-    age: 27,
+    name: "David",
+    age: 30,
     image: require("../../assets/girls/ai11.jpg"),
-    location: "Cagayan de Oro",
+    location: "Sydney, Australia",
     verified: true,
     mutual: true,
+    gender: "male",
   },
   {
     id: 12,
-    name: "Hannah",
-    age: 24,
+    name: "Robert",
+    age: 35,
     image: require("../../assets/girls/ai12.png"),
-    location: "Bacolod",
+    location: "Toronto, Canada",
     verified: true,
     mutual: false,
+    gender: "male",
   },
   {
     id: 13,
-    name: "Irene",
-    age: 22,
+    name: "Thomas",
+    age: 29,
     image: require("../../assets/girls/ai13.png"),
-    location: "Cavite",
+    location: "Berlin, Germany",
     verified: true,
     mutual: true,
+    gender: "male",
   },
   {
     id: 14,
-    name: "Joy",
-    age: 26,
+    name: "Christopher",
+    age: 31,
     image: require("../../assets/girls/ai14.png"),
-    location: "Laguna",
+    location: "Dubai, UAE",
     verified: true,
     mutual: false,
+    gender: "male",
   },
   {
     id: 15,
-    name: "Kaye",
-    age: 23,
+    name: "Daniel",
+    age: 27,
     image: require("../../assets/girls/ai15.png"),
-    location: "Pampanga",
+    location: "Singapore",
     verified: true,
     mutual: true,
+    gender: "male",
   },
-] as const;
+];
 
 interface MatchCardProps {
-  match: (typeof matches)[number];
+  match: Match;
   onMessage: () => void;
   onUnmatch: () => void;
 }
@@ -254,17 +287,58 @@ const MatchCard: React.FC<MatchCardProps> = ({
 export default function Likes() {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<"all" | "mutual">("all");
+  const [userType, setUserType] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch user type on mount
+  useEffect(() => {
+    const fetchUserType = async () => {
+      try {
+        const basicInfo = await accountApi.getBasicInfo();
+        setUserType(basicInfo?.userType ?? null);
+      } catch (error) {
+        console.error("Failed to fetch user type:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserType();
+  }, []);
+
+  // Get matches based on user type
+  const matches = getMatchesForUserType(userType);
 
   const filteredMatches =
     filter === "mutual" ? matches.filter((m) => m.mutual) : matches;
 
   const handleMessage = (id: number) => {
     console.log("Message match:", id);
+    // TODO: Navigate to messages screen with this match
   };
 
   const handleUnmatch = (id: number) => {
     console.log("Unmatch:", id);
+    // TODO: Show confirmation dialog and remove match
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <View style={[styles.root, styles.centerContent]}>
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={BRAND_BG}
+          translucent={false}
+        />
+        {Platform.OS === "ios" && (
+          <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+        )}
+        <ActivityIndicator size="large" color={ACCENT_PINK} />
+        <Text style={styles.loadingText}>Loading matches...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -366,10 +440,45 @@ export default function Likes() {
   );
 }
 
+/**
+ * Returns appropriate matches based on user type
+ * - Foreigners see Filipina matches
+ * - Filipinas see male (foreigner) matches
+ * - Default fallback to Filipina matches
+ */
+function getMatchesForUserType(userType: string | null): Match[] {
+  if (!userType) {
+    return filipinaMatches; // Default fallback
+  }
+
+  // Foreigners see Filipina matches
+  if (userType === "foreigner") {
+    return filipinaMatches;
+  }
+
+  // Filipinas see male matches
+  if (userType === "filipina") {
+    return maleMatches;
+  }
+
+  // Default fallback
+  return filipinaMatches;
+}
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: BRAND_BG,
+  },
+  centerContent: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "rgba(255,255,255,0.85)",
+    fontFamily: "DMSans-Medium",
   },
 
   // Header

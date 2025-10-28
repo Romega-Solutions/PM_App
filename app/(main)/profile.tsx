@@ -1,4 +1,6 @@
 // app/(tabs)/profile.tsx
+import { accountApi } from "@/src/features/account/api/accountApi";
+import { UserType } from "@/src/features/auth/api/authApi";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
@@ -13,9 +15,11 @@ import {
   Settings,
   SlidersHorizontal,
   Sparkles,
+  User,
 } from "lucide-react-native";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   Image,
   Platform,
@@ -31,22 +35,66 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const { width, height } = Dimensions.get("window");
 const isSmallDevice = width < 375;
 
-/** Brand tokens from app/(tabs)/index.tsx */
+/** Brand tokens */
 const BRAND_BG = "#0F0814";
 const ACCENT_PURPLE = "#8D69F6";
 const ACCENT_PINK = "#EF3E78";
 const VERIFIED_GREEN = "#10B981";
-const SUPER_LIKE_GOLD = "#F59E0B"; // not used here but kept for parity
+const WARNING_YELLOW = "#F59E0B";
 const WHITE = "#FFFFFF";
 
-/** Derived surfaces and borders used in index.tsx styles */
+/** Derived surfaces and borders */
 const SURFACE_STRONG = "rgba(255, 255, 255, 0.08)";
 const TILE_BORDER = "rgba(168, 85, 247, 0.13)";
 const DANGER_BG = "rgba(239, 62, 120, 0.12)";
 
+type ProfileData = {
+  firstName: string;
+  lastName: string;
+  age: number;
+  userType: UserType;
+  location: string;
+  photoUri: string | null;
+  isVerified: boolean;
+};
+
 export default function Profile() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const [basicInfo, location, verification, photos] = await Promise.all([
+          accountApi.getBasicInfo(),
+          accountApi.getLocation(),
+          accountApi.getVerification(),
+          accountApi.getProfilePhotos(),
+        ]);
+
+        if (basicInfo) {
+          setProfileData({
+            firstName: basicInfo.firstName,
+            lastName: basicInfo.lastName,
+            age: basicInfo.age,
+            userType: basicInfo.userType,
+            location: location?.locationName || "Unknown Location",
+            photoUri: photos.length > 0 ? photos[0] : null,
+            isVerified: verification?.isVerified ?? false,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch profile data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, []);
 
   const profileOptions: { title: string; icon: React.ReactNode }[] = [
     { title: "Edit Profile", icon: <Edit size={22} color={ACCENT_PURPLE} /> },
@@ -64,9 +112,70 @@ export default function Profile() {
   ];
 
   const handleLogout = () => {
-    // TODO: add logout logic
+    // Clear profile data
+    accountApi.clearBasicInfo();
+    accountApi.clearLocation();
+    accountApi.clearPreferences();
+    accountApi.clearVerification();
+
+    // Navigate to welcome screen
     router.replace("/(auth)/welcome");
   };
+
+  const formatUserType = (type: UserType): string => {
+    return type === "filipina" ? "Filipina" : "Foreigner";
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <View style={[styles.root, styles.centerContent]}>
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={BRAND_BG}
+          translucent={false}
+        />
+        {Platform.OS === "ios" && (
+          <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+        )}
+        <LinearGradient
+          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+          locations={[0, 0.3, 0.7, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        <ActivityIndicator size="large" color={ACCENT_PINK} />
+        <Text style={styles.loadingText}>Loading profile...</Text>
+      </View>
+    );
+  }
+
+  // No profile data
+  if (!profileData) {
+    return (
+      <View style={[styles.root, styles.centerContent]}>
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={BRAND_BG}
+          translucent={false}
+        />
+        {Platform.OS === "ios" && (
+          <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+        )}
+        <LinearGradient
+          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+          locations={[0, 0.3, 0.7, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        <Text style={styles.errorText}>Profile not found</Text>
+        <TouchableOpacity
+          style={styles.retryBtn}
+          onPress={() => router.replace("/(auth)/welcome")}
+        >
+          <Text style={styles.retryText}>Go to Sign In</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -79,7 +188,7 @@ export default function Profile() {
         <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
       )}
 
-      {/* Brand gradient background to match index.tsx */}
+      {/* Brand gradient background */}
       <LinearGradient
         colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
         locations={[0, 0.3, 0.7, 1]}
@@ -105,26 +214,49 @@ export default function Profile() {
         {/* Avatar and user info */}
         <View style={styles.profileTop}>
           <View style={styles.avatarWrap}>
-            <Image
-              source={require("../../assets/couple1.png")}
-              style={styles.avatar}
-              resizeMode="cover"
-            />
+            {profileData.photoUri ? (
+              <Image
+                source={{ uri: profileData.photoUri }}
+                style={styles.avatar}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <User size={48} color={ACCENT_PINK} strokeWidth={2} />
+              </View>
+            )}
           </View>
 
-          <Text style={styles.name}>John Doe</Text>
+          <Text style={styles.name}>
+            {profileData.firstName} {profileData.lastName}
+          </Text>
 
-          {/* Location row using lucide icon, no emoji */}
+          {/* Age and User Type */}
+          <View style={styles.infoRow}>
+            <Text style={styles.infoText}>{profileData.age} years old</Text>
+            <View style={styles.infoDot} />
+            <Text style={styles.infoText}>
+              {formatUserType(profileData.userType)}
+            </Text>
+          </View>
+
+          {/* Location row */}
           <View style={styles.locationRow}>
             <MapPin size={16} color={ACCENT_PINK} strokeWidth={2.5} />
-            <Text style={styles.locationText}>New York, USA</Text>
+            <Text style={styles.locationText}>{profileData.location}</Text>
           </View>
 
-          {/* Verified pill to mirror index.tsx verified badge */}
-          <View style={styles.verifiedPill}>
-            <Sparkles size={12} color={WHITE} strokeWidth={2.5} />
-            <Text style={styles.verifiedText}>VERIFIED</Text>
-          </View>
+          {/* Verification badge */}
+          {profileData.isVerified ? (
+            <View style={styles.verifiedPill}>
+              <Sparkles size={12} color={WHITE} strokeWidth={2.5} />
+              <Text style={styles.verifiedText}>VERIFIED</Text>
+            </View>
+          ) : (
+            <View style={styles.unverifiedPill}>
+              <Text style={styles.unverifiedText}>NOT VERIFIED</Text>
+            </View>
+          )}
         </View>
 
         {/* Options list */}
@@ -163,6 +295,33 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BRAND_BG,
   },
+  centerContent: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "rgba(255,255,255,0.85)",
+    fontFamily: "DMSans-Medium",
+  },
+  errorText: {
+    fontSize: 18,
+    color: "rgba(255,255,255,0.85)",
+    fontFamily: "DMSans-Medium",
+    marginBottom: 16,
+  },
+  retryBtn: {
+    backgroundColor: ACCENT_PINK,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryText: {
+    color: WHITE,
+    fontSize: 16,
+    fontFamily: "DMSans-Bold",
+  },
 
   header: {
     paddingTop: Platform.OS === "ios" ? 16 : 20,
@@ -197,13 +356,21 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 4,
     borderColor: ACCENT_PINK,
-    backgroundColor: WHITE,
+    backgroundColor: "rgba(239, 62, 120, 0.1)",
     marginBottom: 16,
   },
 
   avatar: {
     width: "100%",
     height: "100%",
+  },
+
+  avatarPlaceholder: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(239, 62, 120, 0.15)",
   },
 
   name: {
@@ -214,6 +381,27 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(141, 105, 246, 0.7)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
+    marginBottom: 6,
+  },
+
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+
+  infoText: {
+    color: "rgba(255, 255, 255, 0.85)",
+    fontSize: 14,
+    fontFamily: "DMSans-Medium",
+  },
+
+  infoDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: ACCENT_PURPLE,
   },
 
   locationRow: {
@@ -231,7 +419,7 @@ const styles = StyleSheet.create({
   },
 
   verifiedPill: {
-    marginTop: 10,
+    marginTop: 12,
     backgroundColor: VERIFIED_GREEN,
     borderRadius: 12,
     paddingHorizontal: 12,
@@ -247,6 +435,23 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: "DMSans-Bold",
     color: WHITE,
+    letterSpacing: 1,
+  },
+
+  unverifiedPill: {
+    marginTop: 12,
+    backgroundColor: "rgba(245, 158, 11, 0.2)",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 2,
+    borderColor: WARNING_YELLOW,
+  },
+
+  unverifiedText: {
+    fontSize: 10,
+    fontFamily: "DMSans-Bold",
+    color: WARNING_YELLOW,
     letterSpacing: 1,
   },
 
