@@ -1,15 +1,15 @@
 import AccountProgress from "@/src/components/account/AccountProgress";
 import AgeRangeSlider from "@/src/components/preferences/AgeRangeSlider";
 import DistanceSlider from "@/src/components/preferences/DistanceSlider";
-import GenderPreferenceOption from "@/src/components/preferences/GenderPreferenceOption";
 import PreferenceSection from "@/src/components/preferences/PreferenceSection";
 import RelationshipOption from "@/src/components/preferences/RelationshipOption";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
+import type { UserType } from "@/src/features/auth/api/authApi";
 import { theme } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Calendar, Heart, MapPin } from "lucide-react-native";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Platform,
   ScrollView,
@@ -24,10 +24,24 @@ import { usePreferences } from "../hooks/usePreferences";
 export default function PreferencesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ userType?: string }>();
+
+  // Get userType from params (passed through the flow)
+  const userType = params.userType as UserType;
+
   const { form, setField, isValid, loading, savePreferences } =
     usePreferences();
 
-  const genderOptions = ["Women", "Men", "Everyone"];
+  // Redirect if no userType
+  useEffect(() => {
+    if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
+      console.warn(
+        "⚠️ No valid userType in preferences, redirecting to signin"
+      );
+      router.replace("/(auth)/signin");
+    }
+  }, [userType, router]);
+
   const relationshipOptions = [
     "Long-term relationship",
     "Marriage",
@@ -36,13 +50,24 @@ export default function PreferencesScreen() {
     "Not sure yet",
   ];
 
+  // Auto-derived display text
+  const interestedInText = userType === "filipina" ? "Men" : "Women";
+
   const handleNext = async () => {
     if (!isValid) return;
     const res = await savePreferences();
     if (res?.ok) {
-      router.push("/(auth)/account-setup/verification-upload");
+      router.push({
+        pathname: "/(auth)/account-setup/verification-upload",
+        params: { userType },
+      });
     }
   };
+
+  // Don't render if userType is invalid
+  if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
+    return null;
+  }
 
   return (
     <View style={styles.root}>
@@ -79,18 +104,14 @@ export default function PreferencesScreen() {
         </View>
 
         <View style={styles.form}>
-          <PreferenceSection Icon={Heart} title="I'm interested in">
-            <View style={{ gap: 12 }}>
-              {genderOptions.map((opt) => (
-                <GenderPreferenceOption
-                  key={opt}
-                  option={opt}
-                  selected={form.interestedIn === opt}
-                  onSelect={() => setField("interestedIn", opt)}
-                />
-              ))}
-            </View>
-          </PreferenceSection>
+          {/* Auto-assigned: No need for selection */}
+          <View style={styles.autoAssignedBadge}>
+            <Heart size={18} color={theme.colors.dalisay[400]} />
+            <Text style={styles.autoAssignedText}>
+              Looking for:{" "}
+              <Text style={styles.autoAssignedValue}>{interestedInText}</Text>
+            </Text>
+          </View>
 
           <PreferenceSection
             Icon={Calendar}
@@ -170,6 +191,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   form: { gap: 24 },
+  autoAssignedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "rgba(141,105,246,0.15)",
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "rgba(141,105,246,0.3)",
+  },
+  autoAssignedText: {
+    fontSize: 15,
+    color: "rgba(255,255,255,0.85)",
+    fontFamily: theme.fontFamilies.body.regular,
+  },
+  autoAssignedValue: {
+    fontFamily: theme.fontFamilies.body.semiBold,
+    color: theme.colors.dalisay[400],
+  },
   footer: {
     paddingHorizontal: theme.spacing.lg ?? 24,
     paddingTop: theme.spacing.md ?? 16,

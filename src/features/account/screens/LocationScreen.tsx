@@ -1,12 +1,14 @@
+import AccountProgress from "@/src/components/account/AccountProgress";
 import CustomTextInput from "@/src/components/forms/CustomTextInput";
 import LocationItem from "@/src/components/location/LocationItem";
 import LocationsList from "@/src/components/location/LocationsList";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
+import type { UserType } from "@/src/features/auth/api/authApi";
 import { theme } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { MapPin, Search } from "lucide-react-native";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -24,11 +26,24 @@ import { useLocationSearch } from "../hooks/useLocationSearch";
 export default function LocationScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ userType?: string }>();
+
+  // Get userType from params
+  const userType = params.userType as UserType;
+
   const { query, setQuery, filtered, hasQuery } = useLocationSearch();
 
   const [selectedLocation, setSelectedLocation] = useState<string>("");
   const [useCurrentLocation, setUseCurrentLocation] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Redirect if no userType
+  useEffect(() => {
+    if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
+      console.warn("⚠️ No valid userType in location, redirecting to signin");
+      router.replace("/(auth)/signin");
+    }
+  }, [userType, router]);
 
   const handleUseCurrentLocation = useCallback(() => {
     setUseCurrentLocation(true);
@@ -44,7 +59,7 @@ export default function LocationScreen() {
     (loc: string) => {
       setUseCurrentLocation(false);
       setSelectedLocation(loc);
-      setQuery(""); // clear search after selection
+      setQuery("");
     },
     [setQuery]
   );
@@ -62,7 +77,10 @@ export default function LocationScreen() {
         timestamp: new Date().toISOString(),
       };
       await accountApi.saveLocation(payload);
-      router.push("/(auth)/account-setup/preferences");
+      router.push({
+        pathname: "/(auth)/account-setup/preferences",
+        params: { userType },
+      });
     } catch (err) {
       Alert.alert(
         "Save failed",
@@ -71,7 +89,12 @@ export default function LocationScreen() {
     } finally {
       setSaving(false);
     }
-  }, [selectedLocation, useCurrentLocation, router]);
+  }, [selectedLocation, useCurrentLocation, router, userType]);
+
+  // Don't render if userType is invalid
+  if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
+    return null;
+  }
 
   return (
     <View style={styles.root}>
@@ -103,8 +126,10 @@ export default function LocationScreen() {
             { paddingBottom: Math.max(insets.bottom + 24, 40) },
           ]}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
+            <AccountProgress steps={5} activeIndex={2} />
             <Text style={styles.title}>Where are you located?</Text>
             <Text style={styles.subtitle}>
               This helps us find matches near you
@@ -112,7 +137,6 @@ export default function LocationScreen() {
           </View>
 
           <View style={styles.form}>
-            {/* Current Location Option */}
             <LocationItem
               label="Use Current Location"
               isCurrent
@@ -126,7 +150,6 @@ export default function LocationScreen() {
               <View style={styles.dividerLine} />
             </View>
 
-            {/* Search Input */}
             <CustomTextInput
               label="Search Location"
               value={query}
@@ -137,7 +160,6 @@ export default function LocationScreen() {
               autoComplete="off"
             />
 
-            {/* Results or Empty State */}
             <View style={{ marginTop: 10 }}>
               {hasQuery ? (
                 <LocationsList
@@ -161,7 +183,6 @@ export default function LocationScreen() {
               )}
             </View>
 
-            {/* Selected Location Display */}
             {selectedLocation && !useCurrentLocation && (
               <View style={styles.selectedBox}>
                 <MapPin size={18} color="#EF3E78" />
@@ -200,19 +221,20 @@ const styles = StyleSheet.create({
         ? (theme.spacing.xl ?? 32)
         : (theme.spacing.lg ?? 24),
   },
-  header: { alignItems: "center", marginBottom: 18 },
+  header: { alignItems: "center", marginBottom: 24 },
   title: {
-    fontSize: Math.min(32, 28),
+    fontSize: 28,
     color: "#FFF",
     textAlign: "center",
-    marginBottom: 6,
+    marginTop: 12,
+    marginBottom: 8,
     fontFamily: theme.fontFamilies.header?.semiBold ?? "System",
   },
   subtitle: {
+    fontSize: 15,
     color: "rgba(255,255,255,0.85)",
     textAlign: "center",
-    paddingHorizontal: 8,
-    fontSize: 15,
+    paddingHorizontal: 20,
   },
   form: { gap: 12 },
   dividerRow: { flexDirection: "row", alignItems: "center", marginVertical: 8 },
@@ -264,7 +286,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: theme.spacing.lg ?? 24,
-    paddingTop: theme.spacing.sm ?? 12,
+    paddingTop: theme.spacing.md ?? 16,
     backgroundColor: "rgba(15,8,20,0.95)",
   },
 });

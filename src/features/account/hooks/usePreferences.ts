@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { accountApi, PreferencesPayload } from "../api/accountApi";
+import { accountApi } from "../api/accountApi";
 
 export type PreferencesForm = {
-  interestedIn: string;
   ageMin: number;
   ageMax: number;
   maxDistanceKm: number;
@@ -11,7 +10,6 @@ export type PreferencesForm = {
 
 export const usePreferences = () => {
   const [form, setForm] = useState<PreferencesForm>({
-    interestedIn: "",
     ageMin: 22,
     ageMax: 35,
     maxDistanceKm: 50,
@@ -27,22 +25,30 @@ export const usePreferences = () => {
     []
   );
 
-  const isValid = () => {
-    return form.interestedIn !== "" && form.relationshipGoal !== "";
-  };
+  // Return as a computed value, not a function
+  const isValid = form.relationshipGoal !== "";
 
   const savePreferences = useCallback(async () => {
     setLoading(true);
     try {
-      const payload: PreferencesPayload = {
-        interestedIn: form.interestedIn.toLowerCase(),
+      // Get userType from basicInfo
+      const basicInfo = await accountApi.getBasicInfo();
+      if (!basicInfo?.userType) {
+        throw new Error(
+          "User type not found. Please complete basic info first."
+        );
+      }
+
+      const payload = {
         ageMin: form.ageMin,
         ageMax: form.ageMax,
         maxDistanceKm: form.maxDistanceKm,
         relationshipGoal: form.relationshipGoal
           .toLowerCase()
           .replace(/\s+/g, "_"),
+        userType: basicInfo.userType,
       };
+
       const res = await accountApi.savePreferences(payload);
       return res;
     } finally {
@@ -56,7 +62,6 @@ export const usePreferences = () => {
       const existing = await accountApi.getPreferences();
       if (existing) {
         setForm({
-          interestedIn: existing.interestedIn ?? "",
           ageMin: existing.ageMin ?? 22,
           ageMax: existing.ageMax ?? 35,
           maxDistanceKm: existing.maxDistanceKm ?? 50,
@@ -75,7 +80,7 @@ export const usePreferences = () => {
   return {
     form,
     setField,
-    isValid: isValid(),
+    isValid, // This is now a boolean, not a function
     loading,
     loadingInitial,
     savePreferences,

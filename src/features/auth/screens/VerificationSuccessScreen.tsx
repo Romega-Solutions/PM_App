@@ -2,13 +2,22 @@ import VerificationSuccessActions from "@/src/components/auth/VerificationSucces
 import VerificationSuccessHeader from "@/src/components/auth/VerificationSuccessHeader";
 import { useFonts } from "expo-font";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect } from "react";
 import { ActivityIndicator, Platform, StatusBar, View } from "react-native";
 import { useVerificationAdvance } from "../hooks/useVerificationAdvance";
 
 export default function VerificationSuccessScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    userType?: string;
+    firstName?: string;
+  }>();
+
+  // Extract params
+  const userType = params.userType;
+  const firstName = params.firstName;
+
   const { countdown, start, immediateAdvance, stop } =
     useVerificationAdvance(3000);
 
@@ -19,8 +28,18 @@ export default function VerificationSuccessScreen() {
   });
 
   const goNext = useCallback(() => {
-    router.replace("/(auth)/account-setup/basic-info");
-  }, [router]);
+    console.log("✅ Verification complete, navigating to basic info...");
+    console.log("📦 Passing params:", { userType, firstName });
+
+    // CRITICAL: Pass userType and firstName to basic info
+    router.replace({
+      pathname: "/(auth)/account-setup/basic-info",
+      params: {
+        userType: userType || "",
+        firstName: firstName || "",
+      },
+    });
+  }, [router, userType, firstName]);
 
   useEffect(() => {
     start(goNext);

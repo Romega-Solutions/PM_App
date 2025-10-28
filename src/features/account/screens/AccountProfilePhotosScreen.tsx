@@ -1,9 +1,11 @@
+import AccountProgress from "@/src/components/account/AccountProgress";
 import PhotoPicker from "@/src/components/account/PhotoPicker";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
+import type { UserType } from "@/src/features/auth/api/authApi";
 import { theme } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import React, { useCallback } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect } from "react";
 import {
   Platform,
   ScrollView,
@@ -18,6 +20,11 @@ import { useProfilePhotos } from "../hooks/useProfilePhotos";
 export default function AccountProfilePhotosScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const params = useLocalSearchParams<{ userType?: string }>();
+
+  // Get userType from params
+  const userType = params.userType as UserType;
+
   const {
     photos,
     loading,
@@ -28,8 +35,17 @@ export default function AccountProfilePhotosScreen() {
     removePhoto,
   } = useProfilePhotos();
 
+  // Redirect if no userType
+  useEffect(() => {
+    if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
+      console.warn(
+        "⚠️ No valid userType in profile photos, redirecting to signin"
+      );
+      router.replace("/(auth)/signin");
+    }
+  }, [userType, router]);
+
   const onAdd = useCallback(async () => {
-    // show gallery first; you can prompt user to choose camera/gallery UI in future
     const uri = await pickFromGallery();
     if (uri) await uploadPhoto(uri);
   }, [pickFromGallery, uploadPhoto]);
@@ -43,34 +59,52 @@ export default function AccountProfilePhotosScreen() {
 
   const handleNext = async () => {
     if (photos.length === 0) return;
-    // continue to next setup step
-    router.push("/(auth)/account-setup/location");
+    router.push({
+      pathname: "/(auth)/account-setup/location",
+      params: { userType },
+    });
   };
+
+  // Don't render if userType is invalid
+  if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
+    return null;
+  }
 
   return (
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={theme.colors.dalisay[950]}
+        backgroundColor={theme.colors.dalisay[950] ?? "#0F0814"}
       />
+      {Platform.OS === "ios" && (
+        <View
+          style={{
+            height: insets.top,
+            backgroundColor: theme.colors.dalisay[950] ?? "#0F0814",
+          }}
+        />
+      )}
+
       <LinearGradient
-        colors={[theme.colors.dalisay[950], "#1A0F1F"]}
+        colors={[theme.colors.dalisay[950] ?? "#0F0814", "#1A0F1F"]}
         style={StyleSheet.absoluteFill}
       />
 
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: Math.max(insets.bottom + 20, 32) },
+          { paddingBottom: Math.max(insets.bottom + 24, 40) },
         ]}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Add your photo</Text>
-        <Text style={styles.subtitle}>
-          Upload at least one clear and recent photo
-        </Text>
-
-        <View style={{ height: 12 }} />
+        <View style={styles.header}>
+          <AccountProgress steps={5} activeIndex={1} />
+          <Text style={styles.title}>Add your photos</Text>
+          <Text style={styles.subtitle}>
+            Upload at least one clear and recent photo of yourself
+          </Text>
+        </View>
 
         <PhotoPicker
           photos={photos}
@@ -79,16 +113,15 @@ export default function AccountProfilePhotosScreen() {
           canAdd={!loading && photos.length < 6}
         />
 
-        <View style={{ height: 10 }} />
         <Text style={styles.helper}>
-          Tap a photo to replace or use the Add button
+          Tap a photo to replace it, or use the Add button to upload more
         </Text>
       </ScrollView>
 
       <View
         style={[
           styles.footer,
-          { paddingBottom: Math.max(insets.bottom + 12, 20) },
+          { paddingBottom: Math.max(insets.bottom + 16, 32) },
         ]}
       >
         <PrimaryButton
@@ -103,28 +136,39 @@ export default function AccountProfilePhotosScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.dalisay[950] },
+  root: { flex: 1, backgroundColor: theme.colors.dalisay[950] ?? "#0F0814" },
   content: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: Platform.OS === "ios" ? theme.spacing.xl : theme.spacing.lg,
+    paddingHorizontal: theme.spacing.lg ?? 24,
+    paddingTop:
+      Platform.OS === "ios"
+        ? (theme.spacing.xl ?? 32)
+        : (theme.spacing.lg ?? 24),
   },
+  header: { alignItems: "center", marginBottom: 24 },
   title: {
-    fontSize: 22,
+    fontSize: 28,
     color: theme.colors.neutral.white,
-    fontFamily: theme.fontFamilies.header.semiBold,
     textAlign: "center",
-    marginBottom: 6,
+    marginTop: 12,
+    marginBottom: 8,
+    fontFamily: theme.fontFamilies.header.semiBold,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: "rgba(255,255,255,0.85)",
     textAlign: "center",
-    marginBottom: 10,
+    paddingHorizontal: 20,
   },
-  helper: { color: "rgba(255,255,255,0.6)", textAlign: "center", fontSize: 13 },
+  helper: {
+    color: "rgba(255,255,255,0.6)",
+    textAlign: "center",
+    fontSize: 13,
+    marginTop: 16,
+    paddingHorizontal: 20,
+  },
   footer: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg ?? 24,
+    paddingTop: theme.spacing.md ?? 16,
     backgroundColor: "rgba(15,8,20,0.95)",
   },
 });

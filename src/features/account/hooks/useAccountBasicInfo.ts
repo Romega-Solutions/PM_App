@@ -1,106 +1,121 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { accountApi, BasicInfoPayload } from "../api/accountApi";
+import { accountApi } from "@/src/features/account/api/accountApi";
+import type { UserType } from "@/src/features/auth/api/authApi";
+import { useState } from "react";
 
-export type BasicInfoForm = {
+type FormState = {
   firstName: string;
   lastName: string;
   age: string;
-  gender: string;
+  userType: UserType;
 };
 
-export const useAccountBasicInfo = (initial?: Partial<BasicInfoForm>) => {
-  const [form, setForm] = useState<BasicInfoForm>({
-    firstName: initial?.firstName ?? "",
-    lastName: initial?.lastName ?? "",
-    age: initial?.age ?? "",
-    gender: initial?.gender ?? "",
+type FormErrors = {
+  firstName?: string;
+  lastName?: string;
+  age?: string;
+};
+
+type TouchedFields = {
+  firstName: boolean;
+  lastName: boolean;
+  age: boolean;
+};
+
+/**
+ * Hook for managing basic info form state and validation
+ * Gender is no longer part of the form - it's auto-assigned based on userType
+ */
+export function useAccountBasicInfo(initialUserType: UserType) {
+  const [form, setForm] = useState<FormState>({
+    firstName: "",
+    lastName: "",
+    age: "",
+    userType: initialUserType,
   });
 
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [touched, setTouched] = useState<TouchedFields>({
+    firstName: false,
+    lastName: false,
+    age: false,
+  });
+
   const [loading, setLoading] = useState(false);
-  const [loadingInitial, setLoadingInitial] = useState(false);
-  const minAge = 18;
-  const maxAge = 70;
 
-  const setField = useCallback((key: keyof BasicInfoForm, value: string) => {
-    setForm((s) => ({ ...s, [key]: value }));
-  }, []);
+  // Validation
+  const validateField = (
+    field: keyof Omit<FormState, "userType">,
+    value: string
+  ): string | undefined => {
+    switch (field) {
+      case "firstName":
+        if (!value.trim()) return "First name is required";
+        if (value.trim().length < 2)
+          return "First name must be at least 2 characters";
+        return undefined;
 
-  const errors = useMemo(() => {
-    return {
-      firstName:
-        touched.firstName && form.firstName.trim().length < 2
-          ? "Enter your first name (min 2 chars)"
-          : "",
-      lastName:
-        touched.lastName && form.lastName.trim().length < 2
-          ? "Enter your last name (min 2 chars)"
-          : "",
-      age:
-        touched.age &&
-        (form.age === "" ||
-          isNaN(Number(form.age)) ||
-          Number(form.age) < minAge ||
-          Number(form.age) > maxAge)
-          ? `Enter a valid age (${minAge}-${maxAge})`
-          : "",
-      gender: touched.gender && !form.gender ? "Select your gender" : "",
-    };
-  }, [form, touched]);
+      case "lastName":
+        if (!value.trim()) return "Last name is required";
+        if (value.trim().length < 2)
+          return "Last name must be at least 2 characters";
+        return undefined;
 
-  const isValid = useMemo(() => {
-    const ageNum = parseInt(form.age || "", 10);
-    return (
-      form.firstName.trim().length >= 2 &&
-      form.lastName.trim().length >= 2 &&
-      !Number.isNaN(ageNum) &&
-      ageNum >= minAge &&
-      ageNum <= maxAge &&
-      form.gender !== ""
-    );
-  }, [form]);
+      case "age":
+        if (!value.trim()) return "Age is required";
+        const ageNum = parseInt(value, 10);
+        if (isNaN(ageNum)) return "Please enter a valid age";
+        if (ageNum < 18) return "You must be at least 18 years old";
+        if (ageNum > 70) return "Age must be 70 or younger";
+        return undefined;
 
-  const saveBasicInfo = useCallback(async () => {
+      default:
+        return undefined;
+    }
+  };
+
+  const errors: FormErrors = {
+    firstName: touched.firstName
+      ? validateField("firstName", form.firstName)
+      : undefined,
+    lastName: touched.lastName
+      ? validateField("lastName", form.lastName)
+      : undefined,
+    age: touched.age ? validateField("age", form.age) : undefined,
+  };
+
+  const isValid =
+    !errors.firstName &&
+    !errors.lastName &&
+    !errors.age &&
+    form.firstName.trim() !== "" &&
+    form.lastName.trim() !== "" &&
+    form.age.trim() !== "";
+
+  const setField = (
+    field: keyof Omit<FormState, "userType">,
+    value: string
+  ) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const saveBasicInfo = async () => {
     setLoading(true);
     try {
-      const payload: BasicInfoPayload = {
+      const result = await accountApi.saveBasicInfo({
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
-        age: Number(form.age),
-        gender: form.gender,
-      };
+        age: parseInt(form.age, 10),
+        userType: form.userType, // Gender auto-assigned in API
+      });
 
-      const res = await accountApi.saveBasicInfo(payload);
-      return res; // { ok: true, data }
-    } catch (err) {
-      // bubble up error for UI to handle
-      throw err;
+      console.log("✅ Basic info saved with auto-assigned gender");
+      return result;
+    } catch (error) {
+      console.error("❌ Failed to save basic info:", error);
+      throw error;
     } finally {
       setLoading(false);
     }
-  }, [form]);
-
-  const loadExisting = useCallback(async () => {
-    setLoadingInitial(true);
-    try {
-      const existing = await accountApi.getBasicInfo();
-      if (existing) {
-        setForm({
-          firstName: existing.firstName ?? "",
-          lastName: existing.lastName ?? "",
-          age: String(existing.age ?? ""),
-          gender: existing.gender ?? "",
-        });
-      }
-    } finally {
-      setLoadingInitial(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    // load saved basic info when hook mounts (non-blocking)
-    loadExisting();
-  }, [loadExisting]);
+  };
 
   return {
     form,
@@ -110,7 +125,6 @@ export const useAccountBasicInfo = (initial?: Partial<BasicInfoForm>) => {
     errors,
     isValid,
     loading,
-    loadingInitial,
     saveBasicInfo,
-  } as const;
-};
+  };
+}

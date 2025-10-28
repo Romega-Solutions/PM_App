@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Sparkles,
   User,
+  Users, // Add this icon for user type
 } from "lucide-react-native";
 import React from "react";
 import {
@@ -39,8 +40,15 @@ const SURFACE = "rgba(255,255,255,0.12)";
 export default function WelcomeCompleteScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { basicInfo, location, preferences, verification, photos, loading } =
-    useWelcomeData();
+  const {
+    basicInfo,
+    location,
+    preferences,
+    verification,
+    photos,
+    userType,
+    loading,
+  } = useWelcomeData();
 
   const handleStartDating = () => {
     router.replace("/(main)");
@@ -77,6 +85,16 @@ export default function WelcomeCompleteScreen() {
   const distance = preferences?.maxDistanceKm ?? 50;
   const isVerified = verification?.isVerified ?? false;
   const photoCount = photos.length;
+
+  // Format user type for display
+  const formatUserType = (type: string | null) => {
+    if (!type) return "Not specified";
+    return type
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+  const displayUserType = formatUserType(userType);
 
   return (
     <View style={styles.root}>
@@ -176,6 +194,14 @@ export default function WelcomeCompleteScreen() {
                 <MapPin size={18} color={ACCENT_PINK} strokeWidth={2.5} />
               </View>
               <Text style={styles.detailText}>{locationName}</Text>
+            </View>
+
+            {/* User Type Detail */}
+            <View style={styles.detailItem}>
+              <View style={styles.detailIconBox}>
+                <Users size={18} color={ACCENT_PINK} strokeWidth={2.5} />
+              </View>
+              <Text style={styles.detailText}>{displayUserType}</Text>
             </View>
 
             <View style={styles.detailItem}>

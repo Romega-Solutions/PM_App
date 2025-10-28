@@ -1,20 +1,44 @@
-// ...existing code...
+import { UserType } from "../../auth/api/authApi";
+
+// Updated to include userType
 export type BasicInfoPayload = {
   firstName: string;
   lastName: string;
   age: number;
-  gender: string;
+  gender: string; // Auto-derived from userType
+  userType: UserType; // NEW: Store user type with profile
   createdAt?: string;
 };
 
 let basicInfoStore: BasicInfoPayload | null = null;
 
+/**
+ * Auto-derive gender from userType
+ */
+function getGenderFromUserType(userType: UserType): string {
+  return userType === "filipina" ? "female" : "male";
+}
+
 export async function saveBasicInfo(
-  payload: BasicInfoPayload
+  payload: Omit<BasicInfoPayload, "gender"> & { userType: UserType }
 ): Promise<{ ok: true; data: BasicInfoPayload }> {
   await new Promise((r) => setTimeout(r, 700));
-  const record = { ...payload, createdAt: new Date().toISOString() };
+
+  // Auto-assign gender based on userType
+  const gender = getGenderFromUserType(payload.userType);
+
+  const record: BasicInfoPayload = {
+    ...payload,
+    gender, // Automatically set
+    createdAt: new Date().toISOString(),
+  };
+
   basicInfoStore = record;
+  console.log("✅ Saved basic info with auto-assigned gender:", {
+    userType: payload.userType,
+    gender,
+  });
+
   return { ok: true, data: record };
 }
 
@@ -153,25 +177,49 @@ export async function clearVerification(): Promise<void> {
   verificationStore = null;
 }
 
-/* ----------------- NEW: preferences ----------------- */
+/* ----------------- preferences ----------------- */
+
+/**
+ * Auto-derive "interested in" gender from userType
+ * Filipina accounts are interested in Men
+ * Foreign Man accounts are interested in Women
+ */
+function getInterestedInFromUserType(userType: UserType): string {
+  return userType === "filipina" ? "Men" : "Women";
+}
 
 export type PreferencesPayload = {
-  interestedIn: string; // "women" | "men" | "everyone"
+  interestedIn: string; // Auto-derived: "Women" for foreign men, "Men" for filipinas
   ageMin: number;
   ageMax: number;
   maxDistanceKm: number;
   relationshipGoal: string; // "long_term" | "marriage" | "casual" | "friendship" | "not_sure"
+  userType: UserType; // Store to auto-set interestedIn
   createdAt?: string;
 };
 
 let preferencesStore: PreferencesPayload | null = null;
 
 export async function savePreferences(
-  payload: PreferencesPayload
+  payload: Omit<PreferencesPayload, "interestedIn"> & { userType: UserType }
 ): Promise<{ ok: true; data: PreferencesPayload }> {
   await new Promise((r) => setTimeout(r, 500));
-  const record = { ...payload, createdAt: new Date().toISOString() };
+
+  // Auto-assign "interested in" based on userType
+  const interestedIn = getInterestedInFromUserType(payload.userType);
+
+  const record: PreferencesPayload = {
+    ...payload,
+    interestedIn, // Automatically set
+    createdAt: new Date().toISOString(),
+  };
+
   preferencesStore = record;
+  console.log("✅ Saved preferences with auto-assigned interestedIn:", {
+    userType: payload.userType,
+    interestedIn,
+  });
+
   return { ok: true, data: record };
 }
 
@@ -200,7 +248,6 @@ export const accountApi = {
   getVerification,
   clearVerification,
   compareVerificationData,
-  // new
   savePreferences,
   getPreferences,
   clearPreferences,

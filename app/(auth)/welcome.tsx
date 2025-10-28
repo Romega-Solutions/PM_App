@@ -20,9 +20,9 @@ const { width } = Dimensions.get("window");
 const BRAND_BG = "#0F0814"; // deep aubergine
 const OVERLAY = [
   "rgba(141,105,246,0.10)", // soft purple haze
-  "rgba(239,62,120,0.15)",  // subtle pink tint
-  "rgba(15,8,20,0.85)",     // dark base blend
-  "rgba(15,8,20,0.98)",     // near-opaque base
+  "rgba(239,62,120,0.15)", // subtle pink tint
+  "rgba(15,8,20,0.85)", // dark base blend
+  "rgba(15,8,20,0.98)", // near-opaque base
 ];
 
 export default function Welcome() {
@@ -31,7 +31,11 @@ export default function Welcome() {
 
   return (
     <View style={{ flex: 1, backgroundColor: BRAND_BG }}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+      />
 
       {/* Background */}
       <View style={StyleSheet.absoluteFill}>
@@ -78,11 +82,14 @@ export default function Welcome() {
 
           {/* Messaging */}
           <View style={styles.heroTextWrap} accessible>
-            <Text style={[styles.heroHeading, { fontFamily: "HelloParis-Bold" }]}>
+            <Text
+              style={[styles.heroHeading, { fontFamily: "HelloParis-Bold" }]}
+            >
               Find Love in the{"\n"}Filipino Community
             </Text>
             <Text style={[styles.subtitle, { fontFamily: "Lora-Regular" }]}>
-              Connect with verified Filipino singles{"\n"}worldwide. Start meaningful relationships today.
+              Connect with verified Filipino singles{"\n"}worldwide. Start
+              meaningful relationships today.
             </Text>
           </View>
         </View>
@@ -91,7 +98,7 @@ export default function Welcome() {
         <View style={{ gap: 14 }}>
           <PrimaryButton
             title="Create Account"
-            onPress={() => router.push("/(auth)/signup")}
+            onPress={() => router.push("/(auth)/user-type-selection")}
             accessibilityLabel="Create Account"
             accessibilityHint="Sign up to start finding matches"
           />
@@ -106,7 +113,8 @@ export default function Welcome() {
             style={[styles.legal, { fontFamily: "DMSans-Regular" }]}
             accessible
           >
-            By continuing, you agree to our Terms of Service{"\n"}and Privacy Policy
+            By continuing, you agree to our Terms of Service{"\n"}and Privacy
+            Policy
           </Text>
         </View>
       </View>

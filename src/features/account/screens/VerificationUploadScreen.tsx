@@ -1,12 +1,14 @@
+import AccountProgress from "@/src/components/account/AccountProgress";
 import VerificationProcessingCard from "@/src/components/account/VerificationProcessingCard";
 import VerificationStep from "@/src/components/account/VerificationStep";
 import GhostButton from "@/src/components/ui/GhostButton";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
+import type { UserType } from "@/src/features/auth/api/authApi";
 import { theme } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Camera, FileText, Shield } from "lucide-react-native";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Alert,
   Platform,
@@ -22,6 +24,11 @@ import { useVerificationUpload } from "../hooks/useVerificationUpload";
 export default function VerificationUploadScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ userType?: string }>();
+
+  // Get userType from params
+  const userType = params.userType as UserType;
+
   const {
     selfieUri,
     documentUri,
@@ -34,9 +41,22 @@ export default function VerificationUploadScreen() {
     isVerified,
   } = useVerificationUpload();
 
+  // Redirect if no userType
+  useEffect(() => {
+    if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
+      console.warn(
+        "⚠️ No valid userType in verification, redirecting to signin"
+      );
+      router.replace("/(auth)/signin");
+    }
+  }, [userType, router]);
+
   const handleNext = () => {
     if (isVerified) {
-      router.push("/(auth)/account-setup/welcome-complete");
+      router.push({
+        pathname: "/(auth)/account-setup/welcome-complete",
+        params: { userType },
+      });
     }
   };
 
@@ -47,12 +67,21 @@ export default function VerificationUploadScreen() {
       [
         {
           text: "Skip for now",
-          onPress: () => router.push("/(auth)/account-setup/welcome-complete"),
+          onPress: () =>
+            router.push({
+              pathname: "/(auth)/account-setup/welcome-complete",
+              params: { userType },
+            }),
         },
         { text: "Continue setup", style: "cancel" },
       ]
     );
   };
+
+  // Don't render if userType is invalid
+  if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
+    return null;
+  }
 
   return (
     <View style={styles.root}>
@@ -80,9 +109,11 @@ export default function VerificationUploadScreen() {
           { paddingBottom: Math.max(insets.bottom + 24, 40) },
         ]}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Shield size={28} color="#EF3E78" />
+          <AccountProgress steps={5} activeIndex={4} />
+          <Shield size={28} color="#EF3E78" style={{ marginTop: 12 }} />
           <Text style={styles.title}>Verify your identity</Text>
           <Text style={styles.subtitle}>
             Help keep the community safe. Verified accounts gain more trust.
@@ -206,7 +237,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: theme.spacing.md ?? 16,
     backgroundColor: "rgba(15,8,20,0.95)",
   },
 });

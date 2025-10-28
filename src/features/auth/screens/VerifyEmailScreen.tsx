@@ -14,7 +14,16 @@ import {
 
 export default function VerifyEmailScreen() {
   const router = useRouter();
-  const { email } = useLocalSearchParams<{ email?: string }>();
+
+  // ✅ Receive ALL params from signup
+  const params = useLocalSearchParams<{
+    email?: string;
+    firstName?: string;
+    userType?: string;
+  }>();
+
+  const { email, firstName, userType } = params;
+
   const [countdown, setCountdown] = useState(6);
   const didNavigate = useRef(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -37,8 +46,21 @@ export default function VerifyEmailScreen() {
     if (didNavigate.current) return;
     didNavigate.current = true;
     clearTicker();
-    router.replace("/(auth)/verification-success");
-  }, [clearTicker, router]);
+
+    // ✅ Pass firstName and userType to verification success
+    console.log("📧 Navigating to verification success with params:", {
+      firstName,
+      userType,
+    });
+
+    router.replace({
+      pathname: "/(auth)/verification-success",
+      params: {
+        firstName: firstName || "",
+        userType: userType || "",
+      },
+    });
+  }, [clearTicker, router, firstName, userType]);
 
   useEffect(() => {
     // start countdown

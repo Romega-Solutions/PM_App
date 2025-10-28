@@ -1,14 +1,15 @@
-// ...existing code...
 import AccountHeader from "@/src/components/account/AccountHeader";
 import AccountProgress from "@/src/components/account/AccountProgress";
-import GenderOption from "@/src/components/account/GenderOption";
 import CustomTextInput from "@/src/components/forms/CustomTextInput";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
+import { accountApi } from "@/src/features/account/api/accountApi";
+import type { UserType } from "@/src/features/auth/api/authApi";
 import { theme } from "@/src/theme";
-import { useRouter } from "expo-router";
-import { Calendar, User } from "lucide-react-native";
-import React from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Calendar, Heart, User } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -18,40 +19,171 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAccountBasicInfo } from "../hooks/useAccountBasicInfo";
-// ...existing code...
+
+type FormState = {
+  firstName: string;
+  lastName: string;
+  age: string;
+};
+
+type FormErrors = Partial<Record<keyof FormState, string>>;
 
 export default function AccountBasicInfoScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const {
-    form,
-    setField,
-    touched,
-    setTouched,
-    errors,
-    isValid,
-    loading,
-    saveBasicInfo,
-  } = useAccountBasicInfo();
+  const params = useLocalSearchParams<{
+    userType?: string;
+    firstName?: string;
+  }>();
 
-  // use explicit label/value pairs
-  const genderOptions = [
-    { label: "Female", value: "female" },
-    { label: "Male", value: "male" },
-    { label: "Prefer not to say", value: "prefer_not_to_say" },
-  ];
+  const [form, setForm] = useState<FormState>({
+    firstName: params.firstName || "",
+    lastName: "",
+    age: "",
+  });
 
-  const handleNext = async () => {
-    setTouched({ firstName: true, lastName: true, age: true, gender: true });
-    if (!isValid) return;
-    const res = await saveBasicInfo();
-    if (res?.ok) {
-      router.push("/(auth)/account-setup/profile-photos");
-    } else {
-      // show error UI / toast as needed
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<Record<keyof FormState, boolean>>({
+    firstName: false,
+    lastName: false,
+    age: false,
+  });
+  const [loading, setLoading] = useState(false);
+
+  // Cast and validate userType
+  const userType = params.userType as UserType;
+
+  // Redirect if no userType
+  useEffect(() => {
+    if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
+      Alert.alert("Error", "User type not found. Please start from signup.");
+      router.replace("/(auth)/user-type-selection");
+    }
+  }, [userType]);
+
+  // Get display labels based on user type
+  const getUserTypeLabel = (): string => {
+    if (userType === "filipina") return "Filipina";
+    if (userType === "foreigner") return "Foreign Man";
+    return "User";
+  };
+
+  const getGenderLabel = (): string => {
+    if (userType === "filipina") return "Female";
+    if (userType === "foreigner") return "Male";
+    return "Not specified";
+  };
+
+  // Validation
+  const validateField = (
+    field: keyof FormState,
+    value: string
+  ): string | undefined => {
+    switch (field) {
+      case "firstName":
+        if (!value.trim()) return "First name is required";
+        if (value.trim().length < 2)
+          return "First name must be at least 2 characters";
+        return undefined;
+
+      case "lastName":
+        if (!value.trim()) return "Last name is required";
+        if (value.trim().length < 2)
+          return "Last name must be at least 2 characters";
+        return undefined;
+
+      case "age":
+        if (!value.trim()) return "Age is required";
+        const ageNum = parseInt(value, 10);
+        if (isNaN(ageNum)) return "Please enter a valid age";
+        if (ageNum < 18) return "You must be at least 18 years old";
+        if (ageNum > 70) return "Age must be 70 or younger";
+        return undefined;
+
+      default:
+        return undefined;
     }
   };
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    (Object.keys(form) as Array<keyof FormState>).forEach((field) => {
+      const error = validateField(field, form[field]);
+      if (error) newErrors[field] = error;
+    });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleFieldChange = (field: keyof FormState, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const handleBlur = (field: keyof FormState) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+
+    // Validate on blur
+    const error = validateField(field, form[field]);
+    if (error) {
+      setErrors((prev) => ({ ...prev, [field]: error }));
+    }
+  };
+
+  const handleNext = async () => {
+    // Mark all fields as touched
+    setTouched({ firstName: true, lastName: true, age: true });
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Save with auto-assigned gender based on userType
+      const result = await accountApi.saveBasicInfo({
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        age: parseInt(form.age, 10),
+        userType: userType, // Gender will be auto-assigned in the API
+      });
+
+      if (result?.ok) {
+        console.log("✅ Basic info saved:", result.data);
+        console.log(`📋 User Type: ${userType}, Gender: ${result.data.gender}`);
+        router.push("/(auth)/account-setup/profile-photos");
+      }
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        error instanceof Error
+          ? error.message
+          : "Failed to save profile information"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isValid =
+    !errors.firstName &&
+    !errors.lastName &&
+    !errors.age &&
+    form.firstName.trim() !== "" &&
+    form.lastName.trim() !== "" &&
+    form.age.trim() !== "";
+
+  // Don't render if userType is invalid
+  if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
+    return null;
+  }
 
   return (
     <View style={styles.root}>
@@ -82,78 +214,70 @@ export default function AccountBasicInfoScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.top}>
-            <AccountProgress steps={5} activeIndex={0} />
-            <AccountHeader />
+            <AccountProgress steps={6} activeIndex={0} />
+            <AccountHeader
+              title={`${getUserTypeLabel()} Account Setup`}
+              subtitle="Tell us a bit about yourself"
+            />
+          </View>
+
+          {/* Info Banner with Gender Info */}
+          <View style={styles.infoBanner}>
+            <Heart size={16} color={theme.colors.amihan[400]} />
+            <Text style={styles.infoBannerText}>
+              Account type:{" "}
+              <Text style={styles.infoBannerBold}>{getUserTypeLabel()}</Text>
+              {"\n"}
+              Gender:{" "}
+              <Text style={styles.infoBannerBold}>{getGenderLabel()}</Text>{" "}
+              (auto-assigned)
+            </Text>
           </View>
 
           <View style={styles.formContainer}>
             <CustomTextInput
               label="First Name"
               value={form.firstName}
-              onChangeText={(t) => setField("firstName", t)}
-              onBlur={() => setTouched((s) => ({ ...s, firstName: true }))}
+              onChangeText={(text) => handleFieldChange("firstName", text)}
+              onBlur={() => handleBlur("firstName")}
               placeholder="Enter your first name"
               LeftIcon={User}
               autoCapitalize="words"
               autoComplete="given-name"
-              error={errors.firstName}
+              error={touched.firstName ? errors.firstName : undefined}
             />
 
             <CustomTextInput
               label="Last Name"
               value={form.lastName}
-              onChangeText={(t) => setField("lastName", t)}
-              onBlur={() => setTouched((s) => ({ ...s, lastName: true }))}
+              onChangeText={(text) => handleFieldChange("lastName", text)}
+              onBlur={() => handleBlur("lastName")}
               placeholder="Enter your last name"
               LeftIcon={User}
               autoCapitalize="words"
               autoComplete="family-name"
-              error={errors.lastName}
+              error={touched.lastName ? errors.lastName : undefined}
             />
 
             <CustomTextInput
               label="Age"
               value={form.age}
               onChangeText={(text) =>
-                setField("age", text.replace(/[^0-9]/g, ""))
+                handleFieldChange("age", text.replace(/[^0-9]/g, ""))
               }
-              onBlur={() => setTouched((s) => ({ ...s, age: true }))}
+              onBlur={() => handleBlur("age")}
               placeholder="18 - 70 years old"
               LeftIcon={Calendar}
               keyboardType="number-pad"
               maxLength={2}
-              error={errors.age}
+              error={touched.age ? errors.age : undefined}
             />
-
-            <View style={styles.genderSection}>
-              <Text style={styles.genderLabel}>Gender</Text>
-              <View
-                style={styles.genderOptionsColumn}
-                accessibilityRole="radiogroup"
-                accessible
-              >
-                {genderOptions.map((opt) => (
-                  <GenderOption
-                    key={opt.value}
-                    option={opt.label}
-                    selected={form.gender === opt.value}
-                    onSelect={() => {
-                      setField("gender", opt.value);
-                      setTouched((s) => ({ ...s, gender: true }));
-                    }}
-                  />
-                ))}
-              </View>
-              {errors.gender ? (
-                <Text style={styles.fieldError}>{errors.gender}</Text>
-              ) : null}
-            </View>
           </View>
 
           <View style={styles.helperContainer}>
             <Text style={styles.helperText}>
-              Your information is secure and will only be visible according to
-              your privacy settings
+              🔒 Your information is secure and will only be visible according
+              to your privacy settings
             </Text>
           </View>
         </ScrollView>
@@ -176,29 +300,40 @@ export default function AccountBasicInfoScreen() {
   );
 }
 
-// reduced spacing values for tighter layout
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.dalisay[950] },
   keyboardView: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: theme.spacing.md, // reduced from lg
-    paddingTop: Platform.OS === "ios" ? theme.spacing.lg : theme.spacing.md, // reduced
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: Platform.OS === "ios" ? theme.spacing.lg : theme.spacing.md,
   },
-  top: { alignItems: "center", marginBottom: theme.spacing.md }, // reduced
-  formContainer: { gap: theme.spacing.sm }, // reduced gap
-  genderSection: { marginTop: theme.spacing.sm }, // reduced
-  genderLabel: {
+  top: { alignItems: "center", marginBottom: theme.spacing.md },
+  infoBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(239,62,120,0.12)",
+    borderRadius: 14,
+    padding: 14,
+    marginHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: "rgba(239,62,120,0.25)",
+    gap: 10,
+  },
+  infoBannerText: {
+    flex: 1,
     fontSize: 13,
+    fontFamily: theme.fontFamilies.body.regular,
+    color: "rgba(255,255,255,0.85)",
+    lineHeight: 19,
+  },
+  infoBannerBold: {
     fontFamily: theme.fontFamilies.body.semiBold,
-    color: "rgba(255,255,255,0.95)",
-    marginBottom: theme.spacing.xs ?? 6,
+    color: theme.colors.amihan[300],
   },
-  genderOptionsColumn: {
-    gap: theme.spacing.sm,
-    flexDirection: "column",
-  },
-  helperContainer: { marginTop: theme.spacing.sm, paddingHorizontal: 2 },
+  formContainer: { gap: theme.spacing.sm },
+  helperContainer: { marginTop: theme.spacing.md, paddingHorizontal: 2 },
   helperText: {
     fontSize: 12,
     fontFamily: theme.fontFamilies.body.regular,
@@ -207,17 +342,10 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   footer: {
-    paddingHorizontal: theme.spacing.md, // reduced
+    paddingHorizontal: theme.spacing.md,
     paddingTop: theme.spacing.sm,
     backgroundColor: "rgba(15, 8, 20, 0.95)",
     borderTopWidth: 1,
-    borderTopColor: "rgba(141, 105, 246, 0.06)", // lighter border
-  },
-  fieldError: {
-    marginTop: theme.spacing.xs ?? 6,
-    color: theme.colors.amihan?.[500] ?? "#EF3E78",
-    fontSize: 12,
-    fontFamily: theme.fontFamilies.body.regular,
+    borderTopColor: "rgba(141, 105, 246, 0.06)",
   },
 });
-// ...existing code...
