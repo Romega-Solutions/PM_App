@@ -1,50 +1,109 @@
+import { supabase } from "@/src/config/supabase";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export const useVerificationAdvance = (delay = 3000) => {
-  const [countdown, setCountdown] = useState(Math.ceil(delay / 1000));
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+export const useVerificationAdvance = () => {
+  const [countdown, setCountdown] = useState(0);
+  const [isChecking, setIsChecking] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const checkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const didAdvance = useRef(false);
 
   const clearTimers = useCallback(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    if (checkIntervalRef.current) {
+      clearInterval(checkIntervalRef.current);
+      checkIntervalRef.current = null;
+    }
   }, []);
 
-  const start = useCallback((onAdvance: () => void) => {
-    clearTimers();
-    setCountdown(Math.ceil(delay / 1000));
-    intervalRef.current = setInterval(() => {
-      setCountdown((s) => (s <= 1 ? 0 : s - 1));
-    }, 1000);
-    timerRef.current = setTimeout(() => {
+  const checkAuthentication = useCallback(async () => {
+    try {
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error("❌ Error checking session:", error);
+        return false;
+      }
+
+      if (session?.user) {
+        console.log("✅ User is authenticated:", session.user.id);
+        return true;
+      }
+
+      console.log("⏳ User not authenticated yet, checking again...");
+      return false;
+    } catch (error) {
+      console.error("❌ Exception checking auth:", error);
+      return false;
+    }
+  }, []);
+
+  const startChecking = useCallback(
+    (onAdvance: () => void) => {
       if (didAdvance.current) return;
-      didAdvance.current = true;
+
       clearTimers();
-      onAdvance();
-    }, delay);
-  }, [clearTimers, delay]);
+      setIsChecking(true);
+
+      console.log("🔍 Starting authentication check...");
+
+      // Check immediately first
+      checkAuthentication().then((isAuthenticated) => {
+        if (isAuthenticated && !didAdvance.current) {
+          didAdvance.current = true;
+          clearTimers();
+          setIsChecking(false);
+          onAdvance();
+          return;
+        }
+
+        // Start periodic checking every 2 seconds
+        checkIntervalRef.current = setInterval(async () => {
+          const isAuthenticated = await checkAuthentication();
+
+          if (isAuthenticated && !didAdvance.current) {
+            didAdvance.current = true;
+            clearTimers();
+            setIsChecking(false);
+            onAdvance();
+          }
+        }, 2000); // Check every 2 seconds
+      });
+    },
+    [clearTimers, checkAuthentication]
+  );
 
   const stop = useCallback(() => {
     clearTimers();
+    setIsChecking(false);
   }, [clearTimers]);
 
-  const immediateAdvance = useCallback((onAdvance: () => void) => {
-    if (didAdvance.current) return;
-    didAdvance.current = true;
-    clearTimers();
-    onAdvance();
-  }, [clearTimers]);
+  const immediateAdvance = useCallback(
+    (onAdvance: () => void) => {
+      if (didAdvance.current) return;
+      didAdvance.current = true;
+      clearTimers();
+      setIsChecking(false);
+      onAdvance();
+    },
+    [clearTimers]
+  );
 
   useEffect(() => {
     return () => clearTimers();
   }, [clearTimers]);
 
-  return { countdown, start, stop, immediateAdvance };
+  return {
+    countdown,
+    isChecking,
+    startChecking,
+    stop,
+    immediateAdvance,
+  };
 };

@@ -1,3 +1,8 @@
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Eye, EyeOff, Lock, Mail, User } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import { Alert, Dimensions, Image, StyleSheet, Text, View } from "react-native";
+
 import AuthHeader from "@/src/components/auth/AuthHeader";
 import AuthLayout from "@/src/components/auth/AuthLayout";
 import SignUpPrompt from "@/src/components/auth/SignUpPrompt";
@@ -6,10 +11,6 @@ import CustomTextInput from "@/src/components/forms/CustomTextInput";
 import FormDivider from "@/src/components/forms/FormDivider";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import { theme } from "@/src/theme";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { Eye, EyeOff, Lock, Mail, User } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
-import { Alert, Dimensions, Image, StyleSheet, Text, View } from "react-native";
 import { useSignUp } from "../hooks/useSignUp";
 
 const { width } = Dimensions.get("window");
@@ -26,7 +27,7 @@ type FormState = {
   confirmPassword: string;
 };
 
-export default function SignUpScreen() {
+function SignUpScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ userType?: string }>();
   const { signUp, loading } = useSignUp();
@@ -120,7 +121,7 @@ export default function SignUpScreen() {
           pathname: "/(auth)/verify-email",
           params: {
             email: form.email,
-            firstName: form.firstName.trim(), // Use trimmed version
+            firstName: form.firstName.trim(),
             userType: userType,
           },
         });
@@ -137,7 +138,7 @@ export default function SignUpScreen() {
         pathname: "/(auth)/account-setup/basic-info",
         params: {
           userType: userType,
-          firstName: form.firstName.trim(), // Use trimmed version
+          firstName: form.firstName.trim(),
         },
       });
     } catch (err) {
@@ -264,6 +265,8 @@ export default function SignUpScreen() {
     </AuthLayout>
   );
 }
+
+export default SignUpScreen;
 
 const styles = StyleSheet.create({
   logoWrap: {

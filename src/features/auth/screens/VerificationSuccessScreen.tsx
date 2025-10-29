@@ -4,7 +4,13 @@ import { useFonts } from "expo-font";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect } from "react";
-import { ActivityIndicator, Platform, StatusBar, View } from "react-native";
+import {
+  ActivityIndicator,
+  Platform,
+  StatusBar,
+  Text,
+  View,
+} from "react-native";
 import { useVerificationAdvance } from "../hooks/useVerificationAdvance";
 
 export default function VerificationSuccessScreen() {
@@ -14,12 +20,11 @@ export default function VerificationSuccessScreen() {
     firstName?: string;
   }>();
 
-  // Extract params
   const userType = params.userType;
   const firstName = params.firstName;
 
-  const { countdown, start, immediateAdvance, stop } =
-    useVerificationAdvance(3000);
+  const { isChecking, startChecking, immediateAdvance, stop } =
+    useVerificationAdvance();
 
   const [fontsLoaded] = useFonts({
     HelloParis: require("@/assets/fonts/hello-paris-sans/HelloParisSans-Bold.ttf"),
@@ -28,10 +33,9 @@ export default function VerificationSuccessScreen() {
   });
 
   const goNext = useCallback(() => {
-    console.log("✅ Verification complete, navigating to basic info...");
+    console.log("✅ User authenticated, navigating to basic info...");
     console.log("📦 Passing params:", { userType, firstName });
 
-    // CRITICAL: Pass userType and firstName to basic info
     router.replace({
       pathname: "/(auth)/account-setup/basic-info",
       params: {
@@ -42,9 +46,13 @@ export default function VerificationSuccessScreen() {
   }, [router, userType, firstName]);
 
   useEffect(() => {
-    start(goNext);
-    return () => stop();
-  }, [start, stop, goNext]);
+    console.log("🔍 Starting authentication verification...");
+    startChecking(goNext);
+    return () => {
+      console.log("🧹 Cleaning up verification check");
+      stop();
+    };
+  }, [startChecking, stop, goNext]);
 
   if (!fontsLoaded) {
     return (
@@ -56,7 +64,7 @@ export default function VerificationSuccessScreen() {
           backgroundColor: "#340839",
         }}
       >
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#fff" />
       </View>
     );
   }
@@ -86,8 +94,46 @@ export default function VerificationSuccessScreen() {
         }}
       >
         <VerificationSuccessHeader />
+
+        {isChecking && (
+          <View
+            style={{
+              marginVertical: 20,
+              alignItems: "center",
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              paddingHorizontal: 24,
+              paddingVertical: 16,
+              borderRadius: 12,
+            }}
+          >
+            <ActivityIndicator size="small" color="#fff" />
+            <Text
+              style={{
+                color: "#fff",
+                marginTop: 12,
+                fontFamily: "DMSans",
+                fontSize: 14,
+                textAlign: "center",
+              }}
+            >
+              Verifying your account...
+            </Text>
+            <Text
+              style={{
+                color: "rgba(255, 255, 255, 0.7)",
+                marginTop: 4,
+                fontFamily: "DMSans",
+                fontSize: 12,
+                textAlign: "center",
+              }}
+            >
+              Please wait while we confirm your email
+            </Text>
+          </View>
+        )}
+
         <VerificationSuccessActions
-          countdown={countdown}
+          countdown={0}
           onContinue={() => immediateAdvance(goNext)}
           onCancel={() => {
             stop();

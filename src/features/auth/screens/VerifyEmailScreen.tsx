@@ -1,5 +1,6 @@
 import VerifyEmailActions from "@/src/components/auth/VerifyEmailActions";
 import VerifyEmailHeader from "@/src/components/auth/VerifyEmailHeader";
+import { supabase } from "@/src/config/supabase";
 import { useFonts } from "expo-font";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -15,7 +16,6 @@ import {
 export default function VerifyEmailScreen() {
   const router = useRouter();
 
-  // ✅ Receive ALL params from signup
   const params = useLocalSearchParams<{
     email?: string;
     firstName?: string;
@@ -24,11 +24,10 @@ export default function VerifyEmailScreen() {
 
   const { email, firstName, userType } = params;
 
-  const [countdown, setCountdown] = useState(6);
+  const [countdown, setCountdown] = useState(60); // Increased to 60 seconds
   const didNavigate = useRef(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // load brand fonts (safe to call here)
   const [fontsLoaded] = useFonts({
     HelloParis: require("@/assets/fonts/hello-paris-sans/HelloParisSans-Bold.ttf"),
     Lora: require("@/assets/fonts/lora/Lora-SemiBold.ttf"),
@@ -47,7 +46,6 @@ export default function VerifyEmailScreen() {
     didNavigate.current = true;
     clearTicker();
 
-    // ✅ Pass firstName and userType to verification success
     console.log("📧 Navigating to verification success with params:", {
       firstName,
       userType,
@@ -62,8 +60,34 @@ export default function VerifyEmailScreen() {
     });
   }, [clearTicker, router, firstName, userType]);
 
+  // Listen for authentication state changes
   useEffect(() => {
-    // start countdown
+    console.log("👂 Setting up auth state listener...");
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("🔔 Auth event:", event);
+
+        if (event === "SIGNED_IN" && session?.user) {
+          console.log("✅ User signed in, email verified!");
+
+          // Check if email is confirmed
+          if (session.user.email_confirmed_at) {
+            console.log("✅ Email confirmed, navigating to next screen");
+            goNext();
+          }
+        }
+      }
+    );
+
+    return () => {
+      console.log("🧹 Cleaning up auth listener");
+      authListener.subscription.unsubscribe();
+    };
+  }, [goNext]);
+
+  // Countdown timer (as fallback)
+  useEffect(() => {
     if (!intervalRef.current) {
       intervalRef.current = setInterval(() => {
         setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
@@ -72,8 +96,23 @@ export default function VerifyEmailScreen() {
     return () => clearTicker();
   }, [clearTicker]);
 
+  // Auto-advance on countdown complete (fallback behavior)
   useEffect(() => {
-    if (countdown === 0) goNext();
+    if (countdown === 0 && !didNavigate.current) {
+      console.log("⏰ Countdown complete, checking auth status...");
+
+      // Check auth status before advancing
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user?.email_confirmed_at) {
+          console.log("✅ Email confirmed via countdown check");
+          goNext();
+        } else {
+          console.log("⚠️ Email not confirmed yet, user should click verify");
+          // Reset countdown to give more time
+          setCountdown(30);
+        }
+      });
+    }
   }, [countdown, goNext]);
 
   const openEmailApp = async () => {
@@ -90,9 +129,10 @@ export default function VerifyEmailScreen() {
         return;
       }
       await Linking.openURL("https://mail.google.com");
-    } catch {
-      // ignore errors
+    } catch (error) {
+      console.error("Error opening email app:", error);
     } finally {
+      // Restart countdown after opening email app
       if (!didNavigate.current && !intervalRef.current) {
         intervalRef.current = setInterval(() => {
           setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
@@ -101,14 +141,38 @@ export default function VerifyEmailScreen() {
     }
   };
 
-  const handleResend = () => {
-    // TODO: call API to resend verification email
-    clearTicker();
-    setCountdown(6);
-    if (!intervalRef.current) {
-      intervalRef.current = setInterval(() => {
-        setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
-      }, 1000);
+  const handleResend = async () => {
+    if (!email) {
+      console.error("❌ No email available for resend");
+      return;
+    }
+
+    try {
+      console.log("📧 Resending verification email to:", email);
+
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: email,
+      });
+
+      if (error) {
+        console.error("❌ Error resending email:", error);
+        // You could show a toast/alert here
+        return;
+      }
+
+      console.log("✅ Verification email resent successfully");
+
+      // Reset countdown
+      clearTicker();
+      setCountdown(60);
+      if (!intervalRef.current) {
+        intervalRef.current = setInterval(() => {
+          setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
+        }, 1000);
+      }
+    } catch (error) {
+      console.error("❌ Exception resending email:", error);
     }
   };
 
@@ -127,7 +191,7 @@ export default function VerifyEmailScreen() {
           backgroundColor: "#340839",
         }}
       >
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#fff" />
       </View>
     );
   }
