@@ -1,65 +1,99 @@
-import {
-  accountApi,
-  BasicInfoPayload,
-  PreferencesPayload,
-  SavedLocation,
-  VerificationData,
-} from "@/src/features/account/api/accountApi";
 import { useEffect, useState } from "react";
+import { accountApi, type BasicInfoPayload } from "../api/accountApi";
+import type { UserType } from "../../auth/api/authApi";
 
-export type WelcomeData = {
-  basicInfo: BasicInfoPayload | null;
-  location: SavedLocation | null;
-  preferences: PreferencesPayload | null;
-  verification: VerificationData | null;
-  photos: string[];
-  userType: string | null;
-  loading: boolean;
+type WelcomeData = {
+  firstName: string;
+  userType: UserType;
+  completionStats: {
+    basicInfo: boolean;
+    photos: boolean;
+    location: boolean;
+    verification: boolean;
+    preferences: boolean;
+  };
 };
 
 export const useWelcomeData = () => {
-  const [data, setData] = useState<WelcomeData>({
-    basicInfo: null,
-    location: null,
-    preferences: null,
-    verification: null,
-    photos: [],
-    userType: null,
-    loading: true,
-  });
+  const [data, setData] = useState<WelcomeData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
+    const fetchData = async () => {
       try {
-        const [basicInfo, location, preferences, verification, photos] =
+        setLoading(true);
+
+        // Fetch all data from Supabase
+        const [basicInfo, photos, location, verification, preferences] =
           await Promise.all([
             accountApi.getBasicInfo(),
-            accountApi.getLocation(),
-            accountApi.getPreferences(),
-            accountApi.getVerification(),
             accountApi.getProfilePhotos(),
+            accountApi.getLocation(),
+            accountApi.getVerification(),
+            accountApi.getPreferences(),
           ]);
 
-        // Extract userType from basicInfo
-        const userType = basicInfo?.userType ?? null;
-
-        setData({
-          basicInfo,
-          location,
-          preferences,
-          verification,
-          photos,
-          userType,
-          loading: false,
-        });
-      } catch (err) {
-        console.error("Failed to load welcome data:", err);
-        setData((prev) => ({ ...prev, loading: false }));
+        if (basicInfo) {
+          setData({
+            firstName: basicInfo.firstName,
+            userType: basicInfo.userType,
+            completionStats: {
+              basicInfo: !!basicInfo,
+              photos: (photos?.length ?? 0) > 0,
+              location: !!location,
+              verification: verification?.isVerified ?? false,
+              preferences: !!preferences,
+            },
+          });
+        } else {
+          setData(null);
+        }
+      } catch (error) {
+        console.error("❌ Error fetching welcome data:", error);
+        setData(null);
+      } finally {
+        setLoading(false);
       }
     };
 
-    load();
+    fetchData();
   }, []);
 
-  return data;
+  const reload = async () => {
+    setLoading(true);
+    try {
+      const [basicInfo, photos, location, verification, preferences] =
+        await Promise.all([
+          accountApi.getBasicInfo(),
+          accountApi.getProfilePhotos(),
+          accountApi.getLocation(),
+          accountApi.getVerification(),
+          accountApi.getPreferences(),
+        ]);
+
+      if (basicInfo) {
+        setData({
+          firstName: basicInfo.firstName,
+          userType: basicInfo.userType,
+          completionStats: {
+            basicInfo: !!basicInfo,
+            photos: (photos?.length ?? 0) > 0,
+            location: !!location,
+            verification: verification?.isVerified ?? false,
+            preferences: !!preferences,
+          },
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error reloading welcome data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    data,
+    loading,
+    reload,
+  } as const;
 };

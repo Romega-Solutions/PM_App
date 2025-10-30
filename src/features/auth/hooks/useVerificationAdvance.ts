@@ -1,26 +1,14 @@
 import { supabase } from "@/src/config/supabase";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 export const useVerificationAdvance = () => {
-  const [countdown, setCountdown] = useState(0);
   const [isChecking, setIsChecking] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const checkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const didAdvance = useRef(false);
-
-  const clearTimers = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    if (checkIntervalRef.current) {
-      clearInterval(checkIntervalRef.current);
-      checkIntervalRef.current = null;
-    }
-  }, []);
 
   const checkAuthentication = useCallback(async () => {
     try {
+      console.log('🔍 Checking authentication status...');
+      
       const {
         data: { session },
         error,
@@ -32,11 +20,16 @@ export const useVerificationAdvance = () => {
       }
 
       if (session?.user) {
-        console.log("✅ User is authenticated:", session.user.id);
-        return true;
+        const isVerified = !!session.user.email_confirmed_at;
+        console.log(`${isVerified ? '✅' : '⏳'} User auth status:`, {
+          userId: session.user.id,
+          email: session.user.email,
+          verified: isVerified,
+        });
+        return isVerified;
       }
 
-      console.log("⏳ User not authenticated yet, checking again...");
+      console.log("⏳ No active session found");
       return false;
     } catch (error) {
       console.error("❌ Exception checking auth:", error);
@@ -44,66 +37,41 @@ export const useVerificationAdvance = () => {
     }
   }, []);
 
-  const startChecking = useCallback(
-    (onAdvance: () => void) => {
-      if (didAdvance.current) return;
+  const manualCheck = useCallback(
+    async (onAdvance: () => void) => {
+      if (didAdvance.current) {
+        console.log('⚠️ Already advanced, skipping check');
+        return false;
+      }
 
-      clearTimers();
       setIsChecking(true);
+      console.log("🔍 Manual verification check...");
 
-      console.log("🔍 Starting authentication check...");
+      try {
+        const isAuthenticated = await checkAuthentication();
 
-      // Check immediately first
-      checkAuthentication().then((isAuthenticated) => {
-        if (isAuthenticated && !didAdvance.current) {
+        if (isAuthenticated) {
+          console.log('✅ User verified!');
           didAdvance.current = true;
-          clearTimers();
           setIsChecking(false);
           onAdvance();
-          return;
+          return true;
         }
 
-        // Start periodic checking every 2 seconds
-        checkIntervalRef.current = setInterval(async () => {
-          const isAuthenticated = await checkAuthentication();
-
-          if (isAuthenticated && !didAdvance.current) {
-            didAdvance.current = true;
-            clearTimers();
-            setIsChecking(false);
-            onAdvance();
-          }
-        }, 2000); // Check every 2 seconds
-      });
+        console.log('⏳ User not verified yet');
+        setIsChecking(false);
+        return false;
+      } catch (error) {
+        console.error('❌ Error during manual check:', error);
+        setIsChecking(false);
+        return false;
+      }
     },
-    [clearTimers, checkAuthentication]
+    [checkAuthentication]
   );
-
-  const stop = useCallback(() => {
-    clearTimers();
-    setIsChecking(false);
-  }, [clearTimers]);
-
-  const immediateAdvance = useCallback(
-    (onAdvance: () => void) => {
-      if (didAdvance.current) return;
-      didAdvance.current = true;
-      clearTimers();
-      setIsChecking(false);
-      onAdvance();
-    },
-    [clearTimers]
-  );
-
-  useEffect(() => {
-    return () => clearTimers();
-  }, [clearTimers]);
 
   return {
-    countdown,
     isChecking,
-    startChecking,
-    stop,
-    immediateAdvance,
+    manualCheck,
   };
 };

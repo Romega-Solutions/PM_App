@@ -6,6 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { View } from "react-native";
 import "./global.css";
+import { setupDeepLinking } from "@/src/config/deepLinking";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -45,6 +46,13 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
+
+  // Setup deep linking for email verification
+  useEffect(() => {
+    console.log("🚀 Initializing deep link handler...");
+    const cleanup = setupDeepLinking();
+    return cleanup;
+  }, []);
 
   if (!fontsLoaded && !fontError) {
     return null;

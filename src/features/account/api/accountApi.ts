@@ -1,20 +1,16 @@
+import { supabase } from "@/src/config/supabase";
 import { UserType } from "../../auth/api/authApi";
 
-// Updated to include userType
+// ============= BASIC INFO =============
 export type BasicInfoPayload = {
   firstName: string;
   lastName: string;
   age: number;
-  gender: string; // Auto-derived from userType
-  userType: UserType; // NEW: Store user type with profile
+  gender: string;
+  userType: UserType;
   createdAt?: string;
 };
 
-let basicInfoStore: BasicInfoPayload | null = null;
-
-/**
- * Auto-derive gender from userType
- */
 function getGenderFromUserType(userType: UserType): string {
   return userType === "filipina" ? "female" : "male";
 }
@@ -22,60 +18,199 @@ function getGenderFromUserType(userType: UserType): string {
 export async function saveBasicInfo(
   payload: Omit<BasicInfoPayload, "gender"> & { userType: UserType }
 ): Promise<{ ok: true; data: BasicInfoPayload }> {
-  await new Promise((r) => setTimeout(r, 700));
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      throw new Error("Not authenticated");
+    }
 
-  // Auto-assign gender based on userType
-  const gender = getGenderFromUserType(payload.userType);
+    const gender = getGenderFromUserType(payload.userType);
 
-  const record: BasicInfoPayload = {
-    ...payload,
-    gender, // Automatically set
-    createdAt: new Date().toISOString(),
-  };
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({
+        first_name: payload.firstName.trim(),
+        last_name: payload.lastName.trim(),
+        age: payload.age,
+        gender: gender,
+        user_type: payload.userType,
+        basic_info_completed: true,
+      })
+      .eq('id', user.id)
+      .select()
+      .single();
 
-  basicInfoStore = record;
-  console.log("✅ Saved basic info with auto-assigned gender:", {
-    userType: payload.userType,
-    gender,
-  });
+    if (error) {
+      console.error("❌ Error saving basic info:", error);
+      throw error;
+    }
 
-  return { ok: true, data: record };
+    console.log("✅ Saved basic info to Supabase:", data);
+
+    return {
+      ok: true,
+      data: {
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        age: payload.age,
+        gender,
+        userType: payload.userType,
+        createdAt: data.updated_at,
+      },
+    };
+  } catch (error) {
+    console.error("❌ Failed to save basic info:", error);
+    throw error;
+  }
 }
 
 export async function getBasicInfo(): Promise<BasicInfoPayload | null> {
-  await new Promise((r) => setTimeout(r, 250));
-  return basicInfoStore;
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return {
+      firstName: data.first_name,
+      lastName: data.last_name || '',
+      age: data.age || 0,
+      gender: data.gender,
+      userType: data.user_type as UserType,
+      createdAt: data.created_at,
+    };
+  } catch (error) {
+    console.error("❌ Error fetching basic info:", error);
+    return null;
+  }
 }
 
 export async function clearBasicInfo(): Promise<void> {
-  basicInfoStore = null;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({ basic_info_completed: false })
+        .eq('id', user.id);
+    }
+  } catch (error) {
+    console.error("❌ Error clearing basic info:", error);
+  }
 }
 
-/* ----------------- profile photos ----------------- */
-let profilePhotosStore: string[] = [];
+// ============= PROFILE PHOTOS =============
+export async function saveProfilePhoto(uri: string): Promise<{ ok: true; data: { photos: string[] } }> {
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      throw new Error("Not authenticated");
+    }
 
-export async function saveProfilePhoto(
-  uri: string
-): Promise<{ ok: true; data: { photos: string[] } }> {
-  await new Promise((r) => setTimeout(r, 600));
-  profilePhotosStore = [uri, ...profilePhotosStore].slice(0, 6);
-  return { ok: true, data: { photos: profilePhotosStore } };
+    // Get existing photos
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('photos')
+      .eq('id', user.id)
+      .single();
+
+    const existingPhotos = profile?.photos || [];
+    const newPhotos = [uri, ...existingPhotos].slice(0, 6);
+
+    // Update photos array
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        photos: newPhotos,
+        photos_completed: newPhotos.length > 0,
+      })
+      .eq('id', user.id);
+
+    if (error) throw error;
+
+    console.log("✅ Saved photo to Supabase");
+    return { ok: true, data: { photos: newPhotos } };
+  } catch (error) {
+    console.error("❌ Error saving photo:", error);
+    throw error;
+  }
 }
 
 export async function getProfilePhotos(): Promise<string[]> {
-  await new Promise((r) => setTimeout(r, 250));
-  return profilePhotosStore;
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('photos')
+      .eq('id', user.id)
+      .single();
+
+    if (error || !data) {
+      return [];
+    }
+
+    return data.photos || [];
+  } catch (error) {
+    console.error("❌ Error fetching photos:", error);
+    return [];
+  }
 }
 
-export async function removeProfilePhoto(
-  uri: string
-): Promise<{ ok: true; data: string[] }> {
-  await new Promise((r) => setTimeout(r, 200));
-  profilePhotosStore = profilePhotosStore.filter((p) => p !== uri);
-  return { ok: true, data: profilePhotosStore };
+export async function removeProfilePhoto(uri: string): Promise<{ ok: true; data: string[] }> {
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      throw new Error("Not authenticated");
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('photos')
+      .eq('id', user.id)
+      .single();
+
+    const existingPhotos = profile?.photos || [];
+    const newPhotos = existingPhotos.filter((p: string) => p !== uri);
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        photos: newPhotos,
+        photos_completed: newPhotos.length > 0,
+      })
+      .eq('id', user.id);
+
+    if (error) throw error;
+
+    console.log("✅ Removed photo from Supabase");
+    return { ok: true, data: newPhotos };
+  } catch (error) {
+    console.error("❌ Error removing photo:", error);
+    throw error;
+  }
 }
 
-/* ----------------- location ----------------- */
+// ============= LOCATION =============
 export type SavedLocation = {
   locationType: "current" | "manual";
   locationName: string;
@@ -83,27 +218,88 @@ export type SavedLocation = {
   timestamp: string;
 };
 
-let locationStore: SavedLocation | null = null;
+export async function saveLocation(payload: SavedLocation): Promise<{ ok: true; data: SavedLocation }> {
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      throw new Error("Not authenticated");
+    }
 
-export async function saveLocation(
-  payload: SavedLocation
-): Promise<{ ok: true; data: SavedLocation }> {
-  await new Promise((r) => setTimeout(r, 400));
-  const record = { ...payload, timestamp: new Date().toISOString() };
-  locationStore = record;
-  return { ok: true, data: record };
+    const record = { ...payload, timestamp: new Date().toISOString() };
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        location_type: record.locationType,
+        location_name: record.locationName,
+        location_coordinates: record.coordinates,
+        location_timestamp: record.timestamp,
+        location_completed: true,
+      })
+      .eq('id', user.id);
+
+    if (error) throw error;
+
+    console.log("✅ Saved location to Supabase");
+    return { ok: true, data: record };
+  } catch (error) {
+    console.error("❌ Error saving location:", error);
+    throw error;
+  }
 }
 
 export async function getLocation(): Promise<SavedLocation | null> {
-  await new Promise((r) => setTimeout(r, 200));
-  return locationStore;
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('location_type, location_name, location_coordinates, location_timestamp')
+      .eq('id', user.id)
+      .single();
+
+    if (error || !data || !data.location_name) {
+      return null;
+    }
+
+    return {
+      locationType: data.location_type as "current" | "manual",
+      locationName: data.location_name,
+      coordinates: data.location_coordinates,
+      timestamp: data.location_timestamp,
+    };
+  } catch (error) {
+    console.error("❌ Error fetching location:", error);
+    return null;
+  }
 }
 
 export async function clearLocation(): Promise<void> {
-  locationStore = null;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({
+          location_completed: false,
+          location_name: null,
+          location_type: null,
+          location_coordinates: null,
+        })
+        .eq('id', user.id);
+    }
+  } catch (error) {
+    console.error("❌ Error clearing location:", error);
+  }
 }
 
-/* ----------------- verification ----------------- */
+// ============= VERIFICATION =============
 export type VerificationData = {
   selfieUri: string;
   documentUri: string;
@@ -115,124 +311,221 @@ export type VerificationData = {
   mismatchReasons?: string[];
 };
 
-let verificationStore: VerificationData | null = null;
-
 export function compareVerificationData(
-  extracted: {
-    firstName?: string;
-    lastName?: string;
-    age?: number;
-  },
+  extracted: { firstName?: string; lastName?: string; age?: number },
   stored: BasicInfoPayload | null
 ): { match: boolean; reasons: string[] } {
-  if (!stored)
-    return { match: false, reasons: ["No basic info found in store"] };
-
+  if (!stored) return { match: false, reasons: ["No basic info found"] };
   const reasons: string[] = [];
   const normalize = (s: string) => s.trim().toLowerCase();
-
-  if (
-    extracted.firstName &&
-    normalize(extracted.firstName) !== normalize(stored.firstName)
-  ) {
-    reasons.push(
-      `First name mismatch: "${extracted.firstName}" vs "${stored.firstName}"`
-    );
+  
+  if (extracted.firstName && normalize(extracted.firstName) !== normalize(stored.firstName)) {
+    reasons.push(`First name mismatch: "${extracted.firstName}" vs "${stored.firstName}"`);
   }
-
-  if (
-    extracted.lastName &&
-    normalize(extracted.lastName) !== normalize(stored.lastName)
-  ) {
-    reasons.push(
-      `Last name mismatch: "${extracted.lastName}" vs "${stored.lastName}"`
-    );
+  if (extracted.lastName && normalize(extracted.lastName) !== normalize(stored.lastName)) {
+    reasons.push(`Last name mismatch: "${extracted.lastName}" vs "${stored.lastName}"`);
   }
-
   if (extracted.age !== undefined && extracted.age !== stored.age) {
     reasons.push(`Age mismatch: ${extracted.age} vs ${stored.age}`);
   }
-
+  
   return { match: reasons.length === 0, reasons };
 }
 
-export async function saveVerification(
-  payload: VerificationData
-): Promise<{ ok: true; data: VerificationData }> {
-  await new Promise((r) => setTimeout(r, 600));
-  const record = {
-    ...payload,
-    verifiedAt: payload.isVerified ? new Date().toISOString() : undefined,
-  };
-  verificationStore = record;
-  return { ok: true, data: record };
+export async function saveVerification(payload: VerificationData): Promise<{ ok: true; data: VerificationData }> {
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      throw new Error("Not authenticated");
+    }
+
+    const record = { 
+      ...payload, 
+      verifiedAt: payload.isVerified ? new Date().toISOString() : undefined 
+    };
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        verification_selfie: record.selfieUri,
+        verification_document: record.documentUri,
+        verification_extracted_first_name: record.extractedFirstName,
+        verification_extracted_last_name: record.extractedLastName,
+        verification_extracted_age: record.extractedAge,
+        is_verified: record.isVerified,
+        verified_at: record.verifiedAt,
+        verification_mismatch_reasons: record.mismatchReasons,
+        verification_completed: true,
+      })
+      .eq('id', user.id);
+
+    if (error) throw error;
+
+    console.log("✅ Saved verification to Supabase");
+    return { ok: true, data: record };
+  } catch (error) {
+    console.error("❌ Error saving verification:", error);
+    throw error;
+  }
 }
 
 export async function getVerification(): Promise<VerificationData | null> {
-  await new Promise((r) => setTimeout(r, 200));
-  return verificationStore;
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('verification_selfie, verification_document, verification_extracted_first_name, verification_extracted_last_name, verification_extracted_age, is_verified, verified_at, verification_mismatch_reasons')
+      .eq('id', user.id)
+      .single();
+
+    if (error || !data || !data.verification_selfie) {
+      return null;
+    }
+
+    return {
+      selfieUri: data.verification_selfie,
+      documentUri: data.verification_document,
+      extractedFirstName: data.verification_extracted_first_name,
+      extractedLastName: data.verification_extracted_last_name,
+      extractedAge: data.verification_extracted_age,
+      isVerified: data.is_verified,
+      verifiedAt: data.verified_at,
+      mismatchReasons: data.verification_mismatch_reasons,
+    };
+  } catch (error) {
+    console.error("❌ Error fetching verification:", error);
+    return null;
+  }
 }
 
 export async function clearVerification(): Promise<void> {
-  verificationStore = null;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({
+          verification_completed: false,
+          is_verified: false,
+          verification_selfie: null,
+          verification_document: null,
+        })
+        .eq('id', user.id);
+    }
+  } catch (error) {
+    console.error("❌ Error clearing verification:", error);
+  }
 }
 
-/* ----------------- preferences ----------------- */
-
-/**
- * Auto-derive "interested in" gender from userType
- * Filipina accounts are interested in Men
- * Foreign Man accounts are interested in Women
- */
+// ============= PREFERENCES =============
 function getInterestedInFromUserType(userType: UserType): string {
   return userType === "filipina" ? "Men" : "Women";
 }
 
 export type PreferencesPayload = {
-  interestedIn: string; // Auto-derived: "Women" for foreign men, "Men" for filipinas
+  interestedIn: string;
   ageMin: number;
   ageMax: number;
   maxDistanceKm: number;
-  relationshipGoal: string; // "long_term" | "marriage" | "casual" | "friendship" | "not_sure"
-  userType: UserType; // Store to auto-set interestedIn
+  relationshipGoal: string;
+  userType: UserType;
   createdAt?: string;
 };
-
-let preferencesStore: PreferencesPayload | null = null;
 
 export async function savePreferences(
   payload: Omit<PreferencesPayload, "interestedIn"> & { userType: UserType }
 ): Promise<{ ok: true; data: PreferencesPayload }> {
-  await new Promise((r) => setTimeout(r, 500));
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      throw new Error("Not authenticated");
+    }
 
-  // Auto-assign "interested in" based on userType
-  const interestedIn = getInterestedInFromUserType(payload.userType);
+    const interestedIn = getInterestedInFromUserType(payload.userType);
 
-  const record: PreferencesPayload = {
-    ...payload,
-    interestedIn, // Automatically set
-    createdAt: new Date().toISOString(),
-  };
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        interested_in: interestedIn,
+        age_min: payload.ageMin,
+        age_max: payload.ageMax,
+        max_distance_km: payload.maxDistanceKm,
+        relationship_goal: payload.relationshipGoal,
+        preferences_completed: true,
+      })
+      .eq('id', user.id);
 
-  preferencesStore = record;
-  console.log("✅ Saved preferences with auto-assigned interestedIn:", {
-    userType: payload.userType,
-    interestedIn,
-  });
+    if (error) throw error;
 
-  return { ok: true, data: record };
+    const record: PreferencesPayload = {
+      ...payload,
+      interestedIn,
+      createdAt: new Date().toISOString(),
+    };
+
+    console.log("✅ Saved preferences to Supabase:", record);
+    return { ok: true, data: record };
+  } catch (error) {
+    console.error("❌ Error saving preferences:", error);
+    throw error;
+  }
 }
 
 export async function getPreferences(): Promise<PreferencesPayload | null> {
-  await new Promise((r) => setTimeout(r, 200));
-  return preferencesStore;
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('interested_in, age_min, age_max, max_distance_km, relationship_goal, user_type, created_at')
+      .eq('id', user.id)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return {
+      interestedIn: data.interested_in,
+      ageMin: data.age_min,
+      ageMax: data.age_max,
+      maxDistanceKm: data.max_distance_km,
+      relationshipGoal: data.relationship_goal,
+      userType: data.user_type as UserType,
+      createdAt: data.created_at,
+    };
+  } catch (error) {
+    console.error("❌ Error fetching preferences:", error);
+    return null;
+  }
 }
 
 export async function clearPreferences(): Promise<void> {
-  preferencesStore = null;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({ preferences_completed: false })
+        .eq('id', user.id);
+    }
+  } catch (error) {
+    console.error("❌ Error clearing preferences:", error);
+  }
 }
-
-/* ----------------------------------------------------------------------- */
 
 export const accountApi = {
   saveBasicInfo,

@@ -1,4 +1,4 @@
-import { supabase } from "@/src/config/supabase";
+import { supabase, getRedirectUrl } from "@/src/config/supabase";
 
 export type UserType = "filipina" | "foreigner";
 
@@ -27,9 +27,6 @@ export type SignInResult = {
 };
 
 export const authApi = {
-  /**
-   * Sign up new user with Supabase
-   */
   signUp: async (
     email: string,
     password: string,
@@ -37,7 +34,6 @@ export const authApi = {
   ): Promise<SignUpResult> => {
     console.log("🚀 Supabase sign up with:", { email, ...metadata });
 
-    // Validate metadata
     if (!metadata.firstName || !metadata.firstName.trim()) {
       throw new Error("First name is required");
     }
@@ -47,7 +43,6 @@ export const authApi = {
     }
 
     try {
-      // Sign up with Supabase
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -56,6 +51,8 @@ export const authApi = {
             first_name: metadata.firstName.trim(),
             user_type: metadata.userType,
           },
+          // Add email redirect URL
+          emailRedirectTo: getRedirectUrl(),
         },
       });
 
@@ -71,6 +68,7 @@ export const authApi = {
       console.log("✅ Supabase signup successful:", {
         userId: data.user.id,
         needsVerification: !data.session,
+        redirectUrl: getRedirectUrl(),
       });
 
       return {

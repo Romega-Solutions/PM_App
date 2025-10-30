@@ -1,52 +1,90 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
+import { accountApi, type SavedLocation } from "../api/accountApi";
 
-/**
- * Simple hook returning sample locations and filtered results.
- * Replace sampleLocations with API/geocoding when ready.
- */
+type Location = {
+  name: string;
+  coordinates?: { lat: number; lng: number };
+};
+
+const sampleLocations: Location[] = [
+  { name: "Manila", coordinates: { lat: 14.5995, lng: 120.9842 } },
+  { name: "Cebu City", coordinates: { lat: 10.3157, lng: 123.8854 } },
+  { name: "Davao City", coordinates: { lat: 7.1907, lng: 125.4553 } },
+  { name: "Quezon City", coordinates: { lat: 14.6760, lng: 121.0437 } },
+  { name: "Makati", coordinates: { lat: 14.5547, lng: 121.0244 } },
+];
+
 export const useLocationSearch = () => {
   const [query, setQuery] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const sampleLocations = useMemo(
-    () => [
-      "Manila, Philippines",
-      "Cebu City, Philippines",
-      "Davao City, Philippines",
-      "Quezon City, Philippines",
-      "Makati, Philippines",
-      "Taguig, Philippines",
-      "Pasig, Philippines",
-      "Caloocan, Philippines",
-      "Los Angeles, CA, USA",
-      "New York, NY, USA",
-      "Toronto, ON, Canada",
-      "London, UK",
-      "Sydney, Australia",
-      "Tokyo, Japan",
-      "Singapore",
-      "Hong Kong",
-    ],
-    []
-  );
+  const filteredLocations = query.trim()
+    ? sampleLocations.filter((loc) =>
+        loc.name.toLowerCase().includes(query.toLowerCase())
+      )
+    : sampleLocations;
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
-    return sampleLocations
-      .filter((s) => s.toLowerCase().includes(q))
-      .slice(0, 10);
-  }, [query, sampleLocations]);
+  const selectLocation = useCallback(async (location: Location) => {
+    setSelectedLocation(location);
+    
+    // Auto-save to database
+    setSaving(true);
+    try {
+      const payload: SavedLocation = {
+        locationType: "manual",
+        locationName: location.name,
+        coordinates: location.coordinates || null,
+        timestamp: new Date().toISOString(),
+      };
+      
+      await accountApi.saveLocation(payload);
+      console.log("✅ Location auto-saved:", location.name);
+    } catch (error) {
+      console.error("❌ Error saving location:", error);
+    } finally {
+      setSaving(false);
+    }
+  }, []);
 
-  const hasQuery = query.trim().length > 0;
-
-  const clear = useCallback(() => setQuery(""), []);
+  const getCurrentLocation = useCallback(async (): Promise<Location | null> => {
+    // Simulate getting current location
+    // In production, use expo-location
+    const mockCurrent: Location = {
+      name: "Current Location (Manila)",
+      coordinates: { lat: 14.5995, lng: 120.9842 },
+    };
+    
+    setSelectedLocation(mockCurrent);
+    
+    // Auto-save to database
+    setSaving(true);
+    try {
+      const payload: SavedLocation = {
+        locationType: "current",
+        locationName: mockCurrent.name,
+        coordinates: mockCurrent.coordinates,
+        timestamp: new Date().toISOString(),
+      };
+      
+      await accountApi.saveLocation(payload);
+      console.log("✅ Current location saved");
+    } catch (error) {
+      console.error("❌ Error saving location:", error);
+    } finally {
+      setSaving(false);
+    }
+    
+    return mockCurrent;
+  }, []);
 
   return {
     query,
     setQuery,
-    clear,
-    filtered,
-    hasQuery,
-    sampleLocations,
+    selectedLocation,
+    selectLocation,
+    getCurrentLocation,
+    filteredLocations,
+    saving,
   } as const;
 };

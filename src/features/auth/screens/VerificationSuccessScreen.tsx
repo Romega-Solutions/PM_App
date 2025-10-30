@@ -1,17 +1,16 @@
 import VerificationSuccessActions from "@/src/components/auth/VerificationSuccessActions";
 import VerificationSuccessHeader from "@/src/components/auth/VerificationSuccessHeader";
+import { supabase } from "@/src/config/supabase";
 import { useFonts } from "expo-font";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
   StatusBar,
-  Text,
   View,
 } from "react-native";
-import { useVerificationAdvance } from "../hooks/useVerificationAdvance";
 
 export default function VerificationSuccessScreen() {
   const router = useRouter();
@@ -20,11 +19,9 @@ export default function VerificationSuccessScreen() {
     firstName?: string;
   }>();
 
-  const userType = params.userType;
-  const firstName = params.firstName;
-
-  const { isChecking, startChecking, immediateAdvance, stop } =
-    useVerificationAdvance();
+  const [userType, setUserType] = useState(params.userType);
+  const [firstName, setFirstName] = useState(params.firstName);
+  const [isChecking, setIsChecking] = useState(false);
 
   const [fontsLoaded] = useFonts({
     HelloParis: require("@/assets/fonts/hello-paris-sans/HelloParisSans-Bold.ttf"),
@@ -32,8 +29,78 @@ export default function VerificationSuccessScreen() {
     DMSans: require("@/assets/fonts/dm-sans/DMSans-Regular.ttf"),
   });
 
+  // Ensure profile exists and fetch user data
+  useEffect(() => {
+    const ensureProfileExists = async () => {
+      console.log('📦 Ensuring profile exists...');
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        console.log('⚠️ No session found');
+        return;
+      }
+
+      const userId = session.user.id;
+      const metadata = session.user.user_metadata;
+      
+      console.log('📦 User metadata:', metadata);
+
+      try {
+        // Check if profile exists
+        const { data: existingProfile, error: fetchError } = await supabase
+          .from('profiles')
+          .select('id, user_type, first_name')
+          .eq('id', userId)
+          .single();
+
+        if (fetchError && fetchError.code === 'PGRST116') {
+          // Profile doesn't exist - create it manually
+          console.log('⚠️ Profile not found, creating manually...');
+          
+          const userTypeValue = metadata.user_type || 'foreigner';
+          const genderValue = userTypeValue === 'filipina' ? 'female' : 'male';
+          
+          const { data: newProfile, error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: userId,
+              email: session.user.email,
+              first_name: metadata.first_name || '',
+              user_type: userTypeValue,
+              gender: genderValue,
+            })
+            .select()
+            .single();
+
+          if (insertError) {
+            console.error('❌ Error creating profile:', insertError);
+            throw insertError;
+          }
+
+          console.log('✅ Profile created manually:', newProfile);
+          
+          setUserType(newProfile.user_type);
+          setFirstName(newProfile.first_name);
+        } else if (existingProfile) {
+          // Profile exists
+          console.log('✅ Profile found:', existingProfile);
+          
+          setUserType(existingProfile.user_type || metadata.user_type);
+          setFirstName(existingProfile.first_name || metadata.first_name);
+        } else if (fetchError) {
+          console.error('❌ Error fetching profile:', fetchError);
+        }
+      } catch (error) {
+        console.error('❌ Error ensuring profile:', error);
+      }
+    };
+
+    ensureProfileExists();
+  }, []);
+
   const goNext = useCallback(() => {
-    console.log("✅ User authenticated, navigating to basic info...");
+    console.log("✅ Navigating to basic info...");
     console.log("📦 Passing params:", { userType, firstName });
 
     router.replace({
@@ -45,14 +112,45 @@ export default function VerificationSuccessScreen() {
     });
   }, [router, userType, firstName]);
 
+  // Check authentication and auto-advance
   useEffect(() => {
-    console.log("🔍 Starting authentication verification...");
-    startChecking(goNext);
-    return () => {
-      console.log("🧹 Cleaning up verification check");
-      stop();
+    const checkAuth = async () => {
+      console.log("🔍 Checking authentication status...");
+      console.log("📦 Current params:", { userType, firstName });
+      
+      setIsChecking(true);
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user?.email_confirmed_at) {
+          console.log("✅ Email verified!");
+          
+          // Ensure we have userType and firstName before advancing
+          if (userType && firstName) {
+            console.log("✅ User data ready, auto-advancing in 2 seconds...");
+            setTimeout(() => {
+              goNext();
+            }, 2000);
+          } else {
+            console.log("⚠️ Still waiting for user data...");
+            // Will retry after ensureProfileExists completes
+          }
+        } else {
+          console.log("⚠️ Email not yet verified");
+        }
+      } catch (error) {
+        console.error("❌ Error checking auth:", error);
+      } finally {
+        setIsChecking(false);
+      }
     };
-  }, [startChecking, stop, goNext]);
+
+    // Only check if we have the required data
+    if (userType && firstName) {
+      checkAuth();
+    }
+  }, [userType, firstName, goNext]);
 
   if (!fontsLoaded) {
     return (
@@ -107,36 +205,13 @@ export default function VerificationSuccessScreen() {
             }}
           >
             <ActivityIndicator size="small" color="#fff" />
-            <Text
-              style={{
-                color: "#fff",
-                marginTop: 12,
-                fontFamily: "DMSans",
-                fontSize: 14,
-                textAlign: "center",
-              }}
-            >
-              Verifying your account...
-            </Text>
-            <Text
-              style={{
-                color: "rgba(255, 255, 255, 0.7)",
-                marginTop: 4,
-                fontFamily: "DMSans",
-                fontSize: 12,
-                textAlign: "center",
-              }}
-            >
-              Please wait while we confirm your email
-            </Text>
           </View>
         )}
 
         <VerificationSuccessActions
           countdown={0}
-          onContinue={() => immediateAdvance(goNext)}
+          onContinue={goNext}
           onCancel={() => {
-            stop();
             router.replace("/(auth)/signin");
           }}
         />

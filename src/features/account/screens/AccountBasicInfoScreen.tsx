@@ -36,6 +36,8 @@ export default function AccountBasicInfoScreen() {
     firstName?: string;
   }>();
 
+  
+
   const [form, setForm] = useState<FormState>({
     firstName: params.firstName || "",
     lastName: "",

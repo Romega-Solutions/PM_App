@@ -7,9 +7,12 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Linking,
   Platform,
   StatusBar,
+  Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -24,9 +27,8 @@ export default function VerifyEmailScreen() {
 
   const { email, firstName, userType } = params;
 
-  const [countdown, setCountdown] = useState(60); // Increased to 60 seconds
   const didNavigate = useRef(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [isCheckingManually, setIsCheckingManually] = useState(false);
 
   const [fontsLoaded] = useFonts({
     HelloParis: require("@/assets/fonts/hello-paris-sans/HelloParisSans-Bold.ttf"),
@@ -34,89 +36,111 @@ export default function VerifyEmailScreen() {
     DMSans: require("@/assets/fonts/dm-sans/DMSans-Regular.ttf"),
   });
 
-  const clearTicker = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  }, []);
-
-  const goNext = useCallback(() => {
+  const goNext = useCallback((metadata?: any) => {
     if (didNavigate.current) return;
     didNavigate.current = true;
-    clearTicker();
 
-    console.log("📧 Navigating to verification success with params:", {
-      firstName,
-      userType,
+    console.log("📧 Email verified! Navigating to verification success...");
+    
+    const finalFirstName = metadata?.first_name || firstName || "";
+    const finalUserType = metadata?.user_type || userType || "";
+    
+    console.log("📦 Passing params:", { 
+      firstName: finalFirstName, 
+      userType: finalUserType 
     });
 
     router.replace({
       pathname: "/(auth)/verification-success",
       params: {
-        firstName: firstName || "",
-        userType: userType || "",
+        firstName: finalFirstName,
+        userType: finalUserType,
       },
     });
-  }, [clearTicker, router, firstName, userType]);
+  }, [router, firstName, userType]);
 
-  // Listen for authentication state changes
+  // Check for existing verified session on mount
   useEffect(() => {
-    console.log("👂 Setting up auth state listener...");
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("🔔 Auth event:", event);
-
-        if (event === "SIGNED_IN" && session?.user) {
-          console.log("✅ User signed in, email verified!");
-
-          // Check if email is confirmed
-          if (session.user.email_confirmed_at) {
-            console.log("✅ Email confirmed, navigating to next screen");
-            goNext();
-          }
-        }
+    const checkExistingSession = async () => {
+      console.log("🔍 Checking for existing verified session...");
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user?.email_confirmed_at) {
+        console.log("✅ Found existing verified session!");
+        console.log("👤 User metadata:", session.user.user_metadata);
+        
+        // Auto-advance if already verified
+        setTimeout(() => {
+          goNext(session.user.user_metadata);
+        }, 1000);
+      } else {
+        console.log("ℹ️ No verified session found yet");
       }
-    );
-
-    return () => {
-      console.log("🧹 Cleaning up auth listener");
-      authListener.subscription.unsubscribe();
     };
+
+    checkExistingSession();
   }, [goNext]);
 
-  // Countdown timer (as fallback)
-  useEffect(() => {
-    if (!intervalRef.current) {
-      intervalRef.current = setInterval(() => {
-        setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
-      }, 1000);
-    }
-    return () => clearTicker();
-  }, [clearTicker]);
+  // Manual verification check button handler
+  const handleManualCheck = async () => {
+    try {
+      setIsCheckingManually(true);
+      console.log("🔍 Manually checking verification status...");
 
-  // Auto-advance on countdown complete (fallback behavior)
-  useEffect(() => {
-    if (countdown === 0 && !didNavigate.current) {
-      console.log("⏰ Countdown complete, checking auth status...");
+      // Force get fresh session from storage
+      const { data: { session }, error } = await supabase.auth.getSession();
 
-      // Check auth status before advancing
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user?.email_confirmed_at) {
-          console.log("✅ Email confirmed via countdown check");
-          goNext();
-        } else {
-          console.log("⚠️ Email not confirmed yet, user should click verify");
-          // Reset countdown to give more time
-          setCountdown(30);
-        }
+      if (error) {
+        console.error("❌ Error getting session:", error);
+        Alert.alert(
+          "Please Verify First",
+          "Click the verification link in your email, then come back and tap this button.",
+          [{ text: "OK" }]
+        );
+        setIsCheckingManually(false);
+        return;
+      }
+
+      console.log("📧 Current session:", {
+        hasSession: !!session,
+        emailConfirmed: session?.user?.email_confirmed_at,
+        userId: session?.user?.id,
+        metadata: session?.user?.user_metadata,
       });
+
+      if (session?.user?.email_confirmed_at) {
+        console.log("✅ Email verified! Advancing...");
+        goNext(session.user.user_metadata);
+      } else {
+        console.log("⚠️ Email not verified yet or no session");
+        Alert.alert(
+          "Not Yet Verified",
+          "Please:\n\n1. Open your email\n2. Click the verification link\n3. Wait for the app to open\n4. Come back here and tap this button again",
+          [{ text: "OK" }]
+        );
+        setIsCheckingManually(false);
+      }
+    } catch (error) {
+      console.error("❌ Manual check error:", error);
+      Alert.alert(
+        "Error",
+        "Something went wrong. Please try again."
+      );
+      setIsCheckingManually(false);
     }
-  }, [countdown, goNext]);
+  };
+
+  // Log initial params
+  useEffect(() => {
+    console.log("📧 VerifyEmail screen loaded with params:", {
+      email,
+      firstName,
+      userType,
+    });
+  }, [email, firstName, userType]);
 
   const openEmailApp = async () => {
-    clearTicker();
     try {
       const gmailScheme = "googlegmail://";
       const mailto = "mailto:";
@@ -131,19 +155,13 @@ export default function VerifyEmailScreen() {
       await Linking.openURL("https://mail.google.com");
     } catch (error) {
       console.error("Error opening email app:", error);
-    } finally {
-      // Restart countdown after opening email app
-      if (!didNavigate.current && !intervalRef.current) {
-        intervalRef.current = setInterval(() => {
-          setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
-        }, 1000);
-      }
     }
   };
 
   const handleResend = async () => {
     if (!email) {
       console.error("❌ No email available for resend");
+      Alert.alert("Error", "No email address found");
       return;
     }
 
@@ -157,27 +175,19 @@ export default function VerifyEmailScreen() {
 
       if (error) {
         console.error("❌ Error resending email:", error);
-        // You could show a toast/alert here
+        Alert.alert("Error", "Failed to resend verification email");
         return;
       }
 
       console.log("✅ Verification email resent successfully");
-
-      // Reset countdown
-      clearTicker();
-      setCountdown(60);
-      if (!intervalRef.current) {
-        intervalRef.current = setInterval(() => {
-          setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
-        }, 1000);
-      }
+      Alert.alert("Success", "Verification email sent! Please check your inbox.");
     } catch (error) {
       console.error("❌ Exception resending email:", error);
+      Alert.alert("Error", "Something went wrong. Please try again.");
     }
   };
 
   const handleBackToSignIn = () => {
-    clearTicker();
     router.replace("/(auth)/signin");
   };
 
@@ -224,11 +234,64 @@ export default function VerifyEmailScreen() {
         <VerifyEmailHeader email={email ?? null} />
 
         <VerifyEmailActions
-          countdown={countdown}
+          countdown={0}
           onOpenEmailApp={openEmailApp}
           onResend={handleResend}
           onBackToSignIn={handleBackToSignIn}
         />
+
+        {/* Manual verification check button */}
+        <View style={{ marginTop: 32, width: "100%", maxWidth: 400 }}>
+          <TouchableOpacity
+            onPress={handleManualCheck}
+            disabled={isCheckingManually}
+            style={{
+              padding: 18,
+              backgroundColor: "rgba(255, 255, 255, 0.15)",
+              borderRadius: 16,
+              borderWidth: 2,
+              borderColor: "rgba(255, 255, 255, 0.3)",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              elevation: 8,
+            }}
+          >
+            {isCheckingManually ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text
+                style={{
+                  color: "#fff",
+                  fontFamily: "DMSans",
+                  fontSize: 16,
+                  fontWeight: "700",
+                  letterSpacing: 0.5,
+                }}
+              >
+                ✓ I Verified My Email - Continue
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          <Text
+            style={{
+              color: "rgba(255,255,255,0.7)",
+              textAlign: "center",
+              marginTop: 16,
+              fontSize: 13,
+              fontFamily: "DMSans",
+              paddingHorizontal: 24,
+              lineHeight: 20,
+            }}
+          >
+            After clicking the link in your email, return here and tap the button above
+          </Text>
+        </View>
       </View>
     </View>
   );
