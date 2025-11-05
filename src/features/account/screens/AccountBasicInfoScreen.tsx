@@ -4,6 +4,7 @@ import CustomTextInput from "@/src/components/forms/CustomTextInput";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import { accountApi } from "@/src/features/account/api/accountApi";
 import type { UserType } from "@/src/features/auth/api/authApi";
+import { useSignupStore } from "@/src/stores/signupStore";
 import { theme } from "@/src/theme";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Calendar, Heart, User } from "lucide-react-native";
@@ -36,7 +37,7 @@ export default function AccountBasicInfoScreen() {
     firstName?: string;
   }>();
 
-  
+  const { getSignupData, clearSignupData } = useSignupStore();
 
   const [form, setForm] = useState<FormState>({
     firstName: params.firstName || "",
@@ -52,10 +53,21 @@ export default function AccountBasicInfoScreen() {
   });
   const [loading, setLoading] = useState(false);
 
-  // Cast and validate userType
   const userType = params.userType as UserType;
 
-  // Redirect if no userType
+  // 📦 Load firstName from Zustand if missing
+  useEffect(() => {
+    if (!params.firstName) {
+      console.log("⚠️ Missing firstName param, loading from Zustand...");
+      const storedData = getSignupData();
+
+      if (storedData) {
+        console.log("✅ Loaded from Zustand:", storedData);
+        setForm((prev) => ({ ...prev, firstName: storedData.firstName }));
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
       Alert.alert("Error", "User type not found. Please start from signup.");
@@ -63,7 +75,6 @@ export default function AccountBasicInfoScreen() {
     }
   }, [userType]);
 
-  // Get display labels based on user type
   const getUserTypeLabel = (): string => {
     if (userType === "filipina") return "Filipina";
     if (userType === "foreigner") return "Foreign Man";
@@ -76,7 +87,6 @@ export default function AccountBasicInfoScreen() {
     return "Not specified";
   };
 
-  // Validation
   const validateField = (
     field: keyof FormState,
     value: string
@@ -122,7 +132,6 @@ export default function AccountBasicInfoScreen() {
   const handleFieldChange = (field: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
 
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
@@ -131,7 +140,6 @@ export default function AccountBasicInfoScreen() {
   const handleBlur = (field: keyof FormState) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
 
-    // Validate on blur
     const error = validateField(field, form[field]);
     if (error) {
       setErrors((prev) => ({ ...prev, [field]: error }));
@@ -139,7 +147,6 @@ export default function AccountBasicInfoScreen() {
   };
 
   const handleNext = async () => {
-    // Mark all fields as touched
     setTouched({ firstName: true, lastName: true, age: true });
 
     if (!validateForm()) {
@@ -149,17 +156,20 @@ export default function AccountBasicInfoScreen() {
     setLoading(true);
 
     try {
-      // Save with auto-assigned gender based on userType
       const result = await accountApi.saveBasicInfo({
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         age: parseInt(form.age, 10),
-        userType: userType, // Gender will be auto-assigned in the API
+        userType: userType,
       });
 
       if (result?.ok) {
         console.log("✅ Basic info saved:", result.data);
-        console.log(`📋 User Type: ${userType}, Gender: ${result.data.gender}`);
+
+        // 🗑️ CLEAR ZUSTAND STORE AFTER SUCCESSFUL SAVE
+        clearSignupData();
+        console.log("🗑️ Signup data cleared from Zustand");
+
         router.push("/(auth)/account-setup/profile-photos");
       }
     } catch (error) {
@@ -182,7 +192,6 @@ export default function AccountBasicInfoScreen() {
     form.lastName.trim() !== "" &&
     form.age.trim() !== "";
 
-  // Don't render if userType is invalid
   if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
     return null;
   }
@@ -223,7 +232,6 @@ export default function AccountBasicInfoScreen() {
             />
           </View>
 
-          {/* Info Banner with Gender Info */}
           <View style={styles.infoBanner}>
             <Heart size={16} color={theme.colors.amihan[400]} />
             <Text style={styles.infoBannerText}>

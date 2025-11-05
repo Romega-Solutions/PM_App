@@ -1,10 +1,22 @@
 import { useEffect, useState } from "react";
-import { accountApi, type BasicInfoPayload } from "../api/accountApi";
 import type { UserType } from "../../auth/api/authApi";
+import {
+  accountApi,
+  type BasicInfoPayload,
+  type PreferencesPayload,
+  type SavedLocation,
+  type VerificationData,
+} from "../api/accountApi";
 
+// ✅ Fixed: Match the structure you're using in WelcomeCompleteScreen
 type WelcomeData = {
   firstName: string;
   userType: UserType;
+  basicInfo: BasicInfoPayload | null;
+  photos: string[];
+  location: SavedLocation | null;
+  verification: VerificationData | null;
+  preferences: PreferencesPayload | null;
   completionStats: {
     basicInfo: boolean;
     photos: boolean;
@@ -37,6 +49,11 @@ export const useWelcomeData = () => {
           setData({
             firstName: basicInfo.firstName,
             userType: basicInfo.userType,
+            basicInfo: basicInfo, // ✅ Added
+            photos: photos, // ✅ Added
+            location: location, // ✅ Added
+            verification: verification, // ✅ Added
+            preferences: preferences, // ✅ Added
             completionStats: {
               basicInfo: !!basicInfo,
               photos: (photos?.length ?? 0) > 0,
@@ -75,6 +92,11 @@ export const useWelcomeData = () => {
         setData({
           firstName: basicInfo.firstName,
           userType: basicInfo.userType,
+          basicInfo: basicInfo, // ✅ Added
+          photos: photos, // ✅ Added
+          location: location, // ✅ Added
+          verification: verification, // ✅ Added
+          preferences: preferences, // ✅ Added
           completionStats: {
             basicInfo: !!basicInfo,
             photos: (photos?.length ?? 0) > 0,

@@ -31,7 +31,7 @@ export default function LocationScreen() {
   // Get userType from params
   const userType = params.userType as UserType;
 
-  const { query, setQuery, filtered, hasQuery } = useLocationSearch();
+  const { query, setQuery, filteredLocations } = useLocationSearch();
 
   const [selectedLocation, setSelectedLocation] = useState<string>("");
   const [useCurrentLocation, setUseCurrentLocation] = useState(false);
@@ -55,10 +55,12 @@ export default function LocationScreen() {
     );
   }, []);
 
+  // ✅ Fixed: Accept location object instead of string
   const handleSelect = useCallback(
-    (loc: string) => {
+    (location: { city: string; country: string }) => {
       setUseCurrentLocation(false);
-      setSelectedLocation(loc);
+      const locationString = `${location.city}, ${location.country}`;
+      setSelectedLocation(locationString);
       setQuery("");
     },
     [setQuery]
@@ -161,10 +163,17 @@ export default function LocationScreen() {
             />
 
             <View style={{ marginTop: 10 }}>
-              {hasQuery ? (
+              {query.trim() !== "" ? (
                 <LocationsList
-                  locations={filtered}
-                  onSelect={handleSelect}
+                  // ✅ Fixed: Map Location objects to strings
+                  locations={filteredLocations.map(
+                    (loc) => `${loc.city}, ${loc.country}`
+                  )}
+                  // ✅ Fixed: Parse string back to location object
+                  onSelect={(locStr) => {
+                    const [city, country] = locStr.split(", ");
+                    handleSelect({ city, country });
+                  }}
                   emptyLabel="No cities found. Try a different search."
                 />
               ) : (

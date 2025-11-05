@@ -10,6 +10,7 @@ import SocialSignInButton from "@/src/components/auth/SocialSignInButton";
 import CustomTextInput from "@/src/components/forms/CustomTextInput";
 import FormDivider from "@/src/components/forms/FormDivider";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
+import { useSignupStore } from "@/src/stores/signupStore";
 import { theme } from "@/src/theme";
 import { useSignUp } from "../hooks/useSignUp";
 
@@ -31,6 +32,7 @@ function SignUpScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ userType?: string }>();
   const { signUp, loading } = useSignUp();
+  const saveSignupData = useSignupStore((state) => state.saveSignupData);
 
   const [form, setForm] = useState<FormState>({
     firstName: "",
@@ -42,10 +44,8 @@ function SignUpScreen() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [errors, setErrors] = useState<Partial<FormState>>({});
 
-  // Cast and validate userType
   const userType = params.userType as UserType;
 
-  // Redirect if no userType selected
   useEffect(() => {
     if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
       console.warn("⚠️ No valid userType found, redirecting to selection");
@@ -89,7 +89,6 @@ function SignUpScreen() {
   const handleSignUp = async () => {
     if (!validate()) return;
 
-    // Double-check userType exists
     if (!userType) {
       Alert.alert("Error", "Please select your account type first");
       router.replace("/(auth)/user-type-selection");
@@ -97,11 +96,16 @@ function SignUpScreen() {
     }
 
     try {
-      console.log("🚀 Starting signup with:", {
-        email: form.email,
+      const signupData = {
+        email: form.email.toLowerCase().trim(),
         firstName: form.firstName.trim(),
-        userType,
-      });
+        userType: userType,
+      };
+
+      console.log("🚀 Starting signup with:", signupData);
+
+      // 💾 SAVE TO ZUSTAND STORE FIRST
+      saveSignupData(signupData);
 
       const result = await signUp(form.email, form.password, {
         firstName: form.firstName.trim(),
@@ -111,28 +115,17 @@ function SignUpScreen() {
       console.log("✅ Signup result:", result);
 
       if (result?.needsVerification) {
-        console.log("📧 Navigating to email verification with params:", {
-          email: form.email,
-          firstName: form.firstName.trim(),
-          userType,
-        });
+        console.log(
+          "📧 Navigating to email verification with params:",
+          signupData
+        );
 
         router.replace({
           pathname: "/(auth)/verify-email",
-          params: {
-            email: form.email,
-            firstName: form.firstName.trim(),
-            userType: userType,
-          },
+          params: signupData,
         });
         return;
       }
-
-      // If no verification needed, go directly to basic info
-      console.log("🎯 No verification needed, going to basic info with:", {
-        userType,
-        firstName: form.firstName.trim(),
-      });
 
       router.replace({
         pathname: "/(auth)/account-setup/basic-info",
@@ -150,14 +143,12 @@ function SignUpScreen() {
     }
   };
 
-  // Don't render if userType is invalid
   if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
     return null;
   }
 
   return (
     <AuthLayout showBackButton>
-      {/* Logo above header */}
       <View style={styles.logoWrap}>
         <Image
           source={require("@/assets/logo-no-bg.png")}
@@ -174,7 +165,6 @@ function SignUpScreen() {
         showLogo={false}
       />
 
-      {/* User Type Badge */}
       <View style={styles.userTypeBadge}>
         <Text style={styles.userTypeBadgeText}>
           Account Type: {userTypeLabel}

@@ -40,15 +40,15 @@ const SURFACE = "rgba(255,255,255,0.12)";
 export default function WelcomeCompleteScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const {
-    basicInfo,
-    location,
-    preferences,
-    verification,
-    photos,
-    userType,
-    loading,
-  } = useWelcomeData();
+  const { data, loading } = useWelcomeData();
+
+  // Then extract the properties from data:
+  const basicInfo = data?.basicInfo ?? null;
+  const location = data?.location ?? null;
+  const preferences = data?.preferences ?? null;
+  const verification = data?.verification ?? null;
+  const photos = data?.photos ?? [];
+  const userType = data?.userType ?? null;
 
   const handleStartDating = () => {
     router.replace("/(main)");
@@ -280,11 +280,8 @@ export default function WelcomeCompleteScreen() {
           { paddingBottom: Math.max(insets.bottom + 16, 32) },
         ]}
       >
-        <PrimaryButton
-          title="Start Dating"
-          onPress={handleStartDating}
-          icon={<Heart size={20} color={WHITE} fill={WHITE} strokeWidth={2} />}
-        />
+        // To (remove icon prop):
+        <PrimaryButton title="Start Dating" onPress={handleStartDating} />
         <GhostButton title="Explore the App First" onPress={handleExploreApp} />
       </View>
     </View>

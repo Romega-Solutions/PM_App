@@ -1,12 +1,14 @@
 import VerificationSuccessActions from "@/src/components/auth/VerificationSuccessActions";
 import VerificationSuccessHeader from "@/src/components/auth/VerificationSuccessHeader";
 import { supabase } from "@/src/config/supabase";
+import { useSignupStore } from "@/src/stores/signupStore";
 import { useFonts } from "expo-font";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   StatusBar,
   View,
@@ -19,9 +21,11 @@ export default function VerificationSuccessScreen() {
     firstName?: string;
   }>();
 
+  const getSignupData = useSignupStore((state) => state.getSignupData);
+
   const [userType, setUserType] = useState(params.userType);
   const [firstName, setFirstName] = useState(params.firstName);
-  const [isChecking, setIsChecking] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
 
   const [fontsLoaded] = useFonts({
     HelloParis: require("@/assets/fonts/hello-paris-sans/HelloParisSans-Bold.ttf"),
@@ -29,44 +33,76 @@ export default function VerificationSuccessScreen() {
     DMSans: require("@/assets/fonts/dm-sans/DMSans-Regular.ttf"),
   });
 
-  // Ensure profile exists and fetch user data
+  // 📦 Load from Zustand and ensure profile exists
   useEffect(() => {
-    const ensureProfileExists = async () => {
-      console.log('📦 Ensuring profile exists...');
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      
+    const loadDataAndEnsureProfile = async () => {
+      console.log("📦 Loading data and ensuring profile...");
+
+      // Try to get from params first
+      let finalUserType = params.userType;
+      let finalFirstName = params.firstName;
+
+      // If missing, try Zustand
+      if (!finalUserType || !finalFirstName) {
+        console.log("⚠️ Missing params, loading from Zustand...");
+        const storedData = getSignupData();
+
+        if (storedData) {
+          console.log("✅ Loaded from Zustand:", storedData);
+          finalUserType = storedData.userType;
+          finalFirstName = storedData.firstName;
+          setUserType(finalUserType);
+          setFirstName(finalFirstName);
+        }
+      }
+
+      // Get session and ensure profile exists
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (!session?.user) {
-        console.log('⚠️ No session found');
+        console.log("⚠️ No session found");
+        setIsChecking(false);
         return;
       }
 
       const userId = session.user.id;
       const metadata = session.user.user_metadata;
-      
-      console.log('📦 User metadata:', metadata);
+
+      console.log("📦 User metadata:", metadata);
+
+      // Use metadata as fallback
+      if (!finalUserType && metadata.user_type) {
+        finalUserType = metadata.user_type;
+        setUserType(finalUserType);
+      }
+      if (!finalFirstName && metadata.first_name) {
+        finalFirstName = metadata.first_name;
+        setFirstName(finalFirstName);
+      }
 
       try {
         // Check if profile exists
         const { data: existingProfile, error: fetchError } = await supabase
-          .from('profiles')
-          .select('id, user_type, first_name')
-          .eq('id', userId)
+          .from("profiles")
+          .select("id, user_type, first_name")
+          .eq("id", userId)
           .single();
 
-        if (fetchError && fetchError.code === 'PGRST116') {
-          // Profile doesn't exist - create it manually
-          console.log('⚠️ Profile not found, creating manually...');
-          
-          const userTypeValue = metadata.user_type || 'foreigner';
-          const genderValue = userTypeValue === 'filipina' ? 'female' : 'male';
-          
+        if (fetchError && fetchError.code === "PGRST116") {
+          console.log("⚠️ Profile not found, creating...");
+
+          const userTypeValue =
+            finalUserType || metadata.user_type || "foreigner";
+          const genderValue = userTypeValue === "filipina" ? "female" : "male";
+
           const { data: newProfile, error: insertError } = await supabase
-            .from('profiles')
+            .from("profiles")
             .insert({
               id: userId,
               email: session.user.email,
-              first_name: metadata.first_name || '',
+              first_name: finalFirstName || metadata.first_name || "",
               user_type: userTypeValue,
               gender: genderValue,
             })
@@ -74,83 +110,57 @@ export default function VerificationSuccessScreen() {
             .single();
 
           if (insertError) {
-            console.error('❌ Error creating profile:', insertError);
-            throw insertError;
+            console.error("❌ Error creating profile:", insertError);
+          } else {
+            console.log("✅ Profile created:", newProfile);
+            setUserType(newProfile.user_type);
+            setFirstName(newProfile.first_name);
           }
-
-          console.log('✅ Profile created manually:', newProfile);
-          
-          setUserType(newProfile.user_type);
-          setFirstName(newProfile.first_name);
         } else if (existingProfile) {
-          // Profile exists
-          console.log('✅ Profile found:', existingProfile);
-          
-          setUserType(existingProfile.user_type || metadata.user_type);
-          setFirstName(existingProfile.first_name || metadata.first_name);
-        } else if (fetchError) {
-          console.error('❌ Error fetching profile:', fetchError);
+          console.log("✅ Profile exists:", existingProfile);
+          setUserType(existingProfile.user_type);
+          setFirstName(existingProfile.first_name);
         }
       } catch (error) {
-        console.error('❌ Error ensuring profile:', error);
+        console.error("❌ Error ensuring profile:", error);
+      } finally {
+        setIsChecking(false);
       }
     };
 
-    ensureProfileExists();
+    loadDataAndEnsureProfile();
   }, []);
 
   const goNext = useCallback(() => {
+    if (!userType || !firstName) {
+      Alert.alert("Error", "Missing user data. Please try again.");
+      router.replace("/(auth)/user-type-selection");
+      return;
+    }
+
     console.log("✅ Navigating to basic info...");
     console.log("📦 Passing params:", { userType, firstName });
 
     router.replace({
       pathname: "/(auth)/account-setup/basic-info",
       params: {
-        userType: userType || "",
-        firstName: firstName || "",
+        userType: userType,
+        firstName: firstName,
       },
     });
   }, [router, userType, firstName]);
 
-  // Check authentication and auto-advance
+  // Auto-advance after data is loaded
   useEffect(() => {
-    const checkAuth = async () => {
-      console.log("🔍 Checking authentication status...");
-      console.log("📦 Current params:", { userType, firstName });
-      
-      setIsChecking(true);
-      
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user?.email_confirmed_at) {
-          console.log("✅ Email verified!");
-          
-          // Ensure we have userType and firstName before advancing
-          if (userType && firstName) {
-            console.log("✅ User data ready, auto-advancing in 2 seconds...");
-            setTimeout(() => {
-              goNext();
-            }, 2000);
-          } else {
-            console.log("⚠️ Still waiting for user data...");
-            // Will retry after ensureProfileExists completes
-          }
-        } else {
-          console.log("⚠️ Email not yet verified");
-        }
-      } catch (error) {
-        console.error("❌ Error checking auth:", error);
-      } finally {
-        setIsChecking(false);
-      }
-    };
+    if (!isChecking && userType && firstName) {
+      console.log("✅ Data ready, auto-advancing in 2 seconds...");
+      const timer = setTimeout(() => {
+        goNext();
+      }, 2000);
 
-    // Only check if we have the required data
-    if (userType && firstName) {
-      checkAuth();
+      return () => clearTimeout(timer);
     }
-  }, [userType, firstName, goNext]);
+  }, [isChecking, userType, firstName, goNext]);
 
   if (!fontsLoaded) {
     return (
