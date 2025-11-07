@@ -1,6 +1,6 @@
 import * as Linking from "expo-linking";
-import { supabase } from "./supabase";
 import { router } from "expo-router";
+import { supabase } from "./supabase";
 
 export const setupDeepLinking = () => {
   console.log("🔗 Setting up deep link handling...");
@@ -24,6 +24,9 @@ async function handleDeepLink(url: string) {
   try {
     console.log("🔍 Processing deep link:", url);
     console.log("🔍 Full URL:", url);
+    console.log("🔍 URL length:", url.length);
+    console.log("🔍 Has #:", url.includes("#"));
+    console.log("🔍 Has ?:", url.includes("?"));
 
     // ✅ CHECK FOR ERROR FIRST
     if (url.includes("error=")) {
@@ -31,24 +34,57 @@ async function handleDeepLink(url: string) {
       const errorDesc = errorMatch
         ? decodeURIComponent(errorMatch[1].replace(/\+/g, " "))
         : "Unknown error";
-      
+
       console.error("❌ Auth error in URL:", errorDesc);
 
       if (url.includes("otp_expired")) {
         console.log("⏰ OTP EXPIRED - Email link has expired!");
       }
-      
+
       return; // ✅ STOP HERE
     }
+
+    // ✅ Check for confirmation token (email verification)
+    const hasToken = url.includes("token=");
+    const hasType = url.includes("type=");
 
     // ✅ ONLY CHECK FOR ACTUAL TOKENS (not "code=" from error_code)
     const hasAccessToken = url.includes("access_token=");
     const hasRefreshToken = url.includes("refresh_token=");
 
     console.log("🔍 Auth indicators:", {
+      hasToken,
+      hasType,
       hasAccessToken,
       hasRefreshToken,
     });
+
+    // Handle email confirmation token (this comes first before access/refresh tokens)
+    if (hasToken && hasType) {
+      console.log("📧 Email confirmation link detected!");
+      console.log(
+        "⚠️ NOTE: Supabase should automatically exchange this for session tokens"
+      );
+      console.log("⏳ Waiting for token exchange...");
+
+      // Wait a bit for Supabase to process the token exchange
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Check if we now have a session
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        console.log("✅ Session found after token exchange!");
+        await handleSessionEstablished(session);
+        return;
+      } else {
+        console.log(
+          "⚠️ No session after token exchange - checking URL for tokens..."
+        );
+      }
+    }
 
     const isAuthCallback = hasAccessToken && hasRefreshToken;
 
@@ -84,7 +120,7 @@ async function handleDeepLink(url: string) {
 
         if (accessToken && refreshToken) {
           console.log("🔐 Setting session...");
-          
+
           const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,

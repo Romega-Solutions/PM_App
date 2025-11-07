@@ -7,11 +7,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Platform,
-  StatusBar,
-  View,
+    ActivityIndicator,
+    Platform,
+    StatusBar,
+    View
 } from "react-native";
 
 export default function VerificationSuccessScreen() {
@@ -83,10 +82,10 @@ export default function VerificationSuccessScreen() {
       }
 
       try {
-        // Check if profile exists
+        // Check if profile exists with all completion flags
         const { data: existingProfile, error: fetchError } = await supabase
           .from("profiles")
-          .select("id, user_type, first_name")
+          .select("id, user_type, first_name, basic_info_completed, photos_completed, location_completed, verification_completed, preferences_completed")
           .eq("id", userId)
           .single();
 
@@ -106,61 +105,109 @@ export default function VerificationSuccessScreen() {
               user_type: userTypeValue,
               gender: genderValue,
             })
-            .select()
+            .select("id, user_type, first_name, basic_info_completed, photos_completed, location_completed, verification_completed, preferences_completed")
             .single();
 
           if (insertError) {
             console.error("❌ Error creating profile:", insertError);
+            setIsChecking(false);
           } else {
             console.log("✅ Profile created:", newProfile);
             setUserType(newProfile.user_type);
             setFirstName(newProfile.first_name);
+            
+            // Check which step to redirect to
+            redirectToIncompleteStep(newProfile, finalUserType, finalFirstName);
           }
         } else if (existingProfile) {
           console.log("✅ Profile exists:", existingProfile);
           setUserType(existingProfile.user_type);
           setFirstName(existingProfile.first_name);
+          
+          // Check which step to redirect to
+          redirectToIncompleteStep(existingProfile, finalUserType, finalFirstName);
         }
       } catch (error) {
         console.error("❌ Error ensuring profile:", error);
-      } finally {
         setIsChecking(false);
       }
+    };
+
+    const redirectToIncompleteStep = (profile: any, userType?: string, firstName?: string) => {
+      console.log("🔍 Checking profile completion status:", {
+        basic_info_completed: profile.basic_info_completed,
+        photos_completed: profile.photos_completed,
+        location_completed: profile.location_completed,
+        verification_completed: profile.verification_completed,
+        preferences_completed: profile.preferences_completed,
+      });
+
+      const finalUserType = userType || profile.user_type || "foreigner";
+      const finalFirstName = firstName || profile.first_name || "";
+
+      // Determine which step is incomplete and redirect
+      if (!profile.basic_info_completed) {
+        console.log("📍 Redirecting to: basic-info (not completed)");
+        setTimeout(() => {
+          router.replace({
+            pathname: "/(auth)/account-setup/basic-info",
+            params: { userType: finalUserType, firstName: finalFirstName },
+          });
+        }, 2000);
+      } else if (!profile.photos_completed) {
+        console.log("📍 Redirecting to: profile-photos (not completed)");
+        setTimeout(() => {
+          router.replace({
+            pathname: "/(auth)/account-setup/profile-photos",
+            params: { userType: finalUserType, firstName: finalFirstName },
+          });
+        }, 2000);
+      } else if (!profile.location_completed) {
+        console.log("📍 Redirecting to: location (not completed)");
+        setTimeout(() => {
+          router.replace({
+            pathname: "/(auth)/account-setup/location",
+            params: { userType: finalUserType, firstName: finalFirstName },
+          });
+        }, 2000);
+      } else if (!profile.verification_completed) {
+        console.log("📍 Redirecting to: verification-upload (not completed)");
+        setTimeout(() => {
+          router.replace({
+            pathname: "/(auth)/account-setup/verification-upload",
+            params: { userType: finalUserType, firstName: finalFirstName },
+          });
+        }, 2000);
+      } else if (!profile.preferences_completed) {
+        console.log("📍 Redirecting to: preferences (not completed)");
+        setTimeout(() => {
+          router.replace({
+            pathname: "/(auth)/account-setup/preferences",
+            params: { userType: finalUserType, firstName: finalFirstName },
+          });
+        }, 2000);
+      } else {
+        console.log("✅ All steps completed! Redirecting to welcome-complete");
+        setTimeout(() => {
+          router.replace({
+            pathname: "/(auth)/account-setup/welcome-complete",
+            params: { userType: finalUserType, firstName: finalFirstName },
+          });
+        }, 2000);
+      }
+      
+      setIsChecking(false);
     };
 
     loadDataAndEnsureProfile();
   }, []);
 
   const goNext = useCallback(() => {
-    if (!userType || !firstName) {
-      Alert.alert("Error", "Missing user data. Please try again.");
-      router.replace("/(auth)/user-type-selection");
-      return;
-    }
+    // This will be triggered by redirectToIncompleteStep automatically
+    console.log("⏭️ Manual continue clicked (will use auto-redirect)");
+  }, []);
 
-    console.log("✅ Navigating to basic info...");
-    console.log("📦 Passing params:", { userType, firstName });
-
-    router.replace({
-      pathname: "/(auth)/account-setup/basic-info",
-      params: {
-        userType: userType,
-        firstName: firstName,
-      },
-    });
-  }, [router, userType, firstName]);
-
-  // Auto-advance after data is loaded
-  useEffect(() => {
-    if (!isChecking && userType && firstName) {
-      console.log("✅ Data ready, auto-advancing in 2 seconds...");
-      const timer = setTimeout(() => {
-        goNext();
-      }, 2000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [isChecking, userType, firstName, goNext]);
+  // Remove the old auto-advance useEffect since redirectToIncompleteStep handles it now
 
   if (!fontsLoaded) {
     return (

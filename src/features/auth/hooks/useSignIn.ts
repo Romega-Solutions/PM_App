@@ -1,4 +1,5 @@
 // src/features/auth/hooks/useSignIn.ts
+import { supabase } from "@/src/config/supabase";
 import { accountApi } from "@/src/features/account/api/accountApi";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -76,18 +77,166 @@ export const useSignIn = () => {
 
         console.log(`✅ Signed in as test account: ${testAccount.userType}`);
       } else {
-        // Real authentication (to be implemented with Supabase)
+        // Real authentication
         await authApi.signIn(email, password);
       }
 
-      // Navigate to main app on success
-      router.replace("/(main)");
+      // Check profile completion status and redirect accordingly
+      await checkProfileAndRedirect();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Sign in failed";
       setError(message);
       throw err;
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkProfileAndRedirect = async () => {
+    try {
+      console.log("🔍 Checking profile completion status after sign in...");
+
+      // Get current session
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.user) {
+        console.log("❌ No session found");
+        router.replace("/(auth)/signin");
+        return;
+      }
+
+      const userId = session.user.id;
+      const userMetadata = session.user.user_metadata;
+
+      // Fetch profile with completion flags
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select(
+          "id, user_type, first_name, basic_info_completed, photos_completed, location_completed, verification_completed, preferences_completed"
+        )
+        .eq("id", userId)
+        .single();
+
+      if (error && error.code === "PGRST116") {
+        // No profile found, create one and redirect to account setup
+        console.log("⚠️ No profile found, creating profile and redirecting to account setup...");
+        
+        const userTypeValue = userMetadata?.user_type || "foreigner";
+        // Set gender based on user type: filipina = female, foreigner = male
+        const genderValue = userTypeValue === "filipina" ? "female" : "male";
+        
+        try {
+          const { data: newProfile, error: insertError } = await supabase
+            .from("profiles")
+            .insert({
+              id: userId,
+              email: session.user.email,
+              first_name: userMetadata?.first_name || "",
+              user_type: userTypeValue,
+              gender: genderValue,
+            })
+            .select()
+            .single();
+
+          if (insertError) {
+            console.error("❌ Error creating profile:", insertError);
+          } else {
+            console.log("✅ Profile created:", newProfile);
+          }
+        } catch (err) {
+          console.error("❌ Exception creating profile:", err);
+        }
+
+        router.replace({
+          pathname: "/(auth)/verification-success",
+          params: {
+            userType: userTypeValue,
+            firstName: userMetadata?.first_name || "",
+          },
+        });
+        return;
+      } else if (error) {
+        console.error("❌ Error fetching profile:", error);
+        router.replace("/(main)");
+        return;
+      }
+
+      if (!profile) {
+        console.log("⚠️ No profile found, redirecting to account setup...");
+        router.replace({
+          pathname: "/(auth)/verification-success",
+          params: {
+            userType: userMetadata?.user_type || "foreigner",
+            firstName: userMetadata?.first_name || "",
+          },
+        });
+        return;
+      }
+
+      console.log("📊 Profile completion status:", {
+        basic_info_completed: profile.basic_info_completed,
+        photos_completed: profile.photos_completed,
+        location_completed: profile.location_completed,
+        verification_completed: profile.verification_completed,
+        preferences_completed: profile.preferences_completed,
+      });
+
+      // Check which step is incomplete and redirect
+      if (!profile.basic_info_completed) {
+        console.log("📍 Redirecting to: basic-info (not completed)");
+        router.replace({
+          pathname: "/(auth)/account-setup/basic-info",
+          params: {
+            userType: profile.user_type,
+            firstName: profile.first_name,
+          },
+        });
+      } else if (!profile.photos_completed) {
+        console.log("📍 Redirecting to: profile-photos (not completed)");
+        router.replace({
+          pathname: "/(auth)/account-setup/profile-photos",
+          params: {
+            userType: profile.user_type,
+            firstName: profile.first_name,
+          },
+        });
+      } else if (!profile.location_completed) {
+        console.log("📍 Redirecting to: location (not completed)");
+        router.replace({
+          pathname: "/(auth)/account-setup/location",
+          params: {
+            userType: profile.user_type,
+            firstName: profile.first_name,
+          },
+        });
+      } else if (!profile.preferences_completed) {
+        console.log("📍 Redirecting to: preferences (not completed)");
+        router.replace({
+          pathname: "/(auth)/account-setup/preferences",
+          params: {
+            userType: profile.user_type,
+            firstName: profile.first_name,
+          },
+        });
+      } else if (!profile.verification_completed) {
+        console.log("📍 User not verified, skipping welcome screen and redirecting to main app");
+        router.replace("/(main)");
+      } else {
+        console.log("✅ Profile complete and verified! Redirecting to welcome screen");
+        router.replace({
+          pathname: "/(auth)/account-setup/welcome-complete",
+          params: {
+            userType: profile.user_type,
+            firstName: profile.first_name,
+          },
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error checking profile completion:", error);
+      // Fallback to main app on error
+      router.replace("/(main)");
     }
   };
 

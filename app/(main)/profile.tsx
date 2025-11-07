@@ -1,34 +1,35 @@
 // app/(tabs)/profile.tsx
+import { supabase } from "@/src/config/supabase";
 import { accountApi } from "@/src/features/account/api/accountApi";
 import { UserType } from "@/src/features/auth/api/authApi";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
-  Bell,
-  ChevronRight,
-  Edit,
-  HelpCircle,
-  Info,
-  Lock,
-  LogOut,
-  MapPin,
-  Settings,
-  SlidersHorizontal,
-  Sparkles,
-  User,
+    Bell,
+    ChevronRight,
+    Edit,
+    HelpCircle,
+    Info,
+    Lock,
+    LogOut,
+    MapPin,
+    Settings,
+    SlidersHorizontal,
+    Sparkles,
+    User,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Dimensions,
-  Image,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    Image,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -68,26 +69,53 @@ export default function Profile() {
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
-        const [basicInfo, location, verification, photos] = await Promise.all([
-          accountApi.getBasicInfo(),
-          accountApi.getLocation(),
-          accountApi.getVerification(),
-          accountApi.getProfilePhotos(),
-        ]);
+        // Get current session
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-        if (basicInfo) {
+        if (!session?.user) {
+          console.log("❌ No session found");
+          setLoading(false);
+          return;
+        }
+
+        const userId = session.user.id;
+
+        // Fetch profile from Supabase
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select(
+            "id, email, first_name, last_name, age, user_type, gender, location_name, photos, is_verified"
+          )
+          .eq("id", userId)
+          .single();
+
+        if (error) {
+          console.error("❌ Failed to fetch profile:", error);
+          setLoading(false);
+          return;
+        }
+
+        if (profile) {
+          console.log("✅ Profile loaded:", profile);
+          
+          // Parse photos array
+          const photosArray = profile.photos || [];
+          const firstPhoto = photosArray.length > 0 ? photosArray[0] : null;
+
           setProfileData({
-            firstName: basicInfo.firstName,
-            lastName: basicInfo.lastName,
-            age: basicInfo.age,
-            userType: basicInfo.userType,
-            location: location?.locationName || "Unknown Location",
-            photoUri: photos.length > 0 ? photos[0] : null,
-            isVerified: verification?.isVerified ?? false,
+            firstName: profile.first_name || "Unknown",
+            lastName: profile.last_name || "",
+            age: profile.age || 0,
+            userType: profile.user_type as UserType,
+            location: profile.location_name || "Unknown Location",
+            photoUri: firstPhoto,
+            isVerified: profile.is_verified || false,
           });
         }
       } catch (error) {
-        console.error("Failed to fetch profile data:", error);
+        console.error("❌ Failed to fetch profile data:", error);
       } finally {
         setLoading(false);
       }
@@ -111,15 +139,24 @@ export default function Profile() {
     { title: "About", icon: <Info size={22} color={ACCENT_PURPLE} /> },
   ];
 
-  const handleLogout = () => {
-    // Clear profile data
-    accountApi.clearBasicInfo();
-    accountApi.clearLocation();
-    accountApi.clearPreferences();
-    accountApi.clearVerification();
+  const handleLogout = async () => {
+    try {
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+      
+      // Clear local profile data
+      accountApi.clearBasicInfo();
+      accountApi.clearLocation();
+      accountApi.clearPreferences();
+      accountApi.clearVerification();
 
-    // Navigate to welcome screen
-    router.replace("/(auth)/welcome");
+      // Navigate to welcome screen
+      router.replace("/(auth)/welcome");
+    } catch (error) {
+      console.error("❌ Error during logout:", error);
+      // Still navigate to welcome even if there's an error
+      router.replace("/(auth)/welcome");
+    }
   };
 
   const formatUserType = (type: UserType): string => {

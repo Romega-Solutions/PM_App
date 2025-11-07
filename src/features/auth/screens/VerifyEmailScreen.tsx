@@ -33,6 +33,7 @@ export default function VerifyEmailScreen() {
 
   const didNavigate = useRef(false);
   const [isCheckingManually, setIsCheckingManually] = useState(false);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const [fontsLoaded] = useFonts({
     HelloParis: require("@/assets/fonts/hello-paris-sans/HelloParisSans-Bold.ttf"),
@@ -110,6 +111,31 @@ export default function VerifyEmailScreen() {
     };
 
     checkExistingSession();
+
+    // 🔄 Start auto-polling every 5 seconds to check if email was verified
+    console.log("🔄 Starting auto-verification polling...");
+    pollingIntervalRef.current = setInterval(async () => {
+      console.log("🔄 Auto-checking verification status...");
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session?.user?.email_confirmed_at) {
+        console.log("✅ Email verified detected by polling!");
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+        }
+        goNext(session.user.user_metadata);
+      }
+    }, 5000); // Check every 5 seconds
+
+    // Cleanup on unmount
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
   }, [goNext]);
 
   const handleManualCheck = async () => {
@@ -117,41 +143,95 @@ export default function VerifyEmailScreen() {
       setIsCheckingManually(true);
       console.log("🔍 Manually checking verification status...");
 
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.refreshSession();
-
-      if (error) {
-        console.error("❌ Error refreshing session:", error);
-        Alert.alert(
-          "Please Verify First",
-          "Click the verification link in your email, wait a few seconds, then come back and tap this button.",
-          [{ text: "OK" }]
-        );
+      if (!email) {
+        Alert.alert("Error", "No email found");
         setIsCheckingManually(false);
         return;
       }
 
-      console.log("📧 Current session:", {
-        hasSession: !!session,
-        emailConfirmed: session?.user?.email_confirmed_at,
-        userId: session?.user?.id,
-        metadata: session?.user?.user_metadata,
-      });
+      // First, try to refresh the current session
+      console.log("🔄 Refreshing session to check verification...");
+      const {
+        data: { session: refreshedSession },
+        error: refreshError,
+      } = await supabase.auth.refreshSession();
 
-      if (session?.user?.email_confirmed_at) {
-        console.log("✅ Email verified! Advancing...");
-        goNext(session.user.user_metadata);
-      } else {
-        console.log("⚠️ Email not verified yet or no session");
-        Alert.alert(
-          "Not Yet Verified",
-          "Please:\n\n1. Open your email\n2. Click the verification link\n3. Wait 5 seconds\n4. Come back and tap this button",
-          [{ text: "OK" }]
-        );
-        setIsCheckingManually(false);
+      if (refreshedSession?.user?.email_confirmed_at) {
+        console.log("✅ Email verified! Session is active!");
+        goNext(refreshedSession.user.user_metadata);
+        return;
       }
+
+      // If no session or not verified, prompt for password to sign in
+      console.log("⚠️ No active session, prompting for password...");
+
+      Alert.prompt(
+        "Enter Password",
+        "To continue, please enter your password:",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+            onPress: () => setIsCheckingManually(false),
+          },
+          {
+            text: "Sign In",
+            onPress: async (password?: string) => {
+              if (!password) {
+                Alert.alert("Error", "Password is required");
+                setIsCheckingManually(false);
+                return;
+              }
+
+              try {
+                console.log("🔐 Signing in with password...");
+                const { data, error } = await supabase.auth.signInWithPassword({
+                  email: email,
+                  password: password,
+                });
+
+                if (error) {
+                  console.error("❌ Sign in error:", error);
+                  const errorMsg =
+                    error.message === "Invalid login credentials"
+                      ? "Wrong password. Please try again."
+                      : error.message === "Email not confirmed"
+                        ? "Your email hasn't been verified yet. Please verify it first in Supabase:\n\nUPDATE auth.users SET email_confirmed_at = NOW() WHERE email = '" +
+                          email +
+                          "'"
+                        : "Sign in failed: " + error.message;
+
+                  Alert.alert("Sign In Failed", errorMsg);
+                  setIsCheckingManually(false);
+                  return;
+                }
+
+                if (data.session?.user?.email_confirmed_at) {
+                  console.log("✅ Signed in successfully with verified email!");
+                  console.log(
+                    "👤 User metadata:",
+                    data.session.user.user_metadata
+                  );
+                  goNext(data.session.user.user_metadata);
+                } else {
+                  Alert.alert(
+                    "Not Verified Yet",
+                    "Your email hasn't been verified in Supabase yet.\n\nRun this in SQL Editor:\n\nUPDATE auth.users SET email_confirmed_at = NOW() WHERE email = '" +
+                      email +
+                      "'\n\nThen try again."
+                  );
+                  setIsCheckingManually(false);
+                }
+              } catch (err) {
+                console.error("❌ Exception:", err);
+                Alert.alert("Error", "Something went wrong");
+                setIsCheckingManually(false);
+              }
+            },
+          },
+        ],
+        "secure-text"
+      );
     } catch (error) {
       console.error("❌ Manual check error:", error);
       Alert.alert("Error", "Something went wrong. Please try again.");
@@ -271,23 +351,57 @@ export default function VerifyEmailScreen() {
         />
 
         <View style={{ marginTop: 32, width: "100%", maxWidth: 400 }}>
+          <View
+            style={{
+              padding: 20,
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: "rgba(255, 255, 255, 0.2)",
+              alignItems: "center",
+            }}
+          >
+            <Text
+              style={{
+                color: "rgba(255,255,255,0.95)",
+                textAlign: "center",
+                fontSize: 16,
+                fontFamily: "DMSans",
+                lineHeight: 24,
+                fontWeight: "600",
+                marginBottom: 8,
+              }}
+            >
+              📧 Check your email inbox
+            </Text>
+            <Text
+              style={{
+                color: "rgba(255,255,255,0.75)",
+                textAlign: "center",
+                fontSize: 14,
+                fontFamily: "DMSans",
+                paddingHorizontal: 16,
+                lineHeight: 22,
+              }}
+            >
+              Click the verification link in your email and you'll be
+              automatically redirected back to this app to continue
+            </Text>
+          </View>
+
           <TouchableOpacity
             onPress={handleManualCheck}
             disabled={isCheckingManually}
             style={{
-              padding: 18,
-              backgroundColor: "rgba(255, 255, 255, 0.15)",
-              borderRadius: 16,
-              borderWidth: 2,
-              borderColor: "rgba(255, 255, 255, 0.3)",
+              marginTop: 20,
+              padding: 16,
+              backgroundColor: "rgba(255, 255, 255, 0.08)",
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: "rgba(255, 255, 255, 0.2)",
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "center",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 8,
             }}
           >
             {isCheckingManually ? (
@@ -295,31 +409,30 @@ export default function VerifyEmailScreen() {
             ) : (
               <Text
                 style={{
-                  color: "#fff",
+                  color: "rgba(255,255,255,0.8)",
                   fontFamily: "DMSans",
-                  fontSize: 16,
-                  fontWeight: "700",
-                  letterSpacing: 0.5,
+                  fontSize: 14,
+                  fontWeight: "600",
                 }}
               >
-                ✓ I Verified My Email - Continue
+                🔐 I've verified in Supabase - Sign In
               </Text>
             )}
           </TouchableOpacity>
 
           <Text
             style={{
-              color: "rgba(255,255,255,0.7)",
+              color: "rgba(255,255,255,0.6)",
               textAlign: "center",
-              marginTop: 16,
-              fontSize: 13,
+              marginTop: 12,
+              fontSize: 12,
               fontFamily: "DMSans",
               paddingHorizontal: 24,
-              lineHeight: 20,
+              lineHeight: 18,
+              fontStyle: "italic",
             }}
           >
-            After clicking the link in your email and waiting, return here and
-            tap the button above
+            After running the SQL command, click here to sign in
           </Text>
         </View>
       </View>

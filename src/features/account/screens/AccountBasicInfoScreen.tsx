@@ -10,14 +10,14 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Calendar, Heart, User } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -170,7 +170,10 @@ export default function AccountBasicInfoScreen() {
         clearSignupData();
         console.log("🗑️ Signup data cleared from Zustand");
 
-        router.push("/(auth)/account-setup/profile-photos");
+        router.push({
+          pathname: "/(auth)/account-setup/profile-photos",
+          params: { userType },
+        });
       }
     } catch (error) {
       Alert.alert(

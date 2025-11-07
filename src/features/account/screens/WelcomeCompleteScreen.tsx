@@ -280,7 +280,6 @@ export default function WelcomeCompleteScreen() {
           { paddingBottom: Math.max(insets.bottom + 16, 32) },
         ]}
       >
-        // To (remove icon prop):
         <PrimaryButton title="Start Dating" onPress={handleStartDating} />
         <GhostButton title="Explore the App First" onPress={handleExploreApp} />
       </View>
