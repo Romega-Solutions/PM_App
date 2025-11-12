@@ -1,7 +1,7 @@
-import { useCallback, useState } from "react";
+import { calculateAge, extractTextFromImage } from "@/src/services/ocrService";
 import * as ImagePicker from "expo-image-picker";
+import { useCallback, useState } from "react";
 import { accountApi, VerificationData } from "../api/accountApi";
-import { extractTextFromImage, calculateAge } from "@/src/services/ocrService";
 
 export type VerificationStatus =
   | "pending"
@@ -44,7 +44,7 @@ export const useVerificationUpload = () => {
       return;
     }
     const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images',
+      mediaTypes: "images",
       allowsEditing: true,
       quality: 0.9,
     });
@@ -103,7 +103,8 @@ export const useVerificationUpload = () => {
     }
   }, [selfieUri]);
 
-  const isVerified = selfieStatus === "verified" && documentStatus === "verified";
+  const isVerified =
+    selfieStatus === "verified" && documentStatus === "verified";
 
   return {
     selfieUri,

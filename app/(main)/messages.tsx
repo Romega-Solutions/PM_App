@@ -1,4 +1,5 @@
 // app/(tabs)/messages.tsx
+import { useRouter } from "expo-router";
 import {
   CheckCheck,
   Circle,
@@ -311,13 +312,15 @@ const conversations = [
 
 interface ActiveUserProps {
   user: (typeof activeUsers)[number];
+  onPress: () => void;
 }
 
-const ActiveUser: React.FC<ActiveUserProps> = ({ user }) => (
+const ActiveUser: React.FC<ActiveUserProps> = ({ user, onPress }) => (
   <TouchableOpacity
     style={styles.activeUser}
     accessibilityRole="button"
     accessibilityLabel={`Chat with ${user.name}`}
+    onPress={onPress}
   >
     <View style={styles.activeUserImageContainer}>
       <View style={styles.activeUserImageWrap}>
@@ -337,14 +340,19 @@ const ActiveUser: React.FC<ActiveUserProps> = ({ user }) => (
 
 interface ConversationProps {
   conversation: (typeof conversations)[number];
+  onPress: () => void;
 }
 
-const ConversationItem: React.FC<ConversationProps> = ({ conversation }) => (
+const ConversationItem: React.FC<ConversationProps> = ({
+  conversation,
+  onPress,
+}) => (
   <TouchableOpacity
     style={styles.conversationItem}
     activeOpacity={0.85}
     accessibilityRole="button"
     accessibilityLabel={`Open chat with ${conversation.name}`}
+    onPress={onPress}
   >
     {/* Profile Image */}
     <View style={styles.conversationImageContainer}>
@@ -408,11 +416,106 @@ const ConversationItem: React.FC<ConversationProps> = ({ conversation }) => (
 
 export default function Messages() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredConversations = conversations.filter((conv) =>
-    conv.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const [filterType, setFilterType] = useState<"all" | "unread" | "online">(
+    "all"
   );
+
+  // Apply filters to conversations
+  const getFilteredConversations = () => {
+    let filtered = [...conversations];
+
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter((conv) =>
+        conv.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply type filter
+    switch (filterType) {
+      case "unread":
+        filtered = filtered.filter((conv) => conv.unread > 0);
+        break;
+      case "online":
+        filtered = filtered.filter((conv) => conv.isOnline);
+        break;
+      case "all":
+      default:
+        // Show all
+        break;
+    }
+
+    return filtered;
+  };
+
+  const filteredConversations = getFilteredConversations();
+
+  const handleOpenChat = (conversation: (typeof conversations)[number]) => {
+    router.push({
+      pathname: "/(main)/chat",
+      params: {
+        userId: conversation.id.toString(),
+        userName: conversation.name,
+        userImage: conversation.image,
+        isOnline: conversation.isOnline.toString(),
+      },
+    });
+  };
+
+  const handleOpenActiveUserChat = (user: (typeof activeUsers)[number]) => {
+    router.push({
+      pathname: "/(main)/chat",
+      params: {
+        userId: user.id.toString(),
+        userName: user.name,
+        userImage: user.image,
+        isOnline: user.isOnline.toString(),
+      },
+    });
+  };
+
+  // Filter button handler
+  const handleFilterPress = () => {
+    // Cycle through filter types
+    const filterOptions: Array<"all" | "unread" | "online"> = [
+      "all",
+      "unread",
+      "online",
+    ];
+    const currentIndex = filterOptions.indexOf(filterType);
+    const nextIndex = (currentIndex + 1) % filterOptions.length;
+    setFilterType(filterOptions[nextIndex]);
+
+    // Show feedback to user
+    const filterNames = {
+      all: "All Messages",
+      unread: "Unread Only",
+      online: "Online Only",
+    };
+    console.log(`Filter changed to: ${filterNames[filterOptions[nextIndex]]}`);
+  };
+
+  // More options menu handler
+  const handleMoreOptions = () => {
+    // TODO: Show action sheet with options:
+    // - Mark all as read
+    // - Settings
+    // - Archive conversations
+    // - Block users
+    console.log("More options pressed");
+
+    // For now, just log available actions
+    const actions = [
+      "Mark All as Read",
+      "Message Settings",
+      "Archive All",
+      "Blocked Users",
+      "Clear Search History",
+    ];
+    console.log("Available actions:", actions);
+  };
 
   return (
     <View style={styles.root}>
@@ -431,16 +534,27 @@ export default function Messages() {
           <Text style={styles.title}>Messages</Text>
           <View style={styles.headerActions}>
             <TouchableOpacity
-              style={styles.headerIconBtn}
+              style={[
+                styles.headerIconBtn,
+                filterType !== "all" && styles.headerIconBtnActive,
+              ]}
               accessibilityRole="button"
               accessibilityLabel="Filter conversations"
+              onPress={handleFilterPress}
             >
-              <Filter size={22} color={ACCENT_PURPLE} strokeWidth={2} />
+              <Filter
+                size={22}
+                color={filterType !== "all" ? ACCENT_PINK : ACCENT_PURPLE}
+                strokeWidth={2}
+                fill={filterType !== "all" ? ACCENT_PINK : "transparent"}
+              />
+              {filterType !== "all" && <View style={styles.filterActiveDot} />}
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.headerIconBtn}
               accessibilityRole="button"
               accessibilityLabel="More options"
+              onPress={handleMoreOptions}
             >
               <MoreVertical size={22} color={ACCENT_PURPLE} strokeWidth={2} />
             </TouchableOpacity>
@@ -459,6 +573,22 @@ export default function Messages() {
             accessibilityLabel="Search messages"
           />
         </View>
+
+        {/* Active Filter Indicator */}
+        {filterType !== "all" && (
+          <View style={styles.filterBanner}>
+            <Text style={styles.filterBannerText}>
+              {filterType === "unread" && "📬 Showing Unread Messages"}
+              {filterType === "online" && "🟢 Showing Online Users"}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setFilterType("all")}
+              style={styles.filterBannerClose}
+            >
+              <Text style={styles.filterBannerCloseText}>Clear</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Active Users */}
@@ -473,7 +603,11 @@ export default function Messages() {
           contentContainerStyle={styles.activeUsersList}
         >
           {activeUsers.map((user) => (
-            <ActiveUser key={user.id} user={user} />
+            <ActiveUser
+              key={user.id}
+              user={user}
+              onPress={() => handleOpenActiveUserChat(user)}
+            />
           ))}
         </ScrollView>
       </View>
@@ -498,6 +632,7 @@ export default function Messages() {
             <ConversationItem
               key={conversation.id}
               conversation={conversation}
+              onPress={() => handleOpenChat(conversation)}
             />
           ))}
 
@@ -558,6 +693,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "rgba(141, 105, 246, 0.25)",
+    position: "relative",
+  },
+  headerIconBtnActive: {
+    backgroundColor: "rgba(239, 62, 120, 0.2)",
+    borderColor: ACCENT_PINK,
+  },
+  filterActiveDot: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: ACCENT_PINK,
+    borderWidth: 1.5,
+    borderColor: BRAND_BG,
   },
 
   // Search
@@ -579,6 +730,38 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-Regular",
     letterSpacing: 0.2,
     padding: 0,
+  },
+
+  // Filter Banner
+  filterBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "rgba(239, 62, 120, 0.15)",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "rgba(239, 62, 120, 0.3)",
+  },
+  filterBannerText: {
+    fontSize: 13,
+    fontFamily: "DMSans-Medium",
+    color: ACCENT_PINK,
+    letterSpacing: 0.2,
+  },
+  filterBannerClose: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    backgroundColor: "rgba(239, 62, 120, 0.2)",
+    borderRadius: 8,
+  },
+  filterBannerCloseText: {
+    fontSize: 12,
+    fontFamily: "DMSans-Bold",
+    color: ACCENT_PINK,
+    letterSpacing: 0.3,
   },
 
   // Active Users
@@ -626,17 +809,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 2.5,
     borderColor: ACCENT_PURPLE,
-    ...Platform.select({
-      ios: {
-        shadowColor: ACCENT_PURPLE,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
   },
   activeUserImage: {
     width: "100%",
@@ -652,17 +824,6 @@ const styles = StyleSheet.create({
     backgroundColor: ONLINE_GREEN,
     borderWidth: 2.5,
     borderColor: BRAND_BG,
-    ...Platform.select({
-      ios: {
-        shadowColor: ONLINE_GREEN,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.5,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   activeUserName: {
     color: WHITE,
@@ -690,17 +851,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: SURFACE_BORDER,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   conversationImageContainer: {
     position: "relative",
@@ -790,17 +940,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: ACCENT_PINK,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.4,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   unreadText: {
     color: WHITE,

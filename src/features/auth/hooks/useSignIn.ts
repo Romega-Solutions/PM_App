@@ -121,12 +121,14 @@ export const useSignIn = () => {
 
       if (error && error.code === "PGRST116") {
         // No profile found, create one and redirect to account setup
-        console.log("⚠️ No profile found, creating profile and redirecting to account setup...");
-        
+        console.log(
+          "⚠️ No profile found, creating profile and redirecting to account setup..."
+        );
+
         const userTypeValue = userMetadata?.user_type || "foreigner";
         // Set gender based on user type: filipina = female, foreigner = male
         const genderValue = userTypeValue === "filipina" ? "female" : "male";
-        
+
         try {
           const { data: newProfile, error: insertError } = await supabase
             .from("profiles")
@@ -221,10 +223,14 @@ export const useSignIn = () => {
           },
         });
       } else if (!profile.verification_completed) {
-        console.log("📍 User not verified, skipping welcome screen and redirecting to main app");
+        console.log(
+          "📍 User not verified, skipping welcome screen and redirecting to main app"
+        );
         router.replace("/(main)");
       } else {
-        console.log("✅ Profile complete and verified! Redirecting to welcome screen");
+        console.log(
+          "✅ Profile complete and verified! Redirecting to welcome screen"
+        );
         router.replace({
           pathname: "/(auth)/account-setup/welcome-complete",
           params: {

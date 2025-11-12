@@ -142,6 +142,16 @@ export default function MainLayout() {
           ),
         }}
       />
+
+      {/* Chat Screen - Hidden from tabs, accessible only via navigation */}
+      <Tabs.Screen
+        name="chat"
+        options={{
+          href: null, // Hides from tab bar
+          title: "Chat",
+          tabBarStyle: { display: "none" }, // Hides the entire tab bar on this screen
+        }}
+      />
     </Tabs>
   );
 }
@@ -149,7 +159,6 @@ export default function MainLayout() {
 const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: TAB_BAR_BG,
-    borderTopWidth: 0,
     paddingBottom: TAB_PADDING_BOTTOM,
     paddingTop: TAB_PADDING_TOP,
     height: TAB_BAR_HEIGHT,

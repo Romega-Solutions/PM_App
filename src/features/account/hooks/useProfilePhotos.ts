@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
 import * as ImagePicker from "expo-image-picker";
+import { useCallback, useEffect, useState } from "react";
 import { accountApi } from "../api/accountApi";
 
 export const useProfilePhotos = () => {
@@ -25,7 +25,7 @@ export const useProfilePhotos = () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) return null;
     const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images',
+      mediaTypes: "images",
       allowsEditing: true,
       aspect: [4, 5],
       quality: 0.8,
@@ -46,23 +46,20 @@ export const useProfilePhotos = () => {
     return res.assets[0].uri;
   }, []);
 
-  const uploadPhoto = useCallback(
-    async (uri: string) => {
-      setLoading(true);
-      try {
-        // simulate upload + persist via accountApi
-        const res = await accountApi.saveProfilePhoto(uri);
-        if (res?.ok) {
-          setPhotos(res.data.photos);
-          return res.data.photos;
-        }
-        throw new Error("Upload failed");
-      } finally {
-        setLoading(false);
+  const uploadPhoto = useCallback(async (uri: string) => {
+    setLoading(true);
+    try {
+      // simulate upload + persist via accountApi
+      const res = await accountApi.saveProfilePhoto(uri);
+      if (res?.ok) {
+        setPhotos(res.data.photos);
+        return res.data.photos;
       }
-    },
-    []
-  );
+      throw new Error("Upload failed");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const removePhoto = useCallback(async (uri: string) => {
     setLoading(true);
