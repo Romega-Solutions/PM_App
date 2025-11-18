@@ -698,6 +698,17 @@ const styles = StyleSheet.create({
   headerIconBtnActive: {
     backgroundColor: "rgba(239, 62, 120, 0.2)",
     borderColor: ACCENT_PINK,
+    ...Platform.select({
+      ios: {
+        shadowColor: ACCENT_PINK,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   filterActiveDot: {
     position: "absolute",
@@ -809,6 +820,17 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 2.5,
     borderColor: ACCENT_PURPLE,
+    ...Platform.select({
+      ios: {
+        shadowColor: ACCENT_PURPLE,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   activeUserImage: {
     width: "100%",
@@ -824,6 +846,17 @@ const styles = StyleSheet.create({
     backgroundColor: ONLINE_GREEN,
     borderWidth: 2.5,
     borderColor: BRAND_BG,
+    ...Platform.select({
+      ios: {
+        shadowColor: ONLINE_GREEN,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.5,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   activeUserName: {
     color: WHITE,
@@ -851,6 +884,17 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: SURFACE_BORDER,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   conversationImageContainer: {
     position: "relative",
@@ -940,6 +984,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: ACCENT_PINK,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.4,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   unreadText: {
     color: WHITE,

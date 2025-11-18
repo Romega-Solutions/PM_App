@@ -124,19 +124,21 @@ export default function Profile() {
     fetchProfileData();
   }, []);
 
-  const profileOptions: { title: string; icon: React.ReactNode }[] = [
-    { title: "Edit Profile", icon: <Edit size={22} color={ACCENT_PURPLE} /> },
+  const profileOptions: { title: string; icon: React.ReactNode; route: string }[] = [
+    { title: "Edit Profile", icon: <Edit size={22} color={ACCENT_PURPLE} />, route: "/(main)/profile-settings/edit" },
     {
       title: "Preferences",
       icon: <SlidersHorizontal size={22} color={ACCENT_PURPLE} />,
+      route: "/(main)/profile-settings/preferences",
     },
-    { title: "Privacy", icon: <Lock size={22} color={ACCENT_PURPLE} /> },
-    { title: "Notifications", icon: <Bell size={22} color={ACCENT_PURPLE} /> },
+    { title: "Privacy", icon: <Lock size={22} color={ACCENT_PURPLE} />, route: "/(main)/profile-settings/privacy" },
+    { title: "Notifications", icon: <Bell size={22} color={ACCENT_PURPLE} />, route: "/(main)/profile-settings/notifications" },
     {
       title: "Help & Support",
       icon: <HelpCircle size={22} color={ACCENT_PURPLE} />,
+      route: "/(main)/profile-settings/help",
     },
-    { title: "About", icon: <Info size={22} color={ACCENT_PURPLE} /> },
+    { title: "About", icon: <Info size={22} color={ACCENT_PURPLE} />, route: "/(main)/profile-settings/about" },
   ];
 
   const handleLogout = async () => {
@@ -303,6 +305,7 @@ export default function Profile() {
               key={idx}
               style={styles.listItem}
               activeOpacity={0.75}
+              onPress={() => router.push(item.route as any)}
             >
               <View style={{ marginRight: 16 }}>{item.icon}</View>
               <Text style={styles.listItemText}>{item.title}</Text>

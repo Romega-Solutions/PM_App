@@ -264,7 +264,6 @@ export default function Home() {
   const [gestureType, setGestureType] = useState<
     "swipe-left" | "swipe-right" | "swipe-up" | null
   >(null);
-  const [imageLoading, setImageLoading] = useState(true);
 
   // Animation values
   const pan = useRef(new Animated.ValueXY()).current;
@@ -299,16 +298,6 @@ export default function Home() {
 
     fetchUserType();
   }, []);
-
-  // Reset image loading when currentIndex changes
-  useEffect(() => {
-    setImageLoading(true);
-    // Small delay to ensure loading state is visible even for fast-loading local images
-    const timer = setTimeout(() => {
-      // Loading state will be cleared by onLoadEnd
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [currentIndex]);
 
   // Select profiles based on user type
   const profiles = getProfilesForUserType(userType);
@@ -701,31 +690,10 @@ export default function Home() {
 
           {/* Profile Image */}
           <View style={styles.imageContainer}>
-            {/* Loading Gradient Overlay */}
-            {imageLoading && (
-              <View style={styles.imageLoadingOverlay}>
-                <LinearGradient
-                  colors={[
-                    "rgba(141, 105, 246, 0.3)",
-                    "rgba(239, 62, 120, 0.3)",
-                    "rgba(141, 105, 246, 0.3)",
-                  ]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFill}
-                />
-                <ActivityIndicator size="large" color={WHITE} />
-              </View>
-            )}
-            
             <Image
-              key={`profile-${currentIndex}`}
               source={user.image}
               style={styles.profileImage}
               resizeMode="cover"
-              onLoadStart={() => setImageLoading(true)}
-              onLoadEnd={() => setImageLoading(false)}
-              onError={() => setImageLoading(false)}
             />
 
             {/* Verified Badge */}
@@ -871,31 +839,10 @@ export default function Home() {
 
             {/* Profile Image in Modal */}
             <View style={styles.modalImageContainer}>
-              {/* Loading Gradient Overlay */}
-              {imageLoading && (
-                <View style={styles.imageLoadingOverlay}>
-                  <LinearGradient
-                    colors={[
-                      "rgba(141, 105, 246, 0.3)",
-                      "rgba(239, 62, 120, 0.3)",
-                      "rgba(141, 105, 246, 0.3)",
-                    ]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFill}
-                  />
-                  <ActivityIndicator size="large" color={WHITE} />
-                </View>
-              )}
-              
               <Image
-                key={`modal-${currentIndex}`}
                 source={user.image}
                 style={styles.modalImage}
                 resizeMode="cover"
-                onLoadStart={() => setImageLoading(true)}
-                onLoadEnd={() => setImageLoading(false)}
-                onError={() => setImageLoading(false)}
               />
               {user.verified && (
                 <View style={styles.modalVerifiedBadge}>
@@ -1202,17 +1149,6 @@ const styles = StyleSheet.create({
   imageContainer: {
     position: "relative",
     height: "60%",
-  },
-  imageLoadingOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 10,
-    backgroundColor: "rgba(15, 8, 20, 0.5)",
   },
   profileImage: {
     width: "100%",
@@ -1757,6 +1693,11 @@ const styles = StyleSheet.create({
   gestureIconCircleActive: {
     backgroundColor: "rgba(255, 255, 255, 0.15)",
     borderColor: "rgba(255, 255, 255, 0.3)",
+    shadowColor: "#fff",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
   },
   gestureLabel: {
     color: "rgba(255, 255, 255, 0.6)",

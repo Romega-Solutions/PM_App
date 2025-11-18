@@ -152,6 +152,16 @@ export default function MainLayout() {
           tabBarStyle: { display: "none" }, // Hides the entire tab bar on this screen
         }}
       />
+
+      {/* Profile Settings - Hidden from tabs, accessible from profile screen */}
+      <Tabs.Screen
+        name="profile-settings"
+        options={{
+          href: null, // Hides from tab bar
+          title: "Settings",
+          tabBarStyle: { display: "none" }, // Hides the entire tab bar on this screen
+        }}
+      />
     </Tabs>
   );
 }

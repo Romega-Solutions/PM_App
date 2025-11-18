@@ -522,6 +522,17 @@ const styles = StyleSheet.create({
   filterTabActive: {
     backgroundColor: ACCENT_PINK,
     borderColor: ACCENT_PINK,
+    ...Platform.select({
+      ios: {
+        shadowColor: ACCENT_PINK,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   filterText: {
     fontSize: 14,
@@ -555,6 +566,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: SURFACE_BORDER,
     marginBottom: 0,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   imageContainer: {
     position: "relative",
@@ -577,6 +599,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1.5,
     borderColor: WHITE,
+    ...Platform.select({
+      ios: {
+        shadowColor: VERIFIED_GREEN,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.4,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   mutualBadge: {
     position: "absolute",
@@ -590,6 +623,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1.5,
     borderColor: ACCENT_PINK,
+    ...Platform.select({
+      ios: {
+        shadowColor: ACCENT_PINK,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   imageGradient: {
     position: "absolute",
@@ -650,6 +694,17 @@ const styles = StyleSheet.create({
   },
   messageBtn: {
     backgroundColor: ACCENT_PINK,
+    ...Platform.select({
+      ios: {
+        shadowColor: ACCENT_PINK,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
 
   // Empty State
