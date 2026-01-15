@@ -1,4 +1,6 @@
 // app/(tabs)/messages.tsx
+import { supabase } from "@/src/config/supabase";
+import { getConversations } from "@/src/features/messaging/api/messagesApi";
 import { useRouter } from "expo-router";
 import {
   CheckCheck,
@@ -8,7 +10,7 @@ import {
   MoreVertical,
   Search,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dimensions,
   Image,
@@ -421,6 +423,60 @@ export default function Messages() {
   const [filterType, setFilterType] = useState<"all" | "unread" | "online">(
     "all"
   );
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Fetch conversations on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Get current user
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          console.error("Failed to fetch user:", userError);
+          setLoading(false);
+          return;
+        }
+
+        setUserId(user.id);
+
+        // Fetch conversations from database
+        const { data: dbConversations, error: conversationsError } =
+          await getConversations(user.id);
+
+        if (conversationsError) {
+          console.error("Failed to fetch conversations:", conversationsError);
+          // Keep mock data on error
+        } else if (dbConversations && dbConversations.length > 0) {
+          // Convert to display format
+          const displayConversations = dbConversations.map((conv) => ({
+            id: conv.other_user_id,
+            name: conv.other_user_name,
+            image: conv.other_user_image
+              ? { uri: conv.other_user_image }
+              : require("../../assets/girls/ai1.jpg"),
+            lastMessage: conv.latest_message,
+            timestamp: formatTimestamp(conv.latest_message_time),
+            unread: conv.unread_count,
+            isOnline: conv.is_online,
+          }));
+          setConversations(displayConversations);
+        }
+        // If no conversations, keep existing mock data
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Apply filters to conversations
   const getFilteredConversations = () => {
@@ -1027,3 +1083,23 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 });
+
+/**
+ * Format timestamp for display
+ */
+function formatTimestamp(timestamp: string): string {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}

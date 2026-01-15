@@ -41,7 +41,9 @@ export default function PreferencesScreen() {
 
   const fetchPreferences = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data, error } = await supabase
@@ -68,7 +70,9 @@ export default function PreferencesScreen() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
       const { error } = await supabase
@@ -121,7 +125,10 @@ export default function PreferencesScreen() {
       />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push("/(main)/profile")} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => router.push("/(main)/profile")}
+          style={styles.backBtn}
+        >
           <ArrowLeft size={24} color={WHITE} />
         </TouchableOpacity>
         <Text style={styles.title}>Preferences</Text>

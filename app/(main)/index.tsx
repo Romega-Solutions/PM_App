@@ -1,6 +1,14 @@
 // app/(tabs)/index.tsx
+import { supabase } from "@/src/config/supabase";
 import { accountApi } from "@/src/features/account/api/accountApi";
 import { UserType } from "@/src/features/auth/api/authApi";
+import {
+  fetchDiscoverProfiles,
+  likeProfile,
+  passProfile,
+  superLikeProfile,
+} from "@/src/features/matching/api/matchingApi";
+import { Profile as DBProfile } from "@/src/features/matching/types";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   ChevronDown,
@@ -56,6 +64,7 @@ type Profile = {
   interests: string[];
   bio: string;
   gender: "female" | "male";
+  matchScore?: number; // Smart matching score
 };
 
 // Filipina profiles (for foreign men)
@@ -251,8 +260,13 @@ export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showInfo, setShowInfo] = useState(false);
   const [userType, setUserType] = useState<UserType | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [showSwipeHints, setShowSwipeHints] = useState(true);
+  const [matchedProfile, setMatchedProfile] = useState<DBProfile | null>(null);
+  const [showMatchModal, setShowMatchModal] = useState(false);
   const [expandedSections, setExpandedSections] = useState<{
     lookingFor: boolean;
     moreAbout: boolean;
@@ -283,24 +297,96 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Fetch user type on mount
+  // Fetch user data and profiles on mount
   useEffect(() => {
-    const fetchUserType = async () => {
+    const fetchUserData = async () => {
       try {
+        // Get current user
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          console.error("Failed to fetch user:", userError);
+          setLoading(false);
+          return;
+        }
+
+        setUserId(user.id);
+
+        // Get user type
         const basicInfo = await accountApi.getBasicInfo();
         setUserType(basicInfo?.userType ?? null);
+
+        // Fetch discover profiles from database
+        const { data: dbProfiles, error: profilesError } =
+          await fetchDiscoverProfiles(user.id, 20);
+
+        if (profilesError) {
+          console.error("Failed to fetch profiles:", profilesError);
+          // Fall back to mock data if database fetch fails
+          const mockProfiles = getProfilesForUserType(
+            basicInfo?.userType ?? null
+          );
+          setProfiles(mockProfiles);
+        } else if (dbProfiles && dbProfiles.length > 0) {
+          // Convert database profiles to display format
+          const displayProfiles: Profile[] = dbProfiles.map(
+            convertDBProfileToDisplay
+          );
+          setProfiles(displayProfiles);
+        } else {
+          // Use mock data if no profiles in database
+          const mockProfiles = getProfilesForUserType(
+            basicInfo?.userType ?? null
+          );
+          setProfiles(mockProfiles);
+        }
       } catch (error) {
-        console.error("Failed to fetch user type:", error);
+        console.error("Failed to fetch user data:", error);
+        // Fall back to mock data
+        const mockProfiles = getProfilesForUserType(null);
+        setProfiles(mockProfiles);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserType();
+    fetchUserData();
   }, []);
 
-  // Select profiles based on user type
-  const profiles = getProfilesForUserType(userType);
+  // Load more profiles when getting close to the end
+  useEffect(() => {
+    if (
+      userId &&
+      currentIndex >= profiles.length - 3 &&
+      !loadingMore &&
+      profiles.length > 0
+    ) {
+      loadMoreProfiles();
+    }
+  }, [currentIndex, userId]);
+
+  const loadMoreProfiles = async () => {
+    if (!userId || loadingMore) return;
+
+    setLoadingMore(true);
+    try {
+      const { data: dbProfiles } = await fetchDiscoverProfiles(userId, 10);
+      if (dbProfiles && dbProfiles.length > 0) {
+        const displayProfiles: Profile[] = dbProfiles.map(
+          convertDBProfileToDisplay
+        );
+        setProfiles((prev) => [...prev, ...displayProfiles]);
+      }
+    } catch (error) {
+      console.error("Failed to load more profiles:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   const user = profiles[currentIndex];
 
   // Pan Responder for swipe gestures
@@ -379,23 +465,52 @@ export default function Home() {
     })
   ).current;
 
-  const handleLike = () => {
-    setCurrentIndex((prev) => (prev + 1) % profiles.length);
+  const handleLike = async () => {
+    if (!userId || !user) return;
+
+    // Save like to database
+    const result = await likeProfile(userId, user.id);
+
+    if (result.success && result.isMatch) {
+      // Show match modal
+      setMatchedProfile(result.matchedProfile || null);
+      setShowMatchModal(true);
+    }
+
+    // Move to next profile
+    setCurrentIndex((prev) => prev + 1);
     setShowInfo(false);
   };
 
-  const handlePass = () => {
-    setCurrentIndex((prev) => (prev + 1) % profiles.length);
+  const handlePass = async () => {
+    if (!userId || !user) return;
+
+    // Save pass to database
+    await passProfile(userId, user.id);
+
+    // Move to next profile
+    setCurrentIndex((prev) => prev + 1);
     setShowInfo(false);
   };
 
-  const handleSuperLike = () => {
+  const handleSuperLike = async () => {
+    if (!userId || !user) return;
+
     // Animate up for super like
     Animated.spring(pan, {
       toValue: { x: 0, y: -height },
       useNativeDriver: false,
-    }).start(() => {
-      setCurrentIndex((prev) => (prev + 1) % profiles.length);
+    }).start(async () => {
+      // Save super like to database
+      const result = await superLikeProfile(userId, user.id);
+
+      if (result.success && result.isMatch) {
+        // Show match modal
+        setMatchedProfile(result.matchedProfile || null);
+        setShowMatchModal(true);
+      }
+
+      setCurrentIndex((prev) => prev + 1);
       setShowInfo(false);
       pan.setValue({ x: 0, y: 0 });
     });
@@ -695,6 +810,16 @@ export default function Home() {
               style={styles.profileImage}
               resizeMode="cover"
             />
+
+            {/* Match Score Badge (if available) */}
+            {user.matchScore && user.matchScore >= 60 && (
+              <View style={styles.matchScoreBadge}>
+                <Heart size={12} color={WHITE} strokeWidth={2.5} fill={WHITE} />
+                <Text style={styles.matchScoreText}>
+                  {user.matchScore}% MATCH
+                </Text>
+              </View>
+            )}
 
             {/* Verified Badge */}
             {user.verified && (
@@ -1009,6 +1134,55 @@ export default function Home() {
         </View>
       </Modal>
 
+      {/* Match Modal */}
+      <Modal
+        visible={showMatchModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowMatchModal(false)}
+      >
+        <View style={styles.matchModalOverlay}>
+          <LinearGradient
+            colors={["rgba(141, 105, 246, 0.95)", "rgba(239, 62, 120, 0.95)"]}
+            style={styles.matchModalContent}
+          >
+            <Sparkles size={60} color={WHITE} strokeWidth={2} />
+            <Text style={styles.matchTitle}>It's a Match!</Text>
+            <Text style={styles.matchSubtitle}>
+              You and {matchedProfile?.first_name || "someone"} liked each other
+            </Text>
+
+            <View style={styles.matchProfilesContainer}>
+              <Image
+                source={
+                  matchedProfile?.photos?.[0]
+                    ? { uri: matchedProfile.photos[0] }
+                    : require("../../assets/girls/ai1.jpg")
+                }
+                style={styles.matchProfileImage}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.matchButton}
+              onPress={() => {
+                setShowMatchModal(false);
+                // TODO: Navigate to chat
+              }}
+            >
+              <Text style={styles.matchButtonText}>Send Message</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.matchButtonSecondary}
+              onPress={() => setShowMatchModal(false)}
+            >
+              <Text style={styles.matchButtonSecondaryText}>Keep Swiping</Text>
+            </TouchableOpacity>
+          </LinearGradient>
+        </View>
+      </Modal>
+
       {/* Bottom spacing for safe area */}
       <View style={{ height: Math.max(insets.bottom, 20) }} />
     </View>
@@ -1154,6 +1328,26 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     backgroundColor: "#1A1A1A",
+  },
+  matchScoreBadge: {
+    position: "absolute",
+    top: 20,
+    left: 20,
+    backgroundColor: ACCENT_PINK,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 2,
+    borderColor: WHITE,
+  },
+  matchScoreText: {
+    color: WHITE,
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
   verifiedBadge: {
     position: "absolute",
@@ -1766,4 +1960,89 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 2,
   },
+  matchModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  matchModalContent: {
+    width: width * 0.85,
+    borderRadius: 24,
+    padding: 32,
+    alignItems: "center",
+  },
+  matchTitle: {
+    fontSize: 36,
+    fontFamily: "Lora-Bold",
+    color: WHITE,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  matchSubtitle: {
+    fontSize: 16,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255, 255, 255, 0.9)",
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  matchProfilesContainer: {
+    marginBottom: 24,
+  },
+  matchProfileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 4,
+    borderColor: WHITE,
+  },
+  matchButton: {
+    backgroundColor: WHITE,
+    paddingHorizontal: 40,
+    paddingVertical: 16,
+    borderRadius: 28,
+    marginBottom: 12,
+    width: "100%",
+    alignItems: "center",
+  },
+  matchButtonText: {
+    fontSize: 16,
+    fontFamily: "DMSans-Bold",
+    color: ACCENT_PURPLE,
+  },
+  matchButtonSecondary: {
+    paddingVertical: 12,
+  },
+  matchButtonSecondaryText: {
+    fontSize: 14,
+    fontFamily: "DMSans-Medium",
+    color: "rgba(255, 255, 255, 0.8)",
+  },
 });
+
+/**
+ * Convert database profile to display profile format
+ */
+function convertDBProfileToDisplay(dbProfile: DBProfile): Profile {
+  // Get first photo or use default
+  const firstPhoto =
+    dbProfile.photos && dbProfile.photos.length > 0
+      ? { uri: dbProfile.photos[0] }
+      : require("../../assets/girls/ai1.jpg");
+
+  return {
+    id: dbProfile.id,
+    name: dbProfile.first_name,
+    age: dbProfile.age,
+    location: dbProfile.city
+      ? `${dbProfile.city}, ${dbProfile.country || "Philippines"}`
+      : "Philippines",
+    distance: "Calculating...", // TODO: Add distance calculation
+    image: firstPhoto,
+    verified: dbProfile.is_verified,
+    interests: dbProfile.interests || [],
+    bio: dbProfile.bio || "No bio yet",
+    gender: dbProfile.gender === "other" ? "female" : dbProfile.gender,
+    matchScore: dbProfile.matchScore, // Include smart matching score
+  };
+}

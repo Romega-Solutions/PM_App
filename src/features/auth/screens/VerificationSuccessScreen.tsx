@@ -6,12 +6,7 @@ import { useFonts } from "expo-font";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import {
-    ActivityIndicator,
-    Platform,
-    StatusBar,
-    View
-} from "react-native";
+import { ActivityIndicator, Platform, StatusBar, View } from "react-native";
 
 export default function VerificationSuccessScreen() {
   const router = useRouter();
@@ -85,7 +80,9 @@ export default function VerificationSuccessScreen() {
         // Check if profile exists with all completion flags
         const { data: existingProfile, error: fetchError } = await supabase
           .from("profiles")
-          .select("id, user_type, first_name, basic_info_completed, photos_completed, location_completed, verification_completed, preferences_completed")
+          .select(
+            "id, user_type, first_name, basic_info_completed, photos_completed, location_completed, preferences_completed"
+          )
           .eq("id", userId)
           .single();
 
@@ -104,51 +101,107 @@ export default function VerificationSuccessScreen() {
               first_name: finalFirstName || metadata.first_name || "",
               user_type: userTypeValue,
               gender: genderValue,
+              looking_for_gender: genderValue === "female" ? "male" : "female",
+              age_preference_min: 18,
+              age_preference_max: 70,
             })
-            .select("id, user_type, first_name, basic_info_completed, photos_completed, location_completed, verification_completed, preferences_completed")
+            .select(
+              "id, user_type, first_name, basic_info_completed, photos_completed, location_completed, preferences_completed"
+            )
             .single();
 
           if (insertError) {
             console.error("❌ Error creating profile:", insertError);
+
+            // Even if profile creation fails, try to redirect to basic-info
+            console.log("⚠️ Profile creation failed, redirecting anyway...");
+            setTimeout(() => {
+              router.replace({
+                pathname: "/(auth)/account-setup/basic-info",
+                params: {
+                  userType: finalUserType || metadata.user_type || "foreigner",
+                  firstName: finalFirstName || metadata.first_name || "",
+                },
+              });
+            }, 2000);
             setIsChecking(false);
           } else {
             console.log("✅ Profile created:", newProfile);
             setUserType(newProfile.user_type);
             setFirstName(newProfile.first_name);
-            
+
             // Check which step to redirect to
             redirectToIncompleteStep(newProfile, finalUserType, finalFirstName);
           }
+        } else if (fetchError) {
+          // Other fetch errors - redirect to basic-info anyway
+          console.error("❌ Error fetching profile:", fetchError);
+          console.log("⚠️ Redirecting to basic-info despite error...");
+          setTimeout(() => {
+            router.replace({
+              pathname: "/(auth)/account-setup/basic-info",
+              params: {
+                userType: finalUserType || metadata.user_type || "foreigner",
+                firstName: finalFirstName || metadata.first_name || "",
+              },
+            });
+          }, 2000);
+          setIsChecking(false);
         } else if (existingProfile) {
           console.log("✅ Profile exists:", existingProfile);
           setUserType(existingProfile.user_type);
           setFirstName(existingProfile.first_name);
-          
+
           // Check which step to redirect to
-          redirectToIncompleteStep(existingProfile, finalUserType, finalFirstName);
+          redirectToIncompleteStep(
+            existingProfile,
+            finalUserType,
+            finalFirstName
+          );
         }
       } catch (error) {
-        console.error("❌ Error ensuring profile:", error);
+        console.error("❌ Exception ensuring profile:", error);
+
+        // On any exception, redirect to basic-info
+        console.log("⚠️ Exception caught, redirecting to basic-info...");
+        setTimeout(() => {
+          router.replace({
+            pathname: "/(auth)/account-setup/basic-info",
+            params: {
+              userType: finalUserType || metadata.user_type || "foreigner",
+              firstName: finalFirstName || metadata.first_name || "",
+            },
+          });
+        }, 2000);
         setIsChecking(false);
       }
     };
 
-    const redirectToIncompleteStep = (profile: any, userType?: string, firstName?: string) => {
+    const redirectToIncompleteStep = (
+      profile: any,
+      userType?: string,
+      firstName?: string
+    ) => {
       console.log("🔍 Checking profile completion status:", {
         basic_info_completed: profile.basic_info_completed,
         photos_completed: profile.photos_completed,
         location_completed: profile.location_completed,
-        verification_completed: profile.verification_completed,
         preferences_completed: profile.preferences_completed,
       });
 
       const finalUserType = userType || profile.user_type || "foreigner";
       const finalFirstName = firstName || profile.first_name || "";
 
+      console.log("📦 Using params for redirect:", {
+        userType: finalUserType,
+        firstName: finalFirstName,
+      });
+
       // Determine which step is incomplete and redirect
       if (!profile.basic_info_completed) {
         console.log("📍 Redirecting to: basic-info (not completed)");
         setTimeout(() => {
+          console.log("🚀 Executing redirect to basic-info...");
           router.replace({
             pathname: "/(auth)/account-setup/basic-info",
             params: { userType: finalUserType, firstName: finalFirstName },
@@ -157,45 +210,41 @@ export default function VerificationSuccessScreen() {
       } else if (!profile.photos_completed) {
         console.log("📍 Redirecting to: profile-photos (not completed)");
         setTimeout(() => {
+          console.log("🚀 Executing redirect to profile-photos...");
           router.replace({
             pathname: "/(auth)/account-setup/profile-photos",
-            params: { userType: finalUserType, firstName: finalFirstName },
+            params: { userType: finalUserType },
           });
         }, 2000);
       } else if (!profile.location_completed) {
         console.log("📍 Redirecting to: location (not completed)");
         setTimeout(() => {
+          console.log("🚀 Executing redirect to location...");
           router.replace({
             pathname: "/(auth)/account-setup/location",
-            params: { userType: finalUserType, firstName: finalFirstName },
-          });
-        }, 2000);
-      } else if (!profile.verification_completed) {
-        console.log("📍 Redirecting to: verification-upload (not completed)");
-        setTimeout(() => {
-          router.replace({
-            pathname: "/(auth)/account-setup/verification-upload",
-            params: { userType: finalUserType, firstName: finalFirstName },
+            params: { userType: finalUserType },
           });
         }, 2000);
       } else if (!profile.preferences_completed) {
         console.log("📍 Redirecting to: preferences (not completed)");
         setTimeout(() => {
+          console.log("🚀 Executing redirect to preferences...");
           router.replace({
             pathname: "/(auth)/account-setup/preferences",
-            params: { userType: finalUserType, firstName: finalFirstName },
+            params: { userType: finalUserType },
           });
         }, 2000);
       } else {
         console.log("✅ All steps completed! Redirecting to welcome-complete");
         setTimeout(() => {
+          console.log("🚀 Executing redirect to welcome-complete...");
           router.replace({
             pathname: "/(auth)/account-setup/welcome-complete",
-            params: { userType: finalUserType, firstName: finalFirstName },
+            params: { userType: finalUserType },
           });
         }, 2000);
       }
-      
+
       setIsChecking(false);
     };
 

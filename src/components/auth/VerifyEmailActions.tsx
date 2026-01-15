@@ -16,6 +16,7 @@ interface Props {
   onOpenEmailApp: () => void;
   onResend: () => void;
   onBackToSignIn: () => void;
+  onSkipToAccountSetup?: () => void;
 }
 
 export default function VerifyEmailActions({
@@ -23,6 +24,7 @@ export default function VerifyEmailActions({
   onOpenEmailApp,
   onResend,
   onBackToSignIn,
+  onSkipToAccountSetup,
 }: Props) {
   return (
     <View style={styles.container}>
@@ -50,6 +52,19 @@ export default function VerifyEmailActions({
         accessibilityLabel="Resend Verification Email"
       />
 
+      {/* Skip to Account Setup Button */}
+      {onSkipToAccountSetup && (
+        <TouchableOpacity
+          style={styles.skipBtn}
+          onPress={onSkipToAccountSetup}
+          activeOpacity={0.86}
+          accessibilityRole="button"
+          accessibilityLabel="Skip to Account Setup"
+        >
+          <Text style={styles.skipBtnText}>⚡ Skip & Continue Setup</Text>
+        </TouchableOpacity>
+      )}
+
       <TouchableOpacity
         onPress={onBackToSignIn}
         style={styles.backLink}
@@ -66,7 +81,10 @@ export default function VerifyEmailActions({
 }
 
 const styles = StyleSheet.create({
-  container: { width: "100%", gap: 12 },
+  container: {
+    width: "100%",
+    gap: 14,
+  },
   openBtn: {
     height: Platform.select({ ios: 56, android: 52 }),
     borderRadius: 28,
@@ -79,6 +97,20 @@ const styles = StyleSheet.create({
   openBtnText: {
     color: "#FFFFFF",
     fontSize: 17,
+    fontFamily: theme.fontFamilies.body.bold,
+  },
+  skipBtn: {
+    height: Platform.select({ ios: 56, android: 52 }),
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(141, 105, 246, 0.25)",
+    borderWidth: 2,
+    borderColor: "rgba(141, 105, 246, 0.6)",
+  },
+  skipBtnText: {
+    color: "#8D69F6",
+    fontSize: 16,
     fontFamily: theme.fontFamilies.body.bold,
   },
   backLink: {

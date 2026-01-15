@@ -1,6 +1,13 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Eye, EyeOff, Lock, Shield, UserX } from "lucide-react-native";
+import {
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Lock,
+  Shield,
+  UserX,
+} from "lucide-react-native";
 import React, { useState } from "react";
 import {
   Platform,
@@ -44,7 +51,10 @@ export default function PrivacyScreen() {
       />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push("/(main)/profile")} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => router.push("/(main)/profile")}
+          style={styles.backBtn}
+        >
           <ArrowLeft size={24} color={WHITE} />
         </TouchableOpacity>
         <Text style={styles.title}>Privacy</Text>
@@ -59,7 +69,9 @@ export default function PrivacyScreen() {
             <Eye size={22} color={ACCENT_PURPLE} />
             <View style={styles.settingText}>
               <Text style={styles.settingTitle}>Show Online Status</Text>
-              <Text style={styles.settingDesc}>Let others see when you're online</Text>
+              <Text style={styles.settingDesc}>
+                Let others see when you're online
+              </Text>
             </View>
           </View>
           <Switch
@@ -75,7 +87,9 @@ export default function PrivacyScreen() {
             <Shield size={22} color={ACCENT_PURPLE} />
             <View style={styles.settingText}>
               <Text style={styles.settingTitle}>Show Distance</Text>
-              <Text style={styles.settingDesc}>Display your distance to matches</Text>
+              <Text style={styles.settingDesc}>
+                Display your distance to matches
+              </Text>
             </View>
           </View>
           <Switch
@@ -91,7 +105,9 @@ export default function PrivacyScreen() {
             <EyeOff size={22} color={ACCENT_PURPLE} />
             <View style={styles.settingText}>
               <Text style={styles.settingTitle}>Read Receipts</Text>
-              <Text style={styles.settingDesc}>Let others know when you read their messages</Text>
+              <Text style={styles.settingDesc}>
+                Let others know when you read their messages
+              </Text>
             </View>
           </View>
           <Switch
@@ -107,7 +123,9 @@ export default function PrivacyScreen() {
             <Lock size={22} color={ACCENT_PURPLE} />
             <View style={styles.settingText}>
               <Text style={styles.settingTitle}>Profile Visible</Text>
-              <Text style={styles.settingDesc}>Make your profile discoverable</Text>
+              <Text style={styles.settingDesc}>
+                Make your profile discoverable
+              </Text>
             </View>
           </View>
           <Switch

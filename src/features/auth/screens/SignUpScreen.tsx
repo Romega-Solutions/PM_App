@@ -10,6 +10,7 @@ import SocialSignInButton from "@/src/components/auth/SocialSignInButton";
 import CustomTextInput from "@/src/components/forms/CustomTextInput";
 import FormDivider from "@/src/components/forms/FormDivider";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
+import { supabase } from "@/src/config/supabase";
 import { useSignupStore } from "@/src/stores/signupStore";
 import { theme } from "@/src/theme";
 import { useSignUp } from "../hooks/useSignUp";
@@ -96,6 +97,10 @@ function SignUpScreen() {
     }
 
     try {
+      // ⚠️ Sign out any existing session first to avoid conflicts
+      console.log("🚪 Signing out any existing session...");
+      await supabase.auth.signOut();
+
       const signupData = {
         email: form.email.toLowerCase().trim(),
         firstName: form.firstName.trim(),
@@ -114,9 +119,10 @@ function SignUpScreen() {
 
       console.log("✅ Signup result:", result);
 
+      // Always check if email verification is needed
       if (result?.needsVerification) {
         console.log(
-          "📧 Navigating to email verification with params:",
+          "📧 Email not verified yet - navigating to verification screen with params:",
           signupData
         );
 
@@ -127,6 +133,8 @@ function SignUpScreen() {
         return;
       }
 
+      // If email is already verified (shouldn't happen on first signup, but just in case)
+      console.log("✅ Email already verified - proceeding to account setup");
       router.replace({
         pathname: "/(auth)/account-setup/basic-info",
         params: {

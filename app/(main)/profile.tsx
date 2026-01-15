@@ -5,31 +5,31 @@ import { UserType } from "@/src/features/auth/api/authApi";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
-    Bell,
-    ChevronRight,
-    Edit,
-    HelpCircle,
-    Info,
-    Lock,
-    LogOut,
-    MapPin,
-    Settings,
-    SlidersHorizontal,
-    Sparkles,
-    User,
+  Bell,
+  ChevronRight,
+  Edit,
+  HelpCircle,
+  Info,
+  Lock,
+  LogOut,
+  MapPin,
+  Settings,
+  SlidersHorizontal,
+  Sparkles,
+  User,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Dimensions,
-    Image,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -99,7 +99,7 @@ export default function Profile() {
 
         if (profile) {
           console.log("✅ Profile loaded:", profile);
-          
+
           // Parse photos array
           const photosArray = profile.photos || [];
           const firstPhoto = photosArray.length > 0 ? photosArray[0] : null;
@@ -124,28 +124,48 @@ export default function Profile() {
     fetchProfileData();
   }, []);
 
-  const profileOptions: { title: string; icon: React.ReactNode; route: string }[] = [
-    { title: "Edit Profile", icon: <Edit size={22} color={ACCENT_PURPLE} />, route: "/(main)/profile-settings/edit" },
+  const profileOptions: {
+    title: string;
+    icon: React.ReactNode;
+    route: string;
+  }[] = [
+    {
+      title: "Edit Profile",
+      icon: <Edit size={22} color={ACCENT_PURPLE} />,
+      route: "/(main)/profile-settings/edit",
+    },
     {
       title: "Preferences",
       icon: <SlidersHorizontal size={22} color={ACCENT_PURPLE} />,
       route: "/(main)/profile-settings/preferences",
     },
-    { title: "Privacy", icon: <Lock size={22} color={ACCENT_PURPLE} />, route: "/(main)/profile-settings/privacy" },
-    { title: "Notifications", icon: <Bell size={22} color={ACCENT_PURPLE} />, route: "/(main)/profile-settings/notifications" },
+    {
+      title: "Privacy",
+      icon: <Lock size={22} color={ACCENT_PURPLE} />,
+      route: "/(main)/profile-settings/privacy",
+    },
+    {
+      title: "Notifications",
+      icon: <Bell size={22} color={ACCENT_PURPLE} />,
+      route: "/(main)/profile-settings/notifications",
+    },
     {
       title: "Help & Support",
       icon: <HelpCircle size={22} color={ACCENT_PURPLE} />,
       route: "/(main)/profile-settings/help",
     },
-    { title: "About", icon: <Info size={22} color={ACCENT_PURPLE} />, route: "/(main)/profile-settings/about" },
+    {
+      title: "About",
+      icon: <Info size={22} color={ACCENT_PURPLE} />,
+      route: "/(main)/profile-settings/about",
+    },
   ];
 
   const handleLogout = async () => {
     try {
       // Sign out from Supabase
       await supabase.auth.signOut();
-      
+
       // Clear local profile data
       accountApi.clearBasicInfo();
       accountApi.clearLocation();

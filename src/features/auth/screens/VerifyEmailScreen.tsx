@@ -348,6 +348,18 @@ export default function VerifyEmailScreen() {
           onOpenEmailApp={openEmailApp}
           onResend={handleResend}
           onBackToSignIn={handleBackToSignIn}
+          onSkipToAccountSetup={() => {
+            console.log(
+              "⚡ Skipping email verification, going to account setup..."
+            );
+            router.replace({
+              pathname: "/(auth)/account-setup/basic-info",
+              params: {
+                userType: userType || "foreigner",
+                firstName: firstName || "User",
+              },
+            });
+          }}
         />
 
         <View style={{ marginTop: 32, width: "100%", maxWidth: 400 }}>
@@ -433,6 +445,56 @@ export default function VerifyEmailScreen() {
             }}
           >
             After running the SQL command, click here to sign in
+          </Text>
+
+          {/* Skip to Account Setup Button */}
+          <TouchableOpacity
+            onPress={() => {
+              console.log("⏭️ Skipping to account setup...");
+              router.replace({
+                pathname: "/(auth)/account-setup/basic-info",
+                params: {
+                  userType: userType || "foreigner",
+                  firstName: firstName || "User",
+                },
+              });
+            }}
+            style={{
+              marginTop: 20,
+              padding: 16,
+              backgroundColor: "rgba(141, 105, 246, 0.2)",
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: "rgba(141, 105, 246, 0.4)",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text
+              style={{
+                color: "rgba(141, 105, 246, 1)",
+                fontFamily: "DMSans",
+                fontSize: 14,
+                fontWeight: "700",
+              }}
+            >
+              ⚡ Skip & Continue to Account Setup
+            </Text>
+          </TouchableOpacity>
+
+          <Text
+            style={{
+              color: "rgba(255,255,255,0.5)",
+              textAlign: "center",
+              marginTop: 8,
+              fontSize: 11,
+              fontFamily: "DMSans",
+              paddingHorizontal: 24,
+              lineHeight: 16,
+            }}
+          >
+            You can verify your email later
           </Text>
         </View>
       </View>

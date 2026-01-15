@@ -1,6 +1,14 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Book, ChevronRight, FileText, HelpCircle, Mail, MessageCircle } from "lucide-react-native";
+import {
+  ArrowLeft,
+  Book,
+  ChevronRight,
+  FileText,
+  HelpCircle,
+  Mail,
+  MessageCircle,
+} from "lucide-react-native";
 import React from "react";
 import {
   Linking,
@@ -72,7 +80,10 @@ export default function HelpScreen() {
       />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push("/(main)/profile")} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => router.push("/(main)/profile")}
+          style={styles.backBtn}
+        >
           <ArrowLeft size={24} color={WHITE} />
         </TouchableOpacity>
         <Text style={styles.title}>Help & Support</Text>
@@ -98,7 +109,8 @@ export default function HelpScreen() {
         <View style={styles.contactCard}>
           <Text style={styles.contactTitle}>Still need help?</Text>
           <Text style={styles.contactDesc}>
-            Our support team is available 24/7 to assist you with any questions or concerns.
+            Our support team is available 24/7 to assist you with any questions
+            or concerns.
           </Text>
           <TouchableOpacity
             style={styles.contactBtn}

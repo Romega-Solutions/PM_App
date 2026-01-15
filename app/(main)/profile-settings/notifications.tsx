@@ -1,6 +1,13 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Bell, Heart, Mail, MessageCircle, Users } from "lucide-react-native";
+import {
+  ArrowLeft,
+  Bell,
+  Heart,
+  Mail,
+  MessageCircle,
+  Users,
+} from "lucide-react-native";
 import React, { useState } from "react";
 import {
   Platform,
@@ -45,7 +52,10 @@ export default function NotificationsScreen() {
       />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push("/(main)/profile")} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => router.push("/(main)/profile")}
+          style={styles.backBtn}
+        >
           <ArrowLeft size={24} color={WHITE} />
         </TouchableOpacity>
         <Text style={styles.title}>Notifications</Text>
@@ -60,7 +70,9 @@ export default function NotificationsScreen() {
             <Bell size={22} color={ACCENT_PURPLE} />
             <View style={styles.settingText}>
               <Text style={styles.settingTitle}>Enable Push Notifications</Text>
-              <Text style={styles.settingDesc}>Receive notifications on your device</Text>
+              <Text style={styles.settingDesc}>
+                Receive notifications on your device
+              </Text>
             </View>
           </View>
           <Switch
@@ -95,7 +107,9 @@ export default function NotificationsScreen() {
             <MessageCircle size={22} color={ACCENT_PURPLE} />
             <View style={styles.settingText}>
               <Text style={styles.settingTitle}>New Messages</Text>
-              <Text style={styles.settingDesc}>When someone sends you a message</Text>
+              <Text style={styles.settingDesc}>
+                When someone sends you a message
+              </Text>
             </View>
           </View>
           <Switch
@@ -112,7 +126,9 @@ export default function NotificationsScreen() {
             <Heart size={22} color={ACCENT_PURPLE} />
             <View style={styles.settingText}>
               <Text style={styles.settingTitle}>New Likes</Text>
-              <Text style={styles.settingDesc}>When someone likes your profile</Text>
+              <Text style={styles.settingDesc}>
+                When someone likes your profile
+              </Text>
             </View>
           </View>
           <Switch

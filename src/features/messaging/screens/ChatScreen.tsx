@@ -371,33 +371,27 @@ export default function ChatScreen() {
 
   // Phone call handler
   const handlePhoneCall = useCallback(() => {
-    Alert.alert("Voice Call", `Call ${userName}?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Call",
-        onPress: () => {
-          // TODO: Implement voice call functionality
-          console.log("Initiating voice call...");
-          Alert.alert("Coming Soon", "Voice calling will be available soon!");
-        },
+    router.push({
+      pathname: "/(main)/voice-call" as any,
+      params: {
+        userId: params.userId || "unknown",
+        userName: userName,
+        userAvatar: params.userImage || "",
       },
-    ]);
-  }, [userName]);
+    });
+  }, [userName, params.userId, params.userImage, router]);
 
   // Video call handler
   const handleVideoCall = useCallback(() => {
-    Alert.alert("Video Call", `Video call ${userName}?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Call",
-        onPress: () => {
-          // TODO: Implement video call functionality
-          console.log("Initiating video call...");
-          Alert.alert("Coming Soon", "Video calling will be available soon!");
-        },
+    router.push({
+      pathname: "/(main)/video-call" as any,
+      params: {
+        userId: params.userId || "unknown",
+        userName: userName,
+        userAvatar: params.userImage || "",
       },
-    ]);
-  }, [userName]);
+    });
+  }, [userName, params.userId, params.userImage, router]);
 
   // More options handler
   const handleMoreOptions = useCallback(() => {

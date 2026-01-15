@@ -1,5 +1,7 @@
 // app/(tabs)/likes.tsx
+import { supabase } from "@/src/config/supabase";
 import { accountApi } from "@/src/features/account/api/accountApi";
+import { getMatches } from "@/src/features/matching/api/matchingApi";
 import { LinearGradient } from "expo-linear-gradient";
 import { Heart, MapPin, MessageCircle, Sparkles, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
@@ -35,7 +37,7 @@ const IMAGE_HEIGHT = CARD_WIDTH * 0.85;
 
 // Match type
 type Match = {
-  id: number;
+  id: string | number;
   name: string;
   age: number;
   image: any;
@@ -43,6 +45,7 @@ type Match = {
   verified: boolean;
   mutual: boolean;
   gender: "female" | "male";
+  matchedAt?: string;
 };
 
 // Filipina matches (for foreigners to see)
@@ -288,36 +291,92 @@ export default function Likes() {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<"all" | "mutual">("all");
   const [userType, setUserType] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch user type on mount
+  // Fetch user data and matches on mount
   useEffect(() => {
-    const fetchUserType = async () => {
+    const fetchData = async () => {
       try {
+        // Get current user
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          console.error("Failed to fetch user:", userError);
+          setLoading(false);
+          return;
+        }
+
+        setUserId(user.id);
+
+        // Get user type
         const basicInfo = await accountApi.getBasicInfo();
         setUserType(basicInfo?.userType ?? null);
+
+        // Fetch matches from database
+        const { data: dbMatches, error: matchesError } = await getMatches(
+          user.id
+        );
+
+        if (matchesError) {
+          console.error("Failed to fetch matches:", matchesError);
+          // Fall back to mock data
+          const mockMatches = getMatchesForUserType(
+            basicInfo?.userType ?? null
+          );
+          setMatches(mockMatches);
+        } else if (dbMatches && dbMatches.length > 0) {
+          // Convert database matches to display format
+          const displayMatches: Match[] = dbMatches.map((match) => ({
+            id: match.profile.id,
+            name: match.profile.first_name,
+            age: match.profile.age,
+            location: match.profile.city || "Philippines",
+            image: match.profile.photos?.[0]
+              ? { uri: match.profile.photos[0] }
+              : require("../../assets/girls/ai1.jpg"),
+            verified: match.profile.is_verified,
+            mutual: match.is_mutual,
+            gender:
+              match.profile.gender === "other"
+                ? "female"
+                : match.profile.gender,
+            matchedAt: match.matched_at,
+          }));
+          setMatches(displayMatches);
+        } else {
+          // Use mock data if no matches
+          const mockMatches = getMatchesForUserType(
+            basicInfo?.userType ?? null
+          );
+          setMatches(mockMatches);
+        }
       } catch (error) {
-        console.error("Failed to fetch user type:", error);
+        console.error("Failed to fetch data:", error);
+        // Fall back to mock data
+        const mockMatches = getMatchesForUserType(null);
+        setMatches(mockMatches);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserType();
+    fetchData();
   }, []);
-
-  // Get matches based on user type
-  const matches = getMatchesForUserType(userType);
 
   const filteredMatches =
     filter === "mutual" ? matches.filter((m) => m.mutual) : matches;
 
-  const handleMessage = (id: number) => {
+  const handleMessage = (id: string | number) => {
     console.log("Message match:", id);
     // TODO: Navigate to messages screen with this match
   };
 
-  const handleUnmatch = (id: number) => {
+  const handleUnmatch = (id: string | number) => {
     console.log("Unmatch:", id);
     // TODO: Show confirmation dialog and remove match
   };

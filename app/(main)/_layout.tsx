@@ -153,6 +153,26 @@ export default function MainLayout() {
         }}
       />
 
+      {/* Voice Call Screen - Hidden from tabs, accessible from chat */}
+      <Tabs.Screen
+        name="voice-call"
+        options={{
+          href: null, // Hides from tab bar
+          title: "Voice Call",
+          tabBarStyle: { display: "none" }, // Hides the entire tab bar on this screen
+        }}
+      />
+
+      {/* Video Call Screen - Hidden from tabs, accessible from chat */}
+      <Tabs.Screen
+        name="video-call"
+        options={{
+          href: null, // Hides from tab bar
+          title: "Video Call",
+          tabBarStyle: { display: "none" }, // Hides the entire tab bar on this screen
+        }}
+      />
+
       {/* Profile Settings - Hidden from tabs, accessible from profile screen */}
       <Tabs.Screen
         name="profile-settings"

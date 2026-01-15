@@ -39,7 +39,10 @@ export default function AboutScreen() {
       />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push("/(main)/profile")} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => router.push("/(main)/profile")}
+          style={styles.backBtn}
+        >
           <ArrowLeft size={24} color={WHITE} />
         </TouchableOpacity>
         <Text style={styles.title}>About</Text>
@@ -56,17 +59,18 @@ export default function AboutScreen() {
         </View>
 
         <Text style={styles.description}>
-          PinayMate is a modern dating platform designed to connect Filipina women with
-          foreign men seeking meaningful relationships. Our mission is to create authentic
-          connections based on shared values and mutual respect.
+          PinayMate is a modern dating platform designed to connect Filipina
+          women with foreign men seeking meaningful relationships. Our mission
+          is to create authentic connections based on shared values and mutual
+          respect.
         </Text>
 
         <View style={styles.featureCard}>
           <Shield size={32} color={ACCENT_PURPLE} />
           <Text style={styles.featureTitle}>Safe & Secure</Text>
           <Text style={styles.featureDesc}>
-            Your privacy and safety are our top priorities. We use advanced security
-            measures to protect your data.
+            Your privacy and safety are our top priorities. We use advanced
+            security measures to protect your data.
           </Text>
         </View>
 
@@ -74,8 +78,8 @@ export default function AboutScreen() {
           <Sparkles size={32} color={ACCENT_PURPLE} />
           <Text style={styles.featureTitle}>Verified Profiles</Text>
           <Text style={styles.featureDesc}>
-            All profiles go through a verification process to ensure authenticity and
-            create a trusted community.
+            All profiles go through a verification process to ensure
+            authenticity and create a trusted community.
           </Text>
         </View>
 
@@ -83,8 +87,8 @@ export default function AboutScreen() {
           <Heart size={32} color={ACCENT_PURPLE} />
           <Text style={styles.featureTitle}>Meaningful Connections</Text>
           <Text style={styles.featureDesc}>
-            We focus on helping you find genuine relationships built on shared interests
-            and values.
+            We focus on helping you find genuine relationships built on shared
+            interests and values.
           </Text>
         </View>
 
@@ -97,7 +101,9 @@ export default function AboutScreen() {
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>© 2025 PinayMate. All rights reserved.</Text>
+          <Text style={styles.footerText}>
+            © 2025 PinayMate. All rights reserved.
+          </Text>
           <Text style={styles.footerText}>Made with ❤️ in the Philippines</Text>
         </View>
 
