@@ -306,15 +306,27 @@ export default function ChatScreen() {
 
   // Phone call handler
   const handlePhoneCall = useCallback(() => {
-    console.log("Phone call - TODO: implement");
-    Alert.alert("Voice Call", "Voice calling feature coming soon!");
-  }, []);
+    router.push({
+      pathname: "/voice-call",
+      params: {
+        userId: recipientId,
+        userName: userName,
+        userAvatar: params.userImage,
+      },
+    });
+  }, [router, recipientId, userName, params.userImage]);
 
   // Video call handler
   const handleVideoCall = useCallback(() => {
-    console.log("Video call - TODO: implement");
-    Alert.alert("Video Call", "Video calling feature coming soon!");
-  }, []);
+    router.push({
+      pathname: "/video-call",
+      params: {
+        userId: recipientId,
+        userName: userName,
+        userAvatar: params.userImage,
+      },
+    });
+  }, [router, recipientId, userName, params.userImage]);
 
   // Emoji picker handler
   const handleEmojiPick = useCallback(() => {
@@ -361,16 +373,19 @@ export default function ChatScreen() {
           isMyMessage ? styles.myMessageRow : styles.theirMessageRow,
         ]}
       >
-        {showAvatar && (
-          <Image
-            source={
-              params.userImage
-                ? { uri: params.userImage }
-                : require("@/assets/girls/ai1.jpg")
-            }
-            style={styles.messageAvatar}
-          />
-        )}
+        {showAvatar &&
+          (params.userImage && params.userImage.startsWith("http") ? (
+            <Image
+              source={{ uri: params.userImage }}
+              style={styles.messageAvatar}
+            />
+          ) : (
+            <View style={styles.messageAvatarPlaceholder}>
+              <Text style={styles.messageAvatarPlaceholderText}>
+                {userName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          ))}
 
         <View
           style={[
@@ -460,7 +475,13 @@ export default function ChatScreen() {
         <View style={styles.headerContent}>
           {/* Back Button */}
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/messages");
+              }
+            }}
             style={styles.backButton}
             accessibilityLabel="Go back"
             accessibilityRole="button"
@@ -471,14 +492,18 @@ export default function ChatScreen() {
           {/* User Info */}
           <TouchableOpacity style={styles.headerUserInfo} activeOpacity={0.7}>
             <View style={styles.headerAvatarContainer}>
-              <Image
-                source={
-                  params.userImage
-                    ? { uri: params.userImage }
-                    : require("@/assets/girls/ai1.jpg")
-                }
-                style={styles.headerAvatar}
-              />
+              {params.userImage && params.userImage.startsWith("http") ? (
+                <Image
+                  source={{ uri: params.userImage }}
+                  style={styles.headerAvatar}
+                />
+              ) : (
+                <View style={styles.headerAvatarPlaceholder}>
+                  <Text style={styles.headerAvatarPlaceholderText}>
+                    {userName.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
               {isOnline && <View style={styles.headerOnlineDot} />}
             </View>
 
@@ -532,14 +557,18 @@ export default function ChatScreen() {
         {/* Typing Indicator */}
         {isTyping && (
           <View style={[styles.messageRow, styles.theirMessageRow]}>
-            <Image
-              source={
-                params.userImage
-                  ? { uri: params.userImage }
-                  : require("@/assets/girls/ai1.jpg")
-              }
-              style={styles.messageAvatar}
-            />
+            {params.userImage && params.userImage.startsWith("http") ? (
+              <Image
+                source={{ uri: params.userImage }}
+                style={styles.messageAvatar}
+              />
+            ) : (
+              <View style={styles.messageAvatarPlaceholder}>
+                <Text style={styles.messageAvatarPlaceholderText}>
+                  {userName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
             <View style={[styles.messageBubble, styles.theirMessageBubble]}>
               <View style={styles.typingIndicator}>
                 <View style={styles.typingDot} />
@@ -687,6 +716,21 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: ACCENT_PURPLE,
   },
+  headerAvatarPlaceholder: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: ACCENT_PURPLE,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: ACCENT_PURPLE,
+  },
+  headerAvatarPlaceholderText: {
+    fontSize: 18,
+    fontFamily: "Lora-Bold",
+    color: WHITE,
+  },
   headerOnlineDot: {
     position: "absolute",
     bottom: 0,
@@ -769,6 +813,22 @@ const styles = StyleSheet.create({
     marginRight: 8,
     borderWidth: 1.5,
     borderColor: "rgba(141, 105, 246, 0.3)",
+  },
+  messageAvatarPlaceholder: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
+    backgroundColor: ACCENT_PURPLE,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "rgba(141, 105, 246, 0.3)",
+  },
+  messageAvatarPlaceholderText: {
+    fontSize: 14,
+    fontFamily: "Lora-Bold",
+    color: WHITE,
   },
   messageBubble: {
     maxWidth: "75%",

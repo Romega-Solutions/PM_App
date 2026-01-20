@@ -1,21 +1,23 @@
-import { supabase } from "@/src/config/supabase";
+import { useProfile } from "@/src/features/profile/hooks/userProfile";
+import { useUpdateProfile } from "@/src/features/profile/hooks/useUpdateProfile";
+import { useUploadPhoto } from "@/src/features/profile/hooks/useUploadPhoto";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Camera, Save } from "lucide-react-native";
+import { ArrowLeft, Camera, Save, User } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  Image,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    Image,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -32,85 +34,66 @@ const TILE_BORDER = "rgba(168, 85, 247, 0.13)";
 export default function EditProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
+  // Use custom hooks
+  const { profile, loading, refresh } = useProfile();
+  const { updateProfile, updating } = useUpdateProfile();
+  const {
+    pickAndUploadPhoto,
+    uploading: uploadingPhoto,
+    progress,
+  } = useUploadPhoto();
+
+  // Form state
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [bio, setBio] = useState("");
   const [occupation, setOccupation] = useState("");
   const [education, setEducation] = useState("");
   const [location, setLocation] = useState("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [allPhotos, setAllPhotos] = useState<string[]>([]);
 
+  // Load profile data into form
   useEffect(() => {
-    fetchProfileData();
-  }, []);
+    if (profile) {
+      setFirstName(profile.first_name || "");
+      setLastName(profile.last_name || "");
+      setOccupation(profile.occupation || "");
+      setEducation(profile.education || "");
+      setLocation(profile.location_name || "");
 
-  const fetchProfileData = async () => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+      const photosArray = profile.photos || [];
+      setAllPhotos(photosArray);
+      setProfileImage(photosArray.length > 0 ? photosArray[0] : null);
+    }
+  }, [profile]);
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .select(
-          "first_name, last_name, bio, occupation, education, location_name, photos"
-        )
-        .eq("id", user.id)
-        .single();
+  const handleChangePhoto = async () => {
+    const result = await pickAndUploadPhoto(allPhotos);
 
-      if (error) throw error;
-
-      if (data) {
-        setFirstName(data.first_name || "");
-        setLastName(data.last_name || "");
-        setBio(data.bio || "");
-        setOccupation(data.occupation || "");
-        setEducation(data.education || "");
-        setLocation(data.location_name || "");
-        // Get first photo from array
-        const photosArray = data.photos || [];
-        setProfileImage(photosArray.length > 0 ? photosArray[0] : null);
-      }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-    } finally {
-      setLoading(false);
+    if (result.success && result.url) {
+      setProfileImage(result.url);
+      setAllPhotos([result.url, ...allPhotos]);
+      Alert.alert("Success", "Photo uploaded successfully!");
+      // Refresh profile to get updated data
+      refresh();
     }
   };
 
   const handleSave = async () => {
-    setSaving(true);
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+    const success = await updateProfile({
+      first_name: firstName,
+      last_name: lastName,
+      occupation: occupation,
+      education: education,
+      location_name: location,
+    });
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          first_name: firstName,
-          last_name: lastName,
-          bio: bio,
-          occupation: occupation,
-          education: education,
-          location_name: location,
-        })
-        .eq("id", user.id);
-
-      if (error) throw error;
-
+    if (success) {
       Alert.alert("Success", "Profile updated successfully!");
       router.back();
-    } catch (error) {
-      console.error("Error saving profile:", error);
+    } else {
       Alert.alert("Error", "Failed to update profile");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -150,8 +133,11 @@ export default function EditProfileScreen() {
           <ArrowLeft size={24} color={WHITE} />
         </TouchableOpacity>
         <Text style={styles.title}>Edit Profile</Text>
-        <TouchableOpacity onPress={handleSave} disabled={saving}>
-          {saving ? (
+        <TouchableOpacity
+          onPress={handleSave}
+          disabled={updating || uploadingPhoto}
+        >
+          {updating ? (
             <ActivityIndicator size="small" color={ACCENT_PINK} />
           ) : (
             <Save size={24} color={ACCENT_PINK} />
@@ -163,16 +149,29 @@ export default function EditProfileScreen() {
         {/* Profile Photo */}
         <View style={styles.photoSection}>
           <View style={styles.photoWrap}>
-            {profileImage ? (
+            {profileImage && profileImage.startsWith("http") ? (
               <Image source={{ uri: profileImage }} style={styles.photo} />
             ) : (
               <View style={styles.photoPlaceholder}>
-                <Camera size={32} color={ACCENT_PINK} />
+                <User size={32} color={ACCENT_PINK} />
+              </View>
+            )}
+            {uploadingPhoto && (
+              <View style={styles.uploadOverlay}>
+                <ActivityIndicator size="large" color={WHITE} />
+                <Text style={styles.uploadProgress}>{progress}%</Text>
               </View>
             )}
           </View>
-          <TouchableOpacity style={styles.changePhotoBtn}>
-            <Text style={styles.changePhotoText}>Change Photo</Text>
+          <TouchableOpacity
+            style={styles.changePhotoBtn}
+            onPress={handleChangePhoto}
+            disabled={uploadingPhoto}
+          >
+            <Camera size={16} color={WHITE} />
+            <Text style={styles.changePhotoText}>
+              {uploadingPhoto ? "Uploading..." : "Change Photo"}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -197,20 +196,6 @@ export default function EditProfileScreen() {
               onChangeText={setLastName}
               placeholder="Enter last name"
               placeholderTextColor="rgba(255,255,255,0.4)"
-            />
-          </View>
-
-          <View style={styles.fieldWrap}>
-            <Text style={styles.label}>Bio</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={bio}
-              onChangeText={setBio}
-              placeholder="Tell us about yourself..."
-              placeholderTextColor="rgba(255,255,255,0.4)"
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
             />
           </View>
 
@@ -308,6 +293,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   changePhotoBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
     paddingHorizontal: 20,
     paddingVertical: 8,
   },
@@ -315,6 +303,18 @@ const styles = StyleSheet.create({
     color: ACCENT_PURPLE,
     fontSize: 14,
     fontFamily: "DMSans-SemiBold",
+  },
+  uploadOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+  },
+  uploadProgress: {
+    color: WHITE,
+    fontSize: 16,
+    fontFamily: "DMSans-Bold",
   },
   form: {
     gap: 20,

@@ -52,13 +52,19 @@ const ActiveUser: React.FC<ActiveUserProps> = ({ user, onPress }) => (
   >
     <View style={styles.activeUserImageContainer}>
       <View style={styles.activeUserImageWrap}>
-        <Image
-          source={
-            typeof user.image === "string" ? { uri: user.image } : user.image
-          }
-          style={styles.activeUserImage}
-          resizeMode="cover"
-        />
+        {user.image ? (
+          <Image
+            source={{ uri: user.image }}
+            style={styles.activeUserImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.placeholderAvatar}>
+            <Text style={styles.placeholderAvatarText}>
+              {user.name.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+        )}
       </View>
       {user.isOnline && <View style={styles.onlineBadge} />}
     </View>
@@ -94,15 +100,19 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       {/* Profile Image */}
       <View style={styles.conversationImageContainer}>
         <View style={styles.conversationImageWrap}>
-          <Image
-            source={
-              otherUser.photos?.[0]
-                ? { uri: otherUser.photos[0] }
-                : require("../../assets/girls/ai1.jpg")
-            }
-            style={styles.conversationImage}
-            resizeMode="cover"
-          />
+          {otherUser.photos?.[0] ? (
+            <Image
+              source={{ uri: otherUser.photos[0] }}
+              style={styles.conversationImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.placeholderConversationAvatar}>
+              <Text style={styles.placeholderAvatarText}>
+                {otherUser.first_name.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
         </View>
         {isOnline && <View style={styles.conversationOnlineDot} />}
       </View>
@@ -183,7 +193,7 @@ export default function Messages() {
         JSON.stringify(conversations[0], null, 2),
       );
     }
-  }, [currentUserId, loading, error, conversations, filteredConversations]);
+  }, [currentUserId, loading, error, conversations]);
 
   // Filter conversations based on search
   const filteredConversations = conversations.filter((conv) => {
@@ -231,9 +241,7 @@ export default function Messages() {
     .map((conv) => ({
       id: conv.other_user.id,
       name: conv.other_user.first_name,
-      image: conv.other_user.photos?.[0]
-        ? { uri: conv.other_user.photos[0] }
-        : require("../../assets/girls/ai1.jpg"),
+      image: conv.other_user.photos?.[0] || null,
       isOnline: true,
     }));
 
@@ -404,7 +412,9 @@ export default function Messages() {
           <View style={styles.emptyState}>
             <MessageCircle size={64} color={ACCENT_PURPLE} strokeWidth={1.5} />
             <Text style={styles.emptyTitle}>Error loading messages</Text>
-            <Text style={styles.emptyText}>{error}</Text>
+            <Text style={styles.emptyText}>
+              {error?.message || "Failed to load conversations"}
+            </Text>
             <TouchableOpacity style={styles.retryButton} onPress={refresh}>
               <Text style={styles.retryButtonText}>Retry</Text>
             </TouchableOpacity>
@@ -625,6 +635,25 @@ const styles = StyleSheet.create({
   activeUserImage: {
     width: "100%",
     height: "100%",
+  },
+  placeholderAvatar: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: ACCENT_PURPLE,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  placeholderConversationAvatar: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: ACCENT_PURPLE,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  placeholderAvatarText: {
+    fontSize: 24,
+    fontFamily: "Lora-Bold",
+    color: WHITE,
   },
   onlineBadge: {
     position: "absolute",

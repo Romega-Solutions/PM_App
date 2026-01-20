@@ -86,7 +86,7 @@ export default function Profile() {
         const { data: profile, error } = await supabase
           .from("profiles")
           .select(
-            "id, email, first_name, last_name, age, user_type, gender, location_name, photos, is_verified"
+            "id, email, first_name, last_name, age, user_type, gender, location_name, photos, is_verified",
           )
           .eq("id", userId)
           .single();
@@ -273,7 +273,7 @@ export default function Profile() {
         {/* Avatar and user info */}
         <View style={styles.profileTop}>
           <View style={styles.avatarWrap}>
-            {profileData.photoUri ? (
+            {profileData.photoUri && profileData.photoUri.startsWith("http") ? (
               <Image
                 source={{ uri: profileData.photoUri }}
                 style={styles.avatar}
