@@ -15,6 +15,7 @@ import {
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActionSheetIOS,
+  ActivityIndicator,
   Alert,
   Image,
   Keyboard,
@@ -30,6 +31,13 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+// Import hooks and types
+import { supabase } from "@/src/config/supabase";
+import { useChatRealtime } from "@/src/features/messaging/hooks/useChatRealtime";
+import { useMessages } from "@/src/features/messaging/hooks/useMessages";
+import { useMessageUpload } from "@/src/features/messaging/hooks/useMessageUpload";
+import type { Message as MessageType } from "@/src/features/messaging/types/messaging.types";
+
 // Brand Colors
 const BRAND_BG = "#0F0814";
 const ACCENT_PURPLE = "#8D69F6";
@@ -42,21 +50,12 @@ const THEIR_MESSAGE_BG = "rgba(255, 255, 255, 0.08)";
 const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
 const TEXT_MUTED = "rgba(255,255,255,0.5)";
 
-export type Message = {
-  id: string;
-  text: string;
-  senderId: string;
-  timestamp: Date;
-  status: "sending" | "sent" | "delivered" | "read";
-  type: "text" | "image";
-  imageUri?: string;
-};
-
 type ChatScreenParams = {
   userId: string;
   userName: string;
   userImage?: string;
   isOnline?: string;
+  conversationId?: string;
 };
 
 export default function ChatScreen() {
@@ -66,55 +65,55 @@ export default function ChatScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const inputRef = useRef<TextInput>(null);
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      text: "Hi! How are you doing?",
-      senderId: params.userId || "other",
-      timestamp: new Date(Date.now() - 3600000),
-      status: "read",
-      type: "text",
-    },
-    {
-      id: "2",
-      text: "I'm doing great! Just got back from a coffee shop in Makati. How about you?",
-      senderId: "me",
-      timestamp: new Date(Date.now() - 3500000),
-      status: "read",
-      type: "text",
-    },
-    {
-      id: "3",
-      text: "That sounds nice! I've been wanting to explore more cafes there.",
-      senderId: params.userId || "other",
-      timestamp: new Date(Date.now() - 3400000),
-      status: "read",
-      type: "text",
-    },
-    {
-      id: "4",
-      text: "We should definitely go together sometime! I know a few great spots 😊",
-      senderId: "me",
-      timestamp: new Date(Date.now() - 3300000),
-      status: "delivered",
-      type: "text",
-    },
-    {
-      id: "5",
-      text: "That would be amazing! When are you free?",
-      senderId: params.userId || "other",
-      timestamp: new Date(Date.now() - 120000),
-      status: "read",
-      type: "text",
-    },
-  ]);
-
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
 
   const userName = params.userName || "User";
   const isOnline = params.isOnline === "true";
+  const recipientId = params.userId;
+
+  // Get current user ID
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setCurrentUserId(data.user.id);
+      }
+    });
+  }, []);
+
+  // Initialize messaging hooks
+  const {
+    messages: dbMessages,
+    loading,
+    error,
+    sendText,
+    sendImage: sendImageToDb,
+    markAsRead,
+    addMessage,
+  } = useMessages({
+    conversationId: params.conversationId,
+    userId: currentUserId,
+    recipientId: recipientId || "",
+    autoLoad: true,
+  });
+
+  const { uploadImage, uploading } = useMessageUpload();
+
+  // Setup realtime subscriptions
+  const { sendTyping } = useChatRealtime({
+    conversationId: params.conversationId,
+    userId: currentUserId,
+    recipientId: recipientId || "",
+    onNewMessage: (message) => {
+      addMessage(message);
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    },
+    onTyping: (typing) => {
+      setIsTyping(typing);
+    },
+  });
 
   // Keyboard listeners
   useEffect(() => {
@@ -122,13 +121,13 @@ export default function ChatScreen() {
       Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
       (e) => {
         setKeyboardHeight(e.endCoordinates.height);
-      }
+      },
     );
     const keyboardWillHide = Keyboard.addListener(
       Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
       () => {
         setKeyboardHeight(0);
-      }
+      },
     );
 
     return () => {
@@ -142,86 +141,38 @@ export default function ChatScreen() {
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
-  }, [messages]);
+  }, [dbMessages]);
 
-  // Simulate typing indicator
+  // Send typing indicator
   useEffect(() => {
     if (inputText.length > 0) {
-      setIsTyping(true);
-      const timer = setTimeout(() => setIsTyping(false), 1000);
+      sendTyping(true);
+      const timer = setTimeout(() => sendTyping(false), 1000);
       return () => clearTimeout(timer);
     } else {
-      setIsTyping(false);
+      sendTyping(false);
     }
-  }, [inputText]);
+  }, [inputText, sendTyping]);
 
   // ==================== HANDLER FUNCTIONS ====================
 
-  // Send message handler (Ready for Supabase integration)
-  const handleSend = useCallback(() => {
+  // Send message handler - REAL BACKEND INTEGRATION
+  const handleSend = useCallback(async () => {
     if (inputText.trim().length === 0) return;
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text: inputText.trim(),
-      senderId: "me",
-      timestamp: new Date(),
-      status: "sending",
-      type: "text",
-    };
-
-    setMessages((prev) => [...prev, newMessage]);
+    const messageText = inputText.trim();
     setInputText("");
 
-    // TODO: Replace with Supabase integration
-    // await supabase.from('messages').insert({
-    //   text: newMessage.text,
-    //   sender_id: currentUserId,
-    //   recipient_id: params.userId,
-    //   type: 'text',
-    //   created_at: new Date(),
-    // });
-
-    // Simulate message sent (Remove when using real backend)
-    setTimeout(() => {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === newMessage.id ? { ...msg, status: "sent" } : msg
-        )
-      );
-    }, 500);
-
-    // Simulate message delivered (Remove when using real backend)
-    setTimeout(() => {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === newMessage.id ? { ...msg, status: "delivered" } : msg
-        )
-      );
-    }, 1000);
-
-    // Simulate auto-reply from other user (Remove when using real backend)
-    setTimeout(() => {
-      const replyMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "That sounds perfect! Looking forward to it 💕",
-        senderId: params.userId || "other",
-        timestamp: new Date(),
-        status: "read",
-        type: "text",
-      };
-      setMessages((prev) => [...prev, replyMessage]);
-
-      // Mark as read
-      setTimeout(() => {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.senderId === "me" ? { ...msg, status: "read" } : msg
-          )
-        );
-      }, 1500);
-    }, 2000);
-  }, [inputText, params.userId]);
+    try {
+      await sendText(messageText);
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    } catch (error) {
+      console.error("❌ Error sending message:", error);
+      Alert.alert("Error", "Failed to send message. Please try again.");
+      // Restore input text on error
+      setInputText(messageText);
+    }
+  }, [inputText, sendText]);
 
   // Image picker handler
   const handleImagePick = useCallback(async () => {
@@ -233,7 +184,7 @@ export default function ChatScreen() {
       if (status !== "granted") {
         Alert.alert(
           "Permission Required",
-          "Please grant photo library access to send images."
+          "Please grant photo library access to send images.",
         );
         return;
       }
@@ -248,150 +199,34 @@ export default function ChatScreen() {
 
       if (!result.canceled && result.assets[0]) {
         const imageUri = result.assets[0].uri;
-        const fileName = result.assets[0].fileName || `image_${Date.now()}.jpg`;
-        const fileType = result.assets[0].type || "image";
 
-        // Create optimistic image message
-        const imageMessage: Message = {
-          id: `temp_${Date.now()}`,
-          text: "",
-          senderId: "me",
-          timestamp: new Date(),
-          status: "sending",
-          type: "image",
-          imageUri,
-        };
-
-        setMessages((prev) => [...prev, imageMessage]);
-
-        // TODO: Upload to Supabase Storage
         try {
-          // Step 1: Convert image to blob for upload
-          // const response = await fetch(imageUri);
-          // const blob = await response.blob();
-
-          // Step 2: Generate unique file path
-          // const chatId = `${params.userId}_me`;
-          // const filePath = `${chatId}/${Date.now()}_${fileName}`;
-
-          // Step 3: Upload to Supabase Storage
-          // const { data: uploadData, error: uploadError } = await supabase.storage
-          //   .from('chat-images')
-          //   .upload(filePath, blob, {
-          //     contentType: 'image/jpeg',
-          //     cacheControl: '3600',
-          //     upsert: false
-          //   });
-
-          // if (uploadError) throw uploadError;
-
-          // Step 4: Get public URL
-          // const { data: { publicUrl } } = supabase.storage
-          //   .from('chat-images')
-          //   .getPublicUrl(filePath);
-
-          // Step 5: Save message to database
-          // const { data: messageData, error: messageError } = await supabase
-          //   .from('messages')
-          //   .insert({
-          //     sender_id: 'me',
-          //     receiver_id: params.userId,
-          //     content: '',
-          //     message_type: 'image',
-          //     image_url: publicUrl,
-          //     created_at: new Date().toISOString(),
-          //   })
-          //   .select()
-          //   .single();
-
-          // if (messageError) throw messageError;
-
-          // Step 6: Update message with server ID and mark as sent
-          // setMessages((prev) =>
-          //   prev.map((msg) =>
-          //     msg.id === imageMessage.id
-          //       ? { ...msg, id: messageData.id, status: "sent", imageUri: publicUrl }
-          //       : msg
-          //   )
-          // );
-
-          // Simulate upload complete (remove this when Supabase is connected)
-          setTimeout(() => {
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === imageMessage.id ? { ...msg, status: "sent" } : msg
-              )
-            );
-          }, 1500);
-        } catch (uploadError) {
-          console.error("Error uploading image:", uploadError);
-          // Mark message as failed
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === imageMessage.id
-                ? { ...msg, status: "sent", text: "❌ Upload failed" }
-                : msg
-            )
+          // Upload image to Supabase Storage
+          const imageUrl = await uploadImage(
+            imageUri,
+            params.conversationId || "",
           );
+
+          if (!imageUrl) {
+            throw new Error("Failed to get image URL");
+          }
+
+          // Send image message to database
+          await sendImageToDb(imageUrl);
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        } catch (uploadError) {
+          console.error("❌ Error uploading image:", uploadError);
           Alert.alert(
             "Upload Failed",
-            "Could not upload image. Please try again."
+            "Could not upload image. Please try again.",
           );
         }
       }
     } catch (error) {
-      console.error("Error picking image:", error);
+      console.error("❌ Error picking image:", error);
       Alert.alert("Error", "Failed to pick image. Please try again.");
     }
-  }, []);
-
-  // Emoji picker handler
-  const handleEmojiPick = useCallback(() => {
-    // TODO: Implement emoji picker
-    // For now, add common emojis to input
-    const commonEmojis = ["❤️", "😊", "😂", "🥰", "👍", "🙏", "💕", "✨"];
-
-    if (Platform.OS === "ios") {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: [...commonEmojis, "Cancel"],
-          cancelButtonIndex: commonEmojis.length,
-        },
-        (buttonIndex) => {
-          if (buttonIndex < commonEmojis.length) {
-            setInputText((prev) => prev + commonEmojis[buttonIndex]);
-          }
-        }
-      );
-    } else {
-      // On Android, just add a heart emoji for now
-      setInputText((prev) => prev + "❤️");
-    }
-  }, []);
-
-  // Phone call handler
-  const handlePhoneCall = useCallback(() => {
-    router.push({
-      pathname: "/(main)/voice-call" as any,
-      params: {
-        userId: params.userId || "unknown",
-        userName: userName,
-        userAvatar: params.userImage || "",
-      },
-    });
-  }, [userName, params.userId, params.userImage, router]);
-
-  // Video call handler
-  const handleVideoCall = useCallback(() => {
-    router.push({
-      pathname: "/(main)/video-call" as any,
-      params: {
-        userId: params.userId || "unknown",
-        userName: userName,
-        userAvatar: params.userImage || "",
-      },
-    });
-  }, [userName, params.userId, params.userImage, router]);
+  }, [uploadImage, sendImageToDb, params.conversationId]);
 
   // More options handler
   const handleMoreOptions = useCallback(() => {
@@ -438,13 +273,13 @@ export default function ChatScreen() {
                   {
                     text: "Clear",
                     style: "destructive",
-                    onPress: () => setMessages([]),
+                    onPress: () => console.log("Clear chat - TODO: implement"),
                   },
-                ]
+                ],
               );
               break;
           }
-        }
+        },
       );
     } else {
       // Android - show simple alert for now
@@ -458,7 +293,10 @@ export default function ChatScreen() {
           onPress: () =>
             Alert.alert("Clear Chat", "Are you sure?", [
               { text: "Cancel" },
-              { text: "Clear", onPress: () => setMessages([]) },
+              {
+                text: "Clear",
+                onPress: () => console.log("Clear - TODO: implement"),
+              },
             ]),
         },
         { text: "Cancel", style: "cancel" },
@@ -466,9 +304,28 @@ export default function ChatScreen() {
     }
   }, []);
 
+  // Phone call handler
+  const handlePhoneCall = useCallback(() => {
+    console.log("Phone call - TODO: implement");
+    Alert.alert("Voice Call", "Voice calling feature coming soon!");
+  }, []);
+
+  // Video call handler
+  const handleVideoCall = useCallback(() => {
+    console.log("Video call - TODO: implement");
+    Alert.alert("Video Call", "Video calling feature coming soon!");
+  }, []);
+
+  // Emoji picker handler
+  const handleEmojiPick = useCallback(() => {
+    console.log("Emoji picker - TODO: implement");
+    // TODO: Implement emoji picker
+  }, []);
+
   // ==================== END HANDLER FUNCTIONS ====================
 
-  const formatTime = (date: Date) => {
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
     const hours = date.getHours();
     const minutes = date.getMinutes();
     const ampm = hours >= 12 ? "PM" : "AM";
@@ -477,7 +334,7 @@ export default function ChatScreen() {
     return `${formattedHours}:${formattedMinutes} ${ampm}`;
   };
 
-  const renderMessageStatus = (status: Message["status"]) => {
+  const renderMessageStatus = (status: MessageType["status"]) => {
     switch (status) {
       case "sending":
         return <Check size={14} color={TEXT_MUTED} strokeWidth={2.5} />;
@@ -492,76 +349,56 @@ export default function ChatScreen() {
     }
   };
 
-  const renderMessage = (message: Message, index: number) => {
-    const isMyMessage = message.senderId === "me";
-    const showTimestamp =
-      index === 0 ||
-      messages[index - 1].senderId !== message.senderId ||
-      message.timestamp.getTime() - messages[index - 1].timestamp.getTime() >
-        300000; // 5 minutes
+  const renderMessage = (message: MessageType, index: number) => {
+    const isMyMessage = message.sender_id === currentUserId;
+    const showAvatar = !isMyMessage;
 
     return (
-      <View key={message.id}>
-        {showTimestamp && (
-          <View style={styles.timestampContainer}>
-            <Text style={styles.timestampText}>
-              {formatTime(message.timestamp)}
-            </Text>
-          </View>
+      <View
+        key={message.id}
+        style={[
+          styles.messageRow,
+          isMyMessage ? styles.myMessageRow : styles.theirMessageRow,
+        ]}
+      >
+        {showAvatar && (
+          <Image
+            source={
+              params.userImage
+                ? { uri: params.userImage }
+                : require("@/assets/girls/ai1.jpg")
+            }
+            style={styles.messageAvatar}
+          />
         )}
 
         <View
           style={[
-            styles.messageRow,
-            isMyMessage ? styles.myMessageRow : styles.theirMessageRow,
+            styles.messageBubble,
+            isMyMessage ? styles.myMessageBubble : styles.theirMessageBubble,
           ]}
         >
-          {!isMyMessage && (
+          {message.type === "image" && message.image_url ? (
             <Image
-              source={
-                params.userImage
-                  ? { uri: params.userImage }
-                  : require("@/assets/girls/ai1.jpg")
-              }
-              style={styles.messageAvatar}
+              source={{ uri: message.image_url }}
+              style={styles.messageImage}
+              resizeMode="cover"
             />
+          ) : (
+            <Text
+              style={[
+                styles.messageText,
+                isMyMessage ? styles.myMessageText : styles.theirMessageText,
+              ]}
+            >
+              {message.text}
+            </Text>
           )}
 
-          <View
-            style={[
-              styles.messageBubble,
-              isMyMessage ? styles.myMessageBubble : styles.theirMessageBubble,
-              message.type === "image" && styles.imageBubble,
-            ]}
-          >
-            {/* Image Message */}
-            {message.type === "image" && message.imageUri && (
-              <View style={styles.imageMessageContainer}>
-                <Image
-                  source={{ uri: message.imageUri }}
-                  style={styles.messageImage}
-                  resizeMode="cover"
-                />
-                {message.status === "sending" && (
-                  <View style={styles.imageUploadingOverlay}>
-                    <Text style={styles.imageUploadingText}>Uploading...</Text>
-                  </View>
-                )}
-              </View>
-            )}
-
-            {/* Text Message */}
-            {message.type === "text" && (
-              <Text
-                style={[
-                  styles.messageText,
-                  isMyMessage ? styles.myMessageText : styles.theirMessageText,
-                ]}
-              >
-                {message.text}
-              </Text>
-            )}
-
+          <View style={styles.messageFooter}>
+            <Text style={styles.messageTime}>
+              {formatTime(message.created_at)}
+            </Text>
             {isMyMessage && (
               <View style={styles.messageStatusContainer}>
                 {renderMessageStatus(message.status)}
@@ -572,6 +409,31 @@ export default function ChatScreen() {
       </View>
     );
   };
+
+  // Show loading state
+  if (loading && dbMessages.length === 0) {
+    return (
+      <View style={[styles.root, styles.centerContent]}>
+        <ActivityIndicator size="large" color={ACCENT_PURPLE} />
+        <Text style={styles.loadingText}>Loading messages...</Text>
+      </View>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <View style={[styles.root, styles.centerContent]}>
+        <Text style={styles.errorText}>Failed to load messages</Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => window.location.reload()}
+        >
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -665,7 +527,7 @@ export default function ChatScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {messages.map((message, index) => renderMessage(message, index))}
+        {dbMessages.map((message, index) => renderMessage(message, index))}
 
         {/* Typing Indicator */}
         {isTyping && (
@@ -710,11 +572,19 @@ export default function ChatScreen() {
           <View style={styles.inputRow}>
             {/* Media Button */}
             <TouchableOpacity
-              style={styles.mediaButton}
+              style={[
+                styles.mediaButton,
+                uploading && styles.mediaButtonDisabled,
+              ]}
               accessibilityLabel="Attach media"
               onPress={handleImagePick}
+              disabled={uploading}
             >
-              <ImageIcon size={22} color={ACCENT_PURPLE} strokeWidth={2} />
+              {uploading ? (
+                <ActivityIndicator size="small" color={ACCENT_PURPLE} />
+              ) : (
+                <ImageIcon size={22} color={ACCENT_PURPLE} strokeWidth={2} />
+              )}
             </TouchableOpacity>
 
             {/* Text Input */}
@@ -931,6 +801,17 @@ const styles = StyleSheet.create({
     color: TEXT_SECONDARY,
     fontFamily: "DMSans-Regular",
   },
+  messageFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+  },
+  messageTime: {
+    fontSize: 11,
+    fontFamily: "DMSans-Regular",
+    color: TEXT_MUTED,
+  },
   messageStatusContainer: {
     marginTop: 4,
     alignSelf: "flex-end",
@@ -1062,5 +943,37 @@ const styles = StyleSheet.create({
         elevation: 4,
       },
     }),
+  },
+
+  // Loading and Error States
+  centerContent: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 16,
+    color: TEXT_SECONDARY,
+    fontSize: 16,
+    fontFamily: "DMSans-Regular",
+  },
+  errorText: {
+    color: ACCENT_PINK,
+    fontSize: 16,
+    fontFamily: "DMSans-Medium",
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: ACCENT_PURPLE,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    color: WHITE,
+    fontSize: 16,
+    fontFamily: "DMSans-Bold",
+  },
+  mediaButtonDisabled: {
+    opacity: 0.5,
   },
 });

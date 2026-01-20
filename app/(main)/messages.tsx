@@ -1,10 +1,8 @@
-// app/(tabs)/messages.tsx
+// app/(main)/messages.tsx - REAL BACKEND INTEGRATION
 import { supabase } from "@/src/config/supabase";
-import { getConversations } from "@/src/features/messaging/api/messagesApi";
+import { useConversations } from "@/src/features/messaging/hooks/useConversations";
 import { useRouter } from "expo-router";
 import {
-  CheckCheck,
-  Circle,
   Filter,
   MessageCircle,
   MoreVertical,
@@ -12,6 +10,7 @@ import {
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   Image,
   Platform,
@@ -38,282 +37,9 @@ const SURFACE_BORDER = "rgba(141,105,246,0.18)";
 const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
 const TEXT_MUTED = "rgba(255,255,255,0.5)";
 
-// Active users data - updated to use all 15 AI images
-const activeUsers = [
-  {
-    id: 1,
-    name: "Maria",
-    image: require("../../assets/girls/ai1.jpg"),
-    isOnline: true,
-  },
-  {
-    id: 2,
-    name: "Angel",
-    image: require("../../assets/girls/ai2.jpg"),
-    isOnline: true,
-  },
-  {
-    id: 3,
-    name: "Jessa",
-    image: require("../../assets/girls/ai3.jpg"),
-    isOnline: true,
-  },
-  {
-    id: 4,
-    name: "Kim",
-    image: require("../../assets/girls/ai4.jpg"),
-    isOnline: true,
-  },
-  {
-    id: 5,
-    name: "Liza",
-    image: require("../../assets/girls/ai5.jpg"),
-    isOnline: false,
-  },
-  {
-    id: 6,
-    name: "Bea",
-    image: require("../../assets/girls/ai6.jpg"),
-    isOnline: true,
-  },
-  {
-    id: 7,
-    name: "Carla",
-    image: require("../../assets/girls/ai7.jpg"),
-    isOnline: true,
-  },
-  {
-    id: 8,
-    name: "Denise",
-    image: require("../../assets/girls/ai8.jpg"),
-    isOnline: false,
-  },
-  {
-    id: 9,
-    name: "Erika",
-    image: require("../../assets/girls/ai9.jpg"),
-    isOnline: true,
-  },
-  {
-    id: 10,
-    name: "Faith",
-    image: require("../../assets/girls/ai10.jpg"),
-    isOnline: false,
-  },
-  {
-    id: 11,
-    name: "Grace",
-    image: require("../../assets/girls/ai11.jpg"),
-    isOnline: true,
-  },
-  {
-    id: 12,
-    name: "Hannah",
-    image: require("../../assets/girls/ai12.png"),
-    isOnline: false,
-  },
-  {
-    id: 13,
-    name: "Irene",
-    image: require("../../assets/girls/ai13.png"),
-    isOnline: true,
-  },
-  {
-    id: 14,
-    name: "Joy",
-    image: require("../../assets/girls/ai14.png"),
-    isOnline: false,
-  },
-  {
-    id: 15,
-    name: "Kaye",
-    image: require("../../assets/girls/ai15.png"),
-    isOnline: true,
-  },
-] as const;
-
-// Conversations data - updated to use all 15 AI images
-const conversations = [
-  {
-    id: 1,
-    name: "Maria",
-    image: require("../../assets/girls/ai1.jpg"),
-    lastMessage: "That sounds amazing! When are you free?",
-    time: "2m",
-    unread: 2,
-    isTyping: true,
-    isOnline: true,
-    isSent: false,
-  },
-  {
-    id: 2,
-    name: "Angel",
-    image: require("../../assets/girls/ai2.jpg"),
-    lastMessage: "You: Hey! What is up, long time...",
-    time: "18m",
-    unread: 0,
-    isTyping: false,
-    isOnline: true,
-    isSent: true,
-    isRead: true,
-  },
-  {
-    id: 3,
-    name: "Jessa",
-    image: require("../../assets/girls/ai3.jpg"),
-    lastMessage: "I would love to meet this weekend.",
-    time: "24m",
-    unread: 1,
-    isTyping: false,
-    isOnline: false,
-    isSent: false,
-  },
-  {
-    id: 4,
-    name: "Kim",
-    image: require("../../assets/girls/ai4.jpg"),
-    lastMessage: "You: Great. I will message later.",
-    time: "32m",
-    unread: 0,
-    isTyping: false,
-    isOnline: true,
-    isSent: true,
-    isRead: false,
-  },
-  {
-    id: 5,
-    name: "Liza",
-    image: require("../../assets/girls/ai5.jpg"),
-    lastMessage: "You: Hi. How are you?",
-    time: "1h",
-    unread: 0,
-    isTyping: false,
-    isOnline: false,
-    isSent: true,
-    isRead: true,
-  },
-  {
-    id: 6,
-    name: "Bea",
-    image: require("../../assets/girls/ai6.jpg"),
-    lastMessage: "Cafe later after work?",
-    time: "1h",
-    unread: 0,
-    isTyping: false,
-    isOnline: true,
-    isSent: true,
-    isRead: true,
-  },
-  {
-    id: 7,
-    name: "Carla",
-    image: require("../../assets/girls/ai7.jpg"),
-    lastMessage: "You: Let me check my schedule.",
-    time: "2h",
-    unread: 3,
-    isTyping: false,
-    isOnline: true,
-    isSent: false,
-  },
-  {
-    id: 8,
-    name: "Denise",
-    image: require("../../assets/girls/ai8.jpg"),
-    lastMessage: "New cafe opened in BGC. Want to try?",
-    time: "2h",
-    unread: 0,
-    isTyping: false,
-    isOnline: false,
-    isSent: true,
-    isRead: false,
-  },
-  {
-    id: 9,
-    name: "Erika",
-    image: require("../../assets/girls/ai9.jpg"),
-    lastMessage: "Send me the photos later please.",
-    time: "3h",
-    unread: 0,
-    isTyping: false,
-    isOnline: true,
-    isSent: true,
-    isRead: true,
-  },
-  {
-    id: 10,
-    name: "Faith",
-    image: require("../../assets/girls/ai10.jpg"),
-    lastMessage: "You: Flight booked for next month.",
-    time: "4h",
-    unread: 0,
-    isTyping: false,
-    isOnline: false,
-    isSent: true,
-    isRead: true,
-  },
-  {
-    id: 11,
-    name: "Grace",
-    image: require("../../assets/girls/ai11.jpg"),
-    lastMessage: "Let us plan the hike soon.",
-    time: "5h",
-    unread: 1,
-    isTyping: false,
-    isOnline: true,
-    isSent: true,
-    isRead: false,
-  },
-  {
-    id: 12,
-    name: "Hannah",
-    image: require("../../assets/girls/ai12.png"),
-    lastMessage: "Tea or coffee for our catch up?",
-    time: "6h",
-    unread: 0,
-    isTyping: false,
-    isOnline: false,
-    isSent: true,
-    isRead: true,
-  },
-  {
-    id: 13,
-    name: "Irene",
-    image: require("../../assets/girls/ai13.png"),
-    lastMessage: "Gym tomorrow morning?",
-    time: "Yesterday",
-    unread: 0,
-    isTyping: false,
-    isOnline: true,
-    isSent: true,
-    isRead: true,
-  },
-  {
-    id: 14,
-    name: "Joy",
-    image: require("../../assets/girls/ai14.png"),
-    lastMessage: "You: Board game night on Friday?",
-    time: "Yesterday",
-    unread: 2,
-    isTyping: false,
-    isOnline: false,
-    isSent: false,
-  },
-  {
-    id: 15,
-    name: "Kaye",
-    image: require("../../assets/girls/ai15.png"),
-    lastMessage: "Cooking class signup is open.",
-    time: "2d",
-    unread: 0,
-    isTyping: false,
-    isOnline: true,
-    isSent: true,
-    isRead: true,
-  },
-] as const;
-
+// Component: Active User Item
 interface ActiveUserProps {
-  user: (typeof activeUsers)[number];
+  user: { id: string; name: string; image: any; isOnline: boolean };
   onPress: () => void;
 }
 
@@ -327,7 +53,9 @@ const ActiveUser: React.FC<ActiveUserProps> = ({ user, onPress }) => (
     <View style={styles.activeUserImageContainer}>
       <View style={styles.activeUserImageWrap}>
         <Image
-          source={user.image}
+          source={
+            typeof user.image === "string" ? { uri: user.image } : user.image
+          }
           style={styles.activeUserImage}
           resizeMode="cover"
         />
@@ -340,194 +68,184 @@ const ActiveUser: React.FC<ActiveUserProps> = ({ user, onPress }) => (
   </TouchableOpacity>
 );
 
-interface ConversationProps {
-  conversation: (typeof conversations)[number];
+// Component: Conversation Item
+interface ConversationItemProps {
+  conversation: any;
   onPress: () => void;
 }
 
-const ConversationItem: React.FC<ConversationProps> = ({
+const ConversationItem: React.FC<ConversationItemProps> = ({
   conversation,
   onPress,
-}) => (
-  <TouchableOpacity
-    style={styles.conversationItem}
-    activeOpacity={0.85}
-    accessibilityRole="button"
-    accessibilityLabel={`Open chat with ${conversation.name}`}
-    onPress={onPress}
-  >
-    {/* Profile Image */}
-    <View style={styles.conversationImageContainer}>
-      <View style={styles.conversationImageWrap}>
-        <Image
-          source={conversation.image}
-          style={styles.conversationImage}
-          resizeMode="cover"
-        />
-      </View>
-      {conversation.isOnline && <View style={styles.conversationOnlineDot} />}
-    </View>
+}) => {
+  const otherUser = conversation.other_user;
+  const lastMessage = conversation.latest_message || "No messages yet";
+  const isOnline = otherUser.is_active;
+  const unreadCount = conversation.unread_count || 0;
 
-    {/* Message Info */}
-    <View style={styles.conversationContent}>
-      <View style={styles.conversationHeader}>
-        <Text style={styles.conversationName}>{conversation.name}</Text>
-        <Text style={styles.conversationTime}>{conversation.time}</Text>
+  return (
+    <TouchableOpacity
+      style={styles.conversationItem}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`Open chat with ${otherUser.first_name}`}
+      onPress={onPress}
+    >
+      {/* Profile Image */}
+      <View style={styles.conversationImageContainer}>
+        <View style={styles.conversationImageWrap}>
+          <Image
+            source={
+              otherUser.photos?.[0]
+                ? { uri: otherUser.photos[0] }
+                : require("../../assets/girls/ai1.jpg")
+            }
+            style={styles.conversationImage}
+            resizeMode="cover"
+          />
+        </View>
+        {isOnline && <View style={styles.conversationOnlineDot} />}
       </View>
 
-      <View style={styles.conversationFooter}>
-        <View style={styles.lastMessageContainer}>
-          {/* Read or Sent indicator */}
-          {conversation.isSent && (
-            <CheckCheck
-              size={14}
-              color={conversation.isRead ? ACCENT_PURPLE : TEXT_MUTED}
-              strokeWidth={2}
-              style={{ marginRight: 4 }}
-            />
-          )}
-          {/* Typing indicator */}
-          {conversation.isTyping && (
-            <View style={styles.typingIndicator}>
-              <Circle size={4} color={ACCENT_PINK} fill={ACCENT_PINK} />
-              <Circle size={4} color={ACCENT_PINK} fill={ACCENT_PINK} />
-              <Circle size={4} color={ACCENT_PINK} fill={ACCENT_PINK} />
-            </View>
-          )}
-          <Text
-            style={[
-              styles.lastMessage,
-              conversation.isTyping && styles.lastMessageTyping,
-              conversation.unread > 0 && styles.lastMessageUnread,
-            ]}
-            numberOfLines={1}
-          >
-            {conversation.isTyping ? "Typing..." : conversation.lastMessage}
+      {/* Message Info */}
+      <View style={styles.conversationContent}>
+        <View style={styles.conversationHeader}>
+          <Text style={styles.conversationName}>{otherUser.first_name}</Text>
+          <Text style={styles.conversationTime}>
+            {conversation.updated_at
+              ? formatTimestamp(conversation.updated_at)
+              : ""}
           </Text>
         </View>
 
-        {conversation.unread > 0 && (
-          <View style={styles.unreadBadge}>
-            <Text style={styles.unreadText}>{conversation.unread}</Text>
+        <View style={styles.conversationFooter}>
+          <View style={styles.lastMessageContainer}>
+            <Text
+              style={[
+                styles.lastMessage,
+                unreadCount > 0 && styles.lastMessageUnread,
+              ]}
+              numberOfLines={1}
+            >
+              {lastMessage}
+            </Text>
           </View>
-        )}
+
+          {unreadCount > 0 && (
+            <View style={styles.unreadBadge}>
+              <Text style={styles.unreadText}>{unreadCount}</Text>
+            </View>
+          )}
+        </View>
       </View>
-    </View>
-  </TouchableOpacity>
-);
+    </TouchableOpacity>
+  );
+};
 
 export default function Messages() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentUserId, setCurrentUserId] = useState<string>("");
   const [filterType, setFilterType] = useState<"all" | "unread" | "online">(
-    "all"
+    "all",
   );
-  const [conversations, setConversations] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
 
-  // Fetch conversations on mount
+  // Get current user ID
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Get current user
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-
-        if (userError || !user) {
-          console.error("Failed to fetch user:", userError);
-          setLoading(false);
-          return;
-        }
-
-        setUserId(user.id);
-
-        // Fetch conversations from database
-        const { data: dbConversations, error: conversationsError } =
-          await getConversations(user.id);
-
-        if (conversationsError) {
-          console.error("Failed to fetch conversations:", conversationsError);
-          // Keep mock data on error
-        } else if (dbConversations && dbConversations.length > 0) {
-          // Convert to display format
-          const displayConversations = dbConversations.map((conv) => ({
-            id: conv.other_user_id,
-            name: conv.other_user_name,
-            image: conv.other_user_image
-              ? { uri: conv.other_user_image }
-              : require("../../assets/girls/ai1.jpg"),
-            lastMessage: conv.latest_message,
-            timestamp: formatTimestamp(conv.latest_message_time),
-            unread: conv.unread_count,
-            isOnline: conv.is_online,
-          }));
-          setConversations(displayConversations);
-        }
-        // If no conversations, keep existing mock data
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-      } finally {
-        setLoading(false);
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setCurrentUserId(data.user.id);
       }
-    };
-
-    fetchData();
+    });
   }, []);
 
-  // Apply filters to conversations
-  const getFilteredConversations = () => {
-    let filtered = [...conversations];
+  // Fetch conversations from backend
+  const { conversations, loading, error, refresh } = useConversations({
+    userId: currentUserId,
+    autoLoad: true,
+  });
 
-    // Apply search filter
-    if (searchQuery) {
-      filtered = filtered.filter((conv) =>
-        conv.name.toLowerCase().includes(searchQuery.toLowerCase())
+  // Debug logging
+  useEffect(() => {
+    console.log("📊 Messages Screen Debug:");
+    console.log("  Current User ID:", currentUserId);
+    console.log("  Loading:", loading);
+    console.log("  Error:", error);
+    console.log("  Conversations count:", conversations.length);
+    console.log(
+      "  Filtered conversations count:",
+      filteredConversations.length,
+    );
+    if (conversations.length > 0) {
+      console.log(
+        "  First conversation:",
+        JSON.stringify(conversations[0], null, 2),
       );
     }
+  }, [currentUserId, loading, error, conversations, filteredConversations]);
 
-    // Apply type filter
-    switch (filterType) {
-      case "unread":
-        filtered = filtered.filter((conv) => conv.unread > 0);
-        break;
-      case "online":
-        filtered = filtered.filter((conv) => conv.isOnline);
-        break;
-      case "all":
-      default:
-        // Show all
-        break;
-    }
+  // Filter conversations based on search
+  const filteredConversations = conversations.filter((conv) => {
+    if (!conv.other_user) return false;
+    if (!searchQuery) return true;
+    const firstName = conv.other_user.first_name || "";
+    return firstName.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
-    return filtered;
+  // Helper to format time
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "Now";
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays}d`;
+    return date.toLocaleDateString();
   };
 
-  const filteredConversations = getFilteredConversations();
-
-  const handleOpenChat = (conversation: (typeof conversations)[number]) => {
+  // Navigate to chat
+  const handleChatPress = (conv: any) => {
     router.push({
-      pathname: "/(main)/chat",
+      pathname: "/chat",
       params: {
-        userId: conversation.id.toString(),
-        userName: conversation.name,
-        userImage: conversation.image,
-        isOnline: conversation.isOnline.toString(),
+        userId: conv.other_user.id,
+        userName: conv.other_user.first_name,
+        userImage: conv.other_user.photos?.[0] || undefined,
+        isOnline: conv.other_user.is_active ? "true" : "false",
+        conversationId: conv.id,
       },
     });
   };
 
-  const handleOpenActiveUserChat = (user: (typeof activeUsers)[number]) => {
+  // Active users from online conversations
+  const activeUsers = conversations
+    .filter((conv) => conv.other_user?.is_active)
+    .slice(0, 15)
+    .map((conv) => ({
+      id: conv.other_user.id,
+      name: conv.other_user.first_name,
+      image: conv.other_user.photos?.[0]
+        ? { uri: conv.other_user.photos[0] }
+        : require("../../assets/girls/ai1.jpg"),
+      isOnline: true,
+    }));
+
+  // Handler for active user chat
+  const handleOpenActiveUserChat = (user: any) => {
     router.push({
-      pathname: "/(main)/chat",
+      pathname: "/chat",
       params: {
-        userId: user.id.toString(),
+        userId: user.id,
         userName: user.name,
-        userImage: user.image,
-        isOnline: user.isOnline.toString(),
+        userImage: typeof user.image === "string" ? user.image : undefined,
+        isOnline: "true",
       },
     });
   };
@@ -677,36 +395,52 @@ export default function Messages() {
           </Text>
         </View>
 
-        <ScrollView
-          style={styles.conversationsList}
-          contentContainerStyle={{
-            paddingBottom: Math.max(insets.bottom + 24, 100),
-          }}
-          showsVerticalScrollIndicator={false}
-        >
-          {filteredConversations.map((conversation) => (
-            <ConversationItem
-              key={conversation.id}
-              conversation={conversation}
-              onPress={() => handleOpenChat(conversation)}
-            />
-          ))}
-
-          {/* Empty State */}
-          {filteredConversations.length === 0 && (
-            <View style={styles.emptyState}>
-              <MessageCircle
-                size={64}
-                color={ACCENT_PURPLE}
-                strokeWidth={1.5}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={ACCENT_PURPLE} />
+            <Text style={styles.loadingText}>Loading conversations...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.emptyState}>
+            <MessageCircle size={64} color={ACCENT_PURPLE} strokeWidth={1.5} />
+            <Text style={styles.emptyTitle}>Error loading messages</Text>
+            <Text style={styles.emptyText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={refresh}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <ScrollView
+            style={styles.conversationsList}
+            contentContainerStyle={{
+              paddingBottom: Math.max(insets.bottom + 24, 100),
+            }}
+            showsVerticalScrollIndicator={false}
+          >
+            {filteredConversations.map((conversation) => (
+              <ConversationItem
+                key={conversation.id}
+                conversation={conversation}
+                onPress={() => handleChatPress(conversation)}
               />
-              <Text style={styles.emptyTitle}>No messages found</Text>
-              <Text style={styles.emptyText}>
-                Try adjusting your search query
-              </Text>
-            </View>
-          )}
-        </ScrollView>
+            ))}
+
+            {/* Empty State */}
+            {filteredConversations.length === 0 && (
+              <View style={styles.emptyState}>
+                <MessageCircle
+                  size={64}
+                  color={ACCENT_PURPLE}
+                  strokeWidth={1.5}
+                />
+                <Text style={styles.emptyTitle}>No messages found</Text>
+                <Text style={styles.emptyText}>
+                  Try adjusting your search query
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        )}
       </View>
     </View>
   );
@@ -1081,6 +815,35 @@ const styles = StyleSheet.create({
     color: TEXT_MUTED,
     textAlign: "center",
     letterSpacing: 0.2,
+  },
+
+  // Loading state
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontFamily: "DMSans-Medium",
+    color: TEXT_SECONDARY,
+    marginTop: 16,
+  },
+
+  // Retry button
+  retryButton: {
+    marginTop: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: ACCENT_PURPLE,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontFamily: "DMSans-Bold",
+    color: WHITE,
+    letterSpacing: 0.3,
   },
 });
 
