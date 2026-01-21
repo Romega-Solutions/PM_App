@@ -1,16 +1,18 @@
+import { setupDeepLinking } from "@/src/config/deepLinking";
+import { useAuthPersistence } from "@/src/hooks/useAuthPersistence";
 import { semanticColors } from "@/src/theme";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import "./global.css";
-import { setupDeepLinking } from "@/src/config/deepLinking";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  // Font loading
   const [fontsLoaded, fontError] = useFonts({
     // HelloParis (Logo / Display)
     "HelloParis-ExtraLight": require("../assets/fonts/hello-paris-sans/HelloParisSans-ExtraLight.ttf"),
@@ -41,11 +43,15 @@ export default function RootLayout() {
     "DMSans-Black": require("../assets/fonts/dm-sans/DMSans-Black.ttf"),
   });
 
+  // Auth persistence (session restoration, auto-refresh)
+  const { isReady: isAuthReady } = useAuthPersistence();
+
+  // Hide splash screen when ready
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if ((fontsLoaded || fontError) && isAuthReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, isAuthReady]);
 
   // Setup deep linking for email verification
   useEffect(() => {
@@ -54,8 +60,29 @@ export default function RootLayout() {
     return cleanup;
   }, []);
 
-  if (!fontsLoaded && !fontError) {
-    return null;
+  // Show loading state until everything is ready
+  if ((!fontsLoaded && !fontError) || !isAuthReady) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: semanticColors.background,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ActivityIndicator size="large" color="#8D69F6" />
+        <Text
+          style={{
+            color: "rgba(255,255,255,0.5)",
+            marginTop: 16,
+            fontFamily: "DMSans-Regular",
+          }}
+        >
+          {!isAuthReady ? "Restoring session..." : "Loading..."}
+        </Text>
+      </View>
+    );
   }
 
   return (
