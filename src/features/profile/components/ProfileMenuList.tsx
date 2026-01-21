@@ -1,43 +1,38 @@
 /**
  * ProfileMenuList Component
- * 
+ *
  * Displays list of profile settings menu items and logout button.
- * 
+ *
  * SOLID Principles:
  * - Single Responsibility: Only renders menu list UI
  * - Open/Closed: Extensible via props, closed for modification
  * - Liskov Substitution: Can be used in any menu context
  * - Interface Segregation: Only requires menu items and handlers
  * - Dependency Inversion: Depends on props interface
- * 
+ *
  * @module features/profile/components
  */
 
-import React from 'react';
 import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import {
-  Bell,
-  ChevronRight,
-  Edit,
-  HelpCircle,
-  Info,
-  Lock,
-  LogOut,
-  SlidersHorizontal,
-} from 'lucide-react-native';
+    Bell,
+    ChevronRight,
+    Edit,
+    HelpCircle,
+    Info,
+    Lock,
+    LogOut,
+    SlidersHorizontal,
+} from "lucide-react-native";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 // Brand Colors
-const ACCENT_PURPLE = '#8D69F6';
-const ACCENT_PINK = '#EF3E78';
-const WHITE = '#FFFFFF';
-const SURFACE_STRONG = 'rgba(255, 255, 255, 0.08)';
-const TILE_BORDER = 'rgba(168, 85, 247, 0.13)';
-const DANGER_BG = 'rgba(239, 62, 120, 0.12)';
+const ACCENT_PURPLE = "#8D69F6";
+const ACCENT_PINK = "#EF3E78";
+const WHITE = "#FFFFFF";
+const SURFACE_STRONG = "rgba(255, 255, 255, 0.08)";
+const TILE_BORDER = "rgba(168, 85, 247, 0.13)";
+const DANGER_BG = "rgba(239, 62, 120, 0.12)";
 
 /**
  * Menu item interface
@@ -65,7 +60,7 @@ export interface ProfileMenuListProps {
 
 /**
  * ProfileMenuList Component
- * 
+ *
  * Renders a list of profile settings menu items with logout button.
  */
 export const ProfileMenuList: React.FC<ProfileMenuListProps> = ({
@@ -111,34 +106,34 @@ export const ProfileMenuList: React.FC<ProfileMenuListProps> = ({
  */
 export const getDefaultMenuItems = (): MenuItem[] => [
   {
-    title: 'Edit Profile',
+    title: "Edit Profile",
     icon: <Edit size={22} color={ACCENT_PURPLE} />,
-    route: '/(main)/profile-settings/edit',
+    route: "/(main)/profile-settings/edit",
   },
   {
-    title: 'Preferences',
+    title: "Preferences",
     icon: <SlidersHorizontal size={22} color={ACCENT_PURPLE} />,
-    route: '/(main)/profile-settings/preferences',
+    route: "/(main)/profile-settings/preferences",
   },
   {
-    title: 'Privacy',
+    title: "Privacy",
     icon: <Lock size={22} color={ACCENT_PURPLE} />,
-    route: '/(main)/profile-settings/privacy',
+    route: "/(main)/profile-settings/privacy",
   },
   {
-    title: 'Notifications',
+    title: "Notifications",
     icon: <Bell size={22} color={ACCENT_PURPLE} />,
-    route: '/(main)/profile-settings/notifications',
+    route: "/(main)/profile-settings/notifications",
   },
   {
-    title: 'Help & Support',
+    title: "Help & Support",
     icon: <HelpCircle size={22} color={ACCENT_PURPLE} />,
-    route: '/(main)/profile-settings/help',
+    route: "/(main)/profile-settings/help",
   },
   {
-    title: 'About',
+    title: "About",
     icon: <Info size={22} color={ACCENT_PURPLE} />,
-    route: '/(main)/profile-settings/about',
+    route: "/(main)/profile-settings/about",
   },
 ];
 
@@ -151,8 +146,8 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 18,
     marginBottom: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1.5,
     borderColor: TILE_BORDER,
   },
@@ -162,7 +157,7 @@ const styles = StyleSheet.create({
   listItemText: {
     color: WHITE,
     fontSize: 16,
-    fontFamily: 'DMSans-SemiBold',
+    fontFamily: "DMSans-SemiBold",
     letterSpacing: 0.2,
     flex: 1,
   },
@@ -172,9 +167,9 @@ const styles = StyleSheet.create({
     padding: 18,
     marginTop: 8,
     marginBottom: 36,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1.5,
     borderColor: ACCENT_PINK,
     gap: 10,
@@ -182,7 +177,7 @@ const styles = StyleSheet.create({
   logoutText: {
     color: ACCENT_PINK,
     fontSize: 16,
-    fontFamily: 'DMSans-Bold',
+    fontFamily: "DMSans-Bold",
     marginLeft: 8,
   },
 });

@@ -105,10 +105,11 @@ export const phoneSchema = z
  */
 export const imageUploadSchema = z.object({
   uri: z.string().url("Invalid image URI"),
-  type: z.enum(["image/jpeg", "image/png", "image/jpg"]).refine(
-    (val) => ["image/jpeg", "image/png", "image/jpg"].includes(val),
-    { message: "Only JPEG and PNG images allowed" }
-  ),
+  type: z
+    .enum(["image/jpeg", "image/png", "image/jpg"])
+    .refine((val) => ["image/jpeg", "image/png", "image/jpg"].includes(val), {
+      message: "Only JPEG and PNG images allowed",
+    }),
   size: z.number().max(10 * 1024 * 1024, "Image size must be less than 10MB"),
 });
 

@@ -1,53 +1,56 @@
 /**
  * ProfileScreen Component
- * 
+ *
  * Main user profile screen displaying avatar, info, and settings menu.
  * Integrates with Zustand profileStore for global state management.
- * 
+ *
  * SOLID Principles:
  * - Single Responsibility: Manages profile screen UI and user interactions
  * - Open/Closed: Extensible via props, uses composable components
  * - Liskov Substitution: Can be used in any screen context
  * - Interface Segregation: Uses focused hooks and stores
  * - Dependency Inversion: Depends on abstractions (stores, APIs)
- * 
+ *
  * Data Flow:
  * 1. Load profile from Supabase on mount
  * 2. Store in Zustand profileStore
  * 3. Display using ProfileHeader and ProfileMenuList components
  * 4. Handle logout and navigation
- * 
+ *
  * @module features/profile/screens
  */
 
-import React, { useEffect, useState } from 'react';
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { Settings } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Settings } from 'lucide-react-native';
+    ActivityIndicator,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { supabase } from '@/src/config/supabase';
-import { accountApi } from '@/src/features/account/api/accountApi';
-import { UserType } from '@/src/features/auth/api/authApi';
-import { useProfileStore } from '@/src/stores/profileStore';
-import { ProfileHeader } from '../components/ProfileHeader';
-import { ProfileMenuList, getDefaultMenuItems } from '../components/ProfileMenuList';
+import { supabase } from "@/src/config/supabase";
+import { accountApi } from "@/src/features/account/api/accountApi";
+import { UserType } from "@/src/features/auth/api/authApi";
+import { useProfileStore } from "@/src/stores/profileStore";
+import { ProfileHeader } from "../components/ProfileHeader";
+import {
+    ProfileMenuList,
+    getDefaultMenuItems,
+} from "../components/ProfileMenuList";
 
 // Brand Colors
-const BRAND_BG = '#0F0814';
-const ACCENT_PURPLE = '#8D69F6';
-const ACCENT_PINK = '#EF3E78';
-const WHITE = '#FFFFFF';
+const BRAND_BG = "#0F0814";
+const ACCENT_PURPLE = "#8D69F6";
+const ACCENT_PINK = "#EF3E78";
+const WHITE = "#FFFFFF";
 
 /**
  * Profile data interface
@@ -64,7 +67,7 @@ interface ProfileData {
 
 /**
  * ProfileScreen Component
- * 
+ *
  * Displays user profile with settings menu.
  * Integrates with Zustand for global state.
  */
@@ -87,7 +90,7 @@ export const ProfileScreen: React.FC = () => {
         } = await supabase.auth.getSession();
 
         if (!session?.user) {
-          console.log('❌ No session found');
+          console.log("❌ No session found");
           setLoading(false);
           return;
         }
@@ -96,32 +99,32 @@ export const ProfileScreen: React.FC = () => {
 
         // Fetch profile from Supabase
         const { data: profileFromDB, error } = await supabase
-          .from('profiles')
+          .from("profiles")
           .select(
-            'id, email, first_name, last_name, age, user_type, gender, location_name, photos, is_verified'
+            "id, email, first_name, last_name, age, user_type, gender, location_name, photos, is_verified",
           )
-          .eq('id', userId)
+          .eq("id", userId)
           .single();
 
         if (error) {
-          console.error('❌ Failed to fetch profile:', error);
+          console.error("❌ Failed to fetch profile:", error);
           setLoading(false);
           return;
         }
 
         if (profileFromDB) {
-          console.log('✅ Profile loaded:', profileFromDB);
+          console.log("✅ Profile loaded:", profileFromDB);
 
           // Parse photos array
           const photosArray = profileFromDB.photos || [];
           const firstPhoto = photosArray.length > 0 ? photosArray[0] : null;
 
           const data: ProfileData = {
-            firstName: profileFromDB.first_name || 'Unknown',
-            lastName: profileFromDB.last_name || '',
+            firstName: profileFromDB.first_name || "Unknown",
+            lastName: profileFromDB.last_name || "",
             age: profileFromDB.age || 0,
             userType: profileFromDB.user_type as UserType,
-            location: profileFromDB.location_name || 'Unknown Location',
+            location: profileFromDB.location_name || "Unknown Location",
             photoUri: firstPhoto,
             isVerified: profileFromDB.is_verified || false,
           };
@@ -141,7 +144,7 @@ export const ProfileScreen: React.FC = () => {
           });
         }
       } catch (error) {
-        console.error('❌ Failed to fetch profile data:', error);
+        console.error("❌ Failed to fetch profile data:", error);
       } finally {
         setLoading(false);
       }
@@ -171,11 +174,11 @@ export const ProfileScreen: React.FC = () => {
       accountApi.clearVerification();
 
       // Navigate to welcome screen
-      router.replace('/(auth)/welcome');
+      router.replace("/(auth)/welcome");
     } catch (error) {
-      console.error('❌ Error during logout:', error);
+      console.error("❌ Error during logout:", error);
       // Still navigate to welcome even if there's an error
-      router.replace('/(auth)/welcome');
+      router.replace("/(auth)/welcome");
     }
   };
 
@@ -188,11 +191,11 @@ export const ProfileScreen: React.FC = () => {
           backgroundColor={BRAND_BG}
           translucent={false}
         />
-        {Platform.OS === 'ios' && (
+        {Platform.OS === "ios" && (
           <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
         )}
         <LinearGradient
-          colors={[BRAND_BG, '#1A0F1F', '#2D1B35', BRAND_BG]}
+          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
           locations={[0, 0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
@@ -211,18 +214,18 @@ export const ProfileScreen: React.FC = () => {
           backgroundColor={BRAND_BG}
           translucent={false}
         />
-        {Platform.OS === 'ios' && (
+        {Platform.OS === "ios" && (
           <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
         )}
         <LinearGradient
-          colors={[BRAND_BG, '#1A0F1F', '#2D1B35', BRAND_BG]}
+          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
           locations={[0, 0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
         <Text style={styles.errorText}>Profile not found</Text>
         <TouchableOpacity
           style={styles.retryBtn}
-          onPress={() => router.replace('/(auth)/welcome')}
+          onPress={() => router.replace("/(auth)/welcome")}
         >
           <Text style={styles.retryText}>Go to Sign In</Text>
         </TouchableOpacity>
@@ -240,13 +243,13 @@ export const ProfileScreen: React.FC = () => {
         backgroundColor={BRAND_BG}
         translucent={false}
       />
-      {Platform.OS === 'ios' && (
+      {Platform.OS === "ios" && (
         <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
       )}
 
       {/* Brand gradient background */}
       <LinearGradient
-        colors={[BRAND_BG, '#1A0F1F', '#2D1B35', BRAND_BG]}
+        colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
         locations={[0, 0.3, 0.7, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -297,33 +300,33 @@ const styles = StyleSheet.create({
     backgroundColor: BRAND_BG,
   },
   centerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 12,
   },
   title: {
     fontSize: 32,
-    fontFamily: 'DMSans-Bold',
+    fontFamily: "DMSans-Bold",
     color: WHITE,
     letterSpacing: 0.5,
   },
   loadingText: {
     fontSize: 16,
-    fontFamily: 'DMSans-Medium',
-    color: 'rgba(255, 255, 255, 0.75)',
+    fontFamily: "DMSans-Medium",
+    color: "rgba(255, 255, 255, 0.75)",
     marginTop: 16,
   },
   errorText: {
     fontSize: 18,
-    fontFamily: 'DMSans-Bold',
-    color: 'rgba(255, 255, 255, 0.85)',
+    fontFamily: "DMSans-Bold",
+    color: "rgba(255, 255, 255, 0.85)",
     marginBottom: 20,
   },
   retryBtn: {
@@ -334,7 +337,7 @@ const styles = StyleSheet.create({
   },
   retryText: {
     fontSize: 16,
-    fontFamily: 'DMSans-Bold',
+    fontFamily: "DMSans-Bold",
     color: WHITE,
   },
 });
