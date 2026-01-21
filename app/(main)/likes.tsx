@@ -48,163 +48,7 @@ type Match = {
   matchedAt?: string;
 };
 
-// Filipina matches (for foreigners to see)
-const filipinaMatches: Match[] = [
-  {
-    id: 1,
-    name: "Maria",
-    age: 25,
-    image: require("../../assets/girls/ai1.jpg"),
-    location: "Manila",
-    verified: true,
-    mutual: true,
-    gender: "female",
-  },
-  {
-    id: 2,
-    name: "Angel",
-    age: 23,
-    image: require("../../assets/girls/ai2.jpg"),
-    location: "Cebu City",
-    verified: true,
-    mutual: false,
-    gender: "female",
-  },
-  {
-    id: 3,
-    name: "Jessa",
-    age: 27,
-    image: require("../../assets/girls/ai3.jpg"),
-    location: "Davao",
-    verified: false,
-    mutual: true,
-    gender: "female",
-  },
-  {
-    id: 4,
-    name: "Kim",
-    age: 24,
-    image: require("../../assets/girls/ai4.jpg"),
-    location: "Quezon City",
-    verified: true,
-    mutual: false,
-    gender: "female",
-  },
-  {
-    id: 5,
-    name: "Liza",
-    age: 26,
-    image: require("../../assets/girls/ai5.jpg"),
-    location: "Baguio",
-    verified: true,
-    mutual: true,
-    gender: "female",
-  },
-  {
-    id: 6,
-    name: "Bea",
-    age: 22,
-    image: require("../../assets/girls/ai6.jpg"),
-    location: "Makati",
-    verified: true,
-    mutual: false,
-    gender: "female",
-  },
-  {
-    id: 7,
-    name: "Carla",
-    age: 24,
-    image: require("../../assets/girls/ai7.jpg"),
-    location: "Pasig",
-    verified: true,
-    mutual: true,
-    gender: "female",
-  },
-  {
-    id: 8,
-    name: "Denise",
-    age: 25,
-    image: require("../../assets/girls/ai8.jpg"),
-    location: "Taguig",
-    verified: true,
-    mutual: false,
-    gender: "female",
-  },
-];
-
-// Male matches (for filipinas to see)
-const maleMatches: Match[] = [
-  {
-    id: 9,
-    name: "James",
-    age: 28,
-    image: require("../../assets/girls/ai9.jpg"),
-    location: "New York, USA",
-    verified: true,
-    mutual: true,
-    gender: "male",
-  },
-  {
-    id: 10,
-    name: "Michael",
-    age: 32,
-    image: require("../../assets/girls/ai10.jpg"),
-    location: "London, UK",
-    verified: true,
-    mutual: false,
-    gender: "male",
-  },
-  {
-    id: 11,
-    name: "David",
-    age: 30,
-    image: require("../../assets/girls/ai11.jpg"),
-    location: "Sydney, Australia",
-    verified: true,
-    mutual: true,
-    gender: "male",
-  },
-  {
-    id: 12,
-    name: "Robert",
-    age: 35,
-    image: require("../../assets/girls/ai12.png"),
-    location: "Toronto, Canada",
-    verified: true,
-    mutual: false,
-    gender: "male",
-  },
-  {
-    id: 13,
-    name: "Thomas",
-    age: 29,
-    image: require("../../assets/girls/ai13.png"),
-    location: "Berlin, Germany",
-    verified: true,
-    mutual: true,
-    gender: "male",
-  },
-  {
-    id: 14,
-    name: "Christopher",
-    age: 31,
-    image: require("../../assets/girls/ai14.png"),
-    location: "Dubai, UAE",
-    verified: true,
-    mutual: false,
-    gender: "male",
-  },
-  {
-    id: 15,
-    name: "Daniel",
-    age: 27,
-    image: require("../../assets/girls/ai15.png"),
-    location: "Singapore",
-    verified: true,
-    mutual: true,
-    gender: "male",
-  },
-];
+// ✅ NO MOCK DATA - All data from real database
 
 interface MatchCardProps {
   match: Match;
@@ -319,16 +163,13 @@ export default function Likes() {
 
         // Fetch matches from database
         const { data: dbMatches, error: matchesError } = await getMatches(
-          user.id
+          user.id,
         );
 
         if (matchesError) {
           console.error("Failed to fetch matches:", matchesError);
-          // Fall back to mock data
-          const mockMatches = getMatchesForUserType(
-            basicInfo?.userType ?? null
-          );
-          setMatches(mockMatches);
+          // Show empty state - no fallback to mock data
+          setMatches([]);
         } else if (dbMatches && dbMatches.length > 0) {
           // Convert database matches to display format
           const displayMatches: Match[] = dbMatches.map((match) => ({
@@ -349,17 +190,13 @@ export default function Likes() {
           }));
           setMatches(displayMatches);
         } else {
-          // Use mock data if no matches
-          const mockMatches = getMatchesForUserType(
-            basicInfo?.userType ?? null
-          );
-          setMatches(mockMatches);
+          // No matches in database
+          setMatches([]);
         }
       } catch (error) {
         console.error("Failed to fetch data:", error);
-        // Fall back to mock data
-        const mockMatches = getMatchesForUserType(null);
-        setMatches(mockMatches);
+        // Show empty state - no fallback to mock data
+        setMatches([]);
       } finally {
         setLoading(false);
       }
@@ -500,29 +337,9 @@ export default function Likes() {
 }
 
 /**
- * Returns appropriate matches based on user type
- * - Foreigners see Filipina matches
- * - Filipinas see male (foreigner) matches
- * - Default fallback to Filipina matches
+ * ✅ All matches now loaded from real database
+ * ✅ No mock data or fallbacks
  */
-function getMatchesForUserType(userType: string | null): Match[] {
-  if (!userType) {
-    return filipinaMatches; // Default fallback
-  }
-
-  // Foreigners see Filipina matches
-  if (userType === "foreigner") {
-    return filipinaMatches;
-  }
-
-  // Filipinas see male matches
-  if (userType === "filipina") {
-    return maleMatches;
-  }
-
-  // Default fallback
-  return filipinaMatches;
-}
 
 const styles = StyleSheet.create({
   root: {
