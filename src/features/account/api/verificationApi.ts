@@ -1,6 +1,6 @@
 /**
  * Verification API
- * 
+ *
  * Handles identity verification (selfie + document upload, OCR extraction, verification status).
  * Single Responsibility: Verification operations only.
  */
@@ -21,40 +21,55 @@ export type VerificationData = {
 
 export function compareVerificationData(
   extracted: { firstName?: string; lastName?: string; age?: number },
-  stored: BasicInfoPayload | null
+  stored: BasicInfoPayload | null,
 ): { match: boolean; reasons: string[] } {
   if (!stored) return { match: false, reasons: ["No basic info found"] };
   const reasons: string[] = [];
   const normalize = (s: string) => s.trim().toLowerCase();
-  
-  if (extracted.firstName && normalize(extracted.firstName) !== normalize(stored.firstName)) {
-    reasons.push(`First name mismatch: "${extracted.firstName}" vs "${stored.firstName}"`);
+
+  if (
+    extracted.firstName &&
+    normalize(extracted.firstName) !== normalize(stored.firstName)
+  ) {
+    reasons.push(
+      `First name mismatch: "${extracted.firstName}" vs "${stored.firstName}"`,
+    );
   }
-  if (extracted.lastName && normalize(extracted.lastName) !== normalize(stored.lastName)) {
-    reasons.push(`Last name mismatch: "${extracted.lastName}" vs "${stored.lastName}"`);
+  if (
+    extracted.lastName &&
+    normalize(extracted.lastName) !== normalize(stored.lastName)
+  ) {
+    reasons.push(
+      `Last name mismatch: "${extracted.lastName}" vs "${stored.lastName}"`,
+    );
   }
   if (extracted.age !== undefined && extracted.age !== stored.age) {
     reasons.push(`Age mismatch: ${extracted.age} vs ${stored.age}`);
   }
-  
+
   return { match: reasons.length === 0, reasons };
 }
 
-export async function saveVerification(payload: VerificationData): Promise<{ ok: true; data: VerificationData }> {
+export async function saveVerification(
+  payload: VerificationData,
+): Promise<{ ok: true; data: VerificationData }> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
     if (userError || !user) {
       throw new Error("Not authenticated");
     }
 
-    const record = { 
-      ...payload, 
-      verifiedAt: payload.isVerified ? new Date().toISOString() : undefined 
+    const record = {
+      ...payload,
+      verifiedAt: payload.isVerified ? new Date().toISOString() : undefined,
     };
 
     const { error } = await supabase
-      .from('profiles')
+      .from("profiles")
       .update({
         verification_selfie: record.selfieUri,
         verification_document: record.documentUri,
@@ -66,7 +81,7 @@ export async function saveVerification(payload: VerificationData): Promise<{ ok:
         verification_mismatch_reasons: record.mismatchReasons,
         verification_completed: true,
       })
-      .eq('id', user.id);
+      .eq("id", user.id);
 
     if (error) throw error;
 
@@ -80,16 +95,21 @@ export async function saveVerification(payload: VerificationData): Promise<{ ok:
 
 export async function getVerification(): Promise<VerificationData | null> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
     if (userError || !user) {
       return null;
     }
 
     const { data, error } = await supabase
-      .from('profiles')
-      .select('verification_selfie, verification_document, verification_extracted_first_name, verification_extracted_last_name, verification_extracted_age, is_verified, verified_at, verification_mismatch_reasons')
-      .eq('id', user.id)
+      .from("profiles")
+      .select(
+        "verification_selfie, verification_document, verification_extracted_first_name, verification_extracted_last_name, verification_extracted_age, is_verified, verified_at, verification_mismatch_reasons",
+      )
+      .eq("id", user.id)
       .single();
 
     if (error || !data || !data.verification_selfie) {
@@ -114,18 +134,20 @@ export async function getVerification(): Promise<VerificationData | null> {
 
 export async function clearVerification(): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (user) {
       await supabase
-        .from('profiles')
+        .from("profiles")
         .update({
           verification_completed: false,
           is_verified: false,
           verification_selfie: null,
           verification_document: null,
         })
-        .eq('id', user.id);
+        .eq("id", user.id);
     }
   } catch (error) {
     console.error("❌ Error clearing verification:", error);

@@ -1,6 +1,6 @@
 /**
  * Basic Info API
- * 
+ *
  * Handles user basic information (name, age, gender, user type).
  * Single Responsibility: Basic profile info operations only.
  */
@@ -22,11 +22,14 @@ function getGenderFromUserType(userType: UserType): string {
 }
 
 export async function saveBasicInfo(
-  payload: Omit<BasicInfoPayload, "gender"> & { userType: UserType }
+  payload: Omit<BasicInfoPayload, "gender"> & { userType: UserType },
 ): Promise<{ ok: true; data: BasicInfoPayload }> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
     if (userError || !user) {
       throw new Error("Not authenticated");
     }
@@ -34,7 +37,7 @@ export async function saveBasicInfo(
     const gender = getGenderFromUserType(payload.userType);
 
     const { data, error } = await supabase
-      .from('profiles')
+      .from("profiles")
       .update({
         first_name: payload.firstName.trim(),
         last_name: payload.lastName.trim(),
@@ -43,7 +46,7 @@ export async function saveBasicInfo(
         user_type: payload.userType,
         basic_info_completed: true,
       })
-      .eq('id', user.id)
+      .eq("id", user.id)
       .select()
       .single();
 
@@ -73,16 +76,19 @@ export async function saveBasicInfo(
 
 export async function getBasicInfo(): Promise<BasicInfoPayload | null> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
     if (userError || !user) {
       return null;
     }
 
     const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
       .single();
 
     if (error || !data) {
@@ -91,7 +97,7 @@ export async function getBasicInfo(): Promise<BasicInfoPayload | null> {
 
     return {
       firstName: data.first_name,
-      lastName: data.last_name || '',
+      lastName: data.last_name || "",
       age: data.age || 0,
       gender: data.gender,
       userType: data.user_type as UserType,
@@ -105,13 +111,15 @@ export async function getBasicInfo(): Promise<BasicInfoPayload | null> {
 
 export async function clearBasicInfo(): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (user) {
       await supabase
-        .from('profiles')
+        .from("profiles")
         .update({ basic_info_completed: false })
-        .eq('id', user.id);
+        .eq("id", user.id);
     }
   } catch (error) {
     console.error("❌ Error clearing basic info:", error);

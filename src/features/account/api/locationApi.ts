@@ -1,6 +1,6 @@
 /**
  * Location API
- * 
+ *
  * Handles user location data (current/manual location, coordinates).
  * Single Responsibility: Location operations only.
  */
@@ -14,10 +14,15 @@ export type SavedLocation = {
   timestamp: string;
 };
 
-export async function saveLocation(payload: SavedLocation): Promise<{ ok: true; data: SavedLocation }> {
+export async function saveLocation(
+  payload: SavedLocation,
+): Promise<{ ok: true; data: SavedLocation }> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
     if (userError || !user) {
       throw new Error("Not authenticated");
     }
@@ -25,7 +30,7 @@ export async function saveLocation(payload: SavedLocation): Promise<{ ok: true; 
     const record = { ...payload, timestamp: new Date().toISOString() };
 
     const { error } = await supabase
-      .from('profiles')
+      .from("profiles")
       .update({
         location_type: record.locationType,
         location_name: record.locationName,
@@ -33,7 +38,7 @@ export async function saveLocation(payload: SavedLocation): Promise<{ ok: true; 
         location_timestamp: record.timestamp,
         location_completed: true,
       })
-      .eq('id', user.id);
+      .eq("id", user.id);
 
     if (error) throw error;
 
@@ -47,16 +52,21 @@ export async function saveLocation(payload: SavedLocation): Promise<{ ok: true; 
 
 export async function getLocation(): Promise<SavedLocation | null> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
     if (userError || !user) {
       return null;
     }
 
     const { data, error } = await supabase
-      .from('profiles')
-      .select('location_type, location_name, location_coordinates, location_timestamp')
-      .eq('id', user.id)
+      .from("profiles")
+      .select(
+        "location_type, location_name, location_coordinates, location_timestamp",
+      )
+      .eq("id", user.id)
       .single();
 
     if (error || !data || !data.location_name) {
@@ -77,18 +87,20 @@ export async function getLocation(): Promise<SavedLocation | null> {
 
 export async function clearLocation(): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (user) {
       await supabase
-        .from('profiles')
+        .from("profiles")
         .update({
           location_completed: false,
           location_name: null,
           location_type: null,
           location_coordinates: null,
         })
-        .eq('id', user.id);
+        .eq("id", user.id);
     }
   } catch (error) {
     console.error("❌ Error clearing location:", error);

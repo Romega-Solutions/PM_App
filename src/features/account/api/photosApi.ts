@@ -1,25 +1,30 @@
 /**
  * Photos API
- * 
+ *
  * Handles profile photo management (add, remove, list).
  * Single Responsibility: Photo operations only.
  */
 
 import { supabase } from "@/src/config/supabase";
 
-export async function saveProfilePhoto(uri: string): Promise<{ ok: true; data: { photos: string[] } }> {
+export async function saveProfilePhoto(
+  uri: string,
+): Promise<{ ok: true; data: { photos: string[] } }> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
     if (userError || !user) {
       throw new Error("Not authenticated");
     }
 
     // Get existing photos
     const { data: profile } = await supabase
-      .from('profiles')
-      .select('photos')
-      .eq('id', user.id)
+      .from("profiles")
+      .select("photos")
+      .eq("id", user.id)
       .single();
 
     const existingPhotos = profile?.photos || [];
@@ -27,12 +32,12 @@ export async function saveProfilePhoto(uri: string): Promise<{ ok: true; data: {
 
     // Update photos array
     const { error } = await supabase
-      .from('profiles')
+      .from("profiles")
       .update({
         photos: newPhotos,
         photos_completed: newPhotos.length > 0,
       })
-      .eq('id', user.id);
+      .eq("id", user.id);
 
     if (error) throw error;
 
@@ -46,16 +51,19 @@ export async function saveProfilePhoto(uri: string): Promise<{ ok: true; data: {
 
 export async function getProfilePhotos(): Promise<string[]> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
     if (userError || !user) {
       return [];
     }
 
     const { data, error } = await supabase
-      .from('profiles')
-      .select('photos')
-      .eq('id', user.id)
+      .from("profiles")
+      .select("photos")
+      .eq("id", user.id)
       .single();
 
     if (error || !data) {
@@ -69,30 +77,35 @@ export async function getProfilePhotos(): Promise<string[]> {
   }
 }
 
-export async function removeProfilePhoto(uri: string): Promise<{ ok: true; data: string[] }> {
+export async function removeProfilePhoto(
+  uri: string,
+): Promise<{ ok: true; data: string[] }> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
     if (userError || !user) {
       throw new Error("Not authenticated");
     }
 
     const { data: profile } = await supabase
-      .from('profiles')
-      .select('photos')
-      .eq('id', user.id)
+      .from("profiles")
+      .select("photos")
+      .eq("id", user.id)
       .single();
 
     const existingPhotos = profile?.photos || [];
     const newPhotos = existingPhotos.filter((p: string) => p !== uri);
 
     const { error } = await supabase
-      .from('profiles')
+      .from("profiles")
       .update({
         photos: newPhotos,
         photos_completed: newPhotos.length > 0,
       })
-      .eq('id', user.id);
+      .eq("id", user.id);
 
     if (error) throw error;
 

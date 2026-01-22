@@ -1,6 +1,6 @@
 /**
  * ProfileEditForm Component
- * 
+ *
  * Form fields for editing profile information.
  * Includes first name, last name, occupation, education, and location.
  */

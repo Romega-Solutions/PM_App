@@ -1,8 +1,9 @@
 // app/(tabs)/_layout.tsx
+import { TabIconContainer } from "@/src/components/ui/TabIconContainer";
 import { Tabs } from "expo-router";
 import { Heart, Home, MessageCircle, User } from "lucide-react-native";
 import React from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 
 // Brand Colors
 const BRAND_BG = "#0F0814";
@@ -17,45 +18,6 @@ const TAB_PADDING_BOTTOM = Platform.OS === "ios" ? 28 : 12;
 const TAB_PADDING_TOP = Platform.OS === "ios" ? 12 : 8;
 const ICON_SIZE = Platform.OS === "ios" ? 24 : 22;
 const LABEL_FONT_SIZE = Platform.OS === "ios" ? 11 : 10;
-const FOCUSED_CONTAINER_WIDTH = Platform.OS === "ios" ? 56 : 52;
-const FOCUSED_CONTAINER_HEIGHT = Platform.OS === "ios" ? 36 : 34;
-
-interface TabIconProps {
-  focused: boolean;
-  color: string;
-  children: React.ReactNode;
-}
-
-// Reusable Tab Icon Container Component
-const TabIconContainer: React.FC<TabIconProps> = ({
-  focused,
-  color,
-  children,
-}) => (
-  <View
-    style={[
-      styles.iconContainer,
-      {
-        backgroundColor: focused ? "rgba(239, 62, 120, 0.15)" : "transparent",
-        borderWidth: focused ? 1.5 : 0,
-        borderColor: focused ? ACCENT_PINK : "transparent",
-      },
-    ]}
-  >
-    {children}
-    {focused && (
-      <View
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            borderRadius: 16,
-            backgroundColor: "rgba(141, 105, 246, 0.08)",
-          },
-        ]}
-      />
-    )}
-  </View>
-);
 
 export default function MainLayout() {
   return (
@@ -219,24 +181,6 @@ const styles = StyleSheet.create({
   tabBarItem: {
     paddingVertical: Platform.OS === "ios" ? 6 : 4,
     gap: Platform.OS === "ios" ? 4 : 2,
-  },
-  iconContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 16,
-    width: FOCUSED_CONTAINER_WIDTH,
-    height: FOCUSED_CONTAINER_HEIGHT,
-    ...Platform.select({
-      ios: {
-        shadowColor: ACCENT_PINK,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 0,
-      },
-    }),
   },
   // Notification Badge Styles (for future use)
   notificationBadge: {

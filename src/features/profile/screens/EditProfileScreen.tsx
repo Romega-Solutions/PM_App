@@ -1,16 +1,16 @@
 /**
  * EditProfileScreen
- * 
+ *
  * Main screen for editing user profile information and photos.
  * Uses feature hooks for data fetching and updates.
- * 
+ *
  * Features:
  * - Edit profile photo
  * - Update personal information (name, occupation, education, location)
  * - Real-time upload progress
  * - Form validation
  * - Auto-save on back navigation
- * 
+ *
  * Architecture:
  * - Uses ProfilePhotoSection, ProfileEditForm components
  * - Integrates with profile hooks (useProfile, useUpdateProfile, useUploadPhoto)
@@ -24,12 +24,12 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  View,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    View,
 } from "react-native";
 import { EditProfileHeader } from "../components/EditProfileHeader";
 import { ProfileEditForm } from "../components/ProfileEditForm";

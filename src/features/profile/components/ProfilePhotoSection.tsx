@@ -1,9 +1,9 @@
 /**
  * ProfilePhotoSection Component
- * 
+ *
  * Displays and allows editing of profile photo.
  * Shows upload progress when uploading a new photo.
- * 
+ *
  * Features:
  * - Current profile photo or placeholder
  * - Change photo button
@@ -13,12 +13,12 @@
 import { Camera, User } from "lucide-react-native";
 import React from "react";
 import {
-  ActivityIndicator,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 const ACCENT_PINK = "#EF3E78";

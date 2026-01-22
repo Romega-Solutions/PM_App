@@ -1,6 +1,6 @@
 /**
  * EditProfileHeader Component
- * 
+ *
  * Header for the edit profile screen with back button, title, and save action.
  * Shows loading indicator when saving profile updates.
  */
@@ -8,12 +8,12 @@
 import { ArrowLeft, Save } from "lucide-react-native";
 import React from "react";
 import {
-  ActivityIndicator,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 const BRAND_BG = "#0F0814";

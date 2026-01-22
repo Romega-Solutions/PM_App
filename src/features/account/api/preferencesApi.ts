@@ -1,6 +1,6 @@
 /**
  * Preferences API
- * 
+ *
  * Handles user matching preferences (age range, distance, relationship goals).
  * Single Responsibility: Preferences operations only.
  */
@@ -23,11 +23,14 @@ export type PreferencesPayload = {
 };
 
 export async function savePreferences(
-  payload: Omit<PreferencesPayload, "interestedIn"> & { userType: UserType }
+  payload: Omit<PreferencesPayload, "interestedIn"> & { userType: UserType },
 ): Promise<{ ok: true; data: PreferencesPayload }> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
     if (userError || !user) {
       throw new Error("Not authenticated");
     }
@@ -35,7 +38,7 @@ export async function savePreferences(
     const interestedIn = getInterestedInFromUserType(payload.userType);
 
     const { error } = await supabase
-      .from('profiles')
+      .from("profiles")
       .update({
         interested_in: interestedIn,
         age_min: payload.ageMin,
@@ -44,7 +47,7 @@ export async function savePreferences(
         relationship_goal: payload.relationshipGoal,
         preferences_completed: true,
       })
-      .eq('id', user.id);
+      .eq("id", user.id);
 
     if (error) throw error;
 
@@ -64,16 +67,21 @@ export async function savePreferences(
 
 export async function getPreferences(): Promise<PreferencesPayload | null> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
     if (userError || !user) {
       return null;
     }
 
     const { data, error } = await supabase
-      .from('profiles')
-      .select('interested_in, age_min, age_max, max_distance_km, relationship_goal, user_type, created_at')
-      .eq('id', user.id)
+      .from("profiles")
+      .select(
+        "interested_in, age_min, age_max, max_distance_km, relationship_goal, user_type, created_at",
+      )
+      .eq("id", user.id)
       .single();
 
     if (error || !data) {
@@ -97,13 +105,15 @@ export async function getPreferences(): Promise<PreferencesPayload | null> {
 
 export async function clearPreferences(): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (user) {
       await supabase
-        .from('profiles')
+        .from("profiles")
         .update({ preferences_completed: false })
-        .eq('id', user.id);
+        .eq("id", user.id);
     }
   } catch (error) {
     console.error("❌ Error clearing preferences:", error);
