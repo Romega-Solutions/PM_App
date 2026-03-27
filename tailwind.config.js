@@ -1,4 +1,3 @@
-/** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
     "./App.tsx",
@@ -66,8 +65,17 @@ module.exports = {
         },
       },
       fontFamily: {
-        'hello-paris': ['HelloParis', 'sans-serif'],
-        'playfair': ['PlayfairDisplay', 'serif'],
+        // Body / UI
+        body: ["DMSans", "DM Sans", "dm-sans", "system-ui", "sans-serif"],
+        // Logo (Hello Paris)
+        logo: ["HelloParis", "HelloParisSans", "hello-paris-sans", "serif"],
+        // Headers
+        header: ["Lora", "lora", "serif"],
+        // Backwards-compatible aliases
+        sans: ["DMSans", "DM Sans", "dm-sans", "system-ui", "sans-serif"],
+        "hello-paris": ["HelloParis", "HelloParisSans", "serif"],
+        playfair: ["Lora", "lora", "serif"],
+        dm: ["DMSans", "DM Sans", "dm-sans", "sans-serif"],
       },
     },
   },

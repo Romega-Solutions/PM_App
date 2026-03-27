@@ -1,109 +1,127 @@
+import { colors, semanticColors, theme } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { Redirect } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, StatusBar, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  Platform,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+
+const { width, height } = Dimensions.get("window");
+
+// Responsive sizing helper
+const scale = (size: number) => (width / 375) * size; // Based on iPhone X width
+const verticalScale = (size: number) => (height / 812) * size; // Based on iPhone X height
 
 export default function Index() {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowSplash(false), 1800); // 1.8 seconds
+    const timer = setTimeout(() => setShowSplash(false), 1800);
     return () => clearTimeout(timer);
   }, []);
 
   if (showSplash) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#340839" }}>
+      <View style={styles.container}>
         <StatusBar
           barStyle="light-content"
-          backgroundColor="#340839"
+          backgroundColor={colors.dalisay[950]}
           translucent={false}
         />
 
         <LinearGradient
-          colors={["#340839", "#8D69F6"]}
+          colors={[colors.dalisay[950], colors.dalisay[500]]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
+          style={styles.gradient}
         >
-          {/* Logo with Glow Effect */}
-          <View
-            style={{
-              shadowColor: "#EF3E78",
-              shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: 0.6,
-              shadowRadius: 30,
-              elevation: 15,
-              marginBottom: 32,
-            }}
-          >
+          {/* Logo Container */}
+          <View style={styles.logoWrap}>
             <Image
               source={require("../assets/logo-no-bg.png")}
-              style={{
-                width: 140,
-                height: 140,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.4,
-                shadowRadius: 12,
-              }}
+              style={styles.logo}
               resizeMode="contain"
             />
           </View>
 
-          {/* App Name with Gradient Text Effect */}
-          <Text
-            style={{
-              color: "#FFFFFF",
-              fontSize: 42,
-              fontFamily: "PlayfairDisplay-Bold",
-              fontWeight: "800",
-              letterSpacing: 1.5,
-              textShadowColor: "rgba(239, 62, 120, 0.8)",
-              textShadowOffset: { width: 0, height: 3 },
-              textShadowRadius: 8,
-              marginBottom: 24,
-              textAlign: "center",
-            }}
-          >
-            PinayMate
-          </Text>
+          {/* Brand Name */}
+          <Text style={styles.brandText}>PinayMate</Text>
 
           {/* Tagline */}
-          <Text
-            style={{
-              color: "rgba(255, 255, 255, 0.85)",
-              fontSize: 16,
-              fontFamily: "PlayfairDisplay-Regular",
-              letterSpacing: 0.8,
-              textAlign: "center",
-              marginBottom: 32,
-              paddingHorizontal: 40,
-              textShadowColor: "rgba(0, 0, 0, 0.3)",
-              textShadowOffset: { width: 0, height: 1 },
-              textShadowRadius: 3,
-            }}
-          >
-            Elite Filipino Dating
-          </Text>
+          <Text style={styles.tagline}>Elite Filipino Dating</Text>
 
           {/* Loading Indicator */}
           <ActivityIndicator
             size="large"
-            color="#EF3E78"
-            style={{
-              transform: [{ scale: 1.2 }],
-            }}
+            color={semanticColors.primary}
+            style={styles.loader}
           />
         </LinearGradient>
       </View>
     );
   }
 
-  // Redirect to welcome screen inside (auth) group
   return <Redirect href="/(auth)/welcome" />;
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.dalisay[950],
+  },
+
+  gradient: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing.lg,
+  },
+
+  logoWrap: {
+    shadowColor: semanticColors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 30,
+    elevation: 15,
+    marginBottom: verticalScale(28),
+  },
+
+  logo: {
+    width: scale(140),
+    height: scale(140),
+  },
+
+  brandText: {
+    color: colors.neutral.white,
+    fontSize: scale(40),
+    fontFamily: theme.fontFamilies.logo.bold,
+    letterSpacing: 1.2,
+    textShadowColor: `${semanticColors.primary}D9`, // 85% opacity
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 8,
+    marginBottom: verticalScale(18),
+    textAlign: "center",
+  },
+
+  tagline: {
+    color: colors.neutral.white,
+    opacity: 0.88,
+    fontSize: scale(15),
+    fontFamily: theme.fontFamilies.header.medium,
+    letterSpacing: 0.6,
+    textAlign: "center",
+    marginBottom: verticalScale(28),
+    paddingHorizontal: theme.spacing.xl,
+  },
+
+  loader: {
+    transform: [{ scale: Platform.OS === "ios" ? 1.15 : 1.3 }],
+  },
+});

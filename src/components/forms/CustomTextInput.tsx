@@ -1,18 +1,27 @@
+import { colors, semanticColors, theme } from "@/src/theme";
 import { LucideIcon } from "lucide-react-native";
-import React from "react";
+import React, { useState } from "react";
 import {
+  Dimensions,
   KeyboardTypeOptions,
   Platform,
+  StyleSheet,
   Text,
   TextInput,
   TextInputProps,
+  TextStyle,
   TouchableOpacity,
   View,
+  ViewStyle,
 } from "react-native";
 
-/**
- * CustomTextInput Component Props Interface
- */
+const { width } = Dimensions.get("window");
+
+// Responsive scaling
+const scale = (size: number) => (width / 375) * size;
+const moderateScale = (size: number, factor = 0.5) =>
+  size + (scale(size) - size) * factor;
+
 interface CustomTextInputProps
   extends Omit<
     TextInputProps,
@@ -69,18 +78,14 @@ interface CustomTextInputProps
     | "username"
     | "off";
   error?: string;
+
+  // Optional style overrides
+  containerStyle?: ViewStyle;
+  labelStyle?: TextStyle;
+  inputStyle?: TextStyle;
+  errorStyle?: TextStyle;
 }
 
-/**
- * CustomTextInput Component
- * A reusable text input with icon support and consistent styling
- *
- * Best practices applied:
- * - Touch target: 44-48px (iOS/Android guidelines)
- * - Icon size: 20-24px
- * - Font size: 16px (prevents zoom on iOS)
- * - Padding: 16px horizontal, 12-14px vertical
- */
 export default function CustomTextInput({
   label,
   value,
@@ -94,120 +99,161 @@ export default function CustomTextInput({
   autoCapitalize = "sentences",
   autoComplete,
   error,
+  containerStyle,
+  labelStyle,
+  inputStyle,
+  errorStyle,
+  onFocus,
+  onBlur,
   ...props
 }: CustomTextInputProps) {
-  const hasValue = value && value.length > 0;
+  const [focused, setFocused] = useState(false);
+  const hasValue = !!value?.length;
+
+  // Fixed: Remove type annotations to let TypeScript infer
+  const handleFocus = (e: any) => {
+    setFocused(true);
+    onFocus?.(e);
+  };
+
+  const handleBlur = (e: any) => {
+    setFocused(false);
+    onBlur?.(e);
+  };
+
+  // Dynamic border color using theme
+  const borderColor = error
+    ? semanticColors.error
+    : focused
+      ? semanticColors.primary
+      : hasValue
+        ? `${semanticColors.primary}80` // 50% opacity
+        : `${semanticColors.secondary}40`; // 25% opacity
 
   return (
-    <View style={{ marginBottom: 20 }}>
-      {/* Label - Using Hello Paris for UI labels */}
-      {label && (
-        <Text
-          style={{
-            fontSize: 15,
-            fontFamily: "HelloParis",
-            fontWeight: "500",
-            color: "#FFFFFF",
-            marginBottom: 10,
-            letterSpacing: 0.3,
-          }}
-        >
-          {label}
-        </Text>
-      )}
+    <View style={[styles.container, containerStyle]}>
+      {/* Label */}
+      {label ? <Text style={[styles.label, labelStyle]}>{label}</Text> : null}
 
-      {/* Input Container */}
+      {/* Input container */}
       <View style={{ position: "relative" }}>
         <TextInput
-          style={{
-            backgroundColor: "rgba(255, 255, 255, 0.08)",
-            borderRadius: 16,
-            paddingVertical: Platform.select({ ios: 18, android: 16 }),
-            paddingLeft: LeftIcon ? 52 : 18,
-            paddingRight: RightIcon ? 52 : 18,
-            fontSize: 16,
-            fontFamily: "PlayfairDisplay",
-            fontWeight: "400",
-            color: "#FFFFFF",
-            borderWidth: 2,
-            borderColor: error
-              ? "#D52C4D" // error.600
-              : hasValue
-                ? "rgba(239, 62, 120, 0.5)" // amihan.500 with opacity
-                : "rgba(141, 105, 246, 0.25)", // dalisay.500 with opacity
-            minHeight: Platform.select({ ios: 56, android: 52 }),
-          }}
+          style={[
+            styles.input,
+            {
+              paddingLeft: LeftIcon ? moderateScale(52) : moderateScale(18),
+              paddingRight: RightIcon ? moderateScale(52) : moderateScale(18),
+              borderColor,
+            },
+            inputStyle,
+          ]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="rgba(255, 255, 255, 0.4)"
+          placeholderTextColor={`${colors.neutral.white}66`} // 40% opacity
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           autoComplete={autoComplete}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          selectionColor={`${semanticColors.secondary}E6`} // 90% opacity
           {...props}
         />
 
-        {/* Left Icon */}
-        {LeftIcon && (
-          <View
-            style={{
-              position: "absolute",
-              left: 18,
-              top: 0,
-              bottom: 0,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
+        {/* Left icon */}
+        {LeftIcon ? (
+          <View style={styles.leftIconWrap}>
             <LeftIcon
-              size={20}
-              color="rgba(239, 62, 120, 0.7)"
+              size={moderateScale(20)}
+              color={`${semanticColors.primary}B3`} // 70% opacity
               strokeWidth={2}
             />
           </View>
-        )}
+        ) : null}
 
-        {/* Right Icon/Button */}
-        {RightIcon && (
+        {/* Right icon */}
+        {RightIcon ? (
           <TouchableOpacity
             onPress={onRightIconPress}
-            style={{
-              position: "absolute",
-              right: 18,
-              top: 0,
-              bottom: 0,
-              justifyContent: "center",
-              alignItems: "center",
-              padding: 4,
-            }}
-            accessible={true}
+            style={styles.rightIconWrap}
+            accessible
             accessibilityRole="button"
+            accessibilityLabel="Toggle input option"
           >
             <RightIcon
-              size={20}
-              color="rgba(255, 255, 255, 0.6)"
+              size={moderateScale(20)}
+              color={`${colors.neutral.white}B3`} // 70% opacity
               strokeWidth={2}
             />
           </TouchableOpacity>
-        )}
+        ) : null}
       </View>
 
-      {/* Error Message */}
-      {error && (
-        <Text
-          style={{
-            fontSize: 13,
-            fontFamily: "PlayfairDisplay",
-            fontWeight: "400",
-            color: "#D52C4D",
-            marginTop: 6,
-            marginLeft: 4,
-          }}
-        >
-          {error}
-        </Text>
-      )}
+      {/* Error text */}
+      {error ? <Text style={[styles.error, errorStyle]}>{error}</Text> : null}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    marginBottom: theme.spacing.lg,
+  },
+
+  label: {
+    fontSize: moderateScale(15),
+    color: colors.neutral.white,
+    marginBottom: theme.spacing.sm,
+    letterSpacing: Platform.select({ ios: 0.3, android: 0.2, web: 0.3 }),
+    fontFamily: theme.fontFamilies.body.semiBold,
+  },
+
+  input: {
+    backgroundColor: `${colors.neutral.white}14`, // 8% opacity
+    borderRadius: moderateScale(16),
+    paddingVertical: Platform.select({
+      ios: moderateScale(18),
+      android: moderateScale(16),
+      web: moderateScale(16),
+    }),
+    fontSize: moderateScale(16),
+    color: colors.neutral.white,
+    borderWidth: Platform.select({ ios: 2, android: 2, web: 1.5 }),
+    minHeight: Platform.select({
+      ios: moderateScale(56),
+      android: moderateScale(52),
+      web: moderateScale(52),
+    }),
+    fontFamily: theme.fontFamilies.body.regular,
+    letterSpacing: Platform.select({ ios: 0.2, android: 0.15, web: 0.2 }),
+  },
+
+  leftIconWrap: {
+    position: "absolute",
+    left: moderateScale(18),
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  rightIconWrap: {
+    position: "absolute",
+    right: moderateScale(18),
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: moderateScale(4),
+  },
+
+  error: {
+    fontSize: moderateScale(13),
+    color: semanticColors.error,
+    marginTop: theme.spacing.xs,
+    marginLeft: moderateScale(4),
+    fontFamily: theme.fontFamilies.body.regular,
+    letterSpacing: Platform.select({ ios: 0.2, android: 0.15, web: 0.2 }),
+  },
+});
