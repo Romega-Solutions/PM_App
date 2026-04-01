@@ -76,6 +76,12 @@
         "projectId": "2fa7007a-ece6-4e00-8a9a-a04488f58e9a"
       }
     },
-    "owner": "canthought"
+    "owner": "canthought",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2fa7007a-ece6-4e00-8a9a-a04488f58e9a"
+    }
   }
 }
