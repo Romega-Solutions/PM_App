@@ -20,10 +20,13 @@
 import { supabase } from "@/src/config/supabase";
 import { accountApi } from "@/src/features/account/api/accountApi";
 import { getMatches } from "@/src/features/matching/api/matchingApi";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
+    Alert,
     Platform,
+    RefreshControl,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -46,84 +49,99 @@ export default function LikesScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Fetch user data and matches on mount
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Get current user
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+  const fetchData = async () => {
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-        if (userError || !user) {
-          console.error("Failed to fetch user:", userError);
-          setLoading(false);
-          return;
-        }
-
-        setUserId(user.id);
-
-        // Get user type
-        const basicInfo = await accountApi.getBasicInfo();
-        setUserType(basicInfo?.userType ?? null);
-
-        // Fetch matches from database
-        const { data: dbMatches, error: matchesError } = await getMatches(
-          user.id,
-        );
-
-        if (matchesError) {
-          console.error("Failed to fetch matches:", matchesError);
-          // Show empty state - no fallback to mock data
-          setMatches([]);
-        } else if (dbMatches && dbMatches.length > 0) {
-          // Convert database matches to display format
-          const displayMatches: Match[] = dbMatches.map((match) => ({
-            id: match.profile.id,
-            name: match.profile.first_name,
-            age: match.profile.age,
-            location: match.profile.city || "Philippines",
-            image: match.profile.photos?.[0]
-              ? { uri: match.profile.photos[0] }
-              : require("../../../../assets/girls/ai1.jpg"),
-            verified: match.profile.is_verified,
-            mutual: match.is_mutual,
-            gender:
-              match.profile.gender === "other"
-                ? "female"
-                : match.profile.gender,
-            matchedAt: match.matched_at,
-          }));
-          setMatches(displayMatches);
-        } else {
-          // No matches in database
-          setMatches([]);
-        }
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-        // Show empty state - no fallback to mock data
-        setMatches([]);
-      } finally {
-        setLoading(false);
+      if (userError || !user) {
+        console.error("Failed to fetch user:", userError);
+        return;
       }
-    };
 
-    fetchData();
+      setUserId(user.id);
+
+      const basicInfo = await accountApi.getBasicInfo();
+      setUserType(basicInfo?.userType ?? null);
+
+      const { data: dbMatches, error: matchesError } = await getMatches(user.id);
+
+      if (matchesError) {
+        console.error("Failed to fetch matches:", matchesError);
+        setMatches([]);
+      } else if (dbMatches && dbMatches.length > 0) {
+        const displayMatches: Match[] = dbMatches.map((match) => ({
+          id: match.profile.id,
+          name: match.profile.first_name,
+          age: match.profile.age,
+          location: match.profile.city || "Philippines",
+          image: match.profile.photos?.[0]
+            ? { uri: match.profile.photos[0] }
+            : require("../../../../assets/girls/ai1.jpg"),
+          verified: match.profile.is_verified,
+          mutual: match.is_mutual,
+          gender:
+            match.profile.gender === "other"
+              ? "female"
+              : match.profile.gender,
+          matchedAt: match.matched_at,
+        }));
+        setMatches(displayMatches);
+      } else {
+        setMatches([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+      setMatches([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchData().finally(() => setLoading(false));
   }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  };
 
   const filteredMatches =
     filter === "mutual" ? matches.filter((m) => m.mutual) : matches;
 
-  const handleMessage = (id: string | number) => {
-    console.log("Message match:", id);
-    // TODO: Navigate to messages screen with this match
+  const handleMessage = (match: Match) => {
+    router.push({
+      pathname: "/chat",
+      params: {
+        userId: String(match.id),
+        userName: match.name,
+        userImage: typeof match.image === "object" && match.image?.uri
+          ? match.image.uri
+          : undefined,
+      },
+    });
   };
 
-  const handleUnmatch = (id: string | number) => {
-    console.log("Unmatch:", id);
-    // TODO: Show confirmation dialog and remove match
+  const handleUnmatch = (match: Match) => {
+    Alert.alert(
+      "Unmatch",
+      `Are you sure you want to unmatch with ${match.name}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Unmatch",
+          style: "destructive",
+          onPress: () => {
+            setMatches((prev) => prev.filter((m) => m.id !== match.id));
+          },
+        },
+      ],
+    );
   };
 
   // Loading state
@@ -165,19 +183,26 @@ export default function LikesScreen() {
           paddingBottom: Math.max(insets.bottom + 24, 100),
         }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="#EF3E78"
+            colors={["#EF3E78"]}
+          />
+        }
       >
         <View style={styles.grid}>
           {filteredMatches.map((match) => (
             <MatchCard
               key={match.id}
               match={match}
-              onMessage={() => handleMessage(match.id)}
-              onUnmatch={() => handleUnmatch(match.id)}
+              onMessage={() => handleMessage(match)}
+              onUnmatch={() => handleUnmatch(match)}
             />
           ))}
         </View>
 
-        {/* Empty State */}
         {filteredMatches.length === 0 && <EmptyMatchesState />}
       </ScrollView>
     </View>
