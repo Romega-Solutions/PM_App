@@ -58,14 +58,22 @@ interface MatchCardProps {
   match: Match;
   onMessage: () => void;
   onUnmatch: () => void;
+  onPress?: () => void;
 }
 
 export const MatchCard: React.FC<MatchCardProps> = ({
   match,
   onMessage,
   onUnmatch,
+  onPress,
 }) => (
-  <View style={styles.card}>
+  <TouchableOpacity
+    style={styles.card}
+    activeOpacity={0.85}
+    onPress={onPress}
+    accessibilityRole="button"
+    accessibilityLabel={`View ${match.name}'s profile`}
+  >
     {/* Image Container */}
     <View style={styles.imageContainer}>
       <Image source={match.image} style={styles.cardImage} resizeMode="cover" />
@@ -132,7 +140,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
         </TouchableOpacity>
       </View>
     </View>
-  </View>
+  </TouchableOpacity>
 );
 
 const styles = StyleSheet.create({

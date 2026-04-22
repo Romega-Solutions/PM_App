@@ -199,6 +199,7 @@ export default function LikesScreen() {
               match={match}
               onMessage={() => handleMessage(match)}
               onUnmatch={() => handleUnmatch(match)}
+              onPress={() => handleMessage(match)}
             />
           ))}
         </View>
