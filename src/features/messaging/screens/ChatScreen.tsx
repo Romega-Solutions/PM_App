@@ -17,11 +17,13 @@ import {
   ActionSheetIOS,
   ActivityIndicator,
   Alert,
+  FlatList,
   Image,
   Keyboard,
   KeyboardAvoidingView,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Platform,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -37,6 +39,10 @@ import { useChatRealtime } from "@/src/features/messaging/hooks/useChatRealtime"
 import { useMessages } from "@/src/features/messaging/hooks/useMessages";
 import { useMessageUpload } from "@/src/features/messaging/hooks/useMessageUpload";
 import type { Message as MessageType } from "@/src/features/messaging/types/messaging.types";
+import { DateHeader } from "@/src/features/messaging/components/DateHeader";
+import { EmptyChatState } from "@/src/features/messaging/components/EmptyChatState";
+import { ScrollToBottomFab } from "@/src/features/messaging/components/ScrollToBottomFab";
+import { TypingIndicator } from "@/src/features/messaging/components/TypingIndicator";
 
 // Brand Colors
 const BRAND_BG = "#0F0814";
@@ -62,8 +68,9 @@ export default function ChatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<ChatScreenParams>();
-  const scrollViewRef = useRef<ScrollView>(null);
+  const flatListRef = useRef<FlatList<MessageType>>(null);
   const inputRef = useRef<TextInput>(null);
+  const [showScrollFab, setShowScrollFab] = useState(false);
 
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -108,7 +115,7 @@ export default function ChatScreen() {
     recipientId: recipientId || "",
     onNewMessage: (message) => {
       addMessage(message);
-      scrollViewRef.current?.scrollToEnd({ animated: true });
+      flatListRef.current?.scrollToEnd({ animated: true });
     },
     onTyping: (typing) => {
       setIsTyping(typing);
@@ -138,10 +145,12 @@ export default function ChatScreen() {
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  }, [dbMessages]);
+    if (!showScrollFab) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [dbMessages, showScrollFab]);
 
   // Send typing indicator
   useEffect(() => {
@@ -165,7 +174,7 @@ export default function ChatScreen() {
 
     try {
       await sendText(messageText);
-      scrollViewRef.current?.scrollToEnd({ animated: true });
+      flatListRef.current?.scrollToEnd({ animated: true });
     } catch (error) {
       console.error("❌ Error sending message:", error);
       Alert.alert("Error", "Failed to send message. Please try again.");
@@ -213,7 +222,7 @@ export default function ChatScreen() {
 
           // Send image message to database
           await sendImageToDb(imageUrl);
-          scrollViewRef.current?.scrollToEnd({ animated: true });
+          flatListRef.current?.scrollToEnd({ animated: true });
         } catch (uploadError) {
           console.error("❌ Error uploading image:", uploadError);
           Alert.alert(
@@ -336,6 +345,35 @@ export default function ChatScreen() {
 
   // ==================== END HANDLER FUNCTIONS ====================
 
+  function getDateKey(dateString: string): string {
+    return new Date(dateString).toDateString();
+  }
+
+  function shouldShowDateHeader(
+    messages: MessageType[],
+    index: number,
+  ): boolean {
+    if (index === 0) return true;
+    return (
+      getDateKey(messages[index].created_at) !==
+      getDateKey(messages[index - 1].created_at)
+    );
+  }
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+      const distanceFromBottom =
+        contentSize.height - layoutMeasurement.height - contentOffset.y;
+      setShowScrollFab(distanceFromBottom > 200);
+    },
+    [],
+  );
+
+  const scrollToBottom = useCallback(() => {
+    flatListRef.current?.scrollToEnd({ animated: true });
+  }, []);
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     const hours = date.getHours();
@@ -442,7 +480,7 @@ export default function ChatScreen() {
         <Text style={styles.errorText}>Failed to load messages</Text>
         <TouchableOpacity
           style={styles.retryButton}
-          onPress={() => window.location.reload()}
+          onPress={() => router.replace("/messages")}
         >
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
@@ -543,42 +581,53 @@ export default function ChatScreen() {
       </View>
 
       {/* Messages */}
-      <ScrollView
-        ref={scrollViewRef}
+      <FlatList
+        ref={flatListRef}
+        data={dbMessages}
+        keyExtractor={(item) => item.id}
         style={styles.messagesContainer}
         contentContainerStyle={[
           styles.messagesContent,
           { paddingBottom: Math.max(insets.bottom + 80, 100) },
+          dbMessages.length === 0 && { flex: 1 },
         ]}
         showsVerticalScrollIndicator={false}
-      >
-        {dbMessages.map((message, index) => renderMessage(message, index))}
-
-        {/* Typing Indicator */}
-        {isTyping && (
-          <View style={[styles.messageRow, styles.theirMessageRow]}>
-            {params.userImage && params.userImage.startsWith("http") ? (
-              <Image
-                source={{ uri: params.userImage }}
-                style={styles.messageAvatar}
-              />
-            ) : (
-              <View style={styles.messageAvatarPlaceholder}>
-                <Text style={styles.messageAvatarPlaceholderText}>
-                  {userName.charAt(0).toUpperCase()}
-                </Text>
-              </View>
+        onScroll={handleScroll}
+        scrollEventThrottle={100}
+        ListEmptyComponent={<EmptyChatState userName={userName} />}
+        renderItem={({ item, index }) => (
+          <View>
+            {shouldShowDateHeader(dbMessages, index) && (
+              <DateHeader date={item.created_at} />
             )}
-            <View style={[styles.messageBubble, styles.theirMessageBubble]}>
-              <View style={styles.typingIndicator}>
-                <View style={styles.typingDot} />
-                <View style={styles.typingDot} />
-                <View style={styles.typingDot} />
-              </View>
-            </View>
+            {renderMessage(item, index)}
           </View>
         )}
-      </ScrollView>
+        ListFooterComponent={
+          isTyping ? (
+            <View style={[styles.messageRow, styles.theirMessageRow]}>
+              {params.userImage && params.userImage.startsWith("http") ? (
+                <Image
+                  source={{ uri: params.userImage }}
+                  style={styles.messageAvatar}
+                />
+              ) : (
+                <View style={styles.messageAvatarPlaceholder}>
+                  <Text style={styles.messageAvatarPlaceholderText}>
+                    {userName.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              <View style={[styles.messageBubble, styles.theirMessageBubble]}>
+                <TypingIndicator />
+              </View>
+            </View>
+          ) : null
+        }
+      />
+
+      {/* Scroll to Bottom FAB */}
+      <ScrollToBottomFab visible={showScrollFab} onPress={scrollToBottom} />
 
       {/* Input Area */}
       <KeyboardAvoidingView
