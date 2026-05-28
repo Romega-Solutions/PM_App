@@ -68,7 +68,10 @@ export default function Index() {
     );
   }
 
-  return <Redirect href="/(auth)/welcome" />;
+  // TEMP TEST BYPASS: route testers straight into the app shell.
+  // Auth screens and Supabase auth flows are still available under /(auth).
+  // Restore this to "/(auth)/welcome" when login gates are ready to enforce.
+  return <Redirect href="/(main)" />;
 }
 
 const styles = StyleSheet.create({

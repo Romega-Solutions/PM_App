@@ -39,6 +39,15 @@ import { Match, MatchCard } from "../components/MatchCard";
 const BRAND_BG = "#0F0814";
 const ACCENT_PINK = "#EF3E78";
 
+function isMissingAuthSession(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    error.name === "AuthSessionMissingError"
+  );
+}
+
 export default function LikesScreen() {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<"all" | "mutual">("all");
@@ -58,7 +67,11 @@ export default function LikesScreen() {
         } = await supabase.auth.getUser();
 
         if (userError || !user) {
-          console.error("Failed to fetch user:", userError);
+          // TEMP TEST BYPASS: unauthenticated testers can inspect the app shell.
+          // Keep auth code intact; restore login gates before production testing.
+          if (userError && !isMissingAuthSession(userError)) {
+            console.error("Failed to fetch user:", userError);
+          }
           setLoading(false);
           return;
         }

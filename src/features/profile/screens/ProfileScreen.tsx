@@ -52,6 +52,16 @@ const ACCENT_PURPLE = "#8D69F6";
 const ACCENT_PINK = "#EF3E78";
 const WHITE = "#FFFFFF";
 
+const TEST_GUEST_PROFILE: ProfileData = {
+  firstName: "Guest",
+  lastName: "Tester",
+  age: 25,
+  userType: "foreigner",
+  location: "Preview Mode",
+  photoUri: null,
+  isVerified: false,
+};
+
 /**
  * Profile data interface
  */
@@ -90,7 +100,9 @@ export const ProfileScreen: React.FC = () => {
         } = await supabase.auth.getSession();
 
         if (!session?.user) {
-          console.log("❌ No session found");
+          // TEMP TEST BYPASS: show a guest profile instead of sending testers
+          // back to auth. Auth remains available under /(auth).
+          setProfileData(TEST_GUEST_PROFILE);
           setLoading(false);
           return;
         }
@@ -108,6 +120,7 @@ export const ProfileScreen: React.FC = () => {
 
         if (error) {
           console.error("❌ Failed to fetch profile:", error);
+          setProfileData(TEST_GUEST_PROFILE);
           setLoading(false);
           return;
         }
@@ -145,6 +158,7 @@ export const ProfileScreen: React.FC = () => {
         }
       } catch (error) {
         console.error("❌ Failed to fetch profile data:", error);
+        setProfileData(TEST_GUEST_PROFILE);
       } finally {
         setLoading(false);
       }
@@ -173,12 +187,11 @@ export const ProfileScreen: React.FC = () => {
       accountApi.clearPreferences();
       accountApi.clearVerification();
 
-      // Navigate to welcome screen
-      router.replace("/(auth)/welcome");
+      // TEMP TEST BYPASS: stay in the app shell after clearing auth state.
+      router.replace("/(main)");
     } catch (error) {
       console.error("❌ Error during logout:", error);
-      // Still navigate to welcome even if there's an error
-      router.replace("/(auth)/welcome");
+      router.replace("/(main)");
     }
   };
 

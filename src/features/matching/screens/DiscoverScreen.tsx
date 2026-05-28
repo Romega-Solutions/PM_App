@@ -46,6 +46,15 @@ const BRAND_BG = "#0F0814";
 const ACCENT_PINK = "#EF3E78";
 const WHITE = "#FFFFFF";
 
+function isMissingAuthSession(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    error.name === "AuthSessionMissingError"
+  );
+}
+
 /**
  * Convert database profile to display format
  */
@@ -119,7 +128,11 @@ export const DiscoverScreen: React.FC = () => {
       } = await supabase.auth.getUser();
 
       if (userError || !user) {
-        console.error("Failed to fetch user:", userError);
+        // TEMP TEST BYPASS: unauthenticated testers can browse the app shell.
+        // Keep auth code intact; restore login gates before production testing.
+        if (userError && !isMissingAuthSession(userError)) {
+          console.error("Failed to fetch user:", userError);
+        }
         setLoading(false);
         return;
       }
