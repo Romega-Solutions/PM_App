@@ -98,7 +98,7 @@ Stores live in `src/stores/`. `authStore` uses `persist` with `partialize` (only
 
 - Client: `src/config/supabase.ts` — PKCE flow, `detectSessionInUrl: true`, AsyncStorage persistence, auto-refresh.
 - Deep linking: `src/config/deepLinking.ts` handles email-verification callbacks (token exchange → session → profile upsert → navigate). Registered in root `_layout.tsx`.
-- Schema & SQL: `supabase/migrations/` (numbered + ad-hoc `fix_*.sql` files) and `supabase/functions/create-profile-on-signup.sql`. Core tables: `profiles`, `photos`, `swipes`/`likes`, `matches`, `conversations`, `messages`. An auto-match trigger creates a `match` on mutual like.
+- Schema & SQL: `supabase/migrations/` holds **manual, ad-hoc SQL scripts** (no CLI migration tooling). ⚠️ **The migration files do not match the live DB or each other** — see `docs/PINAYMATE_BACKEND_AUDIT_2026-05-30.md`. Treat `migrations/sql_existing_setup.md` (a real schema dump) as the source of truth. Live tables: `profiles`, `likes`, `passes`, `messages`, `typing_events` — **no `conversations` table** despite the app expecting one; `matches` are a flag on `likes` (`is_match`), not a table. Live `messages` uses `text`/`type`/`recipient_id` (not `content`/`message_type`/`receiver_id`).
 
 ### Matching algorithm
 
@@ -169,6 +169,7 @@ EXPO_PUBLIC_BYPASS_AUTH=true
 
 See `docs/PINAYMATE_AUDIT_2026-05-29.md` for the full audit and remediation log. As of the 2026-05-30 pass the gates are green: `tsc` 0 errors · `expo lint` 0 errors (31 warnings) · `jest` 36/36 · `build:web` exports `dist/`. Remaining items to be aware of:
 
+0. **Backend schema drift (highest priority for end-to-end).** Migration files ≠ live DB ≠ app code. Chat/conversations and parts of profiles target columns/tables that don't exist in the live DB. See `docs/PINAYMATE_BACKEND_AUDIT_2026-05-30.md` for the full breakdown + phased roadmap (start with `supabase db pull` + `supabase gen types`).
 1. **Auth gate** — defaults to `/(auth)/welcome`; testers opt into the app shell with `EXPO_PUBLIC_BYPASS_AUTH=true`. Keep that env var **unset in production**.
 2. **Mock OCR** — `src/services/ocrService.ts` is still a mock (`IS_MOCK_OCR === true`); wire a real provider before shipping ID verification, and gate verification UI on that flag.
 3. **Test coverage** — only `matchingApi` + `security` are covered; auth/messaging/profile/screens still need tests.
@@ -179,4 +180,4 @@ See `docs/PINAYMATE_AUDIT_2026-05-29.md` for the full audit and remediation log.
 
 Root setup guides: `README.md`, `SUPABASE_SETUP_INSTRUCTIONS.md`, `EMAIL_VERIFICATION_SETUP.md`, `ENABLE_EMAIL_SIGNUP.md`, `FINAL_EMAIL_FLOW_SETUP.md`, `REDIRECT_URLS_QUICK.md`, `SETUP_CHECKLIST.md`.
 
-Deep docs in `docs/`: architecture (`APP_VS_SRC_ARCHITECTURE.md`), business logic (`businessRules.md`, `SMART_MATCHING_ALGORITHM.md`), chat (`SUPABASE_CHAT_INTEGRATION.md`, `chatUIFlow.md`), refactors (`*_REFACTORING*.md`), testing (`TESTING_GUIDE.md`, `CHAT_TESTING_GUIDE.md`), and the full audit (`PINAYMATE_AUDIT_2026-05-29.md`).
+Deep docs in `docs/`: architecture (`APP_VS_SRC_ARCHITECTURE.md`), business logic (`businessRules.md`, `SMART_MATCHING_ALGORITHM.md`), chat (`SUPABASE_CHAT_INTEGRATION.md`, `chatUIFlow.md`), refactors (`*_REFACTORING*.md`), testing (`TESTING_GUIDE.md`, `CHAT_TESTING_GUIDE.md`), the codebase audit (`PINAYMATE_AUDIT_2026-05-29.md`), and the backend/Supabase audit (`PINAYMATE_BACKEND_AUDIT_2026-05-30.md`).
