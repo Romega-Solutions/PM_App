@@ -70,7 +70,7 @@ export default function PrivacyScreen() {
             <View style={styles.settingText}>
               <Text style={styles.settingTitle}>Show Online Status</Text>
               <Text style={styles.settingDesc}>
-                Let others see when you're online
+                Let others see when you&apos;re online
               </Text>
             </View>
           </View>

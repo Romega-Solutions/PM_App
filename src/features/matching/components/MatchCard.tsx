@@ -28,7 +28,6 @@ import {
 const { width } = Dimensions.get("window");
 
 // Brand Colors
-const BRAND_BG = "#0F0814";
 const ACCENT_PURPLE = "#8D69F6";
 const ACCENT_PINK = "#EF3E78";
 const VERIFIED_GREEN = "#10B981";

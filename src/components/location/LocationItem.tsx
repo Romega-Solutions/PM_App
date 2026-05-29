@@ -12,8 +12,6 @@ interface Props {
 export default function LocationItem({ label, selected = false, onPress, isCurrent = false }: Props) {
   const ACCENT_PINK = "#EF3E78";
   const ACCENT_PURPLE = "#8D69F6";
-  const SURFACE = "rgba(255,255,255,0.08)";
-  const SURFACE_BORDER = "rgba(141,105,246,0.25)";
   const ICON_BG = "rgba(141,105,246,0.12)";
 
   return (

@@ -11,17 +11,17 @@
  */
 
 // Re-export all types and functions from modular API files
-export * from './basicInfoApi';
-export * from './photosApi';
-export * from './locationApi';
-export * from './verificationApi';
-export * from './preferencesApi';
-
 import * as basicInfo from './basicInfoApi';
 import * as photos from './photosApi';
 import * as location from './locationApi';
 import * as verification from './verificationApi';
 import * as preferences from './preferencesApi';
+
+export * from './basicInfoApi';
+export * from './photosApi';
+export * from './locationApi';
+export * from './verificationApi';
+export * from './preferencesApi';
 
 // Unified API object for backward compatibility
 export const accountApi = {

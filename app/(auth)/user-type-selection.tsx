@@ -91,7 +91,7 @@ export default function UserTypeSelectionScreen() {
             </View>
 
             <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>I'm a Filipina</Text>
+              <Text style={styles.cardTitle}>I&apos;m a Filipina</Text>
               <Text style={styles.cardDescription}>
                 Looking to connect with foreign men for meaningful relationships
               </Text>
@@ -134,7 +134,7 @@ export default function UserTypeSelectionScreen() {
             </View>
 
             <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>I'm a Foreign Man</Text>
+              <Text style={styles.cardTitle}>I&apos;m a Foreign Man</Text>
               <Text style={styles.cardDescription}>
                 Seeking genuine connections with Filipina women
               </Text>

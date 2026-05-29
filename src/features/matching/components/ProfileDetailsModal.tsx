@@ -221,7 +221,7 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
                 <View style={styles.modalPillsContainer}>
                   <View style={styles.modalPill}>
                     <Ruler size={14} color={ACCENT_PURPLE} strokeWidth={2} />
-                    <Text style={styles.modalPillText}>5'6"</Text>
+                    <Text style={styles.modalPillText}>5&apos;6&quot;</Text>
                   </View>
                   <View style={styles.modalPill}>
                     <GraduationCap
@@ -229,7 +229,7 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
                       color={ACCENT_PURPLE}
                       strokeWidth={2}
                     />
-                    <Text style={styles.modalPillText}>Bachelor's</Text>
+                    <Text style={styles.modalPillText}>Bachelor&apos;s</Text>
                   </View>
                   <View style={styles.modalPill}>
                     <Languages

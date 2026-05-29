@@ -1,6 +1,6 @@
 // Create: app/(auth)/verify-phone.tsx
 import { useRouter } from "expo-router";
-import { CheckCircle, Smartphone, RefreshCw } from "lucide-react-native";
+import { Smartphone, RefreshCw } from "lucide-react-native";
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -85,7 +85,7 @@ export default function VerifyPhone() {
           textAlign: "center",
           lineHeight: 24,
         }}>
-          We've sent a 6-digit code to{"\n"}+63 *** *** **89
+          We&apos;ve sent a 6-digit code to{"\n"}+63 *** *** **89
         </Text>
       </View>
 

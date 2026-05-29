@@ -74,7 +74,7 @@ export default function RootLayout() {
         <ActivityIndicator size="large" color="#8D69F6" />
         <Text
           style={{
-            color: "rgba(255,255,255,0.5)",
+            color: semanticColors.textSecondary,
             marginTop: 16,
             fontFamily: "DMSans-Regular",
           }}

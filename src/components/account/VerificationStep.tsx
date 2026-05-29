@@ -12,8 +12,6 @@ interface Props {
 export default function VerificationStep({ Icon, title, description, onPress }: Props) {
   const ACCENT_PURPLE = "#8D69F6";
   const ICON_BG = "rgba(141,105,246,0.12)";
-  const SURFACE = "rgba(255,255,255,0.08)";
-  const SURFACE_BORDER = "rgba(141,105,246,0.25)";
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.9} accessibilityRole="button" style={styles.container}>

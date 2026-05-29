@@ -9,7 +9,7 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
 // ✅ Use Linking.createURL for proper deep link handling in both dev and production
 const redirectUrl = Linking.createURL("/(auth)/verification-success");
 
-console.log("🔗 Supabase redirect URL:", redirectUrl);
+if (__DEV__) console.log("🔗 Supabase redirect URL:", redirectUrl);
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

@@ -16,7 +16,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 // Brand Colors
 const BRAND_BG = "#0F0814";
 const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
 const WHITE = "#FFFFFF";
 const SURFACE = "rgba(255,255,255,0.06)";
 const TEXT_SECONDARY = "rgba(255,255,255,0.75)";

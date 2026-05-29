@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect } from "react";
-import { realtimeApi } from "../api/realtime.api";
+import { realtimeApi } from "../api/realtimeApi";
 import type { Message } from "../types/messaging.types";
 
 interface UseChatRealtimeOptions {

@@ -23,7 +23,7 @@ const OVERLAY = [
   "rgba(239,62,120,0.15)", // subtle pink tint
   "rgba(15,8,20,0.85)", // dark base blend
   "rgba(15,8,20,0.98)", // near-opaque base
-];
+] as const;
 
 export default function Welcome() {
   const router = useRouter();

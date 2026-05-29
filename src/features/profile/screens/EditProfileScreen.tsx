@@ -17,7 +17,7 @@
  * - Clean separation of concerns
  */
 
-import { useProfile } from "@/src/features/profile/hooks/userProfile";
+import { useProfile } from "@/src/features/profile/hooks/useProfile";
 import { useUpdateProfile } from "@/src/features/profile/hooks/useUpdateProfile";
 import { useUploadPhoto } from "@/src/features/profile/hooks/useUploadPhoto";
 import { LinearGradient } from "expo-linear-gradient";

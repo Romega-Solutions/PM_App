@@ -1,4 +1,4 @@
-import { theme, colors } from "@/src/theme";
+import { colors } from "@/src/theme";
 import { useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import React from "react";

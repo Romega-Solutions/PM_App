@@ -23,8 +23,6 @@ import {
 const { width } = Dimensions.get("window");
 
 // Brand Colors
-const BRAND_BG = "#0F0814";
-const ACCENT_PURPLE = "#8D69F6";
 const ACCENT_PINK = "#EF3E78";
 const WHITE = "#FFFFFF";
 
@@ -79,7 +77,7 @@ export const MatchModal: React.FC<MatchModalProps> = ({
           </View>
 
           {/* Match Text */}
-          <Text style={styles.matchTitle}>It's a Match!</Text>
+          <Text style={styles.matchTitle}>It&apos;s a Match!</Text>
           <Text style={styles.matchSubtitle}>
             You and {matchedProfile.first_name} liked each other
           </Text>

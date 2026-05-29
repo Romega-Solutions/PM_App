@@ -19,7 +19,6 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 // Brand Colors
 const ACCENT_PURPLE = "#8D69F6";
-const WHITE = "#FFFFFF";
 const ONLINE_GREEN = "#10B981";
 const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
 

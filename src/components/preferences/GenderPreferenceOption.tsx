@@ -12,8 +12,6 @@ interface Props {
 export default function GenderPreferenceOption({ option, selected, onSelect }: Props) {
   const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
   const ACCENT_PURPLE = theme.colors.dalisay?.[500] ?? "#8D69F6";
-  const SURFACE = "rgba(255,255,255,0.08)";
-  const SURFACE_BORDER = "rgba(141,105,246,0.25)";
   const ICON_BG = "rgba(141,105,246,0.12)";
 
   return (

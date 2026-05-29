@@ -13,7 +13,6 @@ interface Props {
 
 export default function DistanceSlider({ value, onChange, min = 10, max = 200, step = 10 }: Props) {
   const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
-  const ACCENT_PURPLE = theme.colors.dalisay?.[500] ?? "#8D69F6";
 
   return (
     <View style={styles.container}>

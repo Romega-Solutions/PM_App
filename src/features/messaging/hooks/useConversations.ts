@@ -16,7 +16,7 @@
 import type { ActiveConversation } from "@/src/stores/chatStore";
 import { useChatStore } from "@/src/stores/chatStore";
 import { useCallback, useEffect, useState } from "react";
-import { getConversationsForUser } from "../api/conversations.api";
+import { getConversationsForUser } from "../api/conversationsApi";
 import type { ConversationWithUser } from "../types/messaging.types";
 
 interface UseConversationsProps {

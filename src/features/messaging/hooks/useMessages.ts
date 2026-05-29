@@ -13,7 +13,7 @@ import {
     markConversationAsRead,
     sendImageMessage,
     sendTextMessage,
-} from "../api/messages.api";
+} from "../api/messagesApi";
 import type { Message } from "../types/messaging.types";
 
 interface UseMessagesOptions {

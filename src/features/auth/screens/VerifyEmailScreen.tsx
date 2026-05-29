@@ -396,7 +396,7 @@ export default function VerifyEmailScreen() {
                 lineHeight: 22,
               }}
             >
-              Click the verification link in your email and you'll be
+              Click the verification link in your email and you&apos;ll be
               automatically redirected back to this app to continue
             </Text>
           </View>
@@ -427,7 +427,7 @@ export default function VerifyEmailScreen() {
                   fontWeight: "600",
                 }}
               >
-                🔐 I've verified in Supabase - Sign In
+                🔐 I&apos;ve verified in Supabase - Sign In
               </Text>
             )}
           </TouchableOpacity>

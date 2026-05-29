@@ -5,9 +5,7 @@ import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
 
 // Brand Colors
-const BRAND_BG = "#0F0814";
 const TAB_BAR_BG = "#1A0F1F"; // Slightly lighter than brand bg
-const ACCENT_PURPLE = "#8D69F6";
 const ACCENT_PINK = "#EF3E78";
 const INACTIVE_TINT = "rgba(255, 255, 255, 0.5)";
 

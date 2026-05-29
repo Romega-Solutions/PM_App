@@ -8,7 +8,10 @@
  */
 
 import { useCallback, useState } from "react";
-import { uploadChatImage } from "../api/messages.api";
+import { uploadChatImage } from "../api/messagesApi";
+
+// Import supabase for auth check
+import { supabase } from "@/src/config/supabase";
 
 interface UseMessageUploadReturn {
   uploading: boolean;
@@ -89,6 +92,3 @@ export function useMessageUpload(): UseMessageUploadReturn {
     reset,
   };
 }
-
-// Import supabase for auth check
-import { supabase } from "@/src/config/supabase";

@@ -115,7 +115,7 @@ export const useAuthStore = create<AuthState>()(
               isInitialized: true,
               isLoading: false,
             });
-            console.log("✅ Session restored for:", session.user.email);
+            if (__DEV__) console.log("✅ Session restored");
           } else {
             set({
               session: null,

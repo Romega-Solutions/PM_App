@@ -255,7 +255,7 @@ export default function WelcomeCompleteScreen() {
             <View style={styles.successTextContainer}>
               <Text style={styles.successTitle}>Profile Complete!</Text>
               <Text style={styles.successSubtitle}>
-                You're all set to start connecting with amazing Filipino singles
+                You&apos;re all set to start connecting with amazing Filipino singles
                 worldwide!
               </Text>
             </View>

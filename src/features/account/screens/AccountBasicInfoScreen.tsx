@@ -120,7 +120,7 @@ export default function AccountBasicInfoScreen() {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    (Object.keys(form) as Array<keyof FormState>).forEach((field) => {
+    (Object.keys(form) as (keyof FormState)[]).forEach((field) => {
       const error = validateField(field, form[field]);
       if (error) newErrors[field] = error;
     });

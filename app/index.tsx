@@ -68,10 +68,10 @@ export default function Index() {
     );
   }
 
-  // TEMP TEST BYPASS: route testers straight into the app shell.
-  // Auth screens and Supabase auth flows are still available under /(auth).
-  // Restore this to "/(auth)/welcome" when login gates are ready to enforce.
-  return <Redirect href="/(main)" />;
+  // Auth gate. Production defaults to the welcome/auth flow. Testers can skip
+  // straight into the app shell by setting EXPO_PUBLIC_BYPASS_AUTH=true in .env.
+  const bypassAuth = process.env.EXPO_PUBLIC_BYPASS_AUTH === "true";
+  return <Redirect href={bypassAuth ? "/(main)" : "/(auth)/welcome"} />;
 }
 
 const styles = StyleSheet.create({

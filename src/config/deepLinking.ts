@@ -2,18 +2,23 @@ import * as Linking from "expo-linking";
 import { router } from "expo-router";
 import { supabase } from "./supabase";
 
+// Dev-only logger — never logs URLs, tokens, emails, IDs, or user metadata.
+const log = (...args: unknown[]) => {
+  if (__DEV__) console.log(...args);
+};
+
 export const setupDeepLinking = () => {
-  console.log("🔗 Setting up deep link handling...");
+  log("🔗 Setting up deep link handling...");
 
   Linking.getInitialURL().then((url) => {
     if (url) {
-      console.log("📲 Initial URL:", url);
+      log("📲 Initial deep link received");
       handleDeepLink(url);
     }
   });
 
   const subscription = Linking.addEventListener("url", ({ url }) => {
-    console.log("📲 Deep link received:", url);
+    log("📲 Deep link received");
     handleDeepLink(url);
   });
 
@@ -22,11 +27,7 @@ export const setupDeepLinking = () => {
 
 async function handleDeepLink(url: string) {
   try {
-    console.log("🔍 Processing deep link:", url);
-    console.log("🔍 Full URL:", url);
-    console.log("🔍 URL length:", url.length);
-    console.log("🔍 Has #:", url.includes("#"));
-    console.log("🔍 Has ?:", url.includes("?"));
+    log("🔍 Processing deep link");
 
     // ✅ CHECK FOR ERROR FIRST
     if (url.includes("error=")) {
@@ -35,10 +36,10 @@ async function handleDeepLink(url: string) {
         ? decodeURIComponent(errorMatch[1].replace(/\+/g, " "))
         : "Unknown error";
 
-      console.error("❌ Auth error in URL:", errorDesc);
+      console.error("❌ Auth error in deep link:", errorDesc);
 
       if (url.includes("otp_expired")) {
-        console.log("⏰ OTP EXPIRED - Email link has expired!");
+        log("⏰ OTP EXPIRED - Email link has expired!");
       }
 
       return; // ✅ STOP HERE
@@ -52,7 +53,7 @@ async function handleDeepLink(url: string) {
     const hasAccessToken = url.includes("access_token=");
     const hasRefreshToken = url.includes("refresh_token=");
 
-    console.log("🔍 Auth indicators:", {
+    log("🔍 Auth indicators:", {
       hasToken,
       hasType,
       hasAccessToken,
@@ -61,11 +62,7 @@ async function handleDeepLink(url: string) {
 
     // Handle email confirmation token (this comes first before access/refresh tokens)
     if (hasToken && hasType) {
-      console.log("📧 Email confirmation link detected!");
-      console.log(
-        "⚠️ NOTE: Supabase should automatically exchange this for session tokens"
-      );
-      console.log("⏳ Waiting for token exchange...");
+      log("📧 Email confirmation link detected, waiting for token exchange...");
 
       // Wait a bit for Supabase to process the token exchange
       await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -76,20 +73,18 @@ async function handleDeepLink(url: string) {
       } = await supabase.auth.getSession();
 
       if (session) {
-        console.log("✅ Session found after token exchange!");
+        log("✅ Session found after token exchange");
         await handleSessionEstablished(session);
         return;
       } else {
-        console.log(
-          "⚠️ No session after token exchange - checking URL for tokens..."
-        );
+        log("⚠️ No session after token exchange - checking URL for tokens...");
       }
     }
 
     const isAuthCallback = hasAccessToken && hasRefreshToken;
 
     if (isAuthCallback) {
-      console.log("🔐 Auth callback detected! Processing...");
+      log("🔐 Auth callback detected, processing...");
 
       try {
         let accessToken = "";
@@ -113,13 +108,13 @@ async function handleDeepLink(url: string) {
           }
         }
 
-        console.log("🔑 Tokens extracted:", {
+        log("🔑 Tokens extracted:", {
           hasAccessToken: !!accessToken,
           hasRefreshToken: !!refreshToken,
         });
 
         if (accessToken && refreshToken) {
-          console.log("🔐 Setting session...");
+          log("🔐 Setting session...");
 
           const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
@@ -132,33 +127,31 @@ async function handleDeepLink(url: string) {
           }
 
           if (data?.session) {
-            console.log("✅ Session established!");
+            log("✅ Session established");
             await handleSessionEstablished(data.session);
           }
         } else {
-          console.log("⚠️ No valid tokens in URL");
+          log("⚠️ No valid tokens in URL");
         }
-      } catch (error) {
-        console.error("❌ Error processing auth:", error);
+      } catch {
+        console.error("❌ Error processing auth deep link");
       }
     } else {
-      console.log("ℹ️ Not an auth callback");
+      log("ℹ️ Not an auth callback");
     }
-  } catch (error) {
-    console.error("❌ Deep link error:", error);
+  } catch {
+    console.error("❌ Deep link error");
   }
 }
 
 async function handleSessionEstablished(session: any) {
-  console.log("✅ Session established!");
-  console.log("👤 User ID:", session.user.id);
-  console.log("👤 Metadata:", session.user.user_metadata);
+  log("✅ Session established, resolving profile...");
 
   const metadata = session.user.user_metadata;
   const userId = session.user.id;
 
   try {
-    console.log("📦 Checking profile...");
+    log("📦 Checking profile...");
 
     const { data: existingProfile, error: fetchError } = await supabase
       .from("profiles")
@@ -167,7 +160,7 @@ async function handleSessionEstablished(session: any) {
       .single();
 
     if (fetchError && fetchError.code === "PGRST116") {
-      console.log("⚠️ Creating profile...");
+      log("⚠️ Creating profile...");
 
       const userTypeValue = metadata.user_type || "foreigner";
       const genderValue = userTypeValue === "filipina" ? "female" : "male";
@@ -180,17 +173,17 @@ async function handleSessionEstablished(session: any) {
         gender: genderValue,
       });
 
-      console.log("✅ Profile created!");
+      log("✅ Profile created");
     } else if (existingProfile) {
-      console.log("✅ Profile exists");
+      log("✅ Profile exists");
     }
-  } catch (error) {
-    console.error("❌ Profile error:", error);
+  } catch {
+    console.error("❌ Profile resolution error");
   }
 
   await new Promise((resolve) => setTimeout(resolve, 500));
 
-  console.log("🚀 Navigating...");
+  log("🚀 Navigating...");
 
   router.replace({
     pathname: "/(auth)/verification-success",

@@ -1,4 +1,8 @@
-import * as ImageManipulator from "expo-image-manipulator";
+/**
+ * ⚠️ MOCK SERVICE. `extractTextFromImage` returns canned data, not real OCR.
+ * Gate any verification UI on `IS_MOCK_OCR` until a real provider is wired in.
+ */
+export const IS_MOCK_OCR = true;
 
 export type OCRResult = {
   firstName?: string;
@@ -12,6 +16,11 @@ export type OCRResult = {
  * Replace with real OCR (Google Vision, AWS Textract, Tesseract.js on web, etc.)
  */
 export async function extractTextFromImage(uri: string): Promise<OCRResult> {
+  if (__DEV__) {
+    console.warn(
+      "[ocrService] MOCK OCR in use — returning canned data, not real extraction."
+    );
+  }
   // Simulate processing delay
   await new Promise((r) => setTimeout(r, 1500));
 
