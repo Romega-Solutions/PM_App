@@ -43,7 +43,7 @@ export default function ForgotPassword() {
         "If an account exists for this email, a reset link has been sent."
       );
       router.replace("/(auth)/signin");
-    } catch (e) {
+    } catch {
       Alert.alert("Error", "Could not start password reset. Please try again.");
     } finally {
       setSubmitting(false);

@@ -11,7 +11,6 @@ import {
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  Dimensions,
   Image,
   StatusBar,
   StyleSheet,
@@ -30,15 +29,12 @@ const SURFACE = "rgba(255,255,255,0.06)";
 const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
 const DANGER_RED = "#EF4444";
 
-const { width, height } = Dimensions.get("window");
-
 export default function VideoCallScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { userName, userAvatar, userId } = useLocalSearchParams<{
+  const { userName, userAvatar } = useLocalSearchParams<{
     userName: string;
     userAvatar: string;
-    userId: string;
   }>();
 
   const [isMuted, setIsMuted] = useState(false);

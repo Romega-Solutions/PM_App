@@ -98,11 +98,11 @@ Stores live in `src/stores/`. `authStore` uses `persist` with `partialize` (only
 
 - Client: `src/config/supabase.ts` — PKCE flow, `detectSessionInUrl: true`, AsyncStorage persistence, auto-refresh.
 - Deep linking: `src/config/deepLinking.ts` handles email-verification callbacks (token exchange → session → profile upsert → navigate). Registered in root `_layout.tsx`.
-- Schema & SQL: `supabase/migrations/` holds **manual, ad-hoc SQL scripts** (no CLI migration tooling). ⚠️ **The migration files do not match the live DB or each other** — see `docs/PINAYMATE_BACKEND_AUDIT_2026-05-30.md`. Treat `migrations/sql_existing_setup.md` (a real schema dump) as the source of truth. Live tables: `profiles`, `likes`, `passes`, `messages`, `typing_events` — **no `conversations` table** despite the app expecting one; `matches` are a flag on `likes` (`is_match`), not a table. Live `messages` uses `text`/`type`/`recipient_id` (not `content`/`message_type`/`receiver_id`).
+- Schema & SQL: `supabase/migrations/` holds **manual, ad-hoc SQL scripts** (no CLI migration tooling). ⚠️ **The migration files do not match the live DB or each other** — see `docs/audits/PINAYMATE_BACKEND_AUDIT_2026-05-30.md`. Treat `migrations/sql_existing_setup.md` (a real schema dump) as the source of truth. Live tables: `profiles`, `likes`, `passes`, `messages`, `typing_events` — **no `conversations` table** despite the app expecting one; `matches` are a flag on `likes` (`is_match`), not a table. Live `messages` uses `text`/`type`/`recipient_id` (not `content`/`message_type`/`receiver_id`).
 
 ### Matching algorithm
 
-The scoring logic is `calculateMatchScore()` in `src/features/matching/api/matchingApi.ts` (0–100 score from intent, interests, language, distance, age, activity). See `docs/SMART_MATCHING_ALGORITHM.md`.
+The scoring logic is `calculateMatchScore()` in `src/features/matching/api/matchingApi.ts` (0–100 score from intent, interests, language, distance, age, activity). See `docs/product/SMART_MATCHING_ALGORITHM.md`.
 
 ## Branding & Design System
 
@@ -120,13 +120,13 @@ Theme tokens are the **source of truth** (`src/theme/`). Prefer importing from `
 
 Use `semanticColors` (`primary`, `secondary`, `accent`, `background`, `surface`, `text`, `textSecondary`, …) in components rather than raw scale steps.
 
-**Typography** (`src/theme/typography.ts`, fonts loaded in `app/_layout.tsx`):
+**Typography** (`src/theme/typography.ts`, fonts loaded in `app/_layout.tsx`) — **2-font system** (HelloParis dropped 2026-06-01):
 
-- **HelloParis** — logo / brand display (`fontFamilies.logo`)
-- **Lora** (serif) — headers (`fontFamilies.header`)
-- **DM Sans** — body / UI (`fontFamilies.body`)
+- **Lora** (serif) — display, headers, and the text brand wordmark (`fontFamilies.header`; `fontFamilies.logo` now maps to Lora)
+- **DM Sans** — body / UI / controls (`fontFamilies.body`)
+- The primary **brand mark is the SVG/PNG logo** (`assets/logo*`), not a font.
 
-Use `textStyles` (`h1`–`h3`, `body`, `caption`, `logo`) and `fontSizes` rather than ad-hoc numbers. `spacing` and `borderRadius` come from `src/shared/utils/spacing.ts`.
+Use `textStyles` (`h1`–`h5`, `body`, `bodyLarge/Small`, `caption`, `button`, `label`, `input`, `overline`, `logo`) and `fontSizes` rather than ad-hoc numbers. `spacing` and `borderRadius` come from `src/shared/utils/spacing.ts`.
 
 > NativeWind/Tailwind theme mirrors these tokens in `tailwind.config.js` (`amihan`/`dalisay`/`luna` + font families), but the codebase styles almost entirely with `StyleSheet` + theme tokens. Reach for `className` only if extending the small existing NativeWind usage.
 
@@ -167,17 +167,25 @@ EXPO_PUBLIC_BYPASS_AUTH=true
 
 ## Known Issues & Tech Debt
 
-See `docs/PINAYMATE_AUDIT_2026-05-29.md` for the full audit and remediation log. As of the 2026-05-30 pass the gates are green: `tsc` 0 errors · `expo lint` 0 errors (31 warnings) · `jest` 36/36 · `build:web` exports `dist/`. Remaining items to be aware of:
+See `docs/audits/PINAYMATE_AUDIT_2026-05-29.md` for the full audit and remediation log. As of the 2026-06-01 pass the gates are green: `tsc` 0 errors · `expo lint` 0 errors / 0 warnings · `jest` 42/42 · `build:web` exports `dist/`. Remaining items to be aware of:
 
-0. **Backend schema drift (highest priority for end-to-end).** Migration files ≠ live DB ≠ app code. Chat/conversations and parts of profiles target columns/tables that don't exist in the live DB. See `docs/PINAYMATE_BACKEND_AUDIT_2026-05-30.md` for the full breakdown + phased roadmap (start with `supabase db pull` + `supabase gen types`).
+0. **Backend schema drift (highest priority for end-to-end).** Migration files ≠ live DB ≠ app code. Chat/conversations and parts of profiles target columns/tables that don't exist in the live DB. See `docs/audits/PINAYMATE_BACKEND_AUDIT_2026-05-30.md` for the full breakdown + phased roadmap (start with `supabase db pull` + `supabase gen types`).
 1. **Auth gate** — defaults to `/(auth)/welcome`; testers opt into the app shell with `EXPO_PUBLIC_BYPASS_AUTH=true`. Keep that env var **unset in production**.
 2. **Mock OCR** — `src/services/ocrService.ts` is still a mock (`IS_MOCK_OCR === true`); wire a real provider before shipping ID verification, and gate verification UI on that flag.
 3. **Test coverage** — only `matchingApi` + `security` are covered; auth/messaging/profile/screens still need tests.
-4. **Lint warnings** — 31 non-blocking (unused locals + intentional once-on-mount `react-hooks/exhaustive-deps`); fix case-by-case.
-5. **Docs sprawl** — 8 setup `.md` files at root + many in `docs/`; consolidation into one `docs/SETUP.md` still pending.
+4. **Lint** — clean as of 2026-06-01 (`expo lint` 0/0). The prior 31 warnings were resolved: unused locals removed (or `[, setter]` holes where only the setter is used), and genuine once-on-mount effects carry a documented `// eslint-disable-next-line react-hooks/exhaustive-deps`.
+5. **Design system** — token foundation rebuilt (2026-06-01): `src/theme/colors.ts` now exposes scheme-aware `lightColors`/`darkColors` + `getSemanticColors()`, consumed via the `useTheme()` hook; ramps filled, semantic tokens added (border/overlay/disabled/on*/textTertiary), the RN `lineHeight` bug fixed, `tailwind.config.js` re-synced, and a theme-contract test added. `userInterfaceStyle` is set to `"light"` until the component **adoption sweep** (still ~233 hex / ~300 rgba literals to migrate onto tokens) is done — then flip it back to `"automatic"` for live dark mode. See `docs/design/DESIGN_SYSTEM_AUDIT_2026-06-01.md` + `design-tokens.html`.
 
 ## Documentation Map
 
-Root setup guides: `README.md`, `SUPABASE_SETUP_INSTRUCTIONS.md`, `EMAIL_VERIFICATION_SETUP.md`, `ENABLE_EMAIL_SIGNUP.md`, `FINAL_EMAIL_FLOW_SETUP.md`, `REDIRECT_URLS_QUICK.md`, `SETUP_CHECKLIST.md`.
+All docs live under `docs/` (only `README.md` + this `CLAUDE.md` stay at the repo root). See `docs/README.md` for the full index. Folders:
 
-Deep docs in `docs/`: architecture (`APP_VS_SRC_ARCHITECTURE.md`), business logic (`businessRules.md`, `SMART_MATCHING_ALGORITHM.md`), chat (`SUPABASE_CHAT_INTEGRATION.md`, `chatUIFlow.md`), refactors (`*_REFACTORING*.md`), testing (`TESTING_GUIDE.md`, `CHAT_TESTING_GUIDE.md`), the codebase audit (`PINAYMATE_AUDIT_2026-05-29.md`), and the backend/Supabase audit (`PINAYMATE_BACKEND_AUDIT_2026-05-30.md`).
+- **`docs/setup/`** — onboarding/config guides: `SUPABASE_SETUP_INSTRUCTIONS.md`, `EMAIL_VERIFICATION_SETUP.md`, `ENABLE_EMAIL_SIGNUP.md`, `FINAL_EMAIL_FLOW_SETUP.md`, `REDIRECT_URLS_QUICK.md`, `SETUP_CHECKLIST.md`.
+- **`docs/architecture/`** — `APP_VS_SRC_ARCHITECTURE.md`, `ZUSTAND_IMPLEMENTATION.md`.
+- **`docs/design/`** — `DESIGN_SYSTEM_AUDIT_2026-06-01.md` (theme tokens, light/dark, typography) + `design-tokens.html` (interactive style guide; open in a browser — live contrast, light/dark grounds).
+- **`docs/audits/`** — `PINAYMATE_AUDIT_2026-05-29.md` (codebase), `PINAYMATE_BACKEND_AUDIT_2026-05-30.md` (Supabase), `SYSTEM_AUDIT_REPORT.md`.
+- **`docs/product/`** — `businessRules.md`, `SMART_MATCHING_ALGORITHM.md`.
+- **`docs/chat/`** — `SUPABASE_CHAT_INTEGRATION.md`, `chatUIFlow.md`, `CHAT_UPDATE.md`.
+- **`docs/testing/`** — `TESTING_GUIDE.md`, `CHAT_TESTING_GUIDE.md`, `runVerification.md`.
+- **`docs/refactoring/`** — `REFACTORING_PLAN.md`, `*_REFACTORING*.md`, refactor session/audit reports.
+- **`docs/guides/`** — `guideWithAI.md`, `QUICK_FIX.md`, `FIX_DATABASE_ERRORS.md`, `newUpdatedRules.md`.

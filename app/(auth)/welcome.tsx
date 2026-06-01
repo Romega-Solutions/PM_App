@@ -83,7 +83,7 @@ export default function Welcome() {
           {/* Messaging */}
           <View style={styles.heroTextWrap} accessible>
             <Text
-              style={[styles.heroHeading, { fontFamily: "HelloParis-Bold" }]}
+              style={[styles.heroHeading, { fontFamily: "Lora-Bold" }]}
             >
               Find Love in the{"\n"}Filipino Community
             </Text>

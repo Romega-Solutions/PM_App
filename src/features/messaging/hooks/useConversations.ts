@@ -41,8 +41,7 @@ export function useConversations({
   const [error, setError] = useState<Error | null>(null);
 
   // Global state from Zustand
-  const { activeConversations, setActiveConversations, totalUnreadCount } =
-    useChatStore();
+  const { setActiveConversations, totalUnreadCount } = useChatStore();
 
   // Use local state for conversations (feature-specific)
   const [conversations, setConversations] = useState<ConversationWithUser[]>(
@@ -95,7 +94,7 @@ export function useConversations({
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, setActiveConversations]);
 
   const refresh = useCallback(async () => {
     await loadConversations();

@@ -1,13 +1,12 @@
 export const fontFamilies = {
-  // Logo / Brand
+  // Brand wordmark. The primary mark is the SVG/PNG logo (assets/logo*); text
+  // wordmarks use the display serif (Lora). HelloParis was dropped — 2-font system.
   logo: {
-    extraLight: 'HelloParis-ExtraLight',
-    light: 'HelloParis-Light',
-    regular: 'HelloParis-Regular',
-    medium: 'HelloParis-Medium',
-    bold: 'HelloParis-Bold',
+    regular: 'Lora-Regular',
+    medium: 'Lora-Medium',
+    bold: 'Lora-Bold',
   },
-  
+
   // Headers (Lora)
   header: {
     regular: 'Lora-Regular',
@@ -19,7 +18,7 @@ export const fontFamilies = {
     bold: 'Lora-Bold',
     boldItalic: 'Lora-BoldItalic',
   },
-  
+
   // Body / UI (DM Sans)
   body: {
     thin: 'DMSans-Thin',
@@ -46,52 +45,107 @@ export const fontSizes = {
   '5xl': 48,
 } as const;
 
+/**
+ * Line-height RATIOS (relative). Do NOT pass these to a React Native `lineHeight`
+ * style — RN reads `lineHeight` as absolute points, so `1.1` collapses the line box.
+ * Use `lineHeightFor(size, ratio)` to get the absolute value (see textStyles below).
+ */
 export const lineHeights = {
   tight: 1.1,
   normal: 1.5,
   relaxed: 1.75,
 } as const;
 
-// Pre-defined text styles
+/** Convert a font size + ratio into an absolute line height (points) for RN. */
+export const lineHeightFor = (size: number, ratio: number): number => Math.round(size * ratio);
+
+// Pre-defined text styles. `lineHeight` is ABSOLUTE (points), per RN semantics.
 export const textStyles = {
   // Logo
   logo: {
     fontFamily: fontFamilies.logo.bold,
     fontSize: fontSizes['3xl'],
+    lineHeight: lineHeightFor(fontSizes['3xl'], 1.1),
     letterSpacing: 0.6,
   },
-  
+
   // Headers
   h1: {
     fontFamily: fontFamilies.header.bold,
     fontSize: fontSizes['4xl'],
-    lineHeight: lineHeights.tight,
+    lineHeight: lineHeightFor(fontSizes['4xl'], 1.1),
   },
   h2: {
     fontFamily: fontFamilies.header.semiBold,
     fontSize: fontSizes['3xl'],
-    lineHeight: lineHeights.tight,
+    lineHeight: lineHeightFor(fontSizes['3xl'], 1.15),
   },
   h3: {
     fontFamily: fontFamilies.header.semiBold,
     fontSize: fontSizes['2xl'],
-    lineHeight: lineHeights.tight,
+    lineHeight: lineHeightFor(fontSizes['2xl'], 1.2),
   },
-  
+  h4: {
+    fontFamily: fontFamilies.header.semiBold,
+    fontSize: fontSizes.xl,
+    lineHeight: lineHeightFor(fontSizes.xl, 1.25),
+  },
+  h5: {
+    fontFamily: fontFamilies.header.medium,
+    fontSize: fontSizes.lg,
+    lineHeight: lineHeightFor(fontSizes.lg, 1.3),
+  },
+
   // Body
+  bodyLarge: {
+    fontFamily: fontFamilies.body.regular,
+    fontSize: fontSizes.lg,
+    lineHeight: lineHeightFor(fontSizes.lg, 1.5),
+  },
   body: {
     fontFamily: fontFamilies.body.regular,
     fontSize: fontSizes.base,
-    lineHeight: lineHeights.normal,
+    lineHeight: lineHeightFor(fontSizes.base, 1.5),
   },
   bodyBold: {
     fontFamily: fontFamilies.body.bold,
     fontSize: fontSizes.base,
-    lineHeight: lineHeights.normal,
+    lineHeight: lineHeightFor(fontSizes.base, 1.5),
+  },
+  bodySmall: {
+    fontFamily: fontFamilies.body.regular,
+    fontSize: fontSizes.sm,
+    lineHeight: lineHeightFor(fontSizes.sm, 1.5),
   },
   caption: {
     fontFamily: fontFamilies.body.regular,
     fontSize: fontSizes.sm,
-    lineHeight: lineHeights.normal,
+    lineHeight: lineHeightFor(fontSizes.sm, 1.5),
+  },
+
+  // UI / controls
+  button: {
+    fontFamily: fontFamilies.body.semiBold,
+    fontSize: fontSizes.base,
+    lineHeight: lineHeightFor(fontSizes.base, 1.25),
+    letterSpacing: 0.3,
+  },
+  label: {
+    fontFamily: fontFamilies.body.medium,
+    fontSize: fontSizes.sm,
+    lineHeight: lineHeightFor(fontSizes.sm, 1.3),
+    letterSpacing: 0.3,
+  },
+  input: {
+    fontFamily: fontFamilies.body.regular,
+    fontSize: fontSizes.base,
+    lineHeight: lineHeightFor(fontSizes.base, 1.4),
+  },
+  overline: {
+    fontFamily: fontFamilies.body.semiBold,
+    fontSize: fontSizes.xs,
+    lineHeight: lineHeightFor(fontSizes.xs, 1.4),
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
 } as const;

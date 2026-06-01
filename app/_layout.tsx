@@ -1,6 +1,6 @@
 import { setupDeepLinking } from "@/src/config/deepLinking";
 import { useAuthPersistence } from "@/src/hooks/useAuthPersistence";
-import { semanticColors } from "@/src/theme";
+import { useTheme } from "@/src/theme";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -14,14 +14,7 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   // Font loading
   const [fontsLoaded, fontError] = useFonts({
-    // HelloParis (Logo / Display)
-    "HelloParis-ExtraLight": require("../assets/fonts/hello-paris-sans/HelloParisSans-ExtraLight.ttf"),
-    "HelloParis-Light": require("../assets/fonts/hello-paris-sans/HelloParisSans-Light.ttf"),
-    "HelloParis-Regular": require("../assets/fonts/hello-paris-sans/HelloParisSans-Regular.ttf"),
-    "HelloParis-Medium": require("../assets/fonts/hello-paris-sans/HelloParisSans-Medium.ttf"),
-    "HelloParis-Bold": require("../assets/fonts/hello-paris-sans/HelloParisSans-Bold.ttf"),
-
-    // Lora (Headers)
+    // Lora (Headers + brand wordmark)
     "Lora-Regular": require("../assets/fonts/lora/Lora-Regular.ttf"),
     "Lora-Italic": require("../assets/fonts/lora/Lora-Italic.ttf"),
     "Lora-Medium": require("../assets/fonts/lora/Lora-Medium.ttf"),
@@ -46,6 +39,9 @@ export default function RootLayout() {
   // Auth persistence (session restoration, auto-refresh)
   const { isReady: isAuthReady } = useAuthPersistence();
 
+  // Scheme-aware theme (light/dark)
+  const { colors, isDark } = useTheme();
+
   // Hide splash screen when ready
   useEffect(() => {
     if ((fontsLoaded || fontError) && isAuthReady) {
@@ -66,7 +62,7 @@ export default function RootLayout() {
       <View
         style={{
           flex: 1,
-          backgroundColor: semanticColors.background,
+          backgroundColor: colors.background,
           justifyContent: "center",
           alignItems: "center",
         }}
@@ -74,7 +70,7 @@ export default function RootLayout() {
         <ActivityIndicator size="large" color="#8D69F6" />
         <Text
           style={{
-            color: semanticColors.textSecondary,
+            color: colors.textSecondary,
             marginTop: 16,
             fontFamily: "DMSans-Regular",
           }}
@@ -86,13 +82,13 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: semanticColors.background }}>
-      <StatusBar style="dark" backgroundColor={semanticColors.background} />
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar style={isDark ? "light" : "dark"} backgroundColor={colors.background} />
       <Stack
         screenOptions={{
           headerShown: false,
           contentStyle: {
-            backgroundColor: semanticColors.background,
+            backgroundColor: colors.background,
           },
           animation: "slide_from_right",
         }}

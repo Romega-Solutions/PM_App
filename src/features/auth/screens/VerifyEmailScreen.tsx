@@ -36,7 +36,6 @@ export default function VerifyEmailScreen() {
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const [fontsLoaded] = useFonts({
-    HelloParis: require("@/assets/fonts/hello-paris-sans/HelloParisSans-Bold.ttf"),
     Lora: require("@/assets/fonts/lora/Lora-SemiBold.ttf"),
     DMSans: require("@/assets/fonts/dm-sans/DMSans-Regular.ttf"),
   });
@@ -62,6 +61,7 @@ export default function VerifyEmailScreen() {
         ]);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   }, []);
 
   const goNext = useCallback(
@@ -153,7 +153,6 @@ export default function VerifyEmailScreen() {
       console.log("🔄 Refreshing session to check verification...");
       const {
         data: { session: refreshedSession },
-        error: refreshError,
       } = await supabase.auth.refreshSession();
 
       if (refreshedSession?.user?.email_confirmed_at) {

@@ -66,7 +66,10 @@ export default function LocationScreen() {
     [setQuery]
   );
 
-  const isValid = () => selectedLocation !== "" || useCurrentLocation;
+  const isValid = useCallback(
+    () => selectedLocation !== "" || useCurrentLocation,
+    [selectedLocation, useCurrentLocation]
+  );
 
   const handleNext = useCallback(async () => {
     if (!isValid()) return;
@@ -91,7 +94,7 @@ export default function LocationScreen() {
     } finally {
       setSaving(false);
     }
-  }, [selectedLocation, useCurrentLocation, router, userType]);
+  }, [selectedLocation, useCurrentLocation, router, userType, isValid]);
 
   // Don't render if userType is invalid
   if (!userType || (userType !== "filipina" && userType !== "foreigner")) {

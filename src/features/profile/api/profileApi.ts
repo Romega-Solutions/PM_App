@@ -113,7 +113,7 @@ export async function uploadProfilePhoto(
     const fileName = `${userId}/${Date.now()}.${fileExt}`;
 
     // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from("profile-photos")
       .upload(fileName, decode(base64), {
         contentType: `image/${fileExt}`,

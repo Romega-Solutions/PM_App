@@ -338,7 +338,7 @@ export async function uploadChatImage(
     const fileName = `${conversationId}/${Date.now()}_${userId}.jpg`;
 
     // Upload to storage
-    const { data, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from("chat-images")
       .upload(fileName, blob, {
         contentType: "image/jpeg",

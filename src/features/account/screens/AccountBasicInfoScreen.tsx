@@ -66,6 +66,7 @@ export default function AccountBasicInfoScreen() {
         setForm((prev) => ({ ...prev, firstName: storedData.firstName }));
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   }, []);
 
   useEffect(() => {
@@ -73,7 +74,7 @@ export default function AccountBasicInfoScreen() {
       Alert.alert("Error", "User type not found. Please start from signup.");
       router.replace("/(auth)/user-type-selection");
     }
-  }, [userType]);
+  }, [userType, router]);
 
   const getUserTypeLabel = (): string => {
     if (userType === "filipina") return "Filipina";

@@ -88,7 +88,7 @@ export const ProfileScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Zustand store
-  const { profile, setProfile, clearProfile } = useProfileStore();
+  const { setProfile, clearProfile } = useProfileStore();
 
   // Fetch profile data on mount
   useEffect(() => {

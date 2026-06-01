@@ -57,7 +57,7 @@ supabase gen types typescript --linked > src/types/database.ts
 
 The app's `src/features/*/api/*` currently targets the legacy column names and an
 ad-hoc conversation model. After applying this schema, run `supabase gen types`
-and reconcile the app to it (see `docs/PINAYMATE_BACKEND_AUDIT_2026-05-30.md`,
+and reconcile the app to it (see `docs/audits/PINAYMATE_BACKEND_AUDIT_2026-05-30.md`,
 Phases 1–2). Notable changes the app must adopt:
 
 - profiles: `interested_in`/`age_min`/`age_max`/`max_distance_km` now live on

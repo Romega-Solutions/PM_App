@@ -70,6 +70,7 @@ export function useAuthPersistence() {
     return () => {
       mounted = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   }, []);
 
   // Listen to Supabase auth changes

@@ -81,7 +81,7 @@ export const DiscoverScreen: React.FC = () => {
   // State
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showInfo, setShowInfo] = useState(false);
-  const [userType, setUserType] = useState<UserType | null>(null);
+  const [, setUserType] = useState<UserType | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<ProfileCardData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,6 +114,7 @@ export const DiscoverScreen: React.FC = () => {
     if (profiles.length - currentIndex <= 2) {
       loadMoreProfiles();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadMoreProfiles is re-created each render; trigger only on index/length
   }, [currentIndex, profiles.length]);
 
   /**
@@ -387,7 +388,7 @@ const styles = StyleSheet.create({
   },
   logoText: {
     fontSize: 28,
-    fontFamily: "HelloParisSans",
+    fontFamily: "Lora-Bold",
     color: WHITE,
     letterSpacing: 1,
   },

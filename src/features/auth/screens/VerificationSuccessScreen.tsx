@@ -17,12 +17,11 @@ export default function VerificationSuccessScreen() {
 
   const getSignupData = useSignupStore((state) => state.getSignupData);
 
-  const [userType, setUserType] = useState(params.userType);
-  const [firstName, setFirstName] = useState(params.firstName);
+  const [, setUserType] = useState(params.userType);
+  const [, setFirstName] = useState(params.firstName);
   const [isChecking, setIsChecking] = useState(true);
 
   const [fontsLoaded] = useFonts({
-    HelloParis: require("@/assets/fonts/hello-paris-sans/HelloParisSans-Bold.ttf"),
     Lora: require("@/assets/fonts/lora/Lora-SemiBold.ttf"),
     DMSans: require("@/assets/fonts/dm-sans/DMSans-Regular.ttf"),
   });
@@ -249,6 +248,7 @@ export default function VerificationSuccessScreen() {
     };
 
     loadDataAndEnsureProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   }, []);
 
   const goNext = useCallback(() => {

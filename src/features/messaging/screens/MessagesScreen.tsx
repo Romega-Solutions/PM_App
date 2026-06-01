@@ -29,7 +29,6 @@ import {
 import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
-    Dimensions,
     Platform,
     ScrollView,
     StatusBar,
@@ -46,8 +45,6 @@ import { useConversations } from "@/src/features/messaging/hooks/useConversation
 import { useChatStore } from "@/src/stores/chatStore";
 import { ActiveUserCard } from "../components/ActiveUserCard";
 import { ConversationCard } from "../components/ConversationCard";
-
-const { width } = Dimensions.get("window");
 
 // Brand Colors
 const BRAND_BG = "#0F0814";
@@ -69,9 +66,7 @@ export const MessagesScreen: React.FC = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string>("");
-  const [filterType, setFilterType] = useState<"all" | "unread" | "online">(
-    "all",
-  );
+  const [, setFilterType] = useState<"all" | "unread" | "online">("all");
 
   // Get global unread count from Zustand store
   const totalUnreadCount = useChatStore((state) => state.totalUnreadCount);

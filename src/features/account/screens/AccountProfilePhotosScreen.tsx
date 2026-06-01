@@ -30,7 +30,6 @@ export default function AccountProfilePhotosScreen() {
     loading,
     loadingInitial,
     pickFromGallery,
-    takePhoto,
     uploadPhoto,
     removePhoto,
   } = useProfilePhotos();

@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light" data-platform="ios">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PinayMate — Design Tokens · Color System</title>
+<link rel="icon" type="image/svg+xml" href="../../assets/logo-no-bg.svg" />
+<!--
+  PinayMate (PM_App) design-system style guide. Companion to:
+    docs/design/DESIGN_SYSTEM_AUDIT_2026-06-01.md
+  Source of truth (React Native / Expo — NOT Flutter/Material):
+    src/theme/colors.ts        → colors{} + lightColors / darkColors + getSemanticColors()
+    src/theme/typography.ts     → fontFamilies, fontSizes, lineHeights, lineHeightFor, textStyles
+    src/theme/useTheme.ts       → scheme-aware hook (useColorScheme → palette)
+    src/shared/utils/spacing.ts → spacing, borderRadius
+    src/theme/iconSizes.ts      → iconSizes
+    tailwind.config.js          → NativeWind mirror (kept in sync with colors.ts)
+    assets/logo.svg             → brand wordmark
+  LIGHT = current shipping theme. DARK = implemented in code (lightColors /
+          darkColors + useTheme(), verified by src/theme/__tests__/theme.test.ts)
+          but NOT yet live in-app: userInterfaceStyle is "light" and components
+          still hold color literals. It switches on after the adoption sweep.
+  Every value below mirrors colors.ts exactly. Contrast computed live (WCAG 2.x).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap" rel="stylesheet" />
+<style>
+  /* 2-font system: Lora (display/headers) + DM Sans (body/UI). The brand mark is the SVG logo. */
+
+  /* ── Theme grounds (mirror lightColors / darkColors) ── */
+  html[data-theme="light"]{
+    --bg:#FFFFFF; --surface:#FAF9FB; --raised:#F2F1F4; --border:#ECEBF0; --borderStrong:#6A6A72;
+    --text1:#1A1A1A; --text2:#6A6A72; --text3:#84828C;
+    --action:#EF3E78; --actionInk:#B31460; --secondary:#8D69F6; --onAction:#FFFFFF; --actionBg:#F6D0F1; --actionTx:#B31460;
+  }
+  html[data-theme="dark"]{
+    --bg:#141019; --surface:#1E1A26; --raised:#2A2533; --border:#383143; --borderStrong:#574F63;
+    --text1:#FAF9FB; --text2:#B8B4C0; --text3:#8C8796;
+    --action:#EF3E78; --actionInk:#F090C6; --secondary:#8D69F6; --onAction:#FFFFFF; --actionBg:#2A0E1E; --actionTx:#F6D0F1;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text1);
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif; font-size: 16px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased; transition: background .25s ease, color .25s ease;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; color: var(--actionTx); background: var(--actionBg); padding: 2px 6px; border-radius: 4px; }
+
+  /* ── Top bar ── */
+  header.bar { position: sticky; top: 0; z-index: 50; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+  .bar .wrap { display: flex; align-items: center; gap: 12px; height: 64px; }
+  .bar .mark { width: 30px; height: 30px; display: block; }
+  .bar .title { font-family: 'Lora', serif; letter-spacing: 0.5px; font-weight: 700; font-size: 19px; color: var(--text1); }
+  .bar .title span { color: var(--actionInk); }
+  .gated { font-family: 'DM Sans', sans-serif; text-transform: uppercase; letter-spacing: 1px; font-size: 10px; font-weight: 700; color: var(--onAction); background: var(--action); padding: 3px 8px; border-radius: 999px; display: none; }
+  html[data-theme="dark"] .gated { display: inline-block; }
+  /* ── Platform switcher (iOS / Android / Web) ── */
+  .platsel { display: inline-flex; border: 1px solid var(--borderStrong); border-radius: 999px; overflow: hidden; }
+  .platsel button { background: transparent; color: var(--text2); border: none; padding: 7px 11px; font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 12px; cursor: pointer; transition: background .15s ease, color .15s ease; }
+  .platsel button.on { background: var(--action); color: var(--onAction); }
+  /* Flat solid CTA on every platform; only the depth treatment changes */
+  html[data-platform="ios"] .cta { box-shadow: 0 4px 14px -4px rgba(0,0,0,.30); }
+  html[data-platform="android"] .cta { box-shadow: 0 1px 2px rgba(0,0,0,.30), 0 2px 6px rgba(0,0,0,.18); }
+  html[data-platform="web"] .cta { box-shadow: none; }
+  html[data-platform="web"] .cta:hover { background: var(--actionInk); }
+  /* Active-platform adaptation panel */
+  .platpanel { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin-top: 4px; }
+  .platpanel .pcell { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .platpanel .pk { font-family: 'DM Sans', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--text3); font-weight: 700; }
+  .platpanel .pv { font-size: 13px; color: var(--text1); margin-top: 3px; }
+  /* Respect reduced-motion (WCAG / both stores) */
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+  }
+  .toggle { margin-left: auto; background: var(--surface); color: var(--text1); border: 1px solid var(--borderStrong); border-radius: 999px; padding: 8px 16px; font-family: 'DM Sans', sans-serif; letter-spacing: .3px; font-weight: 600; font-size: 12px; cursor: pointer; transition: background .15s ease; }
+  .toggle:hover { background: var(--raised); }
+  nav.toc { display: flex; gap: 2px; flex-wrap: wrap; }
+  nav.toc a { font-family: 'DM Sans', sans-serif; letter-spacing: .3px; font-size: 13px; font-weight: 600; color: var(--text2); text-decoration: none; padding: 6px 10px; border-radius: 8px; transition: color .15s ease, background .15s ease; }
+  nav.toc a:hover { color: var(--text1); background: var(--surface); }
+
+  /* ── Hero ── */
+  .hero { padding: 52px 0 36px; }
+  .eyebrow { font-family: 'DM Sans', sans-serif; text-transform: uppercase; letter-spacing: 1.4px; font-size: 11px; font-weight: 700; color: var(--actionInk); margin: 0 0 12px; }
+  h1.display { font-family: 'Lora', serif; font-weight: 700; font-size: 42px; line-height: 1.12; margin: 0 0 14px; letter-spacing: -0.5px; }
+  h1.display span { color: var(--actionInk); }
+  .hero p { color: var(--text2); max-width: 72ch; margin: 0; font-size: 15px; }
+  .rule { height: 4px; width: 120px; background: var(--action); border-radius: 4px; margin: 18px 0 0; }
+
+  /* ── Cards / sections ── */
+  section { padding: 40px 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+  h2 { font-family: 'Lora', serif; font-weight: 700; font-size: 22px; letter-spacing: -0.2px; margin: 0 0 4px; border-left: 4px solid var(--action); padding-left: 12px; }
+  .desc { font-size: 13px; color: var(--text2); margin: 0 0 18px; padding-left: 16px; line-height: 1.55; }
+  .src { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--text3); padding-left: 16px; display: block; margin: -10px 0 16px; }
+
+  /* ── Ramp grid ── */
+  .ramp { display: grid; grid-template-columns: repeat(11, 1fr); gap: 6px; }
+  .sw { border-radius: 8px; height: 60px; border: 1px solid rgba(128,128,128,.18); }
+  .sw.gap { background: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(128,128,128,.16) 5px, rgba(128,128,128,.16) 10px); border-style: dashed; }
+  .lab { margin-top: 5px; font-size: 10px; line-height: 1.35; }
+  .lab .step { font-weight: 700; color: var(--text1); }
+  .lab .hex { font-family: ui-monospace, Menlo, monospace; color: var(--text3); font-size: 9.5px; }
+  .lab .role { color: var(--actionInk); font-weight: 600; font-size: 9.5px; margin-top: 1px; }
+  .lab .gaplab { color: var(--text3); font-size: 9.5px; font-style: italic; }
+  .ratio { font-size: 11px; color: var(--text2); margin: 8px 0 0; padding-left: 0; }
+  .ratio b { color: var(--text1); font-weight: 600; }
+  .ok { color: #16A34A; font-weight: 600; } .warnc { color: #B45309; font-weight: 600; } .fail { color: #DC2626; font-weight: 600; }
+  html[data-theme="dark"] .ok{color:#4ADE80;} html[data-theme="dark"] .warnc{color:#FBBF24;} html[data-theme="dark"] .fail{color:#F87171;}
+
+  /* ── Extended steps (added in rebuild) ── */
+  .customrow { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px; }
+  .custom { width: 200px; }
+  .custom .b { height: 56px; border-radius: 8px; border: 1px solid rgba(128,128,128,.18); }
+  .custom .star { color: var(--actionInk); font-weight: 700; }
+
+  /* ── Surfaces ── */
+  .surfaces { display: flex; gap: 16px; flex-wrap: wrap; }
+  .surfbox { width: 150px; }
+  .surfbox .b { height: 76px; border-radius: 12px; border: 1px solid var(--border); }
+
+  /* ── Chips / in use ── */
+  .chips { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: 999px; font-family: 'DM Sans', sans-serif; letter-spacing: .3px; font-size: 12px; font-weight: 600; }
+  .chip .cdot { width: 8px; height: 8px; border-radius: 50%; }
+  .chip .r { opacity: .7; font-weight: 500; }
+  .cta { margin-left: auto; background: var(--action); color: var(--onAction); border: none; border-radius: 12px; padding: 13px 22px; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: .6px; cursor: pointer; transition: background .15s ease, box-shadow .15s ease; }
+
+  /* ── Logo ── */
+  .logo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .logo-tile { border-radius: 12px; border: 1px solid var(--border); padding: 28px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .logo-tile img { height: 64px; }
+  .logo-tile .cap { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--text3); text-align: center; }
+  .brand-sizes { display: flex; align-items: flex-end; gap: 24px; flex-wrap: wrap; margin-top: 6px; }
+  .size-cell { text-align: center; }
+  .size-cell .nm { font-family: 'DM Sans', sans-serif; letter-spacing: .3px; font-size: 12px; font-weight: 600; margin-top: 10px; color: var(--text1); }
+  .size-cell .px { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* ── Standards ── */
+  .std-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+  .std-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+  .std-card.warn { border-color: color-mix(in srgb, #F59E0B 50%, var(--border)); }
+  .std-card .big { font-family: 'Lora', serif; font-weight: 700; font-size: 28px; color: var(--actionInk); line-height: 1; }
+  .std-card .big.flag { color: #D97706; }
+  .std-card .nm { font-family: 'DM Sans', sans-serif; letter-spacing: .3px; font-weight: 700; font-size: 13px; color: var(--text1); margin: 9px 0 5px; }
+  .std-card .d { font-size: 12px; color: var(--text2); line-height: 1.45; }
+  .std-card .ref { font-family: ui-monospace, Menlo, monospace; font-size: 10px; color: var(--text3); margin-top: 7px; }
+  table.map { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  table.map th, table.map td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  table.map th { font-family: 'DM Sans', sans-serif; text-transform: uppercase; letter-spacing: .6px; font-size: 11px; color: var(--text2); font-weight: 700; }
+  table.map td.role { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--text1); }
+  table.map td.tok { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  table.map .dot { width: 18px; height: 18px; border-radius: 5px; border: 1px solid var(--border); }
+  table.map td.note { color: var(--text2); font-size: 12px; }
+  .pp { color: var(--actionInk); font-weight: 700; }
+
+  /* ── Type ── */
+  .type-row { display: grid; grid-template-columns: 210px 1fr; gap: 22px; align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .type-row:last-child { border-bottom: none; }
+  .type-meta { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--text3); line-height: 1.6; }
+  .type-meta b { color: var(--text2); font-family: 'DM Sans', sans-serif; font-weight: 700; display: block; font-size: 12px; }
+  .specimen { color: var(--text1); }
+
+  /* ── Icons ── */
+  .icons { display: flex; flex-wrap: wrap; gap: 26px; align-items: flex-end; }
+  .icon-cell { text-align: center; }
+  .icon-box { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; width: 68px; height: 68px; color: var(--action); }
+  .icon-cell .nm { font-family: 'DM Sans', sans-serif; letter-spacing: .3px; font-size: 12px; font-weight: 600; margin-top: 9px; color: var(--text1); }
+  .icon-cell .dp { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--text3); }
+  .icon-cell .use { font-size: 11px; color: var(--text2); max-width: 110px; margin: 5px auto 0; line-height: 1.35; }
+
+  /* ── Spacing / radius ── */
+  .scale-list { display: flex; flex-direction: column; gap: 11px; }
+  .scale-row { display: grid; grid-template-columns: 150px 70px 1fr; align-items: center; gap: 14px; }
+  .scale-row .nm { font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: var(--text1); }
+  .scale-row .val { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--text3); }
+  .bar-fill { height: 16px; background: var(--action); border-radius: 4px; }
+  .radii { display: flex; gap: 18px; flex-wrap: wrap; }
+  .radius-cell { text-align: center; }
+  .radius-demo { width: 80px; height: 80px; background: var(--raised); border: 1px solid var(--borderStrong); }
+  .radius-cell .nm { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--text1); margin-top: 8px; }
+  .radius-cell .val { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--text3); }
+
+  .note { background: var(--bg); border-left: 4px solid var(--action); border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 16px 0 0; font-size: 13px; color: var(--text2); }
+  .note b { color: var(--text1); }
+  .note.bug { border-left-color: #D97706; }
+  footer { padding: 32px 0 56px; color: var(--text3); font-size: 11px; font-family: ui-monospace, Menlo, monospace; line-height: 1.7; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ── Top bar ── -->
+<header class="bar">
+  <div class="wrap">
+    <img class="mark" src="../../assets/logo-no-bg.svg" alt="PinayMate" />
+    <span class="title">Pinay<span>Mate</span> Tokens</span>
+    <span class="gated">Dark · token-ready</span>
+    <span class="platsel" id="platsel" style="margin-left:auto">
+      <button data-p="ios" onclick="setPlatform('ios')">iOS</button>
+      <button data-p="android" onclick="setPlatform('android')">Android</button>
+      <button data-p="web" onclick="setPlatform('web')">Web</button>
+    </span>
+    <button class="toggle" onclick="toggleTheme()" style="margin-left:12px">◐ <span id="tg-label">Dark</span></button>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- ── Hero ── -->
+  <div class="hero">
+    <p class="eyebrow">PinayMate Design System</p>
+    <h1 class="display">Color <span>System</span> &amp; Tokens</h1>
+    <p>Primitive → semantic tokens, pulled from <code>src/theme/</code>. Complete brand ramps (amihan / dalisay / luna,
+    50→950) + neutral, each promoted step tagged to its semantic role; status families are intentionally compact. Brand
+    mark, platform standards (Material&nbsp;3 + Apple&nbsp;HIG), typography (Lora + DM&nbsp;Sans — 2-font system), icon sizes, spacing &amp; radii.
+    <b>Light is the shipping theme; dark is implemented in code</b> (<code>lightColors</code>/<code>darkColors</code>
+    + <code>useTheme()</code>, verified by tests) but not yet live in-app — it switches on once components adopt the
+    tokens and <code>userInterfaceStyle</code> flips to <code>automatic</code>. Contrast computed live (WCAG&nbsp;2.x).</p>
+    <div class="rule"></div>
+    <nav class="toc" style="margin-top:22px">
+      <a href="#brand">Brand</a><a href="#color">Color</a><a href="#standards">Standards</a>
+      <a href="#type">Type</a><a href="#icons">Icons</a><a href="#spacing">Spacing</a>
+      <a href="#radius">Radius</a>
+    </nav>
+  </div>
+
+  <!-- ── Brand icon ── -->
+  <section id="brand">
+    <div class="card">
+      <h2>Brand Mark</h2>
+      <span class="src">assets/logo.svg · assets/logo-no-bg.svg</span>
+      <p class="desc">The PinayMate wordmark, set in the primary <b>amihan</b> pink (<code>#EF3E78</code>). Single-file
+      vector; the no-background variant sits on any neutral ground. Use the supplied PNGs for launcher/splash/favicon.</p>
+      <div class="logo-grid">
+        <div class="logo-tile" style="background:var(--bg)"><img src="../../assets/logo-no-bg.svg" alt="logo"><span class="cap">On background</span></div>
+        <div class="logo-tile" style="background:var(--surface)"><img src="../../assets/logo-no-bg.svg" alt="logo"><span class="cap">On surface · card</span></div>
+        <div class="logo-tile" style="background:var(--raised)"><img src="../../assets/logo-no-bg.svg" alt="logo"><span class="cap">On raised</span></div>
+      </div>
+      <div class="brand-sizes" id="brand-sizes"></div>
+      <div class="note"><b>One fill, the brand pink.</b> Don't recolor the mark per theme — it reads on both light and dark grounds. App icon / splash live in <code>assets/images/</code> (<code>icon.png</code>, <code>splash-icon.png</code>, adaptive set).</div>
+    </div>
+  </section>
+
+  <!-- ── Color system ── -->
+  <section id="color">
+    <div id="color-body"></div>
+  </section>
+
+  <!-- ── Standards ── -->
+  <section id="standards">
+    <div class="card">
+      <h2>Platform Standards — Material 3 (Android) · Apple HIG (iOS)</h2>
+      <span class="src">the global phone standards both stores audit against — measured against PinayMate's real setup</span>
+      <p class="desc">PinayMate ships to iOS &amp; Android, so the token system targets <b>both</b> rulebooks at once. Each card shows
+      the iOS (Apple Human Interface Guidelines) value, the Android (Material 3) value, and what PinayMate actually does.
+      ✓ = meets both · ◐ = built, not yet live · ⚠ = best-practice gap.</p>
+      <h2 style="margin:18px 0 4px;font-size:16px">Active platform — <span id="plat-name" class="pp">iOS</span> <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--text3);font-weight:400">(switch top-right)</span></h2>
+      <p class="desc">How the <b>same tokens</b> adapt for the selected target. One source of truth, three lenses — the CTA below also re-renders its depth treatment.</p>
+      <div class="platpanel" id="active-platform"></div>
+      <h2 style="margin:24px 0 4px;font-size:16px">Cross-platform comparison</h2>
+      <div class="std-grid">
+        <div class="std-card"><div class="big">48<span style="font-size:15px">dp</span></div><div class="nm">Touch target</div><div class="d">iOS&nbsp;HIG <b>44pt</b> · Material <b>48dp</b>. PrimaryButton is <b>56pt</b> ✓ — clears both. Use 48 as the floor for every control.</div><div class="ref">PrimaryButton.tsx · h56</div></div>
+        <div class="std-card"><div class="big">8<span style="font-size:15px">pt</span></div><div class="nm">Spacing grid ✓</div><div class="d">iOS 8pt rhythm · Material 4/8dp grid. <code>spacing</code> is a 4dp base (xs4 → xxxl64) — multiples of 4/8.</div><div class="ref">spacing.ts</div></div>
+        <div class="std-card"><div class="big">16<span style="font-size:15px">px</span></div><div class="nm">Min body size ✓</div><div class="d">Both reference 16 for body; below it iOS browsers zoom. <code>bodyLarge</code> 16. Dynamic Type / font-scaling on by default.</div><div class="ref">typography.ts</div></div>
+        <div class="std-card"><div class="big">4.5<span style="font-size:15px">:1</span></div><div class="nm">Contrast ✓</div><div class="d">WCAG AA — the bar both platforms cite (text 4.5:1 · UI/non-text 3:1). Guarded by a test for light <b>and</b> dark.</div><div class="ref">__tests__/theme.test.ts</div></div>
+        <div class="std-card"><div class="big">✓</div><div class="nm">Safe areas</div><div class="d">Notch / Dynamic Island / home indicator (iOS) &amp; status/nav insets (Android) handled via <code>react-native-safe-area-context</code>.</div><div class="ref">safe-area-context 5.6</div></div>
+        <div class="std-card"><div class="big">◐</div><div class="nm">Dark appearance</div><div class="d">Expected since iOS 13 / Android 10. Tokens + <code>useTheme()</code> ready; switches on after adoption (<code>userInterfaceStyle</code>→<code>automatic</code>).</div><div class="ref">useTheme.ts</div></div>
+        <div class="std-card warn"><div class="big flag">⚠</div><div class="nm">Min-touch token</div><div class="d">No <code>minTouch</code> token / <code>hitSlop</code> yet — small icon/text buttons aren't guaranteed 44–48. Add <code>minTouch: 48</code> and apply to all pressables.</div><div class="ref">recommended</div></div>
+        <div class="std-card"><div class="big">≤16<span style="font-size:15px">dp</span></div><div class="nm">Corner radius</div><div class="d">Both platforms favour soft corners; pills for primary actions. <code>borderRadius</code> sm4 → xl16 + <code>full</code> (pill) — PrimaryButton is a 28 pill.</div><div class="ref">spacing.ts · borderRadius</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Rebuild Status &amp; Token Map</h2>
+      <span class="src">src/theme/* · app.json · companion: DESIGN_SYSTEM_AUDIT_2026-06-01.md</span>
+      <p class="desc">Status after the 2026-06-01 token rebuild. ✓ = done (in code) · ◐ = built, not yet live · ⚠ = remaining.</p>
+      <div class="std-grid">
+        <div class="std-card"><div class="big">16<span style="font-size:15px">px</span></div><div class="nm">Body floor ✓</div><div class="d"><code>bodyLarge</code> 16 · <code>caption</code> 14. Anchors the type ramp at the mobile minimum.</div><div class="ref">typography.ts → textStyles</div></div>
+        <div class="std-card"><div class="big">4.5<span style="font-size:15px">:1</span></div><div class="nm">Contrast — guarded ✓</div><div class="d">4.5:1 text · 3:1 large/UI &amp; borders. Locked by a contrast test for both themes.</div><div class="ref">__tests__/theme.test.ts</div></div>
+        <div class="std-card"><div class="big" style="color:#16A34A">✓</div><div class="nm">lineHeight — fixed</div><div class="d"><code>textStyles</code> now use <code>lineHeightFor(size, ratio)</code> → absolute points. No more collapsed lines.</div><div class="ref">audit C2 ✓</div></div>
+        <div class="std-card"><div class="big">◐</div><div class="nm">Dark — token-ready</div><div class="d"><code>lightColors</code>/<code>darkColors</code> + <code>useTheme()</code> shipped &amp; tested. Goes live after adoption (<code>userInterfaceStyle</code>→<code>automatic</code>).</div><div class="ref">audit C1 ◐</div></div>
+        <div class="std-card warn"><div class="big flag">⚠</div><div class="nm">Tokens bypassed</div><div class="d">~233 hex + ~300 rgba literals still in components — the adoption sweep is the next step.</div><div class="ref">audit C3</div></div>
+        <div class="std-card"><div class="big" style="color:#16A34A">✓</div><div class="nm">One source — synced</div><div class="d"><code>tailwind.config.js</code> re-synced to <code>colors.ts</code> (incl. <code>neutral.black</code> + new steps).</div><div class="ref">audit M3 ✓</div></div>
+      </div>
+      <h2 style="margin-top:28px">Semantic token map</h2>
+      <p class="desc">Role → light token → dark token. Both are now in <code>colors.ts</code>
+      (<code>lightColors</code> / <code>darkColors</code>); every value is exact.</p>
+      <table class="map" id="scheme-map"></table>
+    </div>
+  </section>
+
+  <!-- ── Typography ── -->
+  <section id="type">
+    <div class="card">
+      <h2>Typography — Lora + DM Sans (2-font system)</h2>
+      <span class="src">src/theme/typography.ts (fontFamilies, fontSizes, textStyles) · fonts loaded in app/_layout.tsx</span>
+      <p class="desc"><b>Lora</b> (serif) — display, headers <code>h1–h5</code>, and the text brand wordmark.
+      <b>DM&nbsp;Sans</b> — body, UI, captions, controls. The primary brand mark is the <b>SVG logo</b>, not a font
+      (HelloParis was dropped to keep a clean two-typeface system). Sizes are fixed logical px from <code>fontSizes</code>;
+      role names are the <code>textStyles</code> keys.</p>
+      <div class="note"><b>✓ lineHeight fixed.</b> <code>textStyles</code> now use <code>lineHeightFor(size, ratio)</code> → absolute points (shown in px above), the React&nbsp;Native-correct unit. The old unitless ratios that collapsed multi-line text are gone (audit C2 resolved).</div>
+      <div id="type-list" style="margin-top:8px"></div>
+    </div>
+  </section>
+
+  <!-- ── Icons ── -->
+  <section id="icons">
+    <div class="card">
+      <h2>Icon Sizes</h2>
+      <span class="src">src/theme/iconSizes.ts · glyphs: lucide-react-native</span>
+      <p class="desc">Glyphs come from <b>lucide-react-native</b> (SVG), sized by the <code>iconSizes</code> token (added in the rebuild,
+      mirrors <code>fontSizes</code>). Default UI / tab bar = <code>base</code> (24).</p>
+      <div class="icons" id="icon-list"></div>
+      <div class="note"><b>✓ Tokenized.</b> Import <code>iconSizes</code> from <code>@/src/theme</code> so icon scale is consistent instead of hand-set per component.</div>
+    </div>
+  </section>
+
+  <!-- ── Spacing ── -->
+  <section id="spacing">
+    <div class="card">
+      <h2>Spacing — 4dp grid</h2>
+      <span class="src">src/shared/utils/spacing.ts (spacing)</span>
+      <p class="desc">Seven tokens, 4dp base. Need 12? Round to <code>sm</code>(8) or <code>md</code>(16) — don't invent half-steps.</p>
+      <div class="scale-list" id="spacing-list"></div>
+    </div>
+  </section>
+
+  <!-- ── Radius ── -->
+  <section id="radius">
+    <div class="card">
+      <h2>Radius</h2>
+      <span class="src">src/shared/utils/spacing.ts (borderRadius)</span>
+      <p class="desc">Soft, friendly corners — <code>sm</code>4 · <code>md</code>8 · <code>lg</code>12 · <code>xl</code>16 · <code>full</code>9999 (pill). Cards use <code>lg</code>–<code>xl</code>; chips/avatars use <code>full</code>.</p>
+      <div class="radii" id="radius-list"></div>
+    </div>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+/* ── WCAG contrast (computed live) ── */
+function s2l(c){c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);}
+function lum(h){h=h.replace('#','');const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return 0.2126*s2l(r)+0.7152*s2l(g)+0.0722*s2l(b);}
+function cr(f,b){const a=lum(f),c=lum(b);const hi=Math.max(a,c),lo=Math.min(a,c);return (hi+0.05)/(lo+0.05);}
+function tag(r){const v=r.toFixed(2);if(r>=4.5)return `<span class="ok">${v}:1 ✓AA</span>`;if(r>=3)return `<span class="warnc">${v}:1 ✓UI</span>`;return `<span class="fail">${v}:1 ✗</span>`;}
+
+/* ── PinayMate ramps (src/theme/colors.ts — filled in the 2026-06-01 rebuild) ── */
+const AMIHAN ={50:'#FFF7FB',100:'#F6D0F1',200:'#F0B6DF',300:'#E1ABDA',400:'#F090C6',500:'#EF3E78',600:'#D7346B',700:'#B31460',800:'#7A0E45',900:'#4D0034',950:'#33001F'};
+const DALISAY={50:'#F8F5FF',100:'#E3DCF9',200:'#C5B1E4',300:'#B085F6',400:'#A47CF2',500:'#8D69F6',600:'#6F4EF0',700:'#5A3BAF',800:'#46307F',900:'#2E1E5A',950:'#340839'};
+const LUNA   ={50:'#F4F8FF',100:'#C0D2F4',200:'#A0BAEE',300:'#81A5E9',400:'#6D90EA',500:'#5C83E9',600:'#3F6FE4',700:'#1C4EBE',800:'#143A9E',900:'#0B2D8E',950:'#061C57'};
+const NEUTRAL={50:'#FAF9FB',100:'#F2F1F4',200:'#ECEBF0',300:'#E7E6EB',400:'#C9C7CF',500:'#84828C',600:'#6A6A72',700:'#48474E',800:'#2A2A30',900:'#1A1A1A',950:'#0C0C0E'}; // + white/black
+// Status families are deliberately sparse (tint · dark-ink · solid · light-ink) — rendered compact, no gaps.
+const SUCCESS={100:'#E7F6EF',300:'#6FE0B0',600:'#22A574',700:'#15724F'};
+const WARNING={100:'#FFF6E5',300:'#FCD34D',600:'#F59E0B',700:'#B45309'};
+const ERROR  ={100:'#FDE8EC',300:'#F26B86',600:'#D52C4D',700:'#A81D3A'};
+const STEPS=[50,100,200,300,400,500,600,700,800,900,950];
+const STATUS_STEPS=[100,300,600,700];
+
+/* ── Promoted-step role maps (semantic tokens that reference each step) ── */
+const ROLES = {
+  amihan:{100:'primaryLight',500:'primary',700:'primaryDark · ink',800:'(dark) primaryLight'},
+  dalisay:{100:'secondaryLight',500:'secondary',700:'secondaryDark · ink'},
+  luna:{300:'(dark) accentInk',500:'accent',700:'accentInk'},
+  neutral:{50:'surface',100:'raised',200:'border',400:'disabledText',500:'borderStrong · text3',600:'textSecondary',900:'text'},
+  success:{100:'successBg',300:'(dark) ink',600:'success',700:'(light) ink'},
+  warning:{100:'warningBg',300:'(dark) ink',600:'warning',700:'(light) ink'},
+  error:{100:'errorBg',300:'(dark) ink',600:'error',700:'(light) ink'},
+};
+
+/* ── Steps added in the 2026-06-01 rebuild (now in colors.ts) ── */
+const EXTENDED = [
+  ['neutral.400','#C9C7CF','light disabled / soft edge'],
+  ['neutral.500','#84828C','borderStrong · textTertiary (≥3:1)'],
+  ['neutral.700','#48474E','dark border step'],
+  ['neutral.800','#2A2A30','dark surface step'],
+  ['amihan.800','#7A0E45','fills pink ramp'],
+  ['dalisay.800','#46307F','fills purple ramp'],
+  ['luna.800','#143A9E','fills blue ramp'],
+];
+
+/* ── Theme grounds — exact from lightColors / darkColors ── */
+const T = {
+  light:{bg:'#FFFFFF',surface:'#FAF9FB',raised:'#F2F1F4',border:'#ECEBF0',borderStrong:'#84828C',text1:'#1A1A1A',text2:'#6A6A72',text3:'#84828C',action:'#EF3E78',actionInk:'#B31460',secondary:'#8D69F6'},
+  dark:{bg:'#141019',surface:'#1E1A26',raised:'#2A2533',border:'#383143',borderStrong:'#7A7488',text1:'#FAF9FB',text2:'#B8B4C0',text3:'#8C8796',action:'#EF3E78',actionInk:'#F090C6',secondary:'#8D69F6'},
+};
+/* ── Chip pairs (bg + ink) per theme — status uses real *Bg/*Ink tokens ── */
+const PAIRS = {
+  light:{verified:['#E7F6EF','#15724F'],online:['#C0D2F4','#1C4EBE'],match:['#F6D0F1','#B31460'],premium:['#E3DCF9','#5A3BAF']},
+  dark:{verified:['#0E2E22','#6FE0B0'],online:['#16213F','#81A5E9'],match:['#2A0E1E','#F090C6'],premium:['#241A3A','#B085F6']},
+};
+
+function rampHTML(data,roles){
+  return `<div class="ramp">`+STEPS.map(s=>{
+    if(data[s]===undefined){
+      return `<div><div class="sw gap"></div><div class="lab"><span class="step" style="opacity:.55">${s}</span><div class="gaplab">— gap</div></div></div>`;
+    }
+    const role=roles&&roles[s]?`<div class="role">${roles[s]}</div>`:'';
+    return `<div><div class="sw" style="background:${data[s]}"></div><div class="lab"><span class="step">${s}</span> <span class="hex">${data[s]}</span>${role}</div></div>`;
+  }).join('')+`</div>`;
+}
+function rampCompact(data,roles){ // for deliberately-sparse ramps (status) — present steps only, no gaps
+  return `<div class="customrow">`+STATUS_STEPS.map(s=>{
+    const role=roles&&roles[s]?`<div class="role">${roles[s]}</div>`:'';
+    return `<div class="custom" style="width:150px"><div class="b" style="background:${data[s]}"></div><div class="lab"><span class="step">${s}</span> <span class="hex">${data[s]}</span>${role}</div></div>`;
+  }).join('')+`</div>`;
+}
+function chip(label,dot,bg,tx){
+  return `<span class="chip" style="background:${bg};color:${tx}"><span class="cdot" style="background:${dot}"></span>${label}<span class="r">${cr(tx,bg).toFixed(1)}:1</span></span>`;
+}
+
+function renderColor(){
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const k=dark?'dark':'light', t=T[k], P=PAIRS[k];
+  const G=t.surface;                                  // "on surface" ground
+  const proposed = dark ? ` <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--text3);font-weight:400">— DARK (in code · not yet live)</span>`
+                        : ` <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--text3);font-weight:400">— LIGHT (shipping)</span>`;
+
+  document.getElementById('color-body').innerHTML=`
+  <div class="card">
+    <h2>Primary — Amihan (pink)</h2>
+    <span class="src">colors.amihan → semanticColors.primary / primaryLight / primaryDark</span>
+    <p class="desc">The lead brand color. Fills use <b>500</b> (#EF3E78). As <em>text/link</em> on a light surface, <code>primaryInk</code>
+    is <b>700</b> — bright pink text on white only reaches ~3:1. On dark, <code>primaryInk</code> steps to the lighter <b>400</b>.</p>
+    ${rampHTML(AMIHAN,ROLES.amihan)}
+    <p class="ratio">primary 500 text on surface: ${tag(cr(AMIHAN[500],G))} &nbsp;·&nbsp; primaryInk ${dark?'400':'700'} text on surface: ${tag(cr(dark?AMIHAN[400]:AMIHAN[700],G))} ← brand text &nbsp;·&nbsp; onPrimary white on 500 (button): ${tag(cr('#FFFFFF',AMIHAN[500]))}</p>
+    <div class="note"><b>Note:</b> <code>800</code> added in the rebuild; <code>300</code> (#E1ABDA) still reads slightly lilac next to its pink neighbours — a known ramp quirk.</div>
+  </div>
+
+  <div class="card">
+    <h2>Secondary — Dalisay (purple)</h2>
+    <span class="src">colors.dalisay → semanticColors.secondary / secondaryLight / secondaryDark</span>
+    <p class="desc">Pairs with amihan in the primary CTA gradient (pink → purple). Solo use: tags, premium, accents.</p>
+    ${rampHTML(DALISAY,ROLES.dalisay)}
+    <p class="ratio">secondary 500 on surface: ${tag(cr(DALISAY[500],G))} &nbsp;·&nbsp; secondaryDark 700 on surface: ${tag(cr(DALISAY[700],G))} &nbsp;·&nbsp; white on 500: ${tag(cr('#FFFFFF',DALISAY[500]))}</p>
+  </div>
+
+  <div class="card">
+    <h2>Accent — Luna (blue)</h2>
+    <span class="src">colors.luna → semanticColors.accent</span>
+    <p class="desc">Cool accent for links, info and "online/available" states. Status only — never a primary CTA.</p>
+    ${rampHTML(LUNA,ROLES.luna)}
+    <p class="ratio">accent 500 on surface: ${tag(cr(LUNA[500],G))} &nbsp;·&nbsp; luna 700 on surface: ${tag(cr(LUNA[700],G))} ← text on light</p>
+  </div>
+
+  <div class="card">
+    <h2>Neutral — Slate-pink grey</h2>
+    <span class="src">colors.neutral → background / surface / border / borderStrong / text / textSecondary / textTertiary</span>
+    <p class="desc">One warm-grey ramp carries surfaces + text. <b>Now filled</b>: <code>400/500/700/800</code> added in the rebuild —
+    <code>500</code> is the ≥3:1 grey for <code>borderStrong</code> + <code>textTertiary</code>; <code>700/800</code> feed dark surfaces. Plus <code>white</code> #FFFFFF / <code>black</code> #000000.</p>
+    ${rampHTML(NEUTRAL,ROLES.neutral)}
+    <p class="ratio">text on background: ${tag(cr(t.text1,t.bg))} &nbsp;·&nbsp; textSecondary on surface: ${tag(cr(t.text2,G))} &nbsp;·&nbsp; textTertiary on surface: ${tag(cr(t.text3,G))}</p>
+  </div>
+
+  <div class="card">
+    <h2>Surfaces &amp; Borders${proposed}</h2>
+    <p class="desc">Grounds for this theme, exact from <code>${dark?'darkColors':'lightColors'}</code>. <code>border</code> is the soft
+    hairline divider; <code>borderStrong</code> is the interactive edge, tuned to clear the WCAG 1.4.11 non-text 3:1 floor.</p>
+    <div class="surfaces">
+      <div class="surfbox"><div class="b" style="background:${t.bg}"></div><div class="lab"><span class="step">background</span> <span class="hex">${t.bg}</span></div></div>
+      <div class="surfbox"><div class="b" style="background:${t.surface}"></div><div class="lab"><span class="step">surface · card</span> <span class="hex">${t.surface}</span></div></div>
+      <div class="surfbox"><div class="b" style="background:${t.raised}"></div><div class="lab"><span class="step">raised</span> <span class="hex">${t.raised}</span></div></div>
+      <div class="surfbox"><div class="b" style="background:${G};border:2px solid ${t.border}"></div><div class="lab"><span class="step">border</span> <span class="hex">${t.border}</span><div class="ratio">${tag(cr(t.border,G))} divider</div></div></div>
+      <div class="surfbox"><div class="b" style="background:${G};border:2px solid ${t.borderStrong}"></div><div class="lab"><span class="step">borderStrong</span> <span class="hex">${t.borderStrong}</span><div class="ratio">${tag(cr(t.borderStrong,G))} interactive</div></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Semantic / Functional</h2>
+    <span class="src">colors.success / warning / error → success / successBg / successInk (× warning, error)</span>
+    <p class="desc">Each family now has a <b>100</b> tint, a <b>600</b> solid (icons/fills), and inks: <b>700</b> for text on the
+    light tint and <b>300</b> for text on the dark tint. The <code>Ink</code> tokens are what chips use, so every pair clears AA.</p>
+    ${rampCompact(SUCCESS,ROLES.success)}
+    <p class="ratio" style="margin:4px 0 14px">success 600 on surface ${tag(cr(SUCCESS[600],G))} &nbsp;·&nbsp; successInk ${dark?'300':'700'} on tint ${tag(cr(dark?SUCCESS[300]:SUCCESS[700], dark?'#0E2E22':SUCCESS[100]))}</p>
+    ${rampCompact(WARNING,ROLES.warning)}
+    <p class="ratio" style="margin:4px 0 14px">warning 600 on surface ${tag(cr(WARNING[600],G))} &nbsp;·&nbsp; warningInk ${dark?'300':'700'} on tint ${tag(cr(dark?WARNING[300]:WARNING[700], dark?'#3A2A07':WARNING[100]))}</p>
+    ${rampCompact(ERROR,ROLES.error)}
+    <p class="ratio" style="margin:4px 0 0">error 600 on surface ${tag(cr(ERROR[600],G))} &nbsp;·&nbsp; errorInk ${dark?'300':'700'} on tint ${tag(cr(dark?ERROR[300]:ERROR[700], dark?'#3A1119':ERROR[100]))}</p>
+  </div>
+
+  <div class="card">
+    <h2>Added in the rebuild — now in <code>colors.ts</code> <span class="custom"><span class="star" style="color:#16A34A">✓</span></span></h2>
+    <p class="desc">Steps added on 2026-06-01 to close the ramp gaps the audit flagged (mid-greys for borders, placeholders,
+    dark surfaces). Status families also gained <b>300</b> (dark ink) + <b>700</b> (light-tint ink). All shipped in code.</p>
+    <div class="customrow">
+      ${EXTENDED.map(([nm,hex,role])=>`<div class="custom"><div class="b" style="background:${hex}"></div><div class="lab"><span class="step"><span class="star" style="color:#16A34A">✓</span> ${nm}</span> <span class="hex">${hex}</span><div class="role">${role}</div></div></div>`).join('')}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>In use — dating-app states</h2>
+    <p class="desc">Chips invert per theme (light tint + dark text → deep tint + bright text). The primary CTA is the
+    pink→purple gradient with white text (matches <code>PrimaryButton</code>).</p>
+    <div class="chips">
+      ${chip('VERIFIED','#22A574',P.verified[0],P.verified[1])}
+      ${chip('ONLINE','#5C83E9',P.online[0],P.online[1])}
+      ${chip('NEW MATCH','#EF3E78',P.match[0],P.match[1])}
+      ${chip('PREMIUM','#8D69F6',P.premium[0],P.premium[1])}
+      <button class="cta">START MATCHING</button>
+    </div>
+    <p class="ratio" style="margin-top:12px">CTA — white on gradient ends: amihan ${tag(cr('#FFFFFF','#EF3E78'))} · dalisay ${tag(cr('#FFFFFF','#8D69F6'))} &nbsp;<span style="color:var(--text3)">(white text on the pink end is borderline — large/UI only)</span></p>
+  </div>`;
+}
+
+/* ── Static sections (rendered once) ── */
+function renderStatic(){
+  /* brand sizes */
+  const BS=[[96,'Launcher'],[64,'Splash'],[48,'Avatar'],[32,'Inline'],[24,'Favicon']];
+  document.getElementById('brand-sizes').innerHTML=BS.map(([px,nm])=>`<div class="size-cell"><img src="../../assets/logo-no-bg.svg" alt="logo" style="height:${px}px"><div class="nm">${nm}</div><div class="px">${px}px</div></div>`).join('');
+
+  /* semantic token map: role | light token | dark token | use — both in colors.ts */
+  const SWATCH=(hex)=>`<div class="dot" style="background:${hex}"></div>`;
+  const MAP=[
+    ['background','#FFFFFF','#141019','app screen'],
+    ['surface','#FAF9FB','#1E1A26','cards, sheets'],
+    ['surfaceElevated','#FFFFFF','#252030','raised cards'],
+    ['raised','#F2F1F4','#2A2533','pressed / elevated'],
+    ['border','#ECEBF0','#383143','hairline dividers'],
+    ['borderStrong','#84828C','#7A7488','interactive edges (≥3:1)'],
+    ['text','#1A1A1A','#FAF9FB','primary text'],
+    ['textSecondary','#6A6A72','#B8B4C0','muted text'],
+    ['textTertiary','#84828C','#8C8796','placeholder / hint'],
+    ['primary','#EF3E78','#EF3E78','brand fill'],
+    ['primaryInk','#B31460','#F090C6','brand text / link'],
+    ['onPrimary','#FFFFFF','#FFFFFF','text on primary'],
+    ['secondary','#8D69F6','#8D69F6','purple / gradient'],
+    ['secondaryInk','#5A3BAF','#B085F6','secondary text'],
+    ['accent','#5C83E9','#5C83E9','info / online'],
+    ['accentInk','#1C4EBE','#81A5E9','accent text'],
+    ['success','#22A574','#22A574','positive solid'],
+    ['successInk','#15724F','#6FE0B0','success text'],
+    ['warning','#F59E0B','#F59E0B','caution solid'],
+    ['error','#D52C4D','#D52C4D','destructive solid'],
+    ['errorInk','#A81D3A','#F26B86','error text'],
+  ];
+  document.getElementById('scheme-map').innerHTML=`<thead><tr><th>Role</th><th colspan="2">Light</th><th colspan="2">Dark</th><th>Use</th></tr></thead><tbody>`+
+    MAP.map(([role,l,d,use])=>`<tr>
+      <td class="role">${role}</td>
+      <td style="width:26px">${SWATCH(l)}</td><td class="tok" style="color:var(--text2)">${l}</td>
+      <td style="width:26px">${SWATCH(d)}</td><td class="tok pp">${d}</td>
+      <td class="note">${use}</td></tr>`).join('')+`</tbody>`;
+
+  /* type — specimens; lineHeight is now ABSOLUTE points (matches lineHeightFor) */
+  const LORA="'Lora',serif",SANS="'DM Sans',sans-serif";
+  // [name, family, size, weight, lineHeight(px), tracking, sample, use]
+  const TYPE=[
+    ['logo',LORA,30,700,33,0.6,'PinayMate','Lora · text wordmark (primary mark = SVG)'],
+    ['h1',LORA,36,700,40,0,'Find your person','Lora Bold · screen titles'],
+    ['h2',LORA,30,600,35,0,'Discover','Lora SemiBold · section heads'],
+    ['h3',LORA,24,600,29,0,'About her','Lora SemiBold · card titles'],
+    ['h4',LORA,20,600,25,0,'Her interests','Lora SemiBold · sub-heads'],
+    ['h5',LORA,18,500,23,0,'Details','Lora Medium · small heads'],
+    ['bodyLarge',SANS,18,400,27,0,'Lead paragraph for prominent reading.','DM Sans · lead body'],
+    ['body',SANS,16,400,24,0,'Primary body text — the default reading size for bios, descriptions and chat.','DM Sans · default body'],
+    ['bodyBold',SANS,16,700,24,0,'Emphasised body text','DM Sans Bold · inline emphasis'],
+    ['bodySmall',SANS,14,400,21,0,'Smaller supporting copy','DM Sans · supporting'],
+    ['caption',SANS,14,400,21,0,'Caption · metadata · timestamps','DM Sans · captions'],
+    ['button',SANS,16,600,20,0.3,'START MATCHING','DM Sans SemiBold · CTAs'],
+    ['label',SANS,14,500,18,0.3,'Email address','DM Sans Medium · field labels'],
+    ['input',SANS,16,400,22,0,'maria@example.com','DM Sans · text inputs'],
+    ['overline',SANS,12,600,17,1.2,'NEW THIS WEEK','DM Sans SemiBold · eyebrows'],
+  ];
+  document.getElementById('type-list').innerHTML=TYPE.map(([name,fam,size,wt,lh,ls,sample,use])=>{
+    const f=fam.includes('Lora')?'Lora':'DM Sans';
+    const webLH=(lh/size).toFixed(2);
+    return `<div class="type-row"><div class="type-meta"><b>textStyles.${name}</b>${f} · ${wt}<br>${size}px · lineHeight ${lh}px${ls?` · tracking ${ls}`:''}<br><span style="color:var(--text2)">${use}</span></div><div class="specimen" style="font-family:${fam};font-size:${size}px;font-weight:${wt};letter-spacing:${ls}px;line-height:${webLH}">${sample}</div></div>`;
+  }).join('');
+
+  /* icons — heart glyph at convention sizes */
+  const HEART=s=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-6.7-4.35-9.33-8.07C.9 10.3 1.4 6.9 4.1 5.4 6.2 4.2 8.7 4.9 10 6.6l2 .0 0 0c1.3-1.7 3.8-2.4 5.9-1.2 2.7 1.5 3.2 4.9 1.43 7.53C18.7 16.65 12 21 12 21z"/></svg>`;
+  const IC=[[16,'xs','dense metadata'],[18,'sm','chips, labels'],[20,'md','buttons'],[24,'base','default UI & tab bar'],[28,'lg','feature'],[32,'xl','empty-state / hero']];
+  document.getElementById('icon-list').innerHTML=IC.map(([px,nm,use])=>`<div class="icon-cell"><div class="icon-box">${HEART(px)}</div><div class="nm">${nm}</div><div class="dp">${px}px</div><div class="use">${use}</div></div>`).join('');
+
+  /* spacing */
+  const SP=[['xs',4],['sm',8],['md',16],['lg',24],['xl',32],['xxl',48],['xxxl',64]];
+  document.getElementById('spacing-list').innerHTML=SP.map(([nm,v])=>`<div class="scale-row"><span class="nm">spacing.${nm}</span><span class="val">${v}dp</span><div class="bar-fill" style="width:${(v/64)*100}%"></div></div>`).join('');
+
+  /* radii */
+  const RA=[['sm',4],['md',8],['lg',12],['xl',16],['full',9999]];
+  document.getElementById('radius-list').innerHTML=RA.map(([nm,v])=>`<div class="radius-cell"><div class="radius-demo" style="border-radius:${v>100?40:v}px"></div><div class="nm">.${nm}</div><div class="val">${v===9999?'9999 (pill)':v+'dp'}</div></div>`).join('');
+
+  document.getElementById('foot').innerHTML=`mirrors src/theme/colors.ts · typography.ts · useTheme.ts · iconSizes.ts · spacing.ts · tailwind.config.js · assets/logo.svg — last synced 2026-06-01 (single-source via build step: TODO)<br>one token source · three platform lenses (iOS / Android / Web) · light = shipping · dark = in code, verified by __tests__/theme.test.ts · ratios computed live (WCAG 2.x)<br>specs: docs/design/platform/IOS_HIG.md · ANDROID_MATERIAL3.md · WEB.md · audit: docs/design/DESIGN_SYSTEM_AUDIT_2026-06-01.md`;
+}
+
+function toggleTheme(){
+  const h=document.documentElement;
+  const next=h.getAttribute('data-theme')==='light'?'dark':'light';
+  h.setAttribute('data-theme',next);
+  document.getElementById('tg-label').textContent=next==='light'?'Dark':'Light';
+  renderColor();
+}
+
+/* ── Platform lens (one token source, three adaptations) ── */
+const PLATFORMS = {
+  ios:     { label:'iOS', Touch:'44pt minimum', Type:'SF Pro (system fallback)', Depth:'Layered soft shadow', Feedback:'Highlight / opacity', Motion:'ease-out · spring', Edges:'Safe area · home indicator · large titles · swipe-back', CTA:'Solid fill + soft shadow' },
+  android: { label:'Android', Touch:'48dp minimum', Type:'Roboto (system fallback)', Depth:'Elevation levels 1–3', Feedback:'Ripple', Motion:'Material standard easing', Edges:'Edge-to-edge · status & nav bar color', CTA:'Solid fill + elevation + ripple' },
+  web:     { label:'Web', Touch:'44px (+ hover / focus)', Type:'System font stack', Depth:'box-shadow', Feedback:'Hover · :focus-visible', Motion:'CSS transitions · reduced-motion', Edges:'Responsive 375 / 768 / 1024 / 1440', CTA:'Solid fill + hover' },
+};
+function setPlatform(p){
+  document.documentElement.setAttribute('data-platform', p);
+  const d = PLATFORMS[p];
+  document.getElementById('plat-name').textContent = d.label;
+  document.querySelectorAll('#platsel button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
+  const order = ['Touch','Type','Depth','Feedback','Motion','Edges','CTA'];
+  document.getElementById('active-platform').innerHTML =
+    order.map(k => `<div class="pcell"><div class="pk">${k}</div><div class="pv">${d[k]}</div></div>`).join('');
+}
+
+renderStatic();
+renderColor();
+setPlatform('ios');
+</script>
+</body>
+</html>

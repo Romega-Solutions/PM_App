@@ -67,7 +67,7 @@ export default function ChatScreen() {
 
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [, setKeyboardHeight] = useState(0);
   const [currentUserId, setCurrentUserId] = useState<string>("");
 
   const userName = params.userName || "User";
@@ -90,7 +90,6 @@ export default function ChatScreen() {
     error,
     sendText,
     sendImage: sendImageToDb,
-    markAsRead,
     addMessage,
   } = useMessages({
     conversationId: params.conversationId,

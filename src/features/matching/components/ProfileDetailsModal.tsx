@@ -37,7 +37,7 @@ import {
 } from "react-native";
 import type { ProfileCardData } from "./ProfileCard";
 
-const { width, height } = Dimensions.get("window");
+const { height } = Dimensions.get("window");
 
 // Brand Colors
 const BRAND_BG = "#0F0814";

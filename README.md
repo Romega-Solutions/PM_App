@@ -131,10 +131,13 @@ messages          # Chat messages
 
 ## 📚 Documentation
 
-- `SUPABASE_SETUP_INSTRUCTIONS.md` - Database setup guide
-- `EMAIL_VERIFICATION_SETUP.md` - Email verification config
-- `REDIRECT_URLS_QUICK.md` - Deep linking setup
-- `SETUP_CHECKLIST.md` - Complete setup steps
+All documentation lives under [`docs/`](docs/README.md). Setup guides:
+
+- `docs/setup/SUPABASE_SETUP_INSTRUCTIONS.md` - Database setup guide
+- `docs/setup/EMAIL_VERIFICATION_SETUP.md` - Email verification config
+- `docs/setup/REDIRECT_URLS_QUICK.md` - Deep linking setup
+- `docs/setup/SETUP_CHECKLIST.md` - Complete setup steps
+- `docs/design/DESIGN_SYSTEM_AUDIT_2026-06-01.md` - Design system / theme audit
 
 ---
 

@@ -51,8 +51,8 @@ function isMissingAuthSession(error: unknown) {
 export default function LikesScreen() {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<"all" | "mutual">("all");
-  const [userType, setUserType] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [, setUserType] = useState<string | null>(null);
+  const [, setUserId] = useState<string | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
 
