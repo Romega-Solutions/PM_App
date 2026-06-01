@@ -15,7 +15,9 @@ All project documentation lives here. Only `README.md` and `CLAUDE.md` remain at
 - [`SETUP_CHECKLIST.md`](setup/SETUP_CHECKLIST.md) — full setup checklist
 
 ### `architecture/` — how the app is structured
-- [`APP_VS_SRC_ARCHITECTURE.md`](architecture/APP_VS_SRC_ARCHITECTURE.md) — `app/` (routes) vs `src/` (logic) split
+- [`TARGET_ARCHITECTURE.md`](architecture/TARGET_ARCHITECTURE.md) — **the architecture to aim for**: layered RN/Expo design, server-vs-client state, folder structure, rules, current→target map + migration phases (learnable reference)
+- [`ARCHITECTURE_AUDIT_2026-06-02.md`](architecture/ARCHITECTURE_AUDIT_2026-06-02.md) — **current** audit: routing boundaries, feature modules, data-access layering, coupling, module size (2 critical · 4 major · 3 minor)
+- [`APP_VS_SRC_ARCHITECTURE.md`](architecture/APP_VS_SRC_ARCHITECTURE.md) — `app/` (routes) vs `src/` (logic) split (Jan-2026 intent doc)
 - [`ZUSTAND_IMPLEMENTATION.md`](architecture/ZUSTAND_IMPLEMENTATION.md) — store architecture
 
 ### `design/` — design system
