@@ -1,45 +1,44 @@
-import { useEffect, useState } from "react";
-import { getCurrentUserProfile, ProfileData } from "../api/profileApi";
+import { useQuery } from "@tanstack/react-query";
+import { getCurrentUserProfile } from "../api/profileApi";
 
+/**
+ * Query keys for the profile feature. Mutations (e.g. useUpdateProfile,
+ * useUploadPhoto) invalidate `profileKeys.me` to refresh the cached profile.
+ */
+export const profileKeys = {
+  all: ["profile"] as const,
+  me: ["profile", "me"] as const,
+};
+
+/**
+ * Reads the current user's profile from Supabase via TanStack Query.
+ *
+ * This is the TEMPLATE for converting the app's data hooks off the manual
+ * useState/useEffect/try-catch pattern onto server-state caching. The `api/`
+ * layer (`getCurrentUserProfile`) is unchanged; only the consumption changed.
+ *
+ * The public return shape ({ profile, loading, error, refresh }) is preserved
+ * so existing consumers (e.g. EditProfileScreen) need no edits.
+ */
 export function useProfile(autoLoad = true) {
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(autoLoad);
-  const [error, setError] = useState<Error | null>(null);
-
-  const loadProfile = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
+  const query = useQuery({
+    queryKey: profileKeys.me,
+    queryFn: async () => {
       const data = await getCurrentUserProfile();
-
-      if (data) {
-        setProfile(data);
-      } else {
-        setError(new Error("Failed to load profile"));
-      }
-    } catch (err) {
-      console.error("❌ Error loading profile:", err);
-      setError(err instanceof Error ? err : new Error("Unknown error"));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const refresh = () => {
-    loadProfile();
-  };
-
-  useEffect(() => {
-    if (autoLoad) {
-      loadProfile();
-    }
-  }, [autoLoad]);
+      // Preserve the previous hook's behaviour: a null profile is an error
+      // (and lets Query retry transient failures).
+      if (!data) throw new Error("Failed to load profile");
+      return data;
+    },
+    enabled: autoLoad,
+  });
 
   return {
-    profile,
-    loading,
-    error,
-    refresh,
+    profile: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error as Error | null,
+    refresh: query.refetch,
+    // Newly available for free (background refresh indicator):
+    isFetching: query.isFetching,
   };
 }

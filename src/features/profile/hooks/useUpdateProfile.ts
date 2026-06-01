@@ -1,35 +1,44 @@
-import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UpdateProfileData, updateUserProfile } from "../api/profileApi";
+import { profileKeys } from "./useProfile";
 
 export function useUpdateProfile() {
-  const [updating, setUpdating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
 
+  const mutation = useMutation({
+    mutationFn: async (data: UpdateProfileData): Promise<boolean> => {
+      const result = await updateUserProfile(data);
+      if (!result.success) {
+        throw new Error(result.error || "Failed to update profile");
+      }
+      return true;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: profileKeys.me });
+    },
+    onError: (err: Error) => {
+      if (__DEV__) {
+        console.warn("[useUpdateProfile] update failed:", err.message);
+      }
+    },
+  });
+
+  /**
+   * Wraps mutateAsync with a boolean return so consumers don't need to
+   * catch — preserves the original `updateProfile(data) => Promise<boolean>`
+   * public contract.
+   */
   const updateProfile = async (data: UpdateProfileData): Promise<boolean> => {
     try {
-      setUpdating(true);
-      setError(null);
-
-      const result = await updateUserProfile(data);
-
-      if (!result.success) {
-        setError(result.error || "Failed to update profile");
-        return false;
-      }
-
-      return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      setError(errorMessage);
+      return await mutation.mutateAsync(data);
+    } catch {
       return false;
-    } finally {
-      setUpdating(false);
     }
   };
 
   return {
     updateProfile,
-    updating,
-    error,
+    updating: mutation.isPending,
+    error: mutation.error ? (mutation.error as Error).message : null,
   };
 }

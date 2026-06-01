@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { accountApi } from "../api/accountApi";
 
 export type PreferencesForm = {
@@ -8,15 +9,49 @@ export type PreferencesForm = {
   relationshipGoal: string;
 };
 
+export const preferencesKeys = {
+  all: ["account", "preferences"] as const,
+} as const;
+
+const DEFAULT_FORM: PreferencesForm = {
+  ageMin: 22,
+  ageMax: 35,
+  maxDistanceKm: 50,
+  relationshipGoal: "",
+};
+
 export const usePreferences = () => {
-  const [form, setForm] = useState<PreferencesForm>({
-    ageMin: 22,
-    ageMax: 35,
-    maxDistanceKm: 50,
-    relationshipGoal: "",
+  // Local form state — this is client-side ephemeral state, not server state.
+  // The query seeds the initial values once on mount; after that the user
+  // edits locally until they hit "Save".
+  const [form, setForm] = useState<PreferencesForm>(DEFAULT_FORM);
+  const seeded = useRef(false);
+
+  const qc = useQueryClient();
+
+  // ----- READ: server state → useQuery -----
+  const query = useQuery({
+    queryKey: preferencesKeys.all,
+    queryFn: async () => {
+      const existing = await accountApi.getPreferences();
+      return existing ?? null;
+    },
   });
-  const [loading, setLoading] = useState(false);
-  const [loadingInitial, setLoadingInitial] = useState(false);
+
+  // Seed the local form once when server data first arrives.
+  // useEffect is the correct place for this — not render-time side effects.
+  useEffect(() => {
+    if (query.data && !seeded.current) {
+      seeded.current = true;
+      setForm({
+        ageMin: query.data.ageMin ?? DEFAULT_FORM.ageMin,
+        ageMax: query.data.ageMax ?? DEFAULT_FORM.ageMax,
+        maxDistanceKm: query.data.maxDistanceKm ?? DEFAULT_FORM.maxDistanceKm,
+        relationshipGoal:
+          query.data.relationshipGoal ?? DEFAULT_FORM.relationshipGoal,
+      });
+    }
+  }, [query.data]);
 
   const setField = useCallback(
     <K extends keyof PreferencesForm>(key: K, value: PreferencesForm[K]) => {
@@ -28,10 +63,17 @@ export const usePreferences = () => {
   // Return as a computed value, not a function
   const isValid = form.relationshipGoal !== "";
 
-  const savePreferences = useCallback(async () => {
-    setLoading(true);
-    try {
-      // Get userType from basicInfo
+  // ----- WRITE: useMutation -----
+  // form is captured via a ref so mutationFn always sees the latest values
+  // without needing to be recreated on every form change.
+  const formRef = useRef(form);
+  formRef.current = form;
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      // Get userType from basicInfo (unchanged — read inside mutation is fine
+      // because this is not a cacheable read, it's a dependency lookup before
+      // the write).
       const basicInfo = await accountApi.getBasicInfo();
       if (!basicInfo?.userType) {
         throw new Error(
@@ -39,50 +81,35 @@ export const usePreferences = () => {
         );
       }
 
+      const currentForm = formRef.current;
       const payload = {
-        ageMin: form.ageMin,
-        ageMax: form.ageMax,
-        maxDistanceKm: form.maxDistanceKm,
-        relationshipGoal: form.relationshipGoal
+        ageMin: currentForm.ageMin,
+        ageMax: currentForm.ageMax,
+        maxDistanceKm: currentForm.maxDistanceKm,
+        relationshipGoal: currentForm.relationshipGoal
           .toLowerCase()
           .replace(/\s+/g, "_"),
         userType: basicInfo.userType,
       };
 
-      const res = await accountApi.savePreferences(payload);
-      return res;
-    } finally {
-      setLoading(false);
-    }
-  }, [form]);
+      return accountApi.savePreferences(payload);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: preferencesKeys.all });
+    },
+  });
 
-  const load = useCallback(async () => {
-    setLoadingInitial(true);
-    try {
-      const existing = await accountApi.getPreferences();
-      if (existing) {
-        setForm({
-          ageMin: existing.ageMin ?? 22,
-          ageMax: existing.ageMax ?? 35,
-          maxDistanceKm: existing.maxDistanceKm ?? 50,
-          relationshipGoal: existing.relationshipGoal ?? "",
-        });
-      }
-    } finally {
-      setLoadingInitial(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const savePreferences = useCallback(
+    () => mutation.mutateAsync(),
+    [mutation]
+  );
 
   return {
     form,
     setField,
     isValid, // This is now a boolean, not a function
-    loading,
-    loadingInitial,
+    loading: mutation.isPending,
+    loadingInitial: query.isLoading,
     savePreferences,
   } as const;
 };

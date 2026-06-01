@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { UserType } from "../../auth/api/authApi";
 import {
   accountApi,
@@ -26,59 +26,15 @@ type WelcomeData = {
   };
 };
 
+export const welcomeKeys = {
+  all: ["account", "welcome"] as const,
+} as const;
+
 export const useWelcomeData = () => {
-  const [data, setData] = useState<WelcomeData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-
-        // Fetch all data from Supabase
-        const [basicInfo, photos, location, verification, preferences] =
-          await Promise.all([
-            accountApi.getBasicInfo(),
-            accountApi.getProfilePhotos(),
-            accountApi.getLocation(),
-            accountApi.getVerification(),
-            accountApi.getPreferences(),
-          ]);
-
-        if (basicInfo) {
-          setData({
-            firstName: basicInfo.firstName,
-            userType: basicInfo.userType,
-            basicInfo: basicInfo, // ✅ Added
-            photos: photos, // ✅ Added
-            location: location, // ✅ Added
-            verification: verification, // ✅ Added
-            preferences: preferences, // ✅ Added
-            completionStats: {
-              basicInfo: !!basicInfo,
-              photos: (photos?.length ?? 0) > 0,
-              location: !!location,
-              verification: verification?.isVerified ?? false,
-              preferences: !!preferences,
-            },
-          });
-        } else {
-          setData(null);
-        }
-      } catch (error) {
-        console.error("❌ Error fetching welcome data:", error);
-        setData(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  const reload = async () => {
-    setLoading(true);
-    try {
+  // ----- READ: 5 parallel Supabase reads → single useQuery -----
+  const query = useQuery({
+    queryKey: welcomeKeys.all,
+    queryFn: async (): Promise<WelcomeData | null> => {
       const [basicInfo, photos, location, verification, preferences] =
         await Promise.all([
           accountApi.getBasicInfo(),
@@ -88,34 +44,32 @@ export const useWelcomeData = () => {
           accountApi.getPreferences(),
         ]);
 
-      if (basicInfo) {
-        setData({
-          firstName: basicInfo.firstName,
-          userType: basicInfo.userType,
-          basicInfo: basicInfo, // ✅ Added
-          photos: photos, // ✅ Added
-          location: location, // ✅ Added
-          verification: verification, // ✅ Added
-          preferences: preferences, // ✅ Added
-          completionStats: {
-            basicInfo: !!basicInfo,
-            photos: (photos?.length ?? 0) > 0,
-            location: !!location,
-            verification: verification?.isVerified ?? false,
-            preferences: !!preferences,
-          },
-        });
-      }
-    } catch (error) {
-      console.error("❌ Error reloading welcome data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (!basicInfo) return null;
+
+      return {
+        firstName: basicInfo.firstName,
+        userType: basicInfo.userType,
+        basicInfo,
+        photos,
+        location,
+        verification,
+        preferences,
+        completionStats: {
+          basicInfo: !!basicInfo,
+          photos: (photos?.length ?? 0) > 0,
+          location: !!location,
+          verification: verification?.isVerified ?? false,
+          preferences: !!preferences,
+        },
+      };
+    },
+    // On error, treat the data as null (mirrors the previous catch behaviour)
+    throwOnError: false,
+  });
 
   return {
-    data,
-    loading,
-    reload,
+    data: query.data ?? null,
+    loading: query.isLoading,
+    reload: query.refetch,
   } as const;
 };

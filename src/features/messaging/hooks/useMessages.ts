@@ -2,19 +2,34 @@
  * useMessages Hook
  *
  * Manages message state for a conversation.
- * Loads messages, sends new messages, handles updates.
+ * Uses TanStack Query v5 for server-state caching (loading) and
+ * useMutation for writes (sendText, sendImage, markAsRead).
  *
  * @module features/messaging/hooks/useMessages
  */
 
-import { useCallback, useEffect, useState } from "react";
 import {
-    getMessages,
-    markConversationAsRead,
-    sendImageMessage,
-    sendTextMessage,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  getMessages,
+  markConversationAsRead,
+  sendImageMessage,
+  sendTextMessage,
 } from "../api/messagesApi";
 import type { Message } from "../types/messaging.types";
+
+// ─── Query Key Factory ────────────────────────────────────────────────────────
+
+export const messageKeys = {
+  all: ["messages"] as const,
+  byChat: (userId: string, recipientId: string) =>
+    ["messages", userId, recipientId] as const,
+};
+
+// ─── Hook Types ───────────────────────────────────────────────────────────────
 
 interface UseMessagesOptions {
   conversationId?: string;
@@ -34,26 +49,22 @@ interface UseMessagesReturn {
   addMessage: (message: Message) => void;
 }
 
+// ─── Hook ─────────────────────────────────────────────────────────────────────
+
 export function useMessages({
   conversationId,
   userId,
   recipientId,
   autoLoad = true,
 }: UseMessagesOptions): UseMessagesReturn {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
+  const queryKey = messageKeys.byChat(userId, recipientId);
 
-  /**
-   * Load messages from database
-   */
-  const loadMessages = useCallback(async () => {
-    if (!userId || !recipientId) return;
+  // ── READ — fetch message list from Supabase ──────────────────────────────
 
-    setLoading(true);
-    setError(null);
-
-    try {
+  const query = useQuery({
+    queryKey,
+    queryFn: async (): Promise<Message[]> => {
       const { data, error: fetchError } = await getMessages(
         userId,
         recipientId,
@@ -62,128 +73,118 @@ export function useMessages({
 
       if (fetchError) throw fetchError;
 
-      setMessages(data || []);
-    } catch (err) {
-      console.error("❌ Error loading messages:", err);
-      setError(err as Error);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, recipientId]);
-
-  /**
-   * Send text message
-   */
-  const sendText = useCallback(
-    async (text: string) => {
-      if (!text.trim()) return;
-
-      try {
-        const { data, error: sendError } = await sendTextMessage(
-          userId,
-          recipientId,
-          text,
-          conversationId,
-        );
-
-        if (sendError) throw sendError;
-
-        if (data) {
-          setMessages((prev) => [...prev, data]);
-        }
-      } catch (err) {
-        console.error("❌ Error sending message:", err);
-        setError(err as Error);
-        throw err;
-      }
+      return data ?? [];
     },
-    [userId, recipientId, conversationId],
-  );
+    enabled: autoLoad && Boolean(userId) && Boolean(recipientId),
+    staleTime: 10_000, // 10 s — messages refresh via realtime; this is a fallback
+  });
 
-  /**
-   * Send image message
-   */
-  const sendImage = useCallback(
-    async (imageUrl: string) => {
-      try {
-        const { data, error: sendError } = await sendImageMessage(
-          userId,
-          recipientId,
-          imageUrl,
-          conversationId,
-        );
+  // ── WRITE — send text message ────────────────────────────────────────────
 
-        if (sendError) throw sendError;
+  const sendTextMutation = useMutation({
+    mutationFn: async (text: string): Promise<Message> => {
+      const { data, error: sendError } = await sendTextMessage(
+        userId,
+        recipientId,
+        text,
+        conversationId,
+      );
 
-        if (data) {
-          setMessages((prev) => [...prev, data]);
-        }
-      } catch (err) {
-        console.error("❌ Error sending image:", err);
-        setError(err as Error);
-        throw err;
-      }
+      if (sendError) throw sendError;
+      if (!data) throw new Error("No message returned from sendTextMessage");
+
+      return data;
     },
-    [userId, recipientId, conversationId],
-  );
+    onSuccess: (newMessage) => {
+      // Optimistically append the new message to the cached list
+      queryClient.setQueryData<Message[]>(queryKey, (prev = []) => [
+        ...prev,
+        newMessage,
+      ]);
+    },
+  });
 
-  /**
-   * Mark conversation as read
-   */
-  const markAsRead = useCallback(async () => {
-    if (!conversationId) return;
+  // ── WRITE — send image message ───────────────────────────────────────────
 
-    try {
+  const sendImageMutation = useMutation({
+    mutationFn: async (imageUrl: string): Promise<Message> => {
+      const { data, error: sendError } = await sendImageMessage(
+        userId,
+        recipientId,
+        imageUrl,
+        conversationId,
+      );
+
+      if (sendError) throw sendError;
+      if (!data) throw new Error("No message returned from sendImageMessage");
+
+      return data;
+    },
+    onSuccess: (newMessage) => {
+      queryClient.setQueryData<Message[]>(queryKey, (prev = []) => [
+        ...prev,
+        newMessage,
+      ]);
+    },
+  });
+
+  // ── WRITE — mark conversation as read ───────────────────────────────────
+
+  const markAsReadMutation = useMutation({
+    mutationFn: async (): Promise<void> => {
+      if (!conversationId) return;
       await markConversationAsRead(conversationId, userId);
-
-      // Update local state
-      setMessages((prev) =>
+    },
+    onSuccess: () => {
+      // Update read-status on cached messages without a full refetch
+      queryClient.setQueryData<Message[]>(queryKey, (prev = []) =>
         prev.map((msg) =>
           msg.recipient_id === userId && msg.status !== "read"
             ? { ...msg, status: "read", read_at: new Date().toISOString() }
             : msg,
         ),
       );
-    } catch (err) {
-      console.error("❌ Error marking as read:", err);
-    }
-  }, [conversationId, userId]);
+    },
+  });
 
-  /**
-   * Add message to local state (from realtime)
-   */
-  const addMessage = useCallback((message: Message) => {
-    setMessages((prev) => {
-      // Check if message already exists
-      if (prev.some((msg) => msg.id === message.id)) {
-        // Update existing message
+  // ── REALTIME helper — append / update a single message in the cache ──────
+  // Called by useChatRealtime when a new message arrives over the subscription.
+
+  const addMessage = (message: Message): void => {
+    queryClient.setQueryData<Message[]>(queryKey, (prev = []) => {
+      const exists = prev.some((msg) => msg.id === message.id);
+      if (exists) {
         return prev.map((msg) => (msg.id === message.id ? message : msg));
       }
-      // Add new message
       return [...prev, message];
     });
-  }, []);
+  };
 
-  /**
-   * Refresh messages
-   */
-  const refresh = useCallback(async () => {
-    await loadMessages();
-  }, [loadMessages]);
+  // ── Refresh — force refetch ──────────────────────────────────────────────
 
-  /**
-   * Auto-load messages on mount
-   */
-  useEffect(() => {
-    if (autoLoad) {
-      loadMessages();
-    }
-  }, [autoLoad, loadMessages]);
+  const refresh = async (): Promise<void> => {
+    await query.refetch();
+  };
+
+  // ── Public interface wrappers ────────────────────────────────────────────
+
+  const sendText = async (text: string): Promise<void> => {
+    if (!text.trim()) return;
+    await sendTextMutation.mutateAsync(text);
+  };
+
+  const sendImage = async (imageUrl: string): Promise<void> => {
+    await sendImageMutation.mutateAsync(imageUrl);
+  };
+
+  const markAsRead = async (): Promise<void> => {
+    await markAsReadMutation.mutateAsync();
+  };
 
   return {
-    messages,
-    loading,
-    error,
+    messages: query.data ?? [],
+    loading: query.isLoading,
+    error: query.error as Error | null,
     sendText,
     sendImage,
     markAsRead,

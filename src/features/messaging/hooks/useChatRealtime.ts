@@ -4,10 +4,18 @@
  * Subscribes to realtime updates for a conversation.
  * Handles new messages, typing indicators, read receipts.
  *
+ * TanStack Query integration:
+ *   When a new message arrives over the Supabase Realtime subscription, the
+ *   hook upserts it directly into the ["messages", userId, recipientId] cache
+ *   (no refetch — the payload IS the new message). The onNewMessage callback
+ *   is still invoked so the screen can scroll to the bottom.
+ *
  * @module features/messaging/hooks/useChatRealtime
  */
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect } from "react";
+import { messageKeys } from "./useMessages";
 import { realtimeApi } from "../api/realtimeApi";
 import type { Message } from "../types/messaging.types";
 
@@ -31,33 +39,59 @@ export function useChatRealtime({
   sendTyping: (isTyping: boolean) => Promise<void>;
   sendReadReceipt: (messageIds: string[]) => Promise<void>;
 } {
+  const queryClient = useQueryClient();
+
   /**
-   * Subscribe to new messages
+   * Subscribe to new messages.
+   * On arrival: upsert the message into the Query cache (no refetch), then
+   * call onNewMessage so the screen can scroll to the bottom.
    */
   useEffect(() => {
-    if (!conversationId || !userId || !onNewMessage) return;
+    if (!conversationId || !userId) return;
 
-    console.log("🔴 Subscribing to messages for conversation:", conversationId);
+    if (__DEV__) {
+      console.log(
+        "[useChatRealtime] Subscribing to messages for conversation:",
+        conversationId,
+      );
+    }
 
     const unsubscribe = realtimeApi.subscribeToMessages(
       conversationId,
       userId,
-      onNewMessage,
+      (message) => {
+        // 1. Upsert the realtime message straight into the Query cache — no
+        //    refetch (avoids a full re-fetch on every incoming message).
+        queryClient.setQueryData<Message[]>(
+          messageKeys.byChat(userId, recipientId),
+          (prev = []) =>
+            prev.some((m) => m.id === message.id)
+              ? prev.map((m) => (m.id === message.id ? message : m))
+              : [...prev, message],
+        );
+
+        // 2. Notify the screen (e.g. scroll to bottom) — UI side-effect only.
+        onNewMessage?.(message);
+      },
     );
 
     return () => {
-      console.log("🔴 Unsubscribing from messages");
+      if (__DEV__) {
+        console.log("[useChatRealtime] Unsubscribing from messages");
+      }
       unsubscribe();
     };
-  }, [conversationId, userId, onNewMessage]);
+  }, [conversationId, userId, recipientId, onNewMessage, queryClient]);
 
   /**
-   * Subscribe to typing indicators
+   * Subscribe to typing indicators.
    */
   useEffect(() => {
     if (!conversationId || !onTyping) return;
 
-    console.log("⌨️ Subscribing to typing indicators");
+    if (__DEV__) {
+      console.log("[useChatRealtime] Subscribing to typing indicators");
+    }
 
     const unsubscribe = realtimeApi.subscribeToTyping(
       conversationId,
@@ -70,18 +104,22 @@ export function useChatRealtime({
     );
 
     return () => {
-      console.log("⌨️ Unsubscribing from typing");
+      if (__DEV__) {
+        console.log("[useChatRealtime] Unsubscribing from typing");
+      }
       unsubscribe();
     };
   }, [conversationId, recipientId, onTyping]);
 
   /**
-   * Subscribe to read receipts
+   * Subscribe to read receipts.
    */
   useEffect(() => {
     if (!conversationId || !onReadReceipt) return;
 
-    console.log("✅ Subscribing to read receipts");
+    if (__DEV__) {
+      console.log("[useChatRealtime] Subscribing to read receipts");
+    }
 
     const unsubscribe = realtimeApi.subscribeToReadReceipts(
       conversationId,
@@ -89,13 +127,15 @@ export function useChatRealtime({
     );
 
     return () => {
-      console.log("✅ Unsubscribing from read receipts");
+      if (__DEV__) {
+        console.log("[useChatRealtime] Unsubscribing from read receipts");
+      }
       unsubscribe();
     };
   }, [conversationId, onReadReceipt]);
 
   /**
-   * Send typing indicator
+   * Send typing indicator to other participants.
    */
   const sendTyping = useCallback(
     async (isTyping: boolean) => {
@@ -104,14 +144,16 @@ export function useChatRealtime({
       try {
         await realtimeApi.broadcastTyping(conversationId, userId, isTyping);
       } catch (err) {
-        console.error("❌ Error broadcasting typing:", err);
+        if (__DEV__) {
+          console.error("[useChatRealtime] Error broadcasting typing:", err);
+        }
       }
     },
     [conversationId, userId],
   );
 
   /**
-   * Send read receipt
+   * Send read receipt to other participants.
    */
   const sendReadReceipt = useCallback(
     async (messageIds: string[]) => {
@@ -120,7 +162,12 @@ export function useChatRealtime({
       try {
         await realtimeApi.broadcastReadReceipt(conversationId, messageIds);
       } catch (err) {
-        console.error("❌ Error broadcasting read receipt:", err);
+        if (__DEV__) {
+          console.error(
+            "[useChatRealtime] Error broadcasting read receipt:",
+            err,
+          );
+        }
       }
     },
     [conversationId],

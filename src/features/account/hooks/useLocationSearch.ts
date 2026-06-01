@@ -92,12 +92,13 @@ export const useLocationSearch = () => {
       };
 
       await accountApi.saveLocation(payload);
-      console.log(
-        "✅ Location auto-saved:",
-        `${location.city}, ${location.country}`
-      );
+      if (__DEV__) {
+        console.log("Location auto-saved");
+      }
     } catch (error) {
-      console.error("❌ Error saving location:", error);
+      if (__DEV__) {
+        console.error("Error saving location:", error);
+      }
     } finally {
       setSaving(false);
     }
@@ -125,9 +126,13 @@ export const useLocationSearch = () => {
       };
 
       await accountApi.saveLocation(payload);
-      console.log("✅ Current location saved");
+      if (__DEV__) {
+        console.log("Current location saved");
+      }
     } catch (error) {
-      console.error("❌ Error saving location:", error);
+      if (__DEV__) {
+        console.error("Error saving current location:", error);
+      }
     } finally {
       setSaving(false);
     }

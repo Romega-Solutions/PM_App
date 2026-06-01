@@ -107,10 +107,14 @@ export function useAccountBasicInfo(initialUserType: UserType) {
         userType: form.userType, // Gender auto-assigned in API
       });
 
-      console.log("✅ Basic info saved with auto-assigned gender");
+      if (__DEV__) {
+        console.log("Basic info saved with auto-assigned gender");
+      }
       return result;
     } catch (error) {
-      console.error("❌ Failed to save basic info:", error);
+      if (__DEV__) {
+        console.error("Failed to save basic info:", error);
+      }
       throw error;
     } finally {
       setLoading(false);

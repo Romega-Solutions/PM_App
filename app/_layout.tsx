@@ -1,12 +1,15 @@
 import { setupDeepLinking } from "@/src/config/deepLinking";
+import { queryClient } from "@/src/config/queryClient";
 import { useAuthPersistence } from "@/src/hooks/useAuthPersistence";
 import { useTheme } from "@/src/theme";
+import { QueryClientProvider, focusManager } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, AppState, Platform, Text, View } from "react-native";
+import type { AppStateStatus } from "react-native";
 import "./global.css";
 
 SplashScreen.preventAutoHideAsync();
@@ -56,6 +59,16 @@ export default function RootLayout() {
     return cleanup;
   }, []);
 
+  // Tell TanStack Query when the app returns to the foreground so cached
+  // server data refetches (mirrors browser window-focus behaviour on native).
+  useEffect(() => {
+    const onAppStateChange = (status: AppStateStatus) => {
+      if (Platform.OS !== "web") focusManager.setFocused(status === "active");
+    };
+    const subscription = AppState.addEventListener("change", onAppStateChange);
+    return () => subscription.remove();
+  }, []);
+
   // Show loading state until everything is ready
   if ((!fontsLoaded && !fontError) || !isAuthReady) {
     return (
@@ -82,22 +95,24 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <StatusBar style={isDark ? "light" : "dark"} backgroundColor={colors.background} />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: {
-            backgroundColor: colors.background,
-          },
-          animation: "slide_from_right",
-        }}
-      >
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(main)" />
-        <Stack.Screen name="(modals)" />
-      </Stack>
-    </View>
+    <QueryClientProvider client={queryClient}>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <StatusBar style={isDark ? "light" : "dark"} backgroundColor={colors.background} />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: {
+              backgroundColor: colors.background,
+            },
+            animation: "slide_from_right",
+          }}
+        >
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(main)" />
+          <Stack.Screen name="(modals)" />
+        </Stack>
+      </View>
+    </QueryClientProvider>
   );
 }
