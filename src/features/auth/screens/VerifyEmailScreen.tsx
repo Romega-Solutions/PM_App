@@ -1,6 +1,6 @@
 import VerifyEmailActions from "@/src/components/auth/VerifyEmailActions";
 import VerifyEmailHeader from "@/src/components/auth/VerifyEmailHeader";
-import { supabase } from "@/src/config/supabase";
+import { authApi } from "@/src/features/auth/api/authApi";
 import { useSignupStore } from "@/src/stores/signupStore";
 import { useFonts } from "expo-font";
 import { LinearGradient } from "expo-linear-gradient";
@@ -43,16 +43,16 @@ export default function VerifyEmailScreen() {
   // 📦 Load from Zustand if params missing
   useEffect(() => {
     if (!email || !firstName || !userType) {
-      console.log("⚠️ Missing params, loading from Zustand...");
+      if (__DEV__) console.log("⚠️ Missing params, loading from Zustand...");
       const storedData = getSignupData();
 
       if (storedData) {
-        console.log("✅ Loaded signup data from Zustand:", storedData);
+        if (__DEV__) console.log("✅ Loaded signup data from Zustand");
         setEmail(storedData.email);
         setFirstName(storedData.firstName);
         setUserType(storedData.userType);
       } else {
-        console.log("❌ No stored data, redirecting to signup...");
+        if (__DEV__) console.log("❌ No stored data, redirecting to signup...");
         Alert.alert("Session Expired", "Please sign up again.", [
           {
             text: "OK",
@@ -69,15 +69,10 @@ export default function VerifyEmailScreen() {
       if (didNavigate.current) return;
       didNavigate.current = true;
 
-      console.log("📧 Email verified! Navigating to verification success...");
+      if (__DEV__) console.log("📧 Email verified! Navigating to verification success...");
 
       const finalFirstName = metadata?.first_name || firstName || "";
       const finalUserType = metadata?.user_type || userType || "";
-
-      console.log("📦 Passing params:", {
-        firstName: finalFirstName,
-        userType: finalUserType,
-      });
 
       router.replace({
         pathname: "/(auth)/verification-success",
@@ -92,37 +87,32 @@ export default function VerifyEmailScreen() {
 
   useEffect(() => {
     const checkExistingSession = async () => {
-      console.log("🔍 Checking for existing verified session...");
+      if (__DEV__) console.log("🔍 Checking for existing verified session...");
 
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const session = await authApi.getVerifiedSession();
 
-      if (session?.user?.email_confirmed_at) {
-        console.log("✅ Found existing verified session!");
-        console.log("👤 User metadata:", session.user.user_metadata);
+      if (session) {
+        if (__DEV__) console.log("✅ Found existing verified session!");
 
         setTimeout(() => {
           goNext(session.user.user_metadata);
         }, 1000);
       } else {
-        console.log("ℹ️ No verified session found yet");
+        if (__DEV__) console.log("ℹ️ No verified session found yet");
       }
     };
 
     checkExistingSession();
 
     // 🔄 Start auto-polling every 5 seconds to check if email was verified
-    console.log("🔄 Starting auto-verification polling...");
+    if (__DEV__) console.log("🔄 Starting auto-verification polling...");
     pollingIntervalRef.current = setInterval(async () => {
-      console.log("🔄 Auto-checking verification status...");
+      if (__DEV__) console.log("🔄 Auto-checking verification status...");
 
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const session = await authApi.getVerifiedSession();
 
-      if (session?.user?.email_confirmed_at) {
-        console.log("✅ Email verified detected by polling!");
+      if (session) {
+        if (__DEV__) console.log("✅ Email verified detected by polling!");
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current);
         }
@@ -141,7 +131,7 @@ export default function VerifyEmailScreen() {
   const handleManualCheck = async () => {
     try {
       setIsCheckingManually(true);
-      console.log("🔍 Manually checking verification status...");
+      if (__DEV__) console.log("🔍 Manually checking verification status...");
 
       if (!email) {
         Alert.alert("Error", "No email found");
@@ -150,19 +140,17 @@ export default function VerifyEmailScreen() {
       }
 
       // First, try to refresh the current session
-      console.log("🔄 Refreshing session to check verification...");
-      const {
-        data: { session: refreshedSession },
-      } = await supabase.auth.refreshSession();
+      if (__DEV__) console.log("🔄 Refreshing session to check verification...");
+      const refreshedSession = await authApi.refreshVerifiedSession();
 
-      if (refreshedSession?.user?.email_confirmed_at) {
-        console.log("✅ Email verified! Session is active!");
+      if (refreshedSession) {
+        if (__DEV__) console.log("✅ Email verified! Session is active!");
         goNext(refreshedSession.user.user_metadata);
         return;
       }
 
       // If no session or not verified, prompt for password to sign in
-      console.log("⚠️ No active session, prompting for password...");
+      if (__DEV__) console.log("⚠️ No active session, prompting for password...");
 
       Alert.prompt(
         "Enter Password",
@@ -183,35 +171,17 @@ export default function VerifyEmailScreen() {
               }
 
               try {
-                console.log("🔐 Signing in with password...");
-                const { data, error } = await supabase.auth.signInWithPassword({
-                  email: email,
-                  password: password,
-                });
-
-                if (error) {
-                  console.error("❌ Sign in error:", error);
-                  const errorMsg =
-                    error.message === "Invalid login credentials"
-                      ? "Wrong password. Please try again."
-                      : error.message === "Email not confirmed"
-                        ? "Your email hasn't been verified yet. Please verify it first in Supabase:\n\nUPDATE auth.users SET email_confirmed_at = NOW() WHERE email = '" +
-                          email +
-                          "'"
-                        : "Sign in failed: " + error.message;
-
-                  Alert.alert("Sign In Failed", errorMsg);
-                  setIsCheckingManually(false);
-                  return;
-                }
-
-                if (data.session?.user?.email_confirmed_at) {
-                  console.log("✅ Signed in successfully with verified email!");
-                  console.log(
-                    "👤 User metadata:",
-                    data.session.user.user_metadata
+                if (__DEV__) console.log("🔐 Signing in with password...");
+                const verifiedSession =
+                  await authApi.signInWithPasswordForVerification(
+                    email,
+                    password
                   );
-                  goNext(data.session.user.user_metadata);
+
+                if (verifiedSession) {
+                  if (__DEV__)
+                    console.log("✅ Signed in successfully with verified email!");
+                  goNext(verifiedSession.user.user_metadata);
                 } else {
                   Alert.alert(
                     "Not Verified Yet",
@@ -222,8 +192,18 @@ export default function VerifyEmailScreen() {
                   setIsCheckingManually(false);
                 }
               } catch (err) {
-                console.error("❌ Exception:", err);
-                Alert.alert("Error", "Something went wrong");
+                const errMsg =
+                  err instanceof Error ? err.message : "Unknown error";
+                if (__DEV__) console.error("❌ Sign in error:", errMsg);
+                const displayMsg =
+                  errMsg === "Invalid login credentials"
+                    ? "Wrong password. Please try again."
+                    : errMsg === "Email not confirmed"
+                      ? "Your email hasn't been verified yet. Please verify it first in Supabase:\n\nUPDATE auth.users SET email_confirmed_at = NOW() WHERE email = '" +
+                        email +
+                        "'"
+                      : "Sign in failed: " + errMsg;
+                Alert.alert("Sign In Failed", displayMsg);
                 setIsCheckingManually(false);
               }
             },
@@ -232,18 +212,14 @@ export default function VerifyEmailScreen() {
         "secure-text"
       );
     } catch (error) {
-      console.error("❌ Manual check error:", error);
+      if (__DEV__) console.error("❌ Manual check error:", error);
       Alert.alert("Error", "Something went wrong. Please try again.");
       setIsCheckingManually(false);
     }
   };
 
   useEffect(() => {
-    console.log("📧 VerifyEmail screen loaded with params:", {
-      email,
-      firstName,
-      userType,
-    });
+    if (__DEV__) console.log("📧 VerifyEmail screen loaded");
   }, [email, firstName, userType]);
 
   const openEmailApp = async () => {
@@ -260,38 +236,26 @@ export default function VerifyEmailScreen() {
       }
       await Linking.openURL("https://mail.google.com");
     } catch (error) {
-      console.error("Error opening email app:", error);
+      if (__DEV__) console.error("Error opening email app:", error);
     }
   };
 
   const handleResend = async () => {
     if (!email) {
-      console.error("❌ No email available for resend");
+      if (__DEV__) console.error("❌ No email available for resend");
       Alert.alert("Error", "No email address found");
       return;
     }
 
     try {
-      console.log("📧 Resending verification email to:", email);
-
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: email,
-      });
-
-      if (error) {
-        console.error("❌ Error resending email:", error);
-        Alert.alert("Error", "Failed to resend verification email");
-        return;
-      }
-
-      console.log("✅ Verification email resent successfully");
+      await authApi.resendVerificationEmail(email);
+      if (__DEV__) console.log("✅ Verification email resent successfully");
       Alert.alert(
         "Success",
         "New verification email sent! Check your inbox. Link expires in 1 hour."
       );
     } catch (error) {
-      console.error("❌ Exception resending email:", error);
+      if (__DEV__) console.error("❌ Exception resending email:", error);
       Alert.alert("Error", "Something went wrong. Please try again.");
     }
   };

@@ -32,8 +32,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Import hooks and types
-import { supabase } from "@/src/config/supabase";
 import { useChatRealtime } from "@/src/features/messaging/hooks/useChatRealtime";
+import { useCurrentUserId } from "@/src/features/messaging/hooks/useCurrentUserId";
 import { useMessages } from "@/src/features/messaging/hooks/useMessages";
 import { useMessageUpload } from "@/src/features/messaging/hooks/useMessageUpload";
 import type { Message as MessageType } from "@/src/features/messaging/types/messaging.types";
@@ -68,20 +68,13 @@ export default function ChatScreen() {
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [, setKeyboardHeight] = useState(0);
-  const [currentUserId, setCurrentUserId] = useState<string>("");
 
   const userName = params.userName || "User";
   const isOnline = params.isOnline === "true";
   const recipientId = params.userId;
 
-  // Get current user ID
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        setCurrentUserId(data.user.id);
-      }
-    });
-  }, []);
+  // Resolve current user ID via the api/ layer (rule A3)
+  const { currentUserId } = useCurrentUserId();
 
   // Initialize messaging hooks
   const {

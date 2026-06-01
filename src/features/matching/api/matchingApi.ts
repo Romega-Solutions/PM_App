@@ -1,6 +1,34 @@
 // src/features/matching/api/matchingApi.ts
 import { supabase } from "@/src/config/supabase";
+import type { User } from "@supabase/supabase-js";
 import { Match, Profile, SwipeResult } from "../types";
+
+/**
+ * Get the currently authenticated Supabase user.
+ * Centralises `supabase.auth.getUser()` so screens never import the
+ * Supabase client directly (architecture rule A3).
+ *
+ * Returns `{ data: User | null, error: any }`.
+ * When the session is absent the error carries `name === "AuthSessionMissingError"`;
+ * callers that want to distinguish that case can use `isMissingAuthSession()`.
+ */
+export const getCurrentUser = async (): Promise<{
+  data: User | null;
+  error: any;
+}> => {
+  try {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+    return { data: user, error };
+  } catch (error) {
+    if (__DEV__) {
+      console.error("getCurrentUser error:", error);
+    }
+    return { data: null, error };
+  }
+};
 
 /**
  * Calculate distance between two coordinates using Haversine formula

@@ -10,6 +10,31 @@ import { supabase } from "@/src/config/supabase";
 import type { ConversationWithUser } from "../types/messaging.types";
 
 /**
+ * Get the currently authenticated user's ID.
+ * Used by screens (via hook) to resolve the current user without importing
+ * supabase directly — keeps supabase confined to the api/ layer (rule A3).
+ */
+export async function getCurrentUserId(): Promise<{
+  userId: string | null;
+  error: Error | null;
+}> {
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) throw error;
+    return { userId: data.user?.id ?? null, error: null };
+  } catch (error) {
+    if (__DEV__) {
+      console.log("[conversationsApi] getCurrentUserId error:", error);
+    }
+    return {
+      userId: null,
+      error:
+        error instanceof Error ? error : new Error("Failed to get current user"),
+    };
+  }
+}
+
+/**
  * Get all conversations for a user with participant details and last message
  */
 export async function getConversationsForUser(

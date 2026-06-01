@@ -19,6 +19,72 @@ export interface ProfileData {
   updated_at?: string;
 }
 
+/**
+ * Shape returned by getProfileScreenData — the exact columns queried by
+ * ProfileScreen (verbatim from the inline call that was relocated here).
+ */
+export interface ProfileScreenRow {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  age: number;
+  user_type: string;
+  gender: string;
+  location_name: string;
+  photos: string[];
+  is_verified: boolean;
+}
+
+/**
+ * Fetch the current session and then load the profile row used by
+ * ProfileScreen. Mirrors the two-step inline logic that previously lived in
+ * the screen:
+ *   1. supabase.auth.getSession()  → obtain userId
+ *   2. supabase.from("profiles").select(...).eq("id", userId).single()
+ *
+ * Returns `null` when there is no active session (guest / unauthenticated).
+ * Throws on a database error so TanStack Query can surface it.
+ */
+export async function getProfileScreenData(): Promise<ProfileScreenRow | null> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.user) {
+    return null;
+  }
+
+  const userId = session.user.id;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(
+      "id, email, first_name, last_name, age, user_type, gender, location_name, photos, is_verified",
+    )
+    .eq("id", userId)
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data as ProfileScreenRow;
+}
+
+/**
+ * Sign the current user out via Supabase Auth.
+ * Verbatim relocation of `supabase.auth.signOut()` from ProfileScreen.
+ *
+ * Throws if Supabase returns an error so the caller can handle it.
+ */
+export async function signOutUser(): Promise<void> {
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 export interface UpdateProfileData {
   first_name?: string;
   last_name?: string;

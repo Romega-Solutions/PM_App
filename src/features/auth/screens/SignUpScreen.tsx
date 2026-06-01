@@ -10,9 +10,9 @@ import SocialSignInButton from "@/src/components/auth/SocialSignInButton";
 import CustomTextInput from "@/src/components/forms/CustomTextInput";
 import FormDivider from "@/src/components/forms/FormDivider";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
-import { supabase } from "@/src/config/supabase";
 import { useSignupStore } from "@/src/stores/signupStore";
 import { theme } from "@/src/theme";
+import { authApi } from "../api/authApi";
 import { useSignUp } from "../hooks/useSignUp";
 
 const { width } = Dimensions.get("window");
@@ -98,8 +98,8 @@ function SignUpScreen() {
 
     try {
       // ⚠️ Sign out any existing session first to avoid conflicts
-      console.log("🚪 Signing out any existing session...");
-      await supabase.auth.signOut();
+      if (__DEV__) console.log("🚪 Signing out any existing session...");
+      await authApi.signOut();
 
       const signupData = {
         email: form.email.toLowerCase().trim(),
@@ -107,7 +107,7 @@ function SignUpScreen() {
         userType: userType,
       };
 
-      console.log("🚀 Starting signup with:", signupData);
+      if (__DEV__) console.log("🚀 Starting signup...");
 
       // 💾 SAVE TO ZUSTAND STORE FIRST
       saveSignupData(signupData);
@@ -117,14 +117,11 @@ function SignUpScreen() {
         userType: userType,
       });
 
-      console.log("✅ Signup result:", result);
+      if (__DEV__) console.log("✅ Signup result received");
 
       // Always check if email verification is needed
       if (result?.needsVerification) {
-        console.log(
-          "📧 Email not verified yet - navigating to verification screen with params:",
-          signupData
-        );
+        if (__DEV__) console.log("📧 Email not verified yet - navigating to verification screen");
 
         router.replace({
           pathname: "/(auth)/verify-email",
@@ -134,7 +131,7 @@ function SignUpScreen() {
       }
 
       // If email is already verified (shouldn't happen on first signup, but just in case)
-      console.log("✅ Email already verified - proceeding to account setup");
+      if (__DEV__) console.log("✅ Email already verified - proceeding to account setup");
       router.replace({
         pathname: "/(auth)/account-setup/basic-info",
         params: {

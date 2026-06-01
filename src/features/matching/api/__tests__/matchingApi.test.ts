@@ -1,11 +1,19 @@
 // src/features/matching/api/__tests__/matchingApi.test.ts
 import { supabase } from "@/src/config/supabase";
-import { likeProfile, passProfile, superLikeProfile } from "../matchingApi";
+import {
+  getCurrentUser,
+  likeProfile,
+  passProfile,
+  superLikeProfile,
+} from "../matchingApi";
 
-// Mock Supabase client
+// Mock Supabase client — includes both `from` (table queries) and `auth`
 jest.mock("@/src/config/supabase", () => ({
   supabase: {
     from: jest.fn(),
+    auth: {
+      getUser: jest.fn(),
+    },
   },
 }));
 
@@ -507,5 +515,99 @@ describe("superLikeProfile", () => {
     expect(result.success).toBe(true);
     expect(result.isMatch).toBe(true);
     expect(result.matchedProfile).toEqual(mockProfile);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getCurrentUser
+// ---------------------------------------------------------------------------
+
+describe("getCurrentUser", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe("✅ Success Cases", () => {
+    it("should return the authenticated user when session is valid", async () => {
+      const mockUser = {
+        id: "user-123",
+        email: "test@example.com",
+        aud: "authenticated",
+      };
+
+      (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      const result = await getCurrentUser();
+
+      expect(result.data).toEqual(mockUser);
+      expect(result.error).toBeNull();
+    });
+
+    it("should return null user with no error when session is missing (bypass flow)", async () => {
+      const authSessionMissingError = {
+        name: "AuthSessionMissingError",
+        message: "Auth session missing!",
+        status: 400,
+      };
+
+      (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+        data: { user: null },
+        error: authSessionMissingError,
+      });
+
+      const result = await getCurrentUser();
+
+      // AuthSessionMissingError is surfaced as-is — callers decide how to handle
+      expect(result.data).toBeNull();
+      expect(result.error).toEqual(authSessionMissingError);
+    });
+  });
+
+  describe("❌ Error Cases", () => {
+    it("should return null data and the error on a generic auth error", async () => {
+      const authError = {
+        name: "AuthApiError",
+        message: "Invalid JWT",
+        status: 401,
+      };
+
+      (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+        data: { user: null },
+        error: authError,
+      });
+
+      const result = await getCurrentUser();
+
+      expect(result.data).toBeNull();
+      expect(result.error).toEqual(authError);
+    });
+
+    it("should catch a thrown exception and return { data: null, error }", async () => {
+      const networkError = new Error("Network request failed");
+
+      (supabase.auth.getUser as jest.Mock).mockRejectedValue(networkError);
+
+      const result = await getCurrentUser();
+
+      expect(result.data).toBeNull();
+      expect(result.error).toBe(networkError);
+    });
+  });
+
+  describe("🔍 Edge Cases", () => {
+    it("should return null when supabase returns null user without error", async () => {
+      (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+        data: { user: null },
+        error: null,
+      });
+
+      const result = await getCurrentUser();
+
+      expect(result.data).toBeNull();
+      expect(result.error).toBeNull();
+    });
   });
 });

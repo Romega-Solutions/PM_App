@@ -36,10 +36,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { supabase } from "@/src/config/supabase";
 import { accountApi } from "@/src/features/account/api/accountApi";
 import { UserType } from "@/src/features/auth/api/authApi";
 import { useProfileStore } from "@/src/stores/profileStore";
+import { useProfileScreen } from "../hooks/useProfileScreen";
 import { ProfileHeader } from "../components/ProfileHeader";
 import {
     ProfileMenuList,
@@ -85,87 +85,54 @@ export const ProfileScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
 
   // Zustand store
   const { setProfile, clearProfile } = useProfileStore();
 
-  // Fetch profile data on mount
+  // Data hook — replaces the inline supabase calls (A3 compliance).
+  const { profileRow, loading, signOut } = useProfileScreen();
+
+  // Derive local ProfileData from the query result, mirroring the exact
+  // mapping that previously lived in the inline useEffect.
   useEffect(() => {
-    const fetchProfileData = async () => {
-      try {
-        // Get current session
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+    if (loading) return;
 
-        if (!session?.user) {
-          // TEMP TEST BYPASS: show a guest profile instead of sending testers
-          // back to auth. Auth remains available under /(auth).
-          setProfileData(TEST_GUEST_PROFILE);
-          setLoading(false);
-          return;
-        }
+    if (!profileRow) {
+      // No active session — show guest profile (TEMP TEST BYPASS).
+      setProfileData(TEST_GUEST_PROFILE);
+      return;
+    }
 
-        const userId = session.user.id;
+    if (__DEV__) {
+      console.log("✅ Profile loaded");
+    }
 
-        // Fetch profile from Supabase
-        const { data: profileFromDB, error } = await supabase
-          .from("profiles")
-          .select(
-            "id, email, first_name, last_name, age, user_type, gender, location_name, photos, is_verified",
-          )
-          .eq("id", userId)
-          .single();
+    const photosArray = profileRow.photos || [];
+    const firstPhoto = photosArray.length > 0 ? photosArray[0] : null;
 
-        if (error) {
-          console.error("❌ Failed to fetch profile:", error);
-          setProfileData(TEST_GUEST_PROFILE);
-          setLoading(false);
-          return;
-        }
-
-        if (profileFromDB) {
-          console.log("✅ Profile loaded:", profileFromDB);
-
-          // Parse photos array
-          const photosArray = profileFromDB.photos || [];
-          const firstPhoto = photosArray.length > 0 ? photosArray[0] : null;
-
-          const data: ProfileData = {
-            firstName: profileFromDB.first_name || "Unknown",
-            lastName: profileFromDB.last_name || "",
-            age: profileFromDB.age || 0,
-            userType: profileFromDB.user_type as UserType,
-            location: profileFromDB.location_name || "Unknown Location",
-            photoUri: firstPhoto,
-            isVerified: profileFromDB.is_verified || false,
-          };
-
-          // Update local state
-          setProfileData(data);
-
-          // Update Zustand store
-          setProfile({
-            id: profileFromDB.id,
-            firstName: data.firstName,
-            lastName: data.lastName,
-            age: data.age,
-            location: data.location,
-            photos: photosArray,
-            isVerified: data.isVerified,
-          });
-        }
-      } catch (error) {
-        console.error("❌ Failed to fetch profile data:", error);
-        setProfileData(TEST_GUEST_PROFILE);
-      } finally {
-        setLoading(false);
-      }
+    const data: ProfileData = {
+      firstName: profileRow.first_name || "Unknown",
+      lastName: profileRow.last_name || "",
+      age: profileRow.age || 0,
+      userType: profileRow.user_type as UserType,
+      location: profileRow.location_name || "Unknown Location",
+      photoUri: firstPhoto,
+      isVerified: profileRow.is_verified || false,
     };
 
-    fetchProfileData();
-  }, [setProfile]);
+    setProfileData(data);
+
+    // Update Zustand store
+    setProfile({
+      id: profileRow.id,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      age: data.age,
+      location: data.location,
+      photos: photosArray,
+      isVerified: data.isVerified,
+    });
+  }, [profileRow, loading, setProfile]);
 
   // Handle menu item press
   const handleMenuItemPress = (route: string) => {
@@ -175,8 +142,8 @@ export const ProfileScreen: React.FC = () => {
   // Handle logout
   const handleLogout = async () => {
     try {
-      // Sign out from Supabase
-      await supabase.auth.signOut();
+      // Sign out via the api layer (A3: no supabase import in screen).
+      await signOut();
 
       // Clear Zustand store
       clearProfile();
@@ -190,7 +157,9 @@ export const ProfileScreen: React.FC = () => {
       // TEMP TEST BYPASS: stay in the app shell after clearing auth state.
       router.replace("/(main)");
     } catch (error) {
-      console.error("❌ Error during logout:", error);
+      if (__DEV__) {
+        console.error("❌ Error during logout:", error);
+      }
       router.replace("/(main)");
     }
   };

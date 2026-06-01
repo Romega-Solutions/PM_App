@@ -13,13 +13,11 @@
  *
  * Architecture:
  * - Uses feature components for modularity
- * - Fetches data from matchingApi
+ * - Fetches data via useCurrentUser + useMatches hooks (no direct supabase import)
  * - No mock data - 100% database-driven
  */
 
-import { supabase } from "@/src/config/supabase";
 import { accountApi } from "@/src/features/account/api/accountApi";
-import { getMatches } from "@/src/features/matching/api/matchingApi";
 import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -35,107 +33,69 @@ import { EmptyMatchesState } from "../components/EmptyMatchesState";
 import { LikesFilter } from "../components/LikesFilter";
 import { LikesHeader } from "../components/LikesHeader";
 import { Match, MatchCard } from "../components/MatchCard";
+import { useCurrentUser, useMatches } from "../hooks/useMatchingQueries";
 
 const BRAND_BG = "#0F0814";
 const ACCENT_PINK = "#EF3E78";
-
-function isMissingAuthSession(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "name" in error &&
-    error.name === "AuthSessionMissingError"
-  );
-}
 
 export default function LikesScreen() {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<"all" | "mutual">("all");
   const [, setUserType] = useState<string | null>(null);
-  const [, setUserId] = useState<string | null>(null);
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  // Fetch user data and matches on mount
+  // ── Auth & data via hooks (no direct supabase import) ──────────────────────
+  const {
+    data: currentUser,
+    isLoading: userLoading,
+  } = useCurrentUser();
+
+  const userId = currentUser?.id ?? null;
+
+  const {
+    data: dbMatches,
+    isLoading: matchesLoading,
+  } = useMatches(userId);
+
+  const loading = userLoading || matchesLoading;
+
+  // Hydrate user type when auth resolves (preserves original behaviour)
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Get current user
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+    if (!currentUser) return;
+    accountApi.getBasicInfo().then((info) => {
+      setUserType(info?.userType ?? null);
+    });
+  }, [currentUser]);
 
-        if (userError || !user) {
-          // TEMP TEST BYPASS: unauthenticated testers can inspect the app shell.
-          // Keep auth code intact; restore login gates before production testing.
-          if (userError && !isMissingAuthSession(userError)) {
-            console.error("Failed to fetch user:", userError);
-          }
-          setLoading(false);
-          return;
-        }
-
-        setUserId(user.id);
-
-        // Get user type
-        const basicInfo = await accountApi.getBasicInfo();
-        setUserType(basicInfo?.userType ?? null);
-
-        // Fetch matches from database
-        const { data: dbMatches, error: matchesError } = await getMatches(
-          user.id,
-        );
-
-        if (matchesError) {
-          console.error("Failed to fetch matches:", matchesError);
-          // Show empty state - no fallback to mock data
-          setMatches([]);
-        } else if (dbMatches && dbMatches.length > 0) {
-          // Convert database matches to display format
-          const displayMatches: Match[] = dbMatches.map((match) => ({
-            id: match.profile.id,
-            name: match.profile.first_name,
-            age: match.profile.age,
-            location: match.profile.city || "Philippines",
-            image: match.profile.photos?.[0]
-              ? { uri: match.profile.photos[0] }
-              : require("../../../../assets/girls/ai1.jpg"),
-            verified: match.profile.is_verified,
-            mutual: match.is_mutual,
-            gender:
-              match.profile.gender === "other"
-                ? "female"
-                : match.profile.gender,
-            matchedAt: match.matched_at,
-          }));
-          setMatches(displayMatches);
-        } else {
-          // No matches in database
-          setMatches([]);
-        }
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-        // Show empty state - no fallback to mock data
-        setMatches([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  // Convert database matches to display format
+  const matches: Match[] = (dbMatches ?? []).map((match) => ({
+    id: match.profile.id,
+    name: match.profile.first_name,
+    age: match.profile.age,
+    location: match.profile.city || "Philippines",
+    image: match.profile.photos?.[0]
+      ? { uri: match.profile.photos[0] }
+      : require("../../../../assets/girls/ai1.jpg"),
+    verified: match.profile.is_verified,
+    mutual: match.is_mutual,
+    gender:
+      match.profile.gender === "other" ? "female" : match.profile.gender,
+    matchedAt: match.matched_at,
+  }));
 
   const filteredMatches =
     filter === "mutual" ? matches.filter((m) => m.mutual) : matches;
 
   const handleMessage = (id: string | number) => {
-    console.log("Message match:", id);
+    if (__DEV__) {
+      console.log("Message match:", id);
+    }
     // TODO: Navigate to messages screen with this match
   };
 
   const handleUnmatch = (id: string | number) => {
-    console.log("Unmatch:", id);
+    if (__DEV__) {
+      console.log("Unmatch:", id);
+    }
     // TODO: Show confirmation dialog and remove match
   };
 

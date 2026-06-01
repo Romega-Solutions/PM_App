@@ -26,7 +26,7 @@ import {
     MessageCircle,
     Search
 } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
     ActivityIndicator,
     Platform,
@@ -40,8 +40,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { supabase } from "@/src/config/supabase";
 import { useConversations } from "@/src/features/messaging/hooks/useConversations";
+import { useCurrentUserId } from "@/src/features/messaging/hooks/useCurrentUserId";
 import { useChatStore } from "@/src/stores/chatStore";
 import { ActiveUserCard } from "../components/ActiveUserCard";
 import { ConversationCard } from "../components/ConversationCard";
@@ -65,20 +65,13 @@ export const MessagesScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentUserId, setCurrentUserId] = useState<string>("");
   const [, setFilterType] = useState<"all" | "unread" | "online">("all");
 
   // Get global unread count from Zustand store
   const totalUnreadCount = useChatStore((state) => state.totalUnreadCount);
 
-  // Get current user ID
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        setCurrentUserId(data.user.id);
-      }
-    });
-  }, []);
+  // Resolve current user ID via the api/ layer (rule A3)
+  const { currentUserId } = useCurrentUserId();
 
   // Fetch conversations from backend (integrates with chatStore)
   const { conversations, loading, error, refresh } = useConversations({

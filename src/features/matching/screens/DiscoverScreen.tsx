@@ -14,15 +14,8 @@
  * @filesize ~420 lines (under 500 limit)
  */
 
-import { supabase } from "@/src/config/supabase";
 import { accountApi } from "@/src/features/account/api/accountApi";
 import { UserType } from "@/src/features/auth/api/authApi";
-import {
-    fetchDiscoverProfiles,
-    likeProfile,
-    passProfile,
-    superLikeProfile,
-} from "@/src/features/matching/api/matchingApi";
 import { Profile as DBProfile } from "@/src/features/matching/types";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
@@ -39,21 +32,19 @@ import { ActionButtons } from "../components/ActionButtons";
 import { MatchModal, MatchedProfile } from "../components/MatchModal";
 import { ProfileCard, ProfileCardData } from "../components/ProfileCard";
 import { ProfileDetailsModal } from "../components/ProfileDetailsModal";
+import {
+    useCurrentUser,
+    useDiscoverProfiles,
+    useLikeProfile,
+    usePassProfile,
+    useSuperLikeProfile,
+} from "../hooks/useMatchingQueries";
 import { useSwipeGesture } from "../hooks/useSwipeGesture";
 
 // Brand Colors
 const BRAND_BG = "#0F0814";
 const ACCENT_PINK = "#EF3E78";
 const WHITE = "#FFFFFF";
-
-function isMissingAuthSession(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "name" in error &&
-    error.name === "AuthSessionMissingError"
-  );
-}
 
 /**
  * Convert database profile to display format
@@ -82,15 +73,33 @@ export const DiscoverScreen: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showInfo, setShowInfo] = useState(false);
   const [, setUserType] = useState<UserType | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [profiles, setProfiles] = useState<ProfileCardData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [displayProfiles, setDisplayProfiles] = useState<ProfileCardData[]>([]);
   const [matchedProfile, setMatchedProfile] = useState<MatchedProfile | null>(
     null,
   );
   const [showMatchModal, setShowMatchModal] = useState(false);
 
-  const currentProfile = profiles[currentIndex] || null;
+  // ── Auth & data via hooks (no direct supabase import) ──────────────────────
+  const {
+    data: currentUser,
+    isLoading: userLoading,
+  } = useCurrentUser();
+
+  const userId = currentUser?.id ?? null;
+
+  const {
+    data: dbProfiles,
+    isLoading: profilesLoading,
+    refetch: refetchProfiles,
+  } = useDiscoverProfiles(userId, 20);
+
+  const likeMutation = useLikeProfile(userId);
+  const passMutation = usePassProfile(userId);
+  const superLikeMutation = useSuperLikeProfile(userId);
+
+  const loading = userLoading || profilesLoading;
+
+  const currentProfile = displayProfiles[currentIndex] || null;
 
   // Swipe gesture hook
   const { pan, rotate, panResponder, resetPosition } = useSwipeGesture({
@@ -101,93 +110,35 @@ export const DiscoverScreen: React.FC = () => {
   });
 
   /**
-   * Load user data and profiles on mount
+   * Hydrate user type when auth resolves (preserves original behaviour)
    */
   useEffect(() => {
-    loadUserDataAndProfiles();
-  }, []);
+    if (!currentUser) return;
+    accountApi.getBasicInfo().then((info) => {
+      setUserType(info?.userType ?? null);
+    });
+  }, [currentUser]);
+
+  /**
+   * Sync fetched db profiles into local display state
+   */
+  useEffect(() => {
+    if (dbProfiles && dbProfiles.length > 0) {
+      setDisplayProfiles(dbProfiles.map(convertDBProfileToDisplay));
+    } else if (dbProfiles) {
+      setDisplayProfiles([]);
+    }
+  }, [dbProfiles]);
 
   /**
    * Load more profiles when running low
    */
   useEffect(() => {
-    if (profiles.length - currentIndex <= 2) {
-      loadMoreProfiles();
+    if (displayProfiles.length - currentIndex <= 2) {
+      refetchProfiles();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadMoreProfiles is re-created each render; trigger only on index/length
-  }, [currentIndex, profiles.length]);
-
-  /**
-   * Fetch user data and initial profiles
-   */
-  async function loadUserDataAndProfiles() {
-    try {
-      // Get current user
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        // TEMP TEST BYPASS: unauthenticated testers can browse the app shell.
-        // Keep auth code intact; restore login gates before production testing.
-        if (userError && !isMissingAuthSession(userError)) {
-          console.error("Failed to fetch user:", userError);
-        }
-        setLoading(false);
-        return;
-      }
-
-      setUserId(user.id);
-
-      // Get user type
-      const basicInfo = await accountApi.getBasicInfo();
-      setUserType(basicInfo?.userType ?? null);
-
-      // Fetch discover profiles from database
-      const { data: dbProfiles, error: profilesError } =
-        await fetchDiscoverProfiles(user.id, 20);
-
-      if (profilesError) {
-        console.error("Failed to fetch profiles:", profilesError);
-        // Show empty state - no fallback to mock data
-        setProfiles([]);
-      } else if (dbProfiles && dbProfiles.length > 0) {
-        // Convert database profiles to display format
-        const displayProfiles: ProfileCardData[] = dbProfiles.map(
-          convertDBProfileToDisplay,
-        );
-        setProfiles(displayProfiles);
-      } else {
-        // No profiles in database
-        setProfiles([]);
-      }
-    } catch (error) {
-      console.error("Failed to fetch user data:", error);
-      // Show empty state - no fallback to mock data
-      setProfiles([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  /**
-   * Load more profiles when running low
-   */
-  async function loadMoreProfiles() {
-    if (!userId) return;
-
-    try {
-      const { data: dbProfiles } = await fetchDiscoverProfiles(userId, 10);
-
-      if (dbProfiles && dbProfiles.length > 0) {
-        const displayProfiles = dbProfiles.map(convertDBProfileToDisplay);
-        setProfiles((prev) => [...prev, ...displayProfiles]);
-      }
-    } catch (error) {
-      console.error("Failed to load more profiles:", error);
-    }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetchProfiles identity is stable; trigger only on index/length
+  }, [currentIndex, displayProfiles.length]);
 
   /**
    * Handle like action
@@ -195,16 +146,16 @@ export const DiscoverScreen: React.FC = () => {
   async function handleLike() {
     if (!userId || !currentProfile) return;
 
-    // Save like to database
-    const result = await likeProfile(userId, currentProfile.id);
+    const result = await likeMutation.mutateAsync({
+      fromUserId: userId,
+      toUserId: currentProfile.id,
+    });
 
     if (result.success && result.isMatch) {
-      // Show match modal
       setMatchedProfile(result.matchedProfile || null);
       setShowMatchModal(true);
     }
 
-    // Move to next profile
     moveToNextProfile();
   }
 
@@ -214,10 +165,11 @@ export const DiscoverScreen: React.FC = () => {
   async function handlePass() {
     if (!userId || !currentProfile) return;
 
-    // Save pass to database
-    await passProfile(userId, currentProfile.id);
+    await passMutation.mutateAsync({
+      fromUserId: userId,
+      toUserId: currentProfile.id,
+    });
 
-    // Move to next profile
     moveToNextProfile();
   }
 
@@ -227,16 +179,16 @@ export const DiscoverScreen: React.FC = () => {
   async function handleSuperLike() {
     if (!userId || !currentProfile) return;
 
-    // Save super like to database
-    const result = await superLikeProfile(userId, currentProfile.id);
+    const result = await superLikeMutation.mutateAsync({
+      fromUserId: userId,
+      toUserId: currentProfile.id,
+    });
 
     if (result.success && result.isMatch) {
-      // Show match modal
       setMatchedProfile(result.matchedProfile || null);
       setShowMatchModal(true);
     }
 
-    // Move to next profile
     moveToNextProfile();
   }
 
@@ -259,7 +211,9 @@ export const DiscoverScreen: React.FC = () => {
 
   function handleSendMessage() {
     // TODO: Navigate to messages screen with matched profile
-    console.log("Send message to:", matchedProfile);
+    if (__DEV__) {
+      console.log("Send message to:", matchedProfile?.id);
+    }
     setShowMatchModal(false);
     setMatchedProfile(null);
   }
@@ -280,7 +234,7 @@ export const DiscoverScreen: React.FC = () => {
   }
 
   // No profiles available
-  if (profiles.length === 0 || !currentProfile) {
+  if (displayProfiles.length === 0 || !currentProfile) {
     return (
       <View style={[styles.root, styles.centerContent]}>
         <LinearGradient
@@ -332,9 +286,9 @@ export const DiscoverScreen: React.FC = () => {
         )}
 
         {/* Next Profile Card (Preview) */}
-        {profiles[currentIndex + 1] && (
+        {displayProfiles[currentIndex + 1] && (
           <ProfileCard
-            profile={profiles[currentIndex + 1]}
+            profile={displayProfiles[currentIndex + 1]}
             pan={pan}
             rotate={rotate}
             panHandlers={{}}
