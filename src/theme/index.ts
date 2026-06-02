@@ -24,6 +24,7 @@ export { iconSizes } from "./iconSizes";
 export type { IconSize } from "./iconSizes";
 export { useTheme } from "./useTheme";
 export type { AppTheme } from "./useTheme";
+export { withAlpha } from "./colorUtils";
 
 // Export a complete theme object (defaults to the light semantic palette)
 export const theme = {

@@ -1,26 +1,22 @@
-import { colors } from "@/src/theme";
+import { theme, useTheme, withAlpha } from "@/src/theme";
 import { useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import React from "react";
-import {
-  Dimensions,
-  Platform,
-  StyleSheet,
-  TouchableOpacity,
-} from "react-native";
+import { Platform, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const { width } = Dimensions.get("window");
-const scale = (size: number) => (width / 375) * size;
-const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
 interface BackButtonProps {
   onPress?: () => void;
+  accessibilityLabel?: string;
 }
 
-export default function BackButton({ onPress }: BackButtonProps) {
+export default function BackButton({
+  onPress,
+  accessibilityLabel = "Go back",
+}: BackButtonProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
 
   const handlePress = () => {
     if (onPress) {
@@ -31,25 +27,26 @@ export default function BackButton({ onPress }: BackButtonProps) {
   };
 
   return (
-    <TouchableOpacity
-      style={[
+    <Pressable
+      style={({ pressed }) => [
         styles.button,
         {
-          top: insets.top + moderateScale(12),
-          left: moderateScale(16),
+          top: insets.top + theme.spacing.md,
+          left: theme.spacing.md,
+          backgroundColor: pressed
+            ? withAlpha(colors.onPrimary, 0.18)
+            : withAlpha(colors.onPrimary, 0.12),
+          shadowColor: colors.brandOverlay,
         },
       ]}
       onPress={handlePress}
+      hitSlop={8}
       accessible
       accessibilityRole="button"
-      accessibilityLabel="Go back"
+      accessibilityLabel={accessibilityLabel}
     >
-      <ArrowLeft 
-        size={moderateScale(24)} 
-        color={colors.neutral.white} 
-        strokeWidth={2.5} 
-      />
-    </TouchableOpacity>
+      <ArrowLeft size={theme.iconSizes.base} color={colors.onPrimary} strokeWidth={2.5} />
+    </Pressable>
   );
 }
 
@@ -57,17 +54,15 @@ const styles = StyleSheet.create({
   button: {
     position: "absolute",
     zIndex: 10,
-    width: moderateScale(40),
-    height: moderateScale(40),
-    borderRadius: moderateScale(20),
-    backgroundColor: `${colors.neutral.white}1F`, // 12% opacity
+    width: Platform.OS === "android" ? 48 : 44,
+    height: Platform.OS === "android" ? 48 : 44,
+    borderRadius: theme.borderRadius.full,
     justifyContent: "center",
     alignItems: "center",
     ...Platform.select({
       ios: {
-        shadowColor: colors.neutral.black,
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.12,
         shadowRadius: 8,
       },
       android: {

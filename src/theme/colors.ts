@@ -12,6 +12,7 @@
  *   getSemanticColors(scheme) — pick a theme; use the useTheme() hook in components.
  *   semanticColors — backward-compatible alias of lightColors.
  */
+import { withAlpha } from './colorUtils';
 
 // ── Primitive ramps ──────────────────────────────────────────────────────────
 export const colors = {
@@ -122,6 +123,18 @@ export const lightColors = {
   surface: colors.neutral[50],
   surfaceElevated: colors.neutral.white,
   raised: colors.neutral[100],
+  brandBackground: '#0F0814',
+  brandSurface: withAlpha(colors.neutral.white, 0.08),
+  brandSurfaceElevated: withAlpha(colors.neutral.white, 0.12),
+  brandBorder: withAlpha(colors.neutral.white, 0.14),
+  brandOverlay: withAlpha(colors.neutral.black, 0.55),
+  brandScrim: withAlpha(colors.neutral.black, 0.72),
+  tabBar: withAlpha(colors.neutral[950], 0.92),
+  tabBarBorder: withAlpha(colors.neutral.white, 0.12),
+  tabActive: colors.amihan[500],
+  tabInactive: colors.neutral[500],
+  chip: withAlpha(colors.amihan[500], 0.1),
+  chipBorder: withAlpha(colors.amihan[500], 0.22),
 
   // lines
   border: colors.neutral[200],
@@ -150,6 +163,9 @@ export const lightColors = {
   error: colors.error[600],
   errorBg: colors.error[100],
   errorInk: colors.error[700],
+  danger: colors.error[600],
+  dangerBg: colors.error[100],
+  dangerInk: colors.error[700],
   onStatus: colors.neutral.white,
 } satisfies Record<string, string>;
 
@@ -179,6 +195,18 @@ export const darkColors = {
   surface: darkGround.surface,
   surfaceElevated: darkGround.surfaceElevated,
   raised: darkGround.raised,
+  brandBackground: darkGround.bg,
+  brandSurface: withAlpha(colors.neutral.white, 0.08),
+  brandSurfaceElevated: withAlpha(colors.neutral.white, 0.12),
+  brandBorder: withAlpha(colors.neutral.white, 0.14),
+  brandOverlay: withAlpha(colors.neutral.black, 0.55),
+  brandScrim: withAlpha(colors.neutral.black, 0.72),
+  tabBar: withAlpha(colors.neutral[950], 0.92),
+  tabBarBorder: withAlpha(colors.neutral.white, 0.12),
+  tabActive: colors.amihan[500],
+  tabInactive: darkGround.textTertiary,
+  chip: withAlpha(colors.neutral.white, 0.08),
+  chipBorder: withAlpha(colors.neutral.white, 0.14),
 
   // lines
   border: darkGround.border,
@@ -207,6 +235,9 @@ export const darkColors = {
   error: colors.error[600],
   errorBg: darkGround.errorBg,
   errorInk: colors.error[300],
+  danger: colors.error[600],
+  dangerBg: darkGround.errorBg,
+  dangerInk: colors.error[300],
   onStatus: colors.neutral.white,
 } satisfies SemanticColors;
 

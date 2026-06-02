@@ -33,7 +33,7 @@ export default function VerifyEmailScreen() {
 
   const didNavigate = useRef(false);
   const [isCheckingManually, setIsCheckingManually] = useState(false);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [fontsLoaded] = useFonts({
     Lora: require("@/assets/fonts/lora/Lora-SemiBold.ttf"),

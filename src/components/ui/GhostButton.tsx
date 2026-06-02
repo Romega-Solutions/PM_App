@@ -1,6 +1,13 @@
+import { theme, useTheme, withAlpha } from "@/src/theme";
 import React from "react";
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, View, Platform } from "react-native";
-import { theme } from "@/src/theme";
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 interface GhostButtonProps {
   title: string;
@@ -21,28 +28,35 @@ export default function GhostButton({
   accessibilityLabel,
   accessibilityHint,
 }: GhostButtonProps) {
+  const { colors } = useTheme();
   const isDisabled = disabled || loading;
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
       disabled={isDisabled}
-      style={[styles.button, isDisabled && styles.buttonDisabled]}
-      activeOpacity={0.7}
+      style={({ pressed }) => [
+        styles.button,
+        {
+          opacity: isDisabled ? 0.48 : pressed ? 0.78 : 1,
+          backgroundColor: pressed ? withAlpha(colors.onPrimary, 0.08) : "transparent",
+        },
+      ]}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || title}
       accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       accessible
     >
       {loading ? (
-        <ActivityIndicator size="small" color="rgba(255,255,255,0.85)" />
+        <ActivityIndicator size="small" color={colors.onPrimary} />
       ) : (
         <View style={styles.content}>
-          {icon && <View style={styles.icon}>{icon}</View>}
-          <Text style={[styles.text, isDisabled && styles.textDisabled]}>{title}</Text>
+          {icon ? <View style={styles.icon}>{icon}</View> : null}
+          <Text style={[styles.text, { color: colors.onPrimary }]}>{title}</Text>
         </View>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -51,14 +65,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 16,
+    borderRadius: theme.borderRadius.xl,
     paddingVertical: Platform.OS === "ios" ? 16 : 14,
-    paddingHorizontal: 24,
-    minHeight: Platform.OS === "ios" ? 56 : 52,
-    backgroundColor: "transparent",
-  },
-  buttonDisabled: {
-    opacity: 0.4,
+    paddingHorizontal: theme.spacing.lg,
+    minHeight: Platform.OS === "android" ? 52 : 56,
   },
   content: {
     flexDirection: "row",
@@ -66,14 +76,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   text: {
-    fontSize: 16,
-    fontFamily: theme.fontFamilies?.body?.semiBold ?? "System",
-    color: "rgba(255,255,255,0.85)",
+    ...theme.textStyles.button,
     textAlign: "center",
-    letterSpacing: 0.3,
-  },
-  textDisabled: {
-    opacity: 0.6,
   },
   icon: {
     marginRight: 4,

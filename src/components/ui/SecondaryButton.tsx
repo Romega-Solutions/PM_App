@@ -1,22 +1,14 @@
-import { colors, theme } from "@/src/theme";
+import { theme, useTheme, withAlpha, type SemanticColors } from "@/src/theme";
 import React from "react";
 import {
   ActivityIndicator,
-  Dimensions,
   DimensionValue,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
-
-const { width } = Dimensions.get("window");
-
-// Responsive scaling
-const scale = (size: number) => (width / 375) * size;
-const moderateScale = (size: number, factor = 0.5) =>
-  size + (scale(size) - size) * factor;
 
 interface SecondaryButtonProps {
   title: string;
@@ -29,6 +21,43 @@ interface SecondaryButtonProps {
   accessibilityHint?: string;
 }
 
+type VariantStyle = {
+  backgroundColor: string;
+  borderColor: string;
+  shadowColor: string;
+  textColor: string;
+};
+
+const getVariantStyle = (
+  colors: SemanticColors,
+  variant: "purple" | "pink" | "white",
+): VariantStyle => {
+  if (variant === "pink") {
+    return {
+      backgroundColor: withAlpha(colors.primary, 0.12),
+      borderColor: withAlpha(colors.primary, 0.4),
+      shadowColor: colors.primary,
+      textColor: colors.onPrimary,
+    };
+  }
+
+  if (variant === "white") {
+    return {
+      backgroundColor: withAlpha(colors.onPrimary, 0.12),
+      borderColor: withAlpha(colors.onPrimary, 0.38),
+      shadowColor: colors.onPrimary,
+      textColor: colors.onPrimary,
+    };
+  }
+
+  return {
+    backgroundColor: withAlpha(colors.secondary, 0.12),
+    borderColor: withAlpha(colors.secondary, 0.4),
+    shadowColor: colors.secondary,
+    textColor: colors.onSecondary,
+  };
+};
+
 export default function SecondaryButton({
   title,
   onPress,
@@ -39,104 +68,66 @@ export default function SecondaryButton({
   accessibilityLabel,
   accessibilityHint,
 }: SecondaryButtonProps) {
+  const { colors } = useTheme();
   const isDisabled = disabled || loading;
-
-  const variantStyles = getVariantStyles(variant);
+  const variantStyle = getVariantStyle(colors, variant);
 
   return (
-    <TouchableOpacity
-      style={[
+    <Pressable
+      style={({ pressed }) => [
         styles.container,
-        variantStyles.container,
         {
           width: customWidth,
-          opacity: isDisabled ? 0.6 : 1,
+          backgroundColor: variantStyle.backgroundColor,
+          borderColor: variantStyle.borderColor,
+          shadowColor: variantStyle.shadowColor,
+          opacity: isDisabled ? 0.56 : pressed ? 0.88 : 1,
         },
       ]}
       onPress={onPress}
-      activeOpacity={0.8}
       disabled={isDisabled}
       accessible
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || title}
       accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
+      android_ripple={{ color: withAlpha(variantStyle.textColor, 0.14) }}
     >
       <View style={styles.content}>
         {loading ? (
-          <ActivityIndicator size="small" color={colors.neutral.white} />
+          <ActivityIndicator size="small" color={variantStyle.textColor} />
         ) : null}
 
-        <Text style={[styles.text, variantStyles.text]}>
+        <Text style={[styles.text, { color: variantStyle.textColor }]}>
           {loading ? "Loading..." : title}
         </Text>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
-}
-
-function getVariantStyles(variant: "purple" | "pink" | "white") {
-  const variants = {
-    purple: {
-      container: {
-        backgroundColor: `${colors.dalisay[500]}1F`, // 12% opacity
-        borderColor: `${colors.dalisay[500]}66`, // 40% opacity
-        shadowColor: colors.dalisay[500],
-      },
-      text: {
-        textShadowColor: `${colors.dalisay[500]}80`, // 50% opacity
-      },
-    },
-    pink: {
-      container: {
-        backgroundColor: `${colors.amihan[500]}1F`,
-        borderColor: `${colors.amihan[500]}66`,
-        shadowColor: colors.amihan[500],
-      },
-      text: {
-        textShadowColor: `${colors.amihan[500]}80`,
-      },
-    },
-    white: {
-      container: {
-        backgroundColor: `${colors.neutral.white}1F`,
-        borderColor: `${colors.neutral.white}66`,
-        shadowColor: colors.neutral.white,
-      },
-      text: {
-        textShadowColor: `${colors.neutral.white}80`,
-      },
-    },
-  };
-
-  return variants[variant];
 }
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: moderateScale(28),
-    height: moderateScale(56),
+    minHeight: 56,
+    borderRadius: theme.borderRadius.full,
     borderWidth: Platform.select({ ios: 1.5, android: 2, web: 1.5 }),
     justifyContent: "center",
     alignItems: "center",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: Platform.select({ ios: 0.25, android: 0.2, web: 0.2 }),
+    shadowOpacity: Platform.select({ ios: 0.24, android: 0.18, web: 0.18 }),
     shadowRadius: 12,
     elevation: 6,
   },
-
   content: {
+    minHeight: 56,
     flexDirection: "row",
     alignItems: "center",
-    gap: moderateScale(8),
-    paddingHorizontal: theme.spacing.md,
+    justifyContent: "center",
+    gap: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
   },
-
   text: {
-    color: colors.neutral.white,
-    fontSize: moderateScale(18),
-    fontFamily: theme.fontFamilies.body.semiBold,
-    letterSpacing: Platform.select({ ios: 0.5, android: 0.3, web: 0.4 }),
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    ...theme.textStyles.button,
+    textAlign: "center",
   },
 });

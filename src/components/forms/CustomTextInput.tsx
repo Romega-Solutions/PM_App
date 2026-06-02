@@ -1,26 +1,18 @@
-import { colors, semanticColors, theme } from "@/src/theme";
+import { theme, useTheme, withAlpha } from "@/src/theme";
 import { LucideIcon } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-  Dimensions,
   KeyboardTypeOptions,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
   TextInputProps,
   TextStyle,
-  TouchableOpacity,
   View,
   ViewStyle,
 } from "react-native";
-
-const { width } = Dimensions.get("window");
-
-// Responsive scaling
-const scale = (size: number) => (width / 375) * size;
-const moderateScale = (size: number, factor = 0.5) =>
-  size + (scale(size) - size) * factor;
 
 interface CustomTextInputProps
   extends Omit<
@@ -34,6 +26,7 @@ interface CustomTextInputProps
   LeftIcon?: LucideIcon;
   RightIcon?: LucideIcon;
   onRightIconPress?: () => void;
+  rightIconAccessibilityLabel?: string;
   secureTextEntry?: boolean;
   keyboardType?: KeyboardTypeOptions;
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
@@ -78,8 +71,6 @@ interface CustomTextInputProps
     | "username"
     | "off";
   error?: string;
-
-  // Optional style overrides
   containerStyle?: ViewStyle;
   labelStyle?: TextStyle;
   inputStyle?: TextStyle;
@@ -94,6 +85,7 @@ export default function CustomTextInput({
   LeftIcon,
   RightIcon,
   onRightIconPress,
+  rightIconAccessibilityLabel = "Toggle input option",
   secureTextEntry = false,
   keyboardType = "default",
   autoCapitalize = "sentences",
@@ -108,90 +100,101 @@ export default function CustomTextInput({
   ...props
 }: CustomTextInputProps) {
   const [focused, setFocused] = useState(false);
+  const { colors } = useTheme();
   const hasValue = !!value?.length;
 
-  // Fixed: Remove type annotations to let TypeScript infer
-  const handleFocus = (e: any) => {
+  const handleFocus: NonNullable<TextInputProps["onFocus"]> = (event) => {
     setFocused(true);
-    onFocus?.(e);
+    onFocus?.(event);
   };
 
-  const handleBlur = (e: any) => {
+  const handleBlur: NonNullable<TextInputProps["onBlur"]> = (event) => {
     setFocused(false);
-    onBlur?.(e);
+    onBlur?.(event);
   };
 
-  // Dynamic border color using theme
   const borderColor = error
-    ? semanticColors.error
+    ? colors.error
     : focused
-      ? semanticColors.primary
+      ? colors.primary
       : hasValue
-        ? `${semanticColors.primary}80` // 50% opacity
-        : `${semanticColors.secondary}40`; // 25% opacity
+        ? withAlpha(colors.primary, 0.5)
+        : colors.brandBorder;
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {/* Label */}
-      {label ? <Text style={[styles.label, labelStyle]}>{label}</Text> : null}
+      {label ? (
+        <Text style={[styles.label, { color: colors.onPrimary }, labelStyle]}>
+          {label}
+        </Text>
+      ) : null}
 
-      {/* Input container */}
-      <View style={{ position: "relative" }}>
+      <View style={styles.inputFrame}>
         <TextInput
           style={[
             styles.input,
             {
-              paddingLeft: LeftIcon ? moderateScale(52) : moderateScale(18),
-              paddingRight: RightIcon ? moderateScale(52) : moderateScale(18),
+              paddingLeft: LeftIcon ? 52 : 18,
+              paddingRight: RightIcon ? 56 : 18,
               borderColor,
+              backgroundColor: colors.brandSurface,
+              color: colors.onPrimary,
             },
             inputStyle,
           ]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={`${colors.neutral.white}66`} // 40% opacity
+          placeholderTextColor={withAlpha(colors.onPrimary, 0.48)}
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           autoComplete={autoComplete}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          selectionColor={`${semanticColors.secondary}E6`} // 90% opacity
+          selectionColor={colors.secondary}
+          accessibilityLabel={props.accessibilityLabel || label || placeholder}
           {...props}
         />
 
-        {/* Left icon */}
         {LeftIcon ? (
-          <View style={styles.leftIconWrap}>
+          <View style={styles.leftIconWrap} pointerEvents="none">
             <LeftIcon
-              size={moderateScale(20)}
-              color={`${semanticColors.primary}B3`} // 70% opacity
+              size={theme.iconSizes.md}
+              color={withAlpha(colors.primary, 0.76)}
               strokeWidth={2}
             />
           </View>
         ) : null}
 
-        {/* Right icon */}
         {RightIcon ? (
-          <TouchableOpacity
+          <Pressable
             onPress={onRightIconPress}
+            disabled={!onRightIconPress}
             style={styles.rightIconWrap}
+            hitSlop={8}
             accessible
             accessibilityRole="button"
-            accessibilityLabel="Toggle input option"
+            accessibilityLabel={rightIconAccessibilityLabel}
+            accessibilityState={{ disabled: !onRightIconPress }}
           >
             <RightIcon
-              size={moderateScale(20)}
-              color={`${colors.neutral.white}B3`} // 70% opacity
+              size={theme.iconSizes.md}
+              color={withAlpha(colors.onPrimary, 0.76)}
               strokeWidth={2}
             />
-          </TouchableOpacity>
+          </Pressable>
         ) : null}
       </View>
 
-      {/* Error text */}
-      {error ? <Text style={[styles.error, errorStyle]}>{error}</Text> : null}
+      {error ? (
+        <Text
+          style={[styles.error, { color: colors.errorInk }, errorStyle]}
+          accessibilityRole="alert"
+        >
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -200,60 +203,49 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: theme.spacing.lg,
   },
-
   label: {
-    fontSize: moderateScale(15),
-    color: colors.neutral.white,
+    ...theme.textStyles.label,
     marginBottom: theme.spacing.sm,
-    letterSpacing: Platform.select({ ios: 0.3, android: 0.2, web: 0.3 }),
-    fontFamily: theme.fontFamilies.body.semiBold,
   },
-
+  inputFrame: {
+    position: "relative",
+  },
   input: {
-    backgroundColor: `${colors.neutral.white}14`, // 8% opacity
-    borderRadius: moderateScale(16),
+    ...theme.textStyles.input,
+    borderRadius: theme.borderRadius.xl,
     paddingVertical: Platform.select({
-      ios: moderateScale(18),
-      android: moderateScale(16),
-      web: moderateScale(16),
+      ios: 18,
+      android: 16,
+      web: 16,
     }),
-    fontSize: moderateScale(16),
-    color: colors.neutral.white,
     borderWidth: Platform.select({ ios: 2, android: 2, web: 1.5 }),
     minHeight: Platform.select({
-      ios: moderateScale(56),
-      android: moderateScale(52),
-      web: moderateScale(52),
+      ios: 56,
+      android: 52,
+      web: 52,
     }),
-    fontFamily: theme.fontFamilies.body.regular,
-    letterSpacing: Platform.select({ ios: 0.2, android: 0.15, web: 0.2 }),
   },
-
   leftIconWrap: {
     position: "absolute",
-    left: moderateScale(18),
+    left: 18,
     top: 0,
     bottom: 0,
     justifyContent: "center",
     alignItems: "center",
   },
-
   rightIconWrap: {
     position: "absolute",
-    right: moderateScale(18),
+    right: 8,
     top: 0,
     bottom: 0,
+    width: 44,
+    minHeight: 44,
     justifyContent: "center",
     alignItems: "center",
-    padding: moderateScale(4),
   },
-
   error: {
-    fontSize: moderateScale(13),
-    color: semanticColors.error,
+    ...theme.textStyles.caption,
     marginTop: theme.spacing.xs,
-    marginLeft: moderateScale(4),
-    fontFamily: theme.fontFamilies.body.regular,
-    letterSpacing: Platform.select({ ios: 0.2, android: 0.15, web: 0.2 }),
+    marginLeft: theme.spacing.xs,
   },
 });

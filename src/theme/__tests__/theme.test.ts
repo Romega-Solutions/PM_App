@@ -1,4 +1,5 @@
 import { lightColors, darkColors, getSemanticColors } from '../colors';
+import { withAlpha } from '../colorUtils';
 import { textStyles, lineHeightFor } from '../typography';
 
 // ── WCAG 2.x relative-contrast helpers ───────────────────────────────────────
@@ -44,6 +45,20 @@ describe('theme color tokens', () => {
     expect(contrast(c.borderStrong, c.surface)).toBeGreaterThanOrEqual(3);
     // Label on a primary fill — large/UI minimum (3:1)
     expect(contrast(c.onPrimary, c.primary)).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('theme color utilities', () => {
+  it('appends a clamped alpha channel to 6-digit hex colors', () => {
+    expect(withAlpha('#EF3E78', 0)).toBe('#EF3E7800');
+    expect(withAlpha('#EF3E78', 0.5)).toBe('#EF3E7880');
+    expect(withAlpha('#EF3E78', 1)).toBe('#EF3E78FF');
+    expect(withAlpha('#EF3E78', -1)).toBe('#EF3E7800');
+    expect(withAlpha('#EF3E78', 2)).toBe('#EF3E78FF');
+  });
+
+  it('expands 3-digit hex colors before appending alpha', () => {
+    expect(withAlpha('#F3A', 0.25)).toBe('#FF33AA40');
   });
 });
 

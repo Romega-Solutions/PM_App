@@ -1,24 +1,16 @@
-import { colors, semanticColors, theme } from "@/src/theme";
+import { theme, useTheme, withAlpha } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronRight } from "lucide-react-native";
 import React from "react";
 import {
   ActivityIndicator,
-  Dimensions,
   DimensionValue,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
-
-const { width } = Dimensions.get("window");
-
-// Responsive scaling
-const scale = (size: number) => (width / 375) * size;
-const moderateScale = (size: number, factor = 0.5) =>
-  size + (scale(size) - size) * factor;
 
 interface PrimaryButtonProps {
   title: string;
@@ -41,27 +33,30 @@ export default function PrimaryButton({
   accessibilityLabel,
   accessibilityHint,
 }: PrimaryButtonProps) {
+  const { colors } = useTheme();
   const isDisabled = disabled || loading;
 
   return (
-    <TouchableOpacity
-      style={[
+    <Pressable
+      style={({ pressed }) => [
         styles.container,
         {
           width: customWidth,
-          opacity: isDisabled ? 0.6 : 1,
+          opacity: isDisabled ? 0.56 : pressed ? 0.9 : 1,
+          shadowColor: colors.primary,
         },
       ]}
       onPress={onPress}
-      activeOpacity={0.85}
       disabled={isDisabled}
       accessible
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || title}
       accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
+      android_ripple={{ color: withAlpha(colors.onPrimary, 0.18) }}
     >
       <LinearGradient
-        colors={[semanticColors.primary, semanticColors.secondary]}
+        colors={[colors.primary, colors.secondary]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={StyleSheet.absoluteFill}
@@ -69,63 +64,48 @@ export default function PrimaryButton({
 
       <View style={styles.content}>
         {loading ? (
-          <ActivityIndicator size="small" color={colors.neutral.white} />
+          <ActivityIndicator size="small" color={colors.onPrimary} />
         ) : null}
 
-        <Text
-          style={[
-            styles.text,
-            showChevron && !loading && styles.textWithChevron,
-          ]}
-        >
+        <Text style={[styles.text, { color: colors.onPrimary }]}>
           {loading ? "Loading..." : title}
         </Text>
 
         {showChevron && !loading ? (
           <ChevronRight
-            size={moderateScale(24)}
-            color={colors.neutral.white}
+            size={theme.iconSizes.base}
+            color={colors.onPrimary}
             strokeWidth={2.5}
           />
         ) : null}
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: moderateScale(28),
-    height: moderateScale(56),
+    minHeight: 56,
+    borderRadius: theme.borderRadius.full,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: semanticColors.primary,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: Platform.select({ ios: 0.5, android: 0.4, web: 0.3 }),
-    shadowRadius: 20,
-    elevation: 12,
+    shadowOpacity: Platform.select({ ios: 0.38, android: 0.28, web: 0.24 }),
+    shadowRadius: 18,
+    elevation: 10,
     overflow: "hidden",
   },
-
   content: {
+    minHeight: 56,
     flexDirection: "row",
     alignItems: "center",
-    gap: moderateScale(8),
-    paddingHorizontal: theme.spacing.md,
+    justifyContent: "center",
+    gap: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
   },
-
   text: {
-    color: colors.neutral.white,
-    fontSize: moderateScale(18),
-    fontFamily: theme.fontFamilies.body.semiBold,
-    letterSpacing: Platform.select({ ios: 0.5, android: 0.3, web: 0.4 }),
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-
-  textWithChevron: {
-    marginRight: moderateScale(4),
+    ...theme.textStyles.button,
+    textAlign: "center",
   },
 });
