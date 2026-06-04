@@ -40,12 +40,16 @@ export default function BackButton({
         },
       ]}
       onPress={handlePress}
-      hitSlop={8}
+      hitSlop={theme.hitSlop.sm}
       accessible
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
     >
-      <ArrowLeft size={theme.iconSizes.base} color={colors.onPrimary} strokeWidth={2.5} />
+      <ArrowLeft
+        size={theme.iconSizes.navigation}
+        color={colors.onPrimary}
+        strokeWidth={theme.strokeWidths.emphasis}
+      />
     </Pressable>
   );
 }
@@ -54,8 +58,8 @@ const styles = StyleSheet.create({
   button: {
     position: "absolute",
     zIndex: 10,
-    width: Platform.OS === "android" ? 48 : 44,
-    height: Platform.OS === "android" ? 48 : 44,
+    width: theme.componentSizes.iconButton,
+    height: theme.componentSizes.iconButton,
     borderRadius: theme.borderRadius.full,
     justifyContent: "center",
     alignItems: "center",

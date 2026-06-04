@@ -194,6 +194,15 @@ export const authApi = {
     return { success: true };
   },
 
+  resetPassword: async (email: string): Promise<{ success: boolean }> => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: getRedirectUrl(),
+    });
+
+    if (error) throw error;
+    return { success: true };
+  },
+
   /**
    * Get the current session.  Returns the session when the user's email has
    * been confirmed, or null otherwise.  Used by VerifyEmailScreen to poll for

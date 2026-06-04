@@ -5,10 +5,9 @@
  * Shows dynamic subtitle based on filter state and match count.
  */
 
+import { useTheme, withAlpha } from "@/src/theme";
 import React from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
-
-const ACCENT_PINK = "#EF3E78";
 
 interface LikesHeaderProps {
   matchCount: number;
@@ -19,6 +18,9 @@ export const LikesHeader: React.FC<LikesHeaderProps> = ({
   matchCount,
   filter,
 }) => {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.header}>
       <View>
@@ -32,7 +34,8 @@ export const LikesHeader: React.FC<LikesHeaderProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
+  StyleSheet.create({
   header: {
     paddingHorizontal: 24,
     paddingTop: Platform.OS === "ios" ? 12 : 16,
@@ -41,14 +44,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Platform.OS === "ios" ? 32 : 30,
     fontFamily: "Lora-Bold",
-    color: ACCENT_PINK,
-    letterSpacing: 0.6,
+    color: colors.primary,
+    letterSpacing: 0,
     marginBottom: 6,
   },
   subtitle: {
     fontSize: 15,
     fontFamily: "DMSans-Regular",
-    color: "rgba(255, 255, 255, 0.75)",
-    letterSpacing: 0.2,
+    color: withAlpha(colors.onPrimary, 0.75),
+    letterSpacing: 0,
   },
 });

@@ -2,7 +2,7 @@
 
 ## 📱 Overview
 
-The chat system implements a Messenger-like interface with real-time messaging capabilities, typing indicators, message status tracking, and a modern design using the app's brand colors.
+The chat system implements a Messenger-like interface with real-time messaging capabilities, typing indicators, message status tracking, and a modern design using scheme-aware theme tokens.
 
 ---
 
@@ -14,15 +14,20 @@ The chat system implements a Messenger-like interface with real-time messaging c
 - **Body/UI**: `DMSans-Regular` (messages, timestamps)
 - **Accents**: Uses brand font weights for consistency
 
-### **Brand Colors**
+### **Theme Tokens**
 
-- **Background**: `#0F0814` (BRAND_BG)
-- **Primary Accent**: `#8D69F6` (ACCENT_PURPLE)
-- **Secondary Accent**: `#EF3E78` (ACCENT_PINK)
-- **Success/Online**: `#10B981` (ONLINE_GREEN)
-- **Surfaces**: `rgba(255,255,255,0.06)` (SURFACE)
-- **My Messages**: `rgba(141, 105, 246, 0.25)` (Purple tint)
-- **Their Messages**: `rgba(255, 255, 255, 0.08)` (Neutral surface)
+Messaging UI reads colors from `useTheme()` and derives translucent states with `withAlpha()` from `@/src/theme`.
+
+- **Background**: `colors.brandBackground`
+- **Primary action / unread emphasis**: `colors.primary`
+- **Secondary action / chat accent**: `colors.secondary`
+- **Online state**: `colors.success`
+- **Danger / failed state**: `colors.danger`, `colors.dangerInk`
+- **Surfaces**: `colors.brandSurface`, `colors.brandSurfaceElevated`
+- **Borders**: `colors.brandBorder`
+- **On-brand text**: `colors.onPrimary`, with muted variants via `withAlpha(colors.onPrimary, alpha)`
+- **Outgoing bubbles**: `withAlpha(colors.secondary, 0.25)` with `withAlpha(colors.secondary, 0.3)` border
+- **Incoming bubbles**: `colors.brandSurface` with `colors.brandBorder`
 
 ---
 
@@ -37,7 +42,18 @@ src/
   features/
     messaging/
       screens/
-        ChatScreen.tsx          # Main chat component
+        ChatScreen.tsx          # Chat orchestration: route params, hooks, handlers
+        MessagesScreen.tsx      # Conversations list and active users
+        VoiceCallScreen.tsx     # Simulated voice call screen
+        VideoCallScreen.tsx     # Simulated video call screen
+      components/
+        ChatHeader.tsx          # Header with contact info and actions
+        MessageList.tsx         # Scrollable message list and typing state
+        MessageBubble.tsx       # Individual message rendering/status/retry
+        MessageComposer.tsx     # Text input, media picker, upload preview/progress
+        ChatStateView.tsx       # Loading/error/empty chat states
+        ConversationCard.tsx    # Conversation list row
+        ActiveUserCard.tsx      # Active users rail item
 ```
 
 ---
@@ -54,7 +70,7 @@ src/
   text: string;                 // Message content
   senderId: string;             // User ID who sent the message
   timestamp: Date;              // When message was sent
-  status: "sending" | "sent" | "delivered" | "read";
+  status: "sending" | "sent" | "delivered" | "read" | "failed";
   type: "text" | "image";       // Future support for images
   imageUri?: string;            // Optional image attachment
 }
@@ -65,7 +81,8 @@ src/
 1. `sending` → Gray single check ✓
 2. `sent` → Gray double check ✓✓
 3. `delivered` → Gray double check ✓✓
-4. `read` → Purple double check ✓✓ (brand color)
+4. `read` → Secondary-token double check ✓✓
+5. `failed` → Danger-token alert icon with retry for text messages
 
 ---
 
@@ -74,9 +91,10 @@ src/
 #### **Typing Indicator**
 
 - **Function**: Shows animated dots when user is typing
-- **Trigger**: Activates when `inputText.length > 0`
+- **Trigger**: Broadcasts through `useChatRealtime().sendTyping()` when `inputText.length > 0`
 - **Auto-hide**: 1 second after user stops typing
 - **Visual**: Three animated dots in recipient's message bubble
+- **Accessibility**: Typing state is announced with `accessibilityLiveRegion="polite"`
 
 ```typescript
 useEffect(() => {
@@ -110,24 +128,17 @@ useEffect(() => {
 
 ```typescript
 1. Validate input (must not be empty)
-2. Create new message with status "sending"
-3. Add to messages array
-4. Clear input field
-5. Simulate status progression:
-   - After 500ms → "sent"
-   - After 1000ms → "delivered"
-   - After 2000ms → Auto-reply from recipient
-   - After 3500ms → Mark as "read"
+2. Clear the composer optimistically
+3. Call `useMessages().sendText(messageText)`
+4. Let TanStack Query append the returned backend message
+5. Restore composer text and show an alert if send fails
+6. Failed text messages rendered from backend/cache state expose a retry button
 ```
 
 #### **Status Simulation Timeline**
 
 ```
-0ms:     User sends message     [sending ✓]
-500ms:   Server receives        [sent ✓✓]
-1000ms:  Delivered to recipient [delivered ✓✓]
-2000ms:  Recipient replies      [auto-reply]
-3500ms:  Recipient reads        [read ✓✓ purple]
+The current screen does not simulate delivery progression. Message status comes from the messaging API/cache and realtime updates.
 ```
 
 ---
@@ -143,8 +154,8 @@ useEffect(() => {
 
 - **Avatar Display**: Shows recipient avatar only for their messages
 - **Message Alignment**:
-  - My messages: Right-aligned, purple background
-  - Their messages: Left-aligned, neutral background
+  - My messages: Right-aligned, secondary-token translucent background
+  - Their messages: Left-aligned, brand surface background
 - **Status Icons**: Shows only on my messages (right side)
 
 ```typescript
@@ -176,9 +187,9 @@ const renderMessage = (message: Message, index: number) => {
 
 #### **Action Buttons**
 
-1. **Phone**: Voice call (placeholder)
-2. **Video**: Video call (placeholder)
-3. **More Options**: Menu (placeholder)
+1. **Phone**: Opens the simulated voice call screen
+2. **Video**: Opens the simulated video call screen
+3. **More Options**: Shows unavailable-state copy for actions not connected yet
 
 ---
 
@@ -187,14 +198,13 @@ const renderMessage = (message: Message, index: number) => {
 #### **Media Attachment**
 
 - **Button**: Image icon on left
-- **Function**: Opens media picker (placeholder)
-- **Future**: Support image messages
+- **Function**: Opens media picker, uploads with `useMessageUpload()`, and sends an image message with `useMessages().sendImage()`
+- **Progress**: Composer shows selected-image preview and upload progress while the hook reports `uploading`
 
 #### **Emoji Picker**
 
 - **Button**: Smile icon inside input
-- **Function**: Opens emoji keyboard (placeholder)
-- **Future**: Quick emoji reactions
+- **Function**: Shows explicit unavailable copy until emoji picker support is implemented
 
 #### **Send Button States**
 
@@ -287,7 +297,7 @@ Load params (userId, userName, userImage, isOnline)
   ↓
 Render header with user info + status
   ↓
-Load message history (hardcoded demo messages)
+Load message history through `useMessages()`
   ↓
 Scroll to bottom (most recent message)
 ```
@@ -299,15 +309,13 @@ User types message → Input updates → Typing indicator shows
   ↓
 User presses send button
   ↓
-Message added with "sending" status
+Backend send starts
   ↓
 Input cleared
   ↓
-Status updates: sending → sent → delivered
+Returned message is appended to cached list
   ↓
-Auto-reply simulated after 2s
-  ↓
-All messages marked as "read" after 3.5s
+Read state is marked through `markAsRead()` where conversation data supports it
 ```
 
 ### **3. Receive Message**
@@ -330,14 +338,14 @@ No status indicator (only for sent messages)
 
 ### **Phase 1: Core Features**
 
-- [ ] Real Supabase integration
-- [ ] Message persistence
-- [ ] Real-time subscriptions
+- [x] Supabase-backed message loading/sending
+- [x] Message persistence
+- [x] Realtime subscriptions for messages/typing/read receipts
 - [ ] Push notifications
 
 ### **Phase 2: Rich Media**
 
-- [ ] Image attachments
+- [x] Image attachments with upload preview/progress
 - [ ] Voice messages
 - [ ] Video messages
 - [ ] File sharing
@@ -348,7 +356,7 @@ No status indicator (only for sent messages)
 - [ ] Reply to specific messages
 - [ ] Message deletion
 - [ ] Edit sent messages
-- [ ] Voice/video calls
+- [ ] Real voice/video calls with signaling and media devices
 
 ### **Phase 4: UX Improvements**
 
@@ -375,7 +383,7 @@ No status indicator (only for sent messages)
 │       ↓                                          │
 │  Delivered → [Status: "delivered"] ✓✓           │
 │       ↓                                          │
-│  Recipient Reads → [Status: "read"] ✓✓ (purple) │
+│  Recipient Reads → [Status: "read"] ✓✓ (accent) │
 │                                                  │
 └─────────────────────────────────────────────────┘
 ```
@@ -388,15 +396,15 @@ No status indicator (only for sent messages)
 
 - **My Messages**:
   - Right-aligned
-  - Purple gradient background (`rgba(141, 105, 246, 0.25)`)
-  - Border: `rgba(141, 105, 246, 0.3)`
+  - Secondary-token translucent background: `withAlpha(colors.secondary, 0.25)`
+  - Border: `withAlpha(colors.secondary, 0.3)`
   - Rounded corners (20px) with sharp bottom-right (4px)
   - Status icon bottom-right
 
 - **Their Messages**:
   - Left-aligned
-  - Neutral surface (`rgba(255, 255, 255, 0.08)`)
-  - Border: `rgba(255, 255, 255, 0.1)`
+  - Surface: `colors.brandSurface`
+  - Border: `colors.brandBorder`
   - Rounded corners (20px) with sharp bottom-left (4px)
   - Avatar on left (32x32)
 

@@ -13,6 +13,7 @@
  * @module features/profile/components
  */
 
+import { useTheme, withAlpha } from "@/src/theme";
 import {
     Bell,
     ChevronRight,
@@ -22,17 +23,10 @@ import {
     Lock,
     LogOut,
     SlidersHorizontal,
+    type LucideIcon,
 } from "lucide-react-native";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-
-// Brand Colors
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
-const SURFACE_STRONG = "rgba(255, 255, 255, 0.08)";
-const TILE_BORDER = "rgba(168, 85, 247, 0.13)";
-const DANGER_BG = "rgba(239, 62, 120, 0.12)";
 
 /**
  * Menu item interface
@@ -41,7 +35,7 @@ export interface MenuItem {
   /** Menu item title */
   title: string;
   /** Menu item icon */
-  icon: React.ReactNode;
+  icon: LucideIcon;
   /** Route to navigate to */
   route: string;
 }
@@ -68,23 +62,32 @@ export const ProfileMenuList: React.FC<ProfileMenuListProps> = ({
   onItemPress,
   onLogout,
 }) => {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.container}>
       {/* Menu Items */}
-      {items.map((item, idx) => (
-        <TouchableOpacity
-          key={idx}
-          style={styles.listItem}
-          activeOpacity={0.75}
-          onPress={() => onItemPress(item.route)}
-          accessibilityRole="button"
-          accessibilityLabel={item.title}
-        >
-          <View style={styles.iconContainer}>{item.icon}</View>
-          <Text style={styles.listItemText}>{item.title}</Text>
-          <ChevronRight size={20} color={ACCENT_PURPLE} />
-        </TouchableOpacity>
-      ))}
+      {items.map((item, idx) => {
+        const Icon = item.icon;
+
+        return (
+          <TouchableOpacity
+            key={idx}
+            style={styles.listItem}
+            activeOpacity={0.75}
+            onPress={() => onItemPress(item.route)}
+            accessibilityRole="button"
+            accessibilityLabel={item.title}
+          >
+            <View style={styles.iconContainer}>
+              <Icon size={22} color={colors.secondary} />
+            </View>
+            <Text style={styles.listItemText}>{item.title}</Text>
+            <ChevronRight size={20} color={colors.secondary} />
+          </TouchableOpacity>
+        );
+      })}
 
       {/* Logout Button */}
       <TouchableOpacity
@@ -94,7 +97,7 @@ export const ProfileMenuList: React.FC<ProfileMenuListProps> = ({
         accessibilityRole="button"
         accessibilityLabel="Logout"
       >
-        <LogOut size={20} color={ACCENT_PINK} />
+        <LogOut size={20} color={colors.primary} />
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
     </View>
@@ -107,62 +110,63 @@ export const ProfileMenuList: React.FC<ProfileMenuListProps> = ({
 export const getDefaultMenuItems = (): MenuItem[] => [
   {
     title: "Edit Profile",
-    icon: <Edit size={22} color={ACCENT_PURPLE} />,
+    icon: Edit,
     route: "/(main)/profile-settings/edit",
   },
   {
     title: "Preferences",
-    icon: <SlidersHorizontal size={22} color={ACCENT_PURPLE} />,
+    icon: SlidersHorizontal,
     route: "/(main)/profile-settings/preferences",
   },
   {
     title: "Privacy",
-    icon: <Lock size={22} color={ACCENT_PURPLE} />,
+    icon: Lock,
     route: "/(main)/profile-settings/privacy",
   },
   {
     title: "Notifications",
-    icon: <Bell size={22} color={ACCENT_PURPLE} />,
+    icon: Bell,
     route: "/(main)/profile-settings/notifications",
   },
   {
     title: "Help & Support",
-    icon: <HelpCircle size={22} color={ACCENT_PURPLE} />,
+    icon: HelpCircle,
     route: "/(main)/profile-settings/help",
   },
   {
     title: "About",
-    icon: <Info size={22} color={ACCENT_PURPLE} />,
+    icon: Info,
     route: "/(main)/profile-settings/about",
   },
 ];
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
+  StyleSheet.create({
   container: {
     paddingHorizontal: 24,
   },
   listItem: {
-    backgroundColor: SURFACE_STRONG,
+    backgroundColor: colors.brandSurface,
     borderRadius: 18,
     padding: 18,
     marginBottom: 14,
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1.5,
-    borderColor: TILE_BORDER,
+    borderColor: colors.brandBorder,
   },
   iconContainer: {
     marginRight: 16,
   },
   listItemText: {
-    color: WHITE,
+    color: colors.onPrimary,
     fontSize: 16,
     fontFamily: "DMSans-SemiBold",
-    letterSpacing: 0.2,
+    letterSpacing: 0,
     flex: 1,
   },
   logoutBtn: {
-    backgroundColor: DANGER_BG,
+    backgroundColor: withAlpha(colors.primary, 0.12),
     borderRadius: 18,
     padding: 18,
     marginTop: 8,
@@ -171,11 +175,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1.5,
-    borderColor: ACCENT_PINK,
+    borderColor: colors.primary,
     gap: 10,
   },
   logoutText: {
-    color: ACCENT_PINK,
+    color: colors.primary,
     fontSize: 16,
     fontFamily: "DMSans-Bold",
     marginLeft: 8,

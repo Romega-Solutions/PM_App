@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Heart, MapPin, Calendar } from "lucide-react-native";
-import { theme } from "@/src/theme";
+import { colors, theme, useTheme, withAlpha } from "@/src/theme";
 
 interface Props {
   interestedIn: string;
@@ -11,10 +11,21 @@ interface Props {
 }
 
 export default function UserPreferences({ interestedIn, ageRange, distance, relationshipGoal }: Props) {
-  const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
+  const { colors: themeColors } = useTheme();
+  const ACCENT_PINK = themeColors.primary;
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: withAlpha(colors.neutral.white, 0.06),
+          borderColor: withAlpha(colors.neutral.white, 0.12),
+        },
+      ]}
+      accessible
+      accessibilityLabel={`Your preferences. Looking for ${interestedIn.toLowerCase()}. Age range ${ageRange}. Within ${distance} kilometers. ${relationshipGoal}.`}
+    >
       <Text style={styles.sectionTitle}>Your preferences</Text>
       
       <View style={styles.row}>
@@ -50,17 +61,15 @@ export default function UserPreferences({ interestedIn, ageRange, distance, rela
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 16,
     padding: 16,
     gap: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
   },
   sectionTitle: {
     fontSize: 15,
     fontFamily: theme.fontFamilies.body.semiBold,
-    color: "rgba(255,255,255,0.95)",
+    color: withAlpha(colors.neutral.white, 0.95),
     marginBottom: 4,
   },
   row: {
@@ -72,7 +81,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: "rgba(239,62,120,0.15)",
+    backgroundColor: withAlpha(colors.amihan[500], 0.15),
     justifyContent: "center",
     alignItems: "center",
   },
@@ -80,6 +89,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontFamily: theme.fontFamilies.body.regular,
-    color: "rgba(255,255,255,0.85)",
+    color: withAlpha(colors.neutral.white, 0.85),
   },
 });

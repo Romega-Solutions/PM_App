@@ -17,11 +17,12 @@
 import { accountApi } from "@/src/features/account/api/accountApi";
 import { UserType } from "@/src/features/auth/api/authApi";
 import { Profile as DBProfile } from "@/src/features/matching/types";
+import { useTheme, withAlpha } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
-    Platform,
+    Alert,
     StatusBar,
     StyleSheet,
     Text,
@@ -40,11 +41,6 @@ import {
     useSuperLikeProfile,
 } from "../hooks/useMatchingQueries";
 import { useSwipeGesture } from "../hooks/useSwipeGesture";
-
-// Brand Colors
-const BRAND_BG = "#0F0814";
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
 
 /**
  * Convert database profile to display format
@@ -68,6 +64,8 @@ function convertDBProfileToDisplay(dbProfile: DBProfile): ProfileCardData {
 
 export const DiscoverScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   // State
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -210,10 +208,10 @@ export const DiscoverScreen: React.FC = () => {
   }
 
   function handleSendMessage() {
-    // TODO: Navigate to messages screen with matched profile
-    if (__DEV__) {
-      console.log("Send message to:", matchedProfile?.id);
-    }
+    Alert.alert(
+      "Messaging unavailable",
+      "Starting a chat from a new match is not wired yet.",
+    );
     setShowMatchModal(false);
     setMatchedProfile(null);
   }
@@ -223,11 +221,16 @@ export const DiscoverScreen: React.FC = () => {
     return (
       <View style={[styles.root, styles.centerContent]}>
         <LinearGradient
-          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+          colors={[
+            colors.brandBackground,
+            withAlpha(colors.secondaryDark, 0.32),
+            withAlpha(colors.primaryDark, 0.24),
+            colors.brandBackground,
+          ]}
           locations={[0, 0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
-        <ActivityIndicator size="large" color={ACCENT_PINK} />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>Loading profiles...</Text>
       </View>
     );
@@ -238,7 +241,12 @@ export const DiscoverScreen: React.FC = () => {
     return (
       <View style={[styles.root, styles.centerContent]}>
         <LinearGradient
-          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+          colors={[
+            colors.brandBackground,
+            withAlpha(colors.secondaryDark, 0.32),
+            withAlpha(colors.primaryDark, 0.24),
+            colors.brandBackground,
+          ]}
           locations={[0, 0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
@@ -254,16 +262,21 @@ export const DiscoverScreen: React.FC = () => {
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={BRAND_BG}
+        backgroundColor={colors.brandBackground}
         translucent={false}
       />
-      {Platform.OS === "ios" && (
-        <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+      {insets.top > 0 && (
+        <View style={{ height: insets.top, backgroundColor: colors.brandBackground }} />
       )}
 
       {/* Brand Gradient Background */}
       <LinearGradient
-        colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+        colors={[
+          colors.brandBackground,
+          withAlpha(colors.secondaryDark, 0.32),
+          withAlpha(colors.primaryDark, 0.24),
+          colors.brandBackground,
+        ]}
         locations={[0, 0.3, 0.7, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -324,10 +337,11 @@ export const DiscoverScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
+  StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: BRAND_BG,
+    backgroundColor: colors.brandBackground,
   },
   centerContent: {
     justifyContent: "center",
@@ -343,8 +357,8 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 28,
     fontFamily: "Lora-Bold",
-    color: WHITE,
-    letterSpacing: 1,
+    color: colors.onPrimary,
+    letterSpacing: 0,
   },
 
   // Cards
@@ -364,17 +378,17 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     fontFamily: "DMSans-Medium",
-    color: "rgba(255, 255, 255, 0.7)",
+    color: withAlpha(colors.onPrimary, 0.72),
   },
   emptyText: {
     fontSize: 22,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: colors.onPrimary,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 16,
     fontFamily: "DMSans-Regular",
-    color: "rgba(255, 255, 255, 0.6)",
+    color: withAlpha(colors.onPrimary, 0.64),
   },
 });

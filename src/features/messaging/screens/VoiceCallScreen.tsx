@@ -4,6 +4,7 @@ import { Mic, MicOff, PhoneOff, Volume2, VolumeX } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   Image,
+  Platform,
   StatusBar,
   StyleSheet,
   Text,
@@ -11,18 +12,12 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-// Brand Colors
-const BRAND_BG = "#0F0814";
-const ACCENT_PURPLE = "#8D69F6";
-const WHITE = "#FFFFFF";
-const SURFACE = "rgba(255,255,255,0.06)";
-const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
-const DANGER_RED = "#EF4444";
+import { useTheme, withAlpha } from "@/src/theme";
 
 export default function VoiceCallScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const { userName, userAvatar } = useLocalSearchParams<{
     userName: string;
     userAvatar: string;
@@ -85,21 +80,25 @@ export default function VoiceCallScreen() {
   const getStatusText = () => {
     switch (callStatus) {
       case "connecting":
-        return "Connecting...";
+        return "Simulated connecting...";
       case "ringing":
-        return "Ringing...";
+        return "Simulated ringing...";
       case "connected":
-        return formatDuration(callDuration);
+        return `Simulated call ${formatDuration(callDuration)}`;
       default:
         return "";
     }
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <View style={[styles.container, { backgroundColor: colors.brandBackground }]}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.brandBackground} />
       <LinearGradient
-        colors={["#0F0814", "#1a0f2e", "#0F0814"]}
+        colors={[
+          colors.brandBackground,
+          withAlpha(colors.secondary, 0.18),
+          colors.brandBackground,
+        ]}
         style={StyleSheet.absoluteFillObject}
       />
 
@@ -113,18 +112,28 @@ export default function VoiceCallScreen() {
                   ? { uri: userAvatar }
                   : require("../../../../assets/girls/ai1.jpg")
               }
-              style={styles.avatar}
+              style={[styles.avatar, { borderColor: colors.brandSurfaceElevated }]}
+              accessibilityLabel={`${userName || "Unknown"} avatar`}
+              accessibilityIgnoresInvertColors
             />
             <View style={styles.pulseRing}>
               <LinearGradient
-                colors={["rgba(141, 105, 246, 0.3)", "rgba(239, 62, 120, 0.3)"]}
+                colors={[withAlpha(colors.secondary, 0.3), withAlpha(colors.primary, 0.3)]}
                 style={styles.pulseGradient}
               />
             </View>
           </View>
 
-          <Text style={styles.userName}>{userName || "Unknown"}</Text>
-          <Text style={styles.callStatus}>{getStatusText()}</Text>
+          <Text style={[styles.userName, { color: colors.onPrimary }]}>{userName || "Unknown"}</Text>
+          <Text
+            style={[styles.callStatus, { color: withAlpha(colors.onPrimary, 0.72) }]}
+            accessibilityLiveRegion="polite"
+          >
+            {getStatusText()}
+          </Text>
+          <Text style={[styles.simulatedNotice, { color: withAlpha(colors.onPrimary, 0.62) }]}>
+            Demo call screen. Real voice signaling is not connected yet.
+          </Text>
         </View>
 
         {/* Call Controls */}
@@ -138,32 +147,42 @@ export default function VoiceCallScreen() {
           <TouchableOpacity
             style={[
               styles.controlButton,
-              isMuted && styles.controlButtonActive,
+              {
+                backgroundColor: isMuted
+                  ? colors.secondary
+                  : colors.brandSurfaceElevated,
+                borderColor: colors.brandBorder,
+              },
             ]}
             onPress={toggleMute}
             activeOpacity={0.7}
+            accessibilityRole="switch"
+            accessibilityLabel="Mute microphone"
+            accessibilityState={{ checked: isMuted }}
           >
             {isMuted ? (
-              <MicOff size={28} color={WHITE} />
+              <MicOff size={28} color={colors.onSecondary} />
             ) : (
-              <Mic size={28} color={WHITE} />
+              <Mic size={28} color={colors.onPrimary} />
             )}
-            <Text style={styles.controlLabel}>
+            <Text style={[styles.controlLabel, { color: withAlpha(colors.onPrimary, 0.72) }]}>
               {isMuted ? "Unmute" : "Mute"}
             </Text>
           </TouchableOpacity>
 
           {/* End Call Button */}
           <TouchableOpacity
-            style={styles.endCallButton}
+            style={[styles.endCallButton, { shadowColor: colors.danger }]}
             onPress={handleEndCall}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="End simulated voice call"
           >
             <LinearGradient
-              colors={[DANGER_RED, "#DC2626"]}
+              colors={[colors.danger, colors.dangerInk]}
               style={styles.endCallGradient}
             >
-              <PhoneOff size={32} color={WHITE} />
+              <PhoneOff size={32} color={colors.onStatus} />
             </LinearGradient>
           </TouchableOpacity>
 
@@ -171,17 +190,25 @@ export default function VoiceCallScreen() {
           <TouchableOpacity
             style={[
               styles.controlButton,
-              isSpeaker && styles.controlButtonActive,
+              {
+                backgroundColor: isSpeaker
+                  ? colors.secondary
+                  : colors.brandSurfaceElevated,
+                borderColor: colors.brandBorder,
+              },
             ]}
             onPress={toggleSpeaker}
             activeOpacity={0.7}
+            accessibilityRole="switch"
+            accessibilityLabel="Speaker mode"
+            accessibilityState={{ checked: isSpeaker }}
           >
             {isSpeaker ? (
-              <Volume2 size={28} color={WHITE} />
+              <Volume2 size={28} color={colors.onSecondary} />
             ) : (
-              <VolumeX size={28} color={WHITE} />
+              <VolumeX size={28} color={colors.onPrimary} />
             )}
-            <Text style={styles.controlLabel}>
+            <Text style={[styles.controlLabel, { color: withAlpha(colors.onPrimary, 0.72) }]}>
               {isSpeaker ? "Speaker" : "Earpiece"}
             </Text>
           </TouchableOpacity>
@@ -194,7 +221,6 @@ export default function VoiceCallScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BRAND_BG,
   },
   content: {
     flex: 1,
@@ -213,7 +239,6 @@ const styles = StyleSheet.create({
     height: 160,
     borderRadius: 80,
     borderWidth: 4,
-    borderColor: SURFACE,
   },
   pulseRing: {
     position: "absolute",
@@ -231,14 +256,20 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 32,
     fontWeight: "700",
-    color: WHITE,
     marginBottom: 8,
     textAlign: "center",
   },
   callStatus: {
     fontSize: 18,
-    color: TEXT_SECONDARY,
     fontWeight: "500",
+  },
+  simulatedNotice: {
+    marginTop: 12,
+    paddingHorizontal: 32,
+    fontSize: 13,
+    fontFamily: "DMSans-Regular",
+    lineHeight: 18,
+    textAlign: "center",
   },
   controlsContainer: {
     flexDirection: "row",
@@ -252,15 +283,11 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: SURFACE,
-  },
-  controlButtonActive: {
-    backgroundColor: ACCENT_PURPLE,
+    borderWidth: 1,
   },
   controlLabel: {
     marginTop: 8,
     fontSize: 12,
-    color: TEXT_SECONDARY,
     fontWeight: "500",
   },
   endCallButton: {
@@ -269,10 +296,14 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     overflow: "hidden",
     elevation: 8,
-    shadowColor: DANGER_RED,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 8,
+    ...Platform.select({
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   endCallGradient: {
     flex: 1,

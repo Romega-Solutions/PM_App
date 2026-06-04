@@ -5,12 +5,9 @@
  * Includes first name, last name, occupation, education, and location.
  */
 
+import { useTheme, withAlpha } from "@/src/theme";
 import React from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
-
-const WHITE = "#FFFFFF";
-const SURFACE_STRONG = "rgba(255, 255, 255, 0.08)";
-const TILE_BORDER = "rgba(168, 85, 247, 0.13)";
 
 interface ProfileEditFormProps {
   firstName: string;
@@ -37,6 +34,9 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
   onEducationChange,
   onLocationChange,
 }) => {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.form}>
       <View style={styles.fieldWrap}>
@@ -46,7 +46,7 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
           value={firstName}
           onChangeText={onFirstNameChange}
           placeholder="Enter first name"
-          placeholderTextColor="rgba(255,255,255,0.4)"
+          placeholderTextColor={withAlpha(colors.onPrimary, 0.42)}
         />
       </View>
 
@@ -57,7 +57,7 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
           value={lastName}
           onChangeText={onLastNameChange}
           placeholder="Enter last name"
-          placeholderTextColor="rgba(255,255,255,0.4)"
+          placeholderTextColor={withAlpha(colors.onPrimary, 0.42)}
         />
       </View>
 
@@ -68,7 +68,7 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
           value={occupation}
           onChangeText={onOccupationChange}
           placeholder="Enter occupation"
-          placeholderTextColor="rgba(255,255,255,0.4)"
+          placeholderTextColor={withAlpha(colors.onPrimary, 0.42)}
         />
       </View>
 
@@ -79,7 +79,7 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
           value={education}
           onChangeText={onEducationChange}
           placeholder="Enter education"
-          placeholderTextColor="rgba(255,255,255,0.4)"
+          placeholderTextColor={withAlpha(colors.onPrimary, 0.42)}
         />
       </View>
 
@@ -90,14 +90,15 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
           value={location}
           onChangeText={onLocationChange}
           placeholder="Enter location"
-          placeholderTextColor="rgba(255,255,255,0.4)"
+          placeholderTextColor={withAlpha(colors.onPrimary, 0.42)}
         />
       </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
+  StyleSheet.create({
   form: {
     gap: 20,
   },
@@ -105,17 +106,17 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
-    color: "rgba(255,255,255,0.9)",
+    color: withAlpha(colors.onPrimary, 0.9),
     fontSize: 14,
     fontFamily: "DMSans-SemiBold",
   },
   input: {
-    backgroundColor: SURFACE_STRONG,
+    backgroundColor: colors.brandSurface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: TILE_BORDER,
+    borderColor: colors.brandBorder,
     padding: 16,
-    color: WHITE,
+    color: colors.onPrimary,
     fontSize: 16,
     fontFamily: "DMSans-Regular",
   },

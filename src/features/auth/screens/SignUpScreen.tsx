@@ -1,9 +1,8 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Eye, EyeOff, Lock, Mail, User } from "lucide-react-native";
+import { Eye, EyeOff, Heart, Lock, Mail, User, Users } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
-import { Alert, Dimensions, Image, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, StyleSheet, Text, View } from "react-native";
 
-import AuthHeader from "@/src/components/auth/AuthHeader";
 import AuthLayout from "@/src/components/auth/AuthLayout";
 import SignUpPrompt from "@/src/components/auth/SignUpPrompt";
 import SocialSignInButton from "@/src/components/auth/SocialSignInButton";
@@ -11,14 +10,9 @@ import CustomTextInput from "@/src/components/forms/CustomTextInput";
 import FormDivider from "@/src/components/forms/FormDivider";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import { useSignupStore } from "@/src/stores/signupStore";
-import { theme } from "@/src/theme";
+import { theme, useTheme, withAlpha, type SemanticColors } from "@/src/theme";
 import { authApi } from "../api/authApi";
 import { useSignUp } from "../hooks/useSignUp";
-
-const { width } = Dimensions.get("window");
-const scale = (size: number) => (width / 375) * size;
-const moderateScale = (size: number, factor = 0.5) =>
-  size + (scale(size) - size) * factor;
 
 type UserType = "filipina" | "foreigner";
 
@@ -34,6 +28,8 @@ function SignUpScreen() {
   const params = useLocalSearchParams<{ userType?: string }>();
   const { signUp, loading } = useSignUp();
   const saveSignupData = useSignupStore((state) => state.saveSignupData);
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   const [form, setForm] = useState<FormState>({
     firstName: "",
@@ -55,6 +51,7 @@ function SignUpScreen() {
   }, [userType, router]);
 
   const userTypeLabel = userType === "filipina" ? "Filipina" : "Foreign Man";
+  const BadgeIcon = userType === "filipina" ? Heart : Users;
 
   const validate = (): boolean => {
     const e: Partial<FormState> = {};
@@ -153,7 +150,7 @@ function SignUpScreen() {
   }
 
   return (
-    <AuthLayout showBackButton>
+    <AuthLayout>
       <View style={styles.logoWrap}>
         <Image
           source={require("@/assets/logo-no-bg.png")}
@@ -164,16 +161,14 @@ function SignUpScreen() {
         />
       </View>
 
-      <AuthHeader
-        title={`Create Your ${userTypeLabel} Account`}
-        subtitle="Join thousands of Filipino singles worldwide"
-        showLogo={false}
-      />
-
       <View style={styles.userTypeBadge}>
-        <Text style={styles.userTypeBadgeText}>
-          Account Type: {userTypeLabel}
-        </Text>
+        <BadgeIcon
+          size={15}
+          color={colors.secondary}
+          strokeWidth={2.5}
+          fill={userType === "filipina" ? colors.secondary : "transparent"}
+        />
+        <Text style={styles.userTypeBadgeText}>{userTypeLabel} Account</Text>
       </View>
 
       <View style={styles.formContainer}>
@@ -189,6 +184,7 @@ function SignUpScreen() {
           autoCapitalize="words"
           autoComplete="given-name"
           error={errors.firstName}
+          containerStyle={styles.field}
         />
 
         <CustomTextInput
@@ -204,6 +200,7 @@ function SignUpScreen() {
           autoCapitalize="none"
           autoComplete="email"
           error={errors.email}
+          containerStyle={styles.field}
         />
 
         <CustomTextInput
@@ -220,6 +217,7 @@ function SignUpScreen() {
           secureTextEntry={!showPassword}
           autoComplete="password-new"
           error={errors.password}
+          containerStyle={styles.field}
         />
 
         <CustomTextInput
@@ -236,6 +234,7 @@ function SignUpScreen() {
           secureTextEntry={!showConfirm}
           autoComplete="password-new"
           error={errors.confirmPassword}
+          containerStyle={styles.field}
         />
 
         <PrimaryButton
@@ -248,7 +247,13 @@ function SignUpScreen() {
         <FormDivider text="Or continue with" />
         <SocialSignInButton
           provider="google"
-          onPress={() => console.log("google")}
+          onPress={() =>
+            Alert.alert(
+              "Unavailable",
+              "Google sign-up is not available in this build.",
+            )
+          }
+          unavailable
         />
 
         <SignUpPrompt
@@ -263,36 +268,43 @@ function SignUpScreen() {
 
 export default SignUpScreen;
 
-const styles = StyleSheet.create({
-  logoWrap: {
-    alignItems: "center",
-    marginTop: moderateScale(8),
-    marginBottom: theme.spacing.sm,
-  },
-  logo: {
-    width: Math.min(140, width * 0.4),
-    height: undefined,
-    aspectRatio: 1.8,
-  },
-  userTypeBadge: {
-    backgroundColor: "rgba(141,105,246,0.15)",
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
-    alignSelf: "center",
-    borderWidth: 1,
-    borderColor: "rgba(141,105,246,0.3)",
-  },
-  userTypeBadgeText: {
-    fontSize: 13,
-    fontFamily: theme.fontFamilies.body.semiBold,
-    color: theme.colors.dalisay[400],
-    textAlign: "center",
-  },
-  formContainer: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: moderateScale(12),
-  },
-});
+const createStyles = (colors: SemanticColors) =>
+  StyleSheet.create({
+    logoWrap: {
+      alignItems: "center",
+      marginBottom: theme.spacing.sm,
+      marginTop: theme.spacing.sm,
+    },
+    logo: {
+      aspectRatio: 1.8,
+      height: 78,
+      width: 140,
+    },
+    userTypeBadge: {
+      alignItems: "center",
+      alignSelf: "center",
+      backgroundColor: withAlpha(colors.secondary, 0.15),
+      borderColor: withAlpha(colors.secondary, 0.3),
+      borderRadius: theme.borderRadius.full,
+      borderWidth: 1,
+      flexDirection: "row",
+      gap: theme.spacing.xs,
+      marginBottom: theme.spacing.md,
+      marginHorizontal: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+    },
+    userTypeBadgeText: {
+      color: colors.secondary,
+      fontFamily: theme.fontFamilies.body.semiBold,
+      fontSize: 13,
+      textAlign: "center",
+    },
+    formContainer: {
+      paddingBottom: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+    },
+    field: {
+      marginBottom: theme.spacing.md,
+    },
+  });

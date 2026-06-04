@@ -1,134 +1,64 @@
-# Fix Database Errors - Missing Columns and Tables
+# Fix Database Schema Errors
 
-## Problem Summary
+Use this guide when the app reports missing tables or columns from Supabase.
 
-Your app is showing these errors:
+## Current Source Of Truth
 
-1. ❌ **`column profiles.is_active does not exist`** - Missing column in profiles table
-2. ❌ **`Could not find the table 'public.likes'`** - Likes table doesn't exist in database
-3. ❌ **No profiles/conversations/matches showing** - Database queries failing due to missing schema
+The active schema is the timestamped migration set in `supabase/migrations/`.
+The old one-off SQL files are archived in `supabase/legacy/` and should not be
+used for fresh setup.
 
-## Solution: Run Database Migration
+Start with:
 
-### Step 1: Open Supabase SQL Editor
-
-1. Go to your Supabase project dashboard: https://supabase.com/dashboard/project/YOUR_PROJECT_ID
-2. Click on **"SQL Editor"** in the left sidebar
-3. Click **"New Query"** button
-
-### Step 2: Run the Migration Script
-
-1. Open the file: `supabase/migrations/fix_missing_columns_and_tables.sql`
-2. Copy **ALL the contents** of the file
-3. Paste into the Supabase SQL Editor
-4. Click **"Run"** button (or press Ctrl+Enter / Cmd+Enter)
-
-### Step 3: Verify Success
-
-You should see output like:
-
-```
-NOTICE: Added is_active column to profiles table
-SUCCESS: Affected rows: X
+```bash
+supabase init
+supabase link --project-ref <project-ref>
+supabase db push
+supabase gen types typescript --linked > src/types/database.ts
 ```
 
-### Step 4: Restart Your Expo App
+Migration order and table responsibilities are documented in
+`supabase/migrations/README.md`.
 
-1. In your terminal, press `r` to reload the app
-2. Or restart the Metro bundler completely:
-   ```bash
-   # Stop current process (Ctrl+C)
-   npx expo start --clear
-   ```
+## If The App Reports Missing Tables
 
-## What This Migration Does
+Check that the active schema was applied:
 
-### ✅ Adds Missing Column
+```sql
+select table_name
+from information_schema.tables
+where table_schema = 'public'
+order by table_name;
+```
 
-- Adds `is_active BOOLEAN DEFAULT TRUE` to profiles table
-- Creates index for better query performance
+Expected app-facing tables include `profiles`, `match_preferences`,
+`profile_photos`, `swipes`, `matches`, `conversations`, `messages`, and
+`verifications`.
 
-### ✅ Creates Missing Tables
+## If The App Reports Missing Columns
 
-- Creates `likes` table for storing swipes and matches
-- Creates `passes` table for storing rejected profiles
-- Adds proper foreign key relationships
+Regenerate types after every schema change:
 
-### ✅ Sets Up Security
+```bash
+supabase gen types typescript --linked > src/types/database.ts
+```
 
-- Enables Row Level Security (RLS) on new tables
-- Creates policies so users can only see their own data
+Then compare the failing query with the current migrations. Common historical
+drift is documented in `docs/audits/PINAYMATE_BACKEND_AUDIT_2026-05-30.md`.
 
-### ✅ Updates Existing Data
+## If You Need To Rebuild Local Supabase
 
-- Sets all existing profiles to `is_active = TRUE`
+For local development only:
 
-## Expected Result After Migration
+```bash
+supabase db reset
+```
 
-Once the migration runs successfully:
+This rebuilds from the timestamped migrations and `supabase/seed.sql`.
 
-1. **Home/Discover Tab** ✅
-   - Will show real profiles from your database
-   - Smart matching algorithm will work
-   - Swiping will save to database
+## If Errors Persist
 
-2. **Likes Tab** ✅
-   - Will show your matched profiles from database
-   - Can view mutual likes and one-way likes
-
-3. **Messages Tab** ✅
-   - Will show conversations from database
-   - Can see online status of matched users
-
-## Troubleshooting
-
-### If you get "relation already exists" errors:
-
-This is OKAY - it means some tables already existed. The migration uses `IF NOT EXISTS` checks.
-
-### If queries still fail after migration:
-
-1. Check the Supabase logs for specific errors
-2. Verify the migration ran by checking Tables in Supabase dashboard:
-   - Should see `profiles` table with `is_active` column
-   - Should see `likes` and `passes` tables
-
-### If you need to reset everything:
-
-Run the main setup migration first:
-
-1. Open `supabase/migrations/00_complete_database_setup.sql`
-2. Run it in Supabase SQL Editor
-3. Then run the fix migration
-
-## Database Schema Reference
-
-After migration, your tables should have:
-
-**profiles table:**
-
-- All user profile data
-- `is_active` column (BOOLEAN) - whether profile is active
-- `verification_completed` - whether user verified ID
-- Location, preferences, photos, etc.
-
-**likes table:**
-
-- `from_user_id` - who sent the like
-- `to_user_id` - who received the like
-- `is_match` - true if mutual like
-- `matched_at` - timestamp of match
-
-**passes table:**
-
-- `from_user_id` - who passed
-- `to_user_id` - who was passed
-- Used to exclude profiles from discovery
-
-## Need More Help?
-
-If errors persist after running the migration:
-
-1. Check Supabase Dashboard → Database → Tables to verify structure
-2. Check Supabase Dashboard → API Docs to test queries
-3. Look at browser console / Metro logs for specific error messages
+1. Check Supabase Dashboard -> Logs -> Postgres Logs.
+2. Check the generated `src/types/database.ts` matches the linked project.
+3. Confirm the app code targets the current normalized schema, not legacy column
+   names from `supabase/legacy/`.

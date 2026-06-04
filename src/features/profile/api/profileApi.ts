@@ -34,6 +34,12 @@ export interface ProfileScreenRow {
   location_name: string;
   photos: string[];
   is_verified: boolean;
+  // Match preferences (shown on the profile screen)
+  interested_in: string | null;
+  relationship_goal: string | null;
+  age_min: number | null;
+  age_max: number | null;
+  max_distance_km: number | null;
 }
 
 /**
@@ -60,7 +66,7 @@ export async function getProfileScreenData(): Promise<ProfileScreenRow | null> {
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, email, first_name, last_name, age, user_type, gender, location_name, photos, is_verified",
+      "id, email, first_name, last_name, age, user_type, gender, location_name, photos, is_verified, interested_in, relationship_goal, age_min, age_max, max_distance_km",
     )
     .eq("id", userId)
     .single();

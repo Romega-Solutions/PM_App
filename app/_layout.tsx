@@ -1,6 +1,7 @@
 import { setupDeepLinking } from "@/src/config/deepLinking";
 import { queryClient } from "@/src/config/queryClient";
 import { useAuthPersistence } from "@/src/hooks/useAuthPersistence";
+import { useReduceMotion } from "@/src/hooks/useReduceMotion";
 import { useTheme } from "@/src/theme";
 import { QueryClientProvider, focusManager } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
@@ -44,6 +45,7 @@ export default function RootLayout() {
 
   // Scheme-aware theme (light/dark)
   const { colors, isDark } = useTheme();
+  const reduceMotion = useReduceMotion();
 
   // Hide splash screen when ready
   useEffect(() => {
@@ -80,7 +82,7 @@ export default function RootLayout() {
           alignItems: "center",
         }}
       >
-        <ActivityIndicator size="large" color="#8D69F6" />
+        <ActivityIndicator size="large" color={colors.secondary} />
         <Text
           style={{
             color: colors.textSecondary,
@@ -104,7 +106,7 @@ export default function RootLayout() {
             contentStyle: {
               backgroundColor: colors.background,
             },
-            animation: "slide_from_right",
+            animation: reduceMotion ? "none" : "slide_from_right",
           }}
         >
           <Stack.Screen name="index" />

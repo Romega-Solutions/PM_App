@@ -10,6 +10,7 @@
  * KISS: Simple display logic, no business logic
  */
 
+import { useTheme, withAlpha } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { Heart, MapPin, Sparkles, Star, X } from "lucide-react-native";
 import React from "react";
@@ -24,14 +25,6 @@ import {
 } from "react-native";
 
 const { width, height } = Dimensions.get("window");
-
-// Brand Colors
-const BRAND_BG = "#0F0814";
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const VERIFIED_GREEN = "#10B981";
-const SUPER_LIKE_GOLD = "#F59E0B";
-const WHITE = "#FFFFFF";
 
 export interface ProfileCardData {
   id: string;
@@ -61,6 +54,9 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   panHandlers,
   style,
 }) => {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
   // Opacity for swipe indicators
   const likeOpacity = pan.x.interpolate({
     inputRange: [0, width / 4],
@@ -97,8 +93,8 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         <View style={styles.likeBox}>
           <Heart
             size={32}
-            color={ACCENT_PINK}
-            fill={ACCENT_PINK}
+            color={colors.primary}
+            fill={colors.primary}
             strokeWidth={3}
           />
           <Text style={styles.likeText}>LIKE</Text>
@@ -108,7 +104,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
       {/* Pass Indicator */}
       <Animated.View style={[styles.passIndicator, { opacity: passOpacity }]}>
         <View style={styles.passBox}>
-          <X size={32} color={ACCENT_PINK} strokeWidth={3} />
+          <X size={32} color={colors.primary} strokeWidth={3} />
           <Text style={styles.passText}>PASS</Text>
         </View>
       </Animated.View>
@@ -116,7 +112,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
       {/* Verified Badge */}
       {profile.verified && (
         <View style={styles.verifiedBadge}>
-          <Sparkles size={14} color={WHITE} strokeWidth={2.5} />
+          <Sparkles size={14} color={colors.onStatus} strokeWidth={2.5} />
         </View>
       )}
 
@@ -125,8 +121,8 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         <View style={styles.matchScoreBadge}>
           <Star
             size={12}
-            color={SUPER_LIKE_GOLD}
-            fill={SUPER_LIKE_GOLD}
+            color={colors.warning}
+            fill={colors.warning}
             strokeWidth={2}
           />
           <Text style={styles.matchScoreText}>{profile.matchScore}%</Text>
@@ -135,7 +131,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
 
       {/* Gradient Overlay */}
       <LinearGradient
-        colors={["transparent", "rgba(0, 0, 0, 0.85)"]}
+        colors={["transparent", colors.brandScrim]}
         style={styles.gradient}
       />
 
@@ -148,7 +144,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         </View>
 
         <View style={styles.locationRow}>
-          <MapPin size={16} color={ACCENT_PINK} strokeWidth={2.5} />
+          <MapPin size={16} color={colors.primary} strokeWidth={2.5} />
           <Text style={styles.location}>{profile.location}</Text>
           <View style={styles.dot} />
           <Text style={styles.distance}>{profile.distance}</Text>
@@ -167,17 +163,18 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
+  StyleSheet.create({
   card: {
     position: "absolute",
     width: width - 40,
     height: height * 0.72,
     borderRadius: 24,
     overflow: "hidden",
-    backgroundColor: BRAND_BG,
+    backgroundColor: colors.brandBackground,
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
+        shadowColor: colors.brandScrim,
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.4,
         shadowRadius: 16,
@@ -213,18 +210,18 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   likeBox: {
-    backgroundColor: "rgba(239, 62, 120, 0.15)",
+    backgroundColor: withAlpha(colors.primary, 0.15),
     borderWidth: 3,
-    borderColor: ACCENT_PINK,
+    borderColor: colors.primary,
     borderRadius: 16,
     padding: 16,
     alignItems: "center",
     gap: 8,
   },
   passBox: {
-    backgroundColor: "rgba(239, 62, 120, 0.15)",
+    backgroundColor: withAlpha(colors.primary, 0.15),
     borderWidth: 3,
-    borderColor: ACCENT_PINK,
+    borderColor: colors.primary,
     borderRadius: 16,
     padding: 16,
     alignItems: "center",
@@ -233,14 +230,14 @@ const styles = StyleSheet.create({
   likeText: {
     fontSize: 18,
     fontFamily: "DMSans-Bold",
-    color: ACCENT_PINK,
-    letterSpacing: 1.5,
+    color: colors.primary,
+    letterSpacing: 0,
   },
   passText: {
     fontSize: 18,
     fontFamily: "DMSans-Bold",
-    color: ACCENT_PINK,
-    letterSpacing: 1.5,
+    color: colors.primary,
+    letterSpacing: 0,
   },
 
   // Badges
@@ -248,7 +245,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 20,
     right: 20,
-    backgroundColor: VERIFIED_GREEN,
+    backgroundColor: colors.success,
     borderRadius: 20,
     width: 32,
     height: 32,
@@ -260,7 +257,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 20,
     left: 20,
-    backgroundColor: "rgba(245, 158, 11, 0.95)",
+    backgroundColor: withAlpha(colors.warning, 0.95),
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -272,7 +269,7 @@ const styles = StyleSheet.create({
   matchScoreText: {
     fontSize: 13,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: colors.onStatus,
   },
 
   // Profile Info
@@ -291,8 +288,8 @@ const styles = StyleSheet.create({
   name: {
     fontSize: Platform.OS === "ios" ? 30 : 28,
     fontFamily: "Lora-Bold",
-    color: WHITE,
-    letterSpacing: 0.5,
+    color: colors.onPrimary,
+    letterSpacing: 0,
   },
   locationRow: {
     flexDirection: "row",
@@ -302,18 +299,18 @@ const styles = StyleSheet.create({
   location: {
     fontSize: 16,
     fontFamily: "DMSans-Medium",
-    color: "rgba(255, 255, 255, 0.9)",
+    color: withAlpha(colors.onPrimary, 0.9),
   },
   dot: {
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: "rgba(255, 255, 255, 0.5)",
+    backgroundColor: withAlpha(colors.onPrimary, 0.5),
   },
   distance: {
     fontSize: 14,
     fontFamily: "DMSans-Regular",
-    color: "rgba(255, 255, 255, 0.7)",
+    color: withAlpha(colors.onPrimary, 0.7),
   },
 
   // Interests
@@ -323,16 +320,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   interestTag: {
-    backgroundColor: "rgba(141, 105, 246, 0.25)",
+    backgroundColor: withAlpha(colors.secondary, 0.25),
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: "rgba(141, 105, 246, 0.4)",
+    borderColor: withAlpha(colors.secondary, 0.4),
   },
   interestText: {
     fontSize: 13,
     fontFamily: "DMSans-Medium",
-    color: ACCENT_PURPLE,
+    color: colors.secondary,
   },
 });

@@ -3,26 +3,25 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
-  Dimensions,
   Image,
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PrimaryButton from "../../src/components/ui/PrimaryButton";
 import SecondaryButton from "../../src/components/ui/SecondaryButton";
+import { theme, withAlpha } from "../../src/theme";
 
-const { width } = Dimensions.get("window");
-
-// Brand-aligned colors
-const BRAND_BG = "#0F0814"; // deep aubergine
+const BRAND_BG = theme.lightColors.brandBackground;
+const WHITE = theme.colors.neutral.white;
 const OVERLAY = [
-  "rgba(141,105,246,0.10)", // soft purple haze
-  "rgba(239,62,120,0.15)", // subtle pink tint
-  "rgba(15,8,20,0.85)", // dark base blend
-  "rgba(15,8,20,0.98)", // near-opaque base
+  withAlpha(theme.colors.dalisay[500], 0.1),
+  withAlpha(theme.colors.amihan[500], 0.15),
+  withAlpha(BRAND_BG, 0.85),
+  withAlpha(BRAND_BG, 0.98),
 ] as const;
 
 export default function Welcome() {
@@ -109,13 +108,39 @@ export default function Welcome() {
             accessibilityLabel="Sign In"
             accessibilityHint="Log in to your existing account"
           />
-          <Text
-            style={[styles.legal, { fontFamily: "DMSans-Regular" }]}
+          <View
+            style={styles.legalWrap}
             accessible
+            accessibilityRole="text"
+            accessibilityLabel="By continuing, you agree to our Terms of Service and Privacy Policy"
           >
-            By continuing, you agree to our Terms of Service{"\n"}and Privacy
-            Policy
-          </Text>
+            <Text style={[styles.legal, { fontFamily: "DMSans-Regular" }]}>
+              By continuing, you agree to our
+            </Text>
+            <View style={styles.legalLinks}>
+              <TouchableOpacity
+                onPress={() => router.push("/(auth)/terms")}
+                accessibilityRole="link"
+                accessibilityLabel="Terms of Service"
+              >
+                <Text style={[styles.legalLink, { fontFamily: "DMSans-Regular" }]}>
+                  Terms of Service
+                </Text>
+              </TouchableOpacity>
+              <Text style={[styles.legal, { fontFamily: "DMSans-Regular" }]}>
+                and
+              </Text>
+              <TouchableOpacity
+                onPress={() => router.push("/(auth)/privacy")}
+                accessibilityRole="link"
+                accessibilityLabel="Privacy Policy"
+              >
+                <Text style={[styles.legalLink, { fontFamily: "DMSans-Regular" }]}>
+                  Privacy Policy
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </View>
     </View>
@@ -139,7 +164,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 24,
-    shadowColor: "#EF3E78",
+    shadowColor: theme.colors.amihan[500],
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 40,
@@ -149,35 +174,55 @@ const styles = StyleSheet.create({
 
   heroTextWrap: { alignItems: "center", marginBottom: 24 },
   heroHeading: {
-    fontSize: Math.min(width * 0.09, 40),
-    color: "#FFFFFF",
+    fontSize: 36,
+    color: WHITE,
     textAlign: "center",
-    lineHeight: Math.min(width * 0.115, 48),
+    lineHeight: 43,
     marginBottom: 16,
-    textShadowColor: "rgba(239, 62, 120, 0.5)",
+    textShadowColor: withAlpha(theme.colors.amihan[500], 0.5),
     textShadowOffset: { width: 0, height: 3 },
     textShadowRadius: 12,
-    letterSpacing: -0.5,
+    letterSpacing: 0,
     paddingHorizontal: 10,
   },
   subtitle: {
-    fontSize: Math.min(width * 0.043, 17),
-    color: "rgba(255, 255, 255, 0.95)",
+    fontSize: 16,
+    color: withAlpha(WHITE, 0.95),
     textAlign: "center",
-    lineHeight: Math.min(width * 0.063, 25),
+    lineHeight: 24,
     paddingHorizontal: 16,
-    textShadowColor: "rgba(0, 0, 0, 0.6)",
+    textShadowColor: withAlpha(theme.colors.neutral.black, 0.6),
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
   },
-  legal: {
-    fontSize: 12,
-    color: "rgba(255, 255, 255, 0.65)",
-    textAlign: "center",
-    lineHeight: 17,
+  legalWrap: {
     marginTop: 16,
     paddingHorizontal: 16,
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
+    alignItems: "center",
+  },
+  legalLinks: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 4,
+  },
+  legal: {
+    fontSize: 12,
+    color: withAlpha(WHITE, 0.65),
+    textAlign: "center",
+    lineHeight: 17,
+    textShadowColor: withAlpha(theme.colors.neutral.black, 0.5),
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  legalLink: {
+    fontSize: 12,
+    color: WHITE,
+    textAlign: "center",
+    lineHeight: 17,
+    textDecorationLine: "underline",
+    fontWeight: "700",
+    textShadowColor: withAlpha(theme.colors.neutral.black, 0.5),
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },

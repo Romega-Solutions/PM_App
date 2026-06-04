@@ -99,7 +99,7 @@ describe("getProfileScreenData", () => {
 
       expect(supabase.from).toHaveBeenCalledWith("profiles");
       expect(mockSelect).toHaveBeenCalledWith(
-        "id, email, first_name, last_name, age, user_type, gender, location_name, photos, is_verified",
+        "id, email, first_name, last_name, age, user_type, gender, location_name, photos, is_verified, interested_in, relationship_goal, age_min, age_max, max_distance_km",
       );
     });
 

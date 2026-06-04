@@ -39,6 +39,17 @@ npm run test:coverage    # Jest with coverage
 npx tsc --noEmit         # TypeScript typecheck (not wired to a script — run manually)
 ```
 
+**⚠️ Default way to run on device — Expo Go, NOT a native build (to save disk).** This Mac's disk is tight, and `npx expo run:android` / `expo run:ios` pull a multi-GB Android NDK + Gradle cache and have failed with "No space left on device." **Unless explicitly asked for a native/dev build, always launch on the physical Samsung via Expo Go + Metro** — the app is fully Expo Go-compatible (zero custom native modules; verified 2026-06-04). The working sequence:
+
+```bash
+npm install                                              # if node_modules was pruned for space
+npx expo start --go --offline                            # --go = Expo Go; --offline REQUIRED (skips EAS auth prompt that the canthought owner/projectId triggers when run detached)
+adb -s RRGL20AEV2K reverse tcp:8081 tcp:8081             # USB → Metro
+adb -s RRGL20AEV2K shell am start -a android.intent.action.VIEW -d "exp://127.0.0.1:8081"   # open project in Expo Go on the phone
+```
+
+`npm run android` (which spawns `expo run:android`) and emulators are avoided here — the user is on a physical phone (adb id `RRGL20AEV2K` / `SM_A266B`). For a real standalone install, prefer **EAS Cloud** (`eas build -p android --profile preview`) over a local native build.
+
 **Native builds (EAS):** configured in `eas.json` (`expo` owner: `canthought`, EAS projectId in `app.json`). Native `ios/` and `android/` folders are git-ignored (managed workflow / prebuild on demand).
 
 **Web deployment:** Vercel. `vercel.json` runs `npm run build:web`, outputs `dist/`, `framework: null`, with a SPA rewrite (`/:path* → /`). `app.json` sets `web.output: "single"` (SPA).

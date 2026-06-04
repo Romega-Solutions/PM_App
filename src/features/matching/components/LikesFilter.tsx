@@ -5,6 +5,7 @@
  * Provides visual feedback for active filter state.
  */
 
+import { useTheme } from "@/src/theme";
 import { Heart } from "lucide-react-native";
 import React from "react";
 import {
@@ -15,11 +16,6 @@ import {
     View,
 } from "react-native";
 
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
-const SURFACE = "rgba(255,255,255,0.06)";
-const SURFACE_BORDER = "rgba(141,105,246,0.18)";
-
 interface LikesFilterProps {
   filter: "all" | "mutual";
   onFilterChange: (filter: "all" | "mutual") => void;
@@ -29,6 +25,9 @@ export const LikesFilter: React.FC<LikesFilterProps> = ({
   filter,
   onFilterChange,
 }) => {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.filterContainer}>
       <TouchableOpacity
@@ -58,8 +57,8 @@ export const LikesFilter: React.FC<LikesFilterProps> = ({
       >
         <Heart
           size={14}
-          color={filter === "mutual" ? WHITE : ACCENT_PINK}
-          fill={filter === "mutual" ? WHITE : "transparent"}
+          color={filter === "mutual" ? colors.onPrimary : colors.primary}
+          fill={filter === "mutual" ? colors.onPrimary : "transparent"}
           strokeWidth={2}
         />
         <Text
@@ -75,7 +74,8 @@ export const LikesFilter: React.FC<LikesFilterProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
+  StyleSheet.create({
   filterContainer: {
     flexDirection: "row",
     paddingHorizontal: 24,
@@ -86,19 +86,19 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 16,
-    backgroundColor: SURFACE,
+    backgroundColor: colors.brandSurface,
     borderWidth: 1,
-    borderColor: SURFACE_BORDER,
+    borderColor: colors.brandBorder,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
   filterTabActive: {
-    backgroundColor: ACCENT_PINK,
-    borderColor: ACCENT_PINK,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
     ...Platform.select({
       ios: {
-        shadowColor: ACCENT_PINK,
+        shadowColor: colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -111,10 +111,10 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 14,
     fontFamily: "DMSans-SemiBold",
-    color: ACCENT_PINK,
-    letterSpacing: 0.3,
+    color: colors.primary,
+    letterSpacing: 0,
   },
   filterTextActive: {
-    color: WHITE,
+    color: colors.onPrimary,
   },
 });

@@ -1,4 +1,4 @@
-import { theme } from "@/src/theme";
+import { colors, theme, useTheme, withAlpha } from "@/src/theme";
 import { Users } from "lucide-react-native";
 import React from "react";
 import {
@@ -16,19 +16,37 @@ interface Props {
 }
 
 export default function GenderOption({ option, selected, onSelect }: Props) {
-  const selectedColor = theme.colors.amihan?.[500] ?? "#EF3E78";
-  const defaultColor = theme.colors.dalisay?.[500] ?? "#8D69F6";
+  const { colors: themeColors } = useTheme();
+  const selectedColor = themeColors.primary;
+  const defaultColor = themeColors.secondary;
 
   return (
     <TouchableOpacity
       onPress={onSelect}
-      style={[styles.container, selected && styles.containerActive]}
+      style={[
+        styles.container,
+        {
+          backgroundColor: withAlpha(colors.neutral.white, 0.06),
+          borderColor: withAlpha(colors.neutral.white, 0.06),
+        },
+        selected && {
+          backgroundColor: withAlpha(themeColors.primary, 0.12),
+          borderColor: withAlpha(themeColors.primary, 0.28),
+        },
+      ]}
       activeOpacity={0.9}
       accessibilityRole="radio"
-      accessibilityState={{ selected }}
+      accessibilityState={{ checked: selected, selected }}
       accessibilityLabel={`Select ${option} as gender`}
+      accessibilityHint={selected ? `${option} is selected` : `Select ${option}`}
     >
-      <View style={[styles.iconBox, selected && styles.iconBoxActive]}>
+      <View
+        style={[
+          styles.iconBox,
+          { backgroundColor: withAlpha(themeColors.secondary, 0.06) },
+          selected && { backgroundColor: withAlpha(themeColors.primary, 0.12) },
+        ]}
+      >
         <Users size={18} color={selected ? selectedColor : defaultColor} />
       </View>
 
@@ -39,7 +57,13 @@ export default function GenderOption({ option, selected, onSelect }: Props) {
         {option}
       </Text>
 
-      <View style={[styles.radio, selected && styles.radioActive]}>
+      <View
+        style={[
+          styles.radio,
+          { borderColor: withAlpha(colors.neutral.white, 0.6) },
+          selected && { borderColor: themeColors.primary },
+        ]}
+      >
         {selected && (
           <View style={[styles.radioDot, { backgroundColor: selectedColor }]} />
         )}
@@ -51,10 +75,8 @@ export default function GenderOption({ option, selected, onSelect }: Props) {
 const styles = StyleSheet.create({
   container: {
     width: "100%", // full width vertical layout
-    backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.06)",
     paddingHorizontal: 16,
     paddingVertical: Platform.OS === "ios" ? 16 : 14,
     minHeight: Platform.OS === "ios" ? 60 : 56,
@@ -62,20 +84,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 14,
   },
-  containerActive: {
-    backgroundColor: "rgba(239,62,120,0.12)",
-    borderColor: "rgba(239,62,120,0.28)",
-  },
   iconBox: {
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: "rgba(141,105,246,0.06)",
     alignItems: "center",
     justifyContent: "center",
-  },
-  iconBoxActive: {
-    backgroundColor: "rgba(239,62,120,0.12)",
   },
   text: {
     flex: 1,
@@ -91,12 +105,8 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.6)",
     alignItems: "center",
     justifyContent: "center",
-  },
-  radioActive: {
-    borderColor: theme.colors.amihan?.[500] ?? "#EF3E78",
   },
   radioDot: {
     width: 10,

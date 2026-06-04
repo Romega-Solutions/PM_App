@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Slider from "@react-native-community/slider";
-import { theme } from "@/src/theme";
+import { theme, withAlpha } from "@/src/theme";
 
 interface Props {
   value: number;
@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function DistanceSlider({ value, onChange, min = 10, max = 200, step = 10 }: Props) {
-  const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
+  const ACCENT_PINK = theme.colors.amihan[500];
 
   return (
     <View style={styles.container}>
@@ -27,7 +27,7 @@ export default function DistanceSlider({ value, onChange, min = 10, max = 200, s
         value={value}
         onValueChange={onChange}
         minimumTrackTintColor={ACCENT_PINK}
-        maximumTrackTintColor="rgba(255,255,255,0.2)"
+        maximumTrackTintColor={withAlpha(theme.colors.neutral.white, 0.2)}
         thumbTintColor={ACCENT_PINK}
       />
       <View style={styles.labels}>
@@ -40,10 +40,10 @@ export default function DistanceSlider({ value, onChange, min = 10, max = 200, s
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: withAlpha(theme.colors.neutral.white, 0.06),
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
+    borderColor: theme.lightColors.brandBorder,
     paddingVertical: 20,
     paddingHorizontal: 16,
   },
@@ -58,5 +58,5 @@ const styles = StyleSheet.create({
   },
   slider: { width: "100%", height: 40 },
   labels: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
-  labelText: { fontSize: 13, color: "rgba(255,255,255,0.6)" },
+  labelText: { fontSize: 13, color: withAlpha(theme.colors.neutral.white, 0.6) },
 });

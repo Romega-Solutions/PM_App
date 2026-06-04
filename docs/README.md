@@ -7,12 +7,12 @@ All project documentation lives here. Only `README.md` and `CLAUDE.md` remain at
 ## 📁 Folders
 
 ### `setup/` — onboarding & configuration
-- [`SUPABASE_SETUP_INSTRUCTIONS.md`](setup/SUPABASE_SETUP_INSTRUCTIONS.md) — database/project setup
-- [`EMAIL_VERIFICATION_SETUP.md`](setup/EMAIL_VERIFICATION_SETUP.md) — email-verification config
-- [`ENABLE_EMAIL_SIGNUP.md`](setup/ENABLE_EMAIL_SIGNUP.md) — enabling email signup
-- [`FINAL_EMAIL_FLOW_SETUP.md`](setup/FINAL_EMAIL_FLOW_SETUP.md) — end-to-end email flow
-- [`REDIRECT_URLS_QUICK.md`](setup/REDIRECT_URLS_QUICK.md) — deep-link redirect URLs
-- [`SETUP_CHECKLIST.md`](setup/SETUP_CHECKLIST.md) — full setup checklist
+- [`SUPABASE_SETUP_INSTRUCTIONS.md`](setup/SUPABASE_SETUP_INSTRUCTIONS.md) — current Supabase CLI, auth, redirect, and schema setup
+- [`EMAIL_VERIFICATION_SETUP.md`](setup/EMAIL_VERIFICATION_SETUP.md) — email-verification and redirect config
+- [`ENABLE_EMAIL_SIGNUP.md`](setup/ENABLE_EMAIL_SIGNUP.md) — fixing disabled Supabase email provider errors
+- [`FINAL_EMAIL_FLOW_SETUP.md`](setup/FINAL_EMAIL_FLOW_SETUP.md) — end-to-end email verification flow
+- [`REDIRECT_URLS_QUICK.md`](setup/REDIRECT_URLS_QUICK.md) — quick redirect URL checklist
+- [`SETUP_CHECKLIST.md`](setup/SETUP_CHECKLIST.md) — current full setup checklist
 
 ### `architecture/` — how the app is structured
 - [`TARGET_ARCHITECTURE.md`](architecture/TARGET_ARCHITECTURE.md) — **the architecture to aim for**: layered RN/Expo design, server-vs-client state, folder structure, rules, current→target map + migration phases (learnable reference)

@@ -6,6 +6,14 @@ export const spacing = {
   xl: 32,
   xxl: 48,
   xxxl: 64,
+  fine: 4,
+  touchGap: 8,
+  related: 12,
+  field: 16,
+  card: 16,
+  section: 24,
+  screen: 24,
+  hero: 48,
 } as const;
 
 export const borderRadius = {

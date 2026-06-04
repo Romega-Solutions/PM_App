@@ -108,7 +108,7 @@ export default function SecondaryButton({
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 56,
+    minHeight: theme.componentSizes.button,
     borderRadius: theme.borderRadius.full,
     borderWidth: Platform.select({ ios: 1.5, android: 2, web: 1.5 }),
     justifyContent: "center",
@@ -119,11 +119,11 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   content: {
-    minHeight: 56,
+    minHeight: theme.componentSizes.button,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: theme.spacing.sm,
+    gap: theme.spacing.touchGap,
     paddingHorizontal: theme.spacing.lg,
   },
   text: {

@@ -20,9 +20,10 @@
 import { useProfile } from "@/src/features/profile/hooks/useProfile";
 import { useUpdateProfile } from "@/src/features/profile/hooks/useUpdateProfile";
 import { useUploadPhoto } from "@/src/features/profile/hooks/useUploadPhoto";
+import { useTheme, withAlpha } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -35,11 +36,10 @@ import { EditProfileHeader } from "../components/EditProfileHeader";
 import { ProfileEditForm } from "../components/ProfileEditForm";
 import { ProfilePhotoSection } from "../components/ProfilePhotoSection";
 
-const BRAND_BG = "#0F0814";
-const ACCENT_PINK = "#EF3E78";
-
 export default function EditProfileScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   // Use custom hooks
   const { profile, loading, refresh } = useProfile();
@@ -58,6 +58,7 @@ export default function EditProfileScreen() {
   const [location, setLocation] = useState("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [allPhotos, setAllPhotos] = useState<string[]>([]);
+  const [initialSnapshot, setInitialSnapshot] = useState("");
 
   // Load profile data into form
   useEffect(() => {
@@ -71,8 +72,26 @@ export default function EditProfileScreen() {
       const photosArray = profile.photos || [];
       setAllPhotos(photosArray);
       setProfileImage(photosArray.length > 0 ? photosArray[0] : null);
+      setInitialSnapshot(
+        JSON.stringify({
+          firstName: profile.first_name || "",
+          lastName: profile.last_name || "",
+          occupation: profile.occupation || "",
+          education: profile.education || "",
+          location: profile.location_name || "",
+        }),
+      );
     }
   }, [profile]);
+
+  const currentSnapshot = JSON.stringify({
+    firstName,
+    lastName,
+    occupation,
+    education,
+    location,
+  });
+  const isDirty = initialSnapshot !== "" && currentSnapshot !== initialSnapshot;
 
   const handleChangePhoto = async () => {
     const result = await pickAndUploadPhoto(allPhotos);
@@ -87,6 +106,11 @@ export default function EditProfileScreen() {
   };
 
   const handleSave = async () => {
+    if (!isDirty) {
+      Alert.alert("No changes", "There are no profile changes to save.");
+      return;
+    }
+
     const success = await updateProfile({
       first_name: firstName,
       last_name: lastName,
@@ -104,29 +128,51 @@ export default function EditProfileScreen() {
   };
 
   const handleBack = () => {
+    if (isDirty) {
+      Alert.alert("Discard changes?", "You have unsaved profile changes.", [
+        { text: "Keep editing", style: "cancel" },
+        {
+          text: "Discard",
+          style: "destructive",
+          onPress: () => router.push("/(main)/profile"),
+        },
+      ]);
+      return;
+    }
+
     router.push("/(main)/profile");
   };
 
   if (loading) {
     return (
       <View style={[styles.root, styles.centered]}>
-        <StatusBar barStyle="light-content" backgroundColor={BRAND_BG} />
+        <StatusBar barStyle="light-content" backgroundColor={colors.brandBackground} />
         <LinearGradient
-          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+          colors={[
+            colors.brandBackground,
+            withAlpha(colors.secondaryDark, 0.32),
+            withAlpha(colors.primaryDark, 0.24),
+            colors.brandBackground,
+          ]}
           locations={[0, 0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
-        <ActivityIndicator size="large" color={ACCENT_PINK} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={BRAND_BG} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.brandBackground} />
 
       <LinearGradient
-        colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+        colors={[
+          colors.brandBackground,
+          withAlpha(colors.secondaryDark, 0.32),
+          withAlpha(colors.primaryDark, 0.24),
+          colors.brandBackground,
+        ]}
         locations={[0, 0.3, 0.7, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -135,6 +181,7 @@ export default function EditProfileScreen() {
         onBack={handleBack}
         onSave={handleSave}
         isSaving={updating || uploadingPhoto}
+        hasChanges={isDirty}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -164,10 +211,11 @@ export default function EditProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
+  StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: BRAND_BG,
+    backgroundColor: colors.brandBackground,
   },
   centered: {
     justifyContent: "center",

@@ -6,6 +6,7 @@
  */
 
 import { supabase } from "@/src/config/supabase";
+import { uploadProfilePhoto } from "@/src/features/profile/api/profileApi";
 
 export async function saveProfilePhoto(uri: string): Promise<{ ok: true; data: { photos: string[] } }> {
   try {
@@ -13,6 +14,18 @@ export async function saveProfilePhoto(uri: string): Promise<{ ok: true; data: {
     
     if (userError || !user) {
       throw new Error("Not authenticated");
+    }
+
+    // Upload local picks to the profile-photos bucket so we store a PUBLIC URL.
+    // A raw file:// path won't render on the profile (the UI only shows URLs
+    // that start with http) and isn't shareable. Existing http URLs pass through.
+    let photoUrl = uri;
+    if (!uri.startsWith("http")) {
+      const uploadResult = await uploadProfilePhoto(uri, user.id);
+      if (!uploadResult.success || !uploadResult.url) {
+        throw new Error(uploadResult.error || "Failed to upload photo");
+      }
+      photoUrl = uploadResult.url;
     }
 
     // Get existing photos
@@ -23,7 +36,7 @@ export async function saveProfilePhoto(uri: string): Promise<{ ok: true; data: {
       .single();
 
     const existingPhotos = profile?.photos || [];
-    const newPhotos = [uri, ...existingPhotos].slice(0, 6);
+    const newPhotos = [photoUrl, ...existingPhotos].slice(0, 6);
 
     // Update photos array
     const { error } = await supabase

@@ -11,6 +11,7 @@ import {
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Image,
   StatusBar,
   StyleSheet,
@@ -20,18 +21,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// Brand Colors
-const BRAND_BG = "#0F0814";
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
-const SURFACE = "rgba(255,255,255,0.06)";
-const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
-const DANGER_RED = "#EF4444";
+import { useTheme, withAlpha } from "@/src/theme";
 
 export default function VideoCallScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const { userName, userAvatar } = useLocalSearchParams<{
     userName: string;
     userAvatar: string;
@@ -45,216 +40,252 @@ export default function VideoCallScreen() {
     "connecting" | "ringing" | "connected"
   >("connecting");
 
-  // Timer for call duration
   useEffect(() => {
-    if (callStatus === "connected") {
-      const timer = setInterval(() => {
-        setCallDuration((prev) => prev + 1);
-      }, 1000);
-
-      return () => clearInterval(timer);
-    }
+    if (callStatus !== "connected") return;
+    const timer = setInterval(() => {
+      setCallDuration((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
   }, [callStatus]);
 
-  // Simulate call connection (for demo purposes)
   useEffect(() => {
-    const connectTimer = setTimeout(() => {
-      setCallStatus("ringing");
-    }, 1000);
-
-    const answerTimer = setTimeout(() => {
-      setCallStatus("connected");
-    }, 3000);
-
+    const ringTimer = setTimeout(() => setCallStatus("ringing"), 1000);
+    const connectTimer = setTimeout(() => setCallStatus("connected"), 3000);
     return () => {
+      clearTimeout(ringTimer);
       clearTimeout(connectTimer);
-      clearTimeout(answerTimer);
     };
   }, []);
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
-  const handleEndCall = () => {
-    router.back();
-  };
-
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-  };
-
-  const toggleVideo = () => {
-    setIsVideoOn(!isVideoOn);
-  };
-
-  const toggleCamera = () => {
-    setIsFrontCamera(!isFrontCamera);
-  };
-
-  const getStatusText = () => {
-    switch (callStatus) {
-      case "connecting":
-        return "Connecting...";
-      case "ringing":
-        return "Ringing...";
-      case "connected":
-        return formatDuration(callDuration);
-      default:
-        return "";
-    }
-  };
+  const statusText = getStatusText(callStatus, callDuration);
+  const avatarSource = userAvatar
+    ? { uri: userAvatar }
+    : require("../../../../assets/girls/ai1.jpg");
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <View style={[styles.container, { backgroundColor: colors.brandBackground }]}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.brandBackground} />
 
-      {/* Remote Video (Full Screen) */}
       <View style={styles.remoteVideoContainer}>
         <LinearGradient
-          colors={["#1a0f2e", "#0F0814"]}
+          colors={[withAlpha(colors.secondary, 0.18), colors.brandBackground]}
           style={StyleSheet.absoluteFillObject}
         />
         {callStatus === "connected" && isVideoOn ? (
           <View style={styles.videoPlaceholder}>
             <Image
-              source={
-                userAvatar
-                  ? { uri: userAvatar }
-                  : require("../../../../assets/girls/ai1.jpg")
-              }
+              source={avatarSource}
               style={styles.remoteAvatar}
               blurRadius={20}
+              accessibilityIgnoresInvertColors
             />
-            <Text style={styles.videoPlaceholderText}>
-              Video feed will appear here
+            <Text
+              style={[
+                styles.videoPlaceholderText,
+                {
+                  color: withAlpha(colors.onPrimary, 0.78),
+                  backgroundColor: colors.brandOverlay,
+                },
+              ]}
+            >
+              Demo video surface. Real video signaling is not connected yet.
             </Text>
           </View>
         ) : (
           <View style={styles.avatarContainer}>
             <Image
-              source={
-                userAvatar
-                  ? { uri: userAvatar }
-                  : require("../../../../assets/girls/ai1.jpg")
-              }
-              style={styles.avatar}
+              source={avatarSource}
+              style={[styles.avatar, { borderColor: colors.brandSurfaceElevated }]}
+              accessibilityLabel={`${userName || "Unknown"} avatar`}
+              accessibilityIgnoresInvertColors
             />
           </View>
         )}
       </View>
 
-      {/* Header with user info */}
       <LinearGradient
-        colors={["rgba(15, 8, 20, 0.9)", "transparent"]}
+        colors={[colors.brandOverlay, "transparent"]}
         style={[styles.header, { paddingTop: insets.top + 16 }]}
       >
-        <Text style={styles.userName}>{userName || "Unknown"}</Text>
-        <Text style={styles.callStatus}>{getStatusText()}</Text>
+        <Text style={[styles.userName, { color: colors.onPrimary }]}>
+          {userName || "Unknown"}
+        </Text>
+        <Text
+          style={[styles.callStatus, { color: withAlpha(colors.onPrimary, 0.72) }]}
+          accessibilityLiveRegion="polite"
+        >
+          {statusText}
+        </Text>
       </LinearGradient>
 
-      {/* Local Video (Picture in Picture) */}
       <View style={[styles.localVideoContainer, { top: insets.top + 80 }]}>
         <LinearGradient
-          colors={[ACCENT_PURPLE, ACCENT_PINK]}
+          colors={[colors.secondary, colors.primary]}
           style={styles.localVideoGradient}
         >
-          <View style={styles.localVideoContent}>
+          <View style={[styles.localVideoContent, { backgroundColor: colors.brandBackground }]}>
             {isVideoOn ? (
-              <View style={styles.localVideoPlaceholder}>
-                <Text style={styles.localVideoText}>You</Text>
+              <View
+                style={[
+                  styles.localVideoPlaceholder,
+                  { backgroundColor: withAlpha(colors.secondary, 0.2) },
+                ]}
+              >
+                <Text style={[styles.localVideoText, { color: colors.onPrimary }]}>You</Text>
               </View>
             ) : (
-              <View style={styles.videoOffContainer}>
-                <VideoOff size={24} color={WHITE} />
+              <View style={[styles.videoOffContainer, { backgroundColor: colors.brandOverlay }]}>
+                <VideoOff size={24} color={colors.onPrimary} />
               </View>
             )}
           </View>
         </LinearGradient>
       </View>
 
-      {/* Controls */}
       <LinearGradient
-        colors={["transparent", "rgba(15, 8, 20, 0.95)"]}
-        style={[
-          styles.controlsContainer,
-          { paddingBottom: insets.bottom + 32 },
-        ]}
+        colors={["transparent", colors.brandScrim]}
+        style={[styles.controlsContainer, { paddingBottom: insets.bottom + 32 }]}
       >
+        <Text style={[styles.simulatedNotice, { color: withAlpha(colors.onPrimary, 0.62) }]}>
+          Demo call controls only. Audio/video devices are not connected.
+        </Text>
         <View style={styles.controlsRow}>
-          {/* Mute Button */}
-          <TouchableOpacity
-            style={[
-              styles.controlButton,
-              isMuted && styles.controlButtonActive,
-            ]}
-            onPress={toggleMute}
-            activeOpacity={0.7}
+          <ControlButton
+            label="Mute microphone"
+            checked={isMuted}
+            activeColor={colors.danger}
+            onPress={() => setIsMuted((value) => !value)}
           >
             {isMuted ? (
-              <MicOff size={26} color={WHITE} />
+              <MicOff size={26} color={colors.onStatus} />
             ) : (
-              <Mic size={26} color={WHITE} />
+              <Mic size={26} color={colors.onPrimary} />
             )}
-          </TouchableOpacity>
+          </ControlButton>
 
-          {/* Video Toggle Button */}
-          <TouchableOpacity
-            style={[
-              styles.controlButton,
-              !isVideoOn && styles.controlButtonActive,
-            ]}
-            onPress={toggleVideo}
-            activeOpacity={0.7}
+          <ControlButton
+            label="Camera"
+            checked={isVideoOn}
+            activeWhenFalse
+            activeColor={colors.danger}
+            onPress={() => setIsVideoOn((value) => !value)}
           >
             {isVideoOn ? (
-              <VideoIcon size={26} color={WHITE} />
+              <VideoIcon size={26} color={colors.onPrimary} />
             ) : (
-              <VideoOff size={26} color={WHITE} />
+              <VideoOff size={26} color={colors.onStatus} />
             )}
-          </TouchableOpacity>
+          </ControlButton>
 
-          {/* End Call Button */}
           <TouchableOpacity
-            style={styles.endCallButton}
-            onPress={handleEndCall}
+            style={[styles.endCallButton, { shadowColor: colors.danger }]}
+            onPress={() => router.back()}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="End simulated video call"
           >
             <LinearGradient
-              colors={[DANGER_RED, "#DC2626"]}
+              colors={[colors.danger, colors.dangerInk]}
               style={styles.endCallGradient}
             >
-              <PhoneOff size={30} color={WHITE} />
+              <PhoneOff size={30} color={colors.onStatus} />
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* Camera Flip Button */}
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={toggleCamera}
-            activeOpacity={0.7}
+          <ControlButton
+            label={`Switch to ${isFrontCamera ? "rear" : "front"} camera in demo state`}
+            onPress={() => setIsFrontCamera((value) => !value)}
           >
-            <Camera size={26} color={WHITE} />
-          </TouchableOpacity>
+            <Camera size={26} color={colors.onPrimary} />
+          </ControlButton>
 
-          {/* Fullscreen Button */}
-          <TouchableOpacity style={styles.controlButton} activeOpacity={0.7}>
-            <Maximize size={26} color={WHITE} />
-          </TouchableOpacity>
+          <ControlButton
+            label="Fullscreen unavailable in demo state"
+            onPress={() =>
+              Alert.alert(
+                "Fullscreen unavailable",
+                "Fullscreen video is not connected until real video signaling exists.",
+              )
+            }
+          >
+            <Maximize size={26} color={colors.onPrimary} />
+          </ControlButton>
         </View>
       </LinearGradient>
     </View>
   );
 }
 
+function ControlButton({
+  label,
+  checked,
+  activeWhenFalse = false,
+  activeColor,
+  onPress,
+  children,
+}: {
+  label: string;
+  checked?: boolean;
+  activeWhenFalse?: boolean;
+  activeColor?: string;
+  onPress: () => void;
+  children: React.ReactNode;
+}) {
+  const { colors } = useTheme();
+  const isActive =
+    checked === undefined ? false : activeWhenFalse ? !checked : checked;
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.controlButton,
+        {
+          backgroundColor: isActive
+            ? activeColor || colors.secondary
+            : colors.brandSurfaceElevated,
+          shadowColor: colors.brandScrim,
+        },
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+      accessibilityRole={checked === undefined ? "button" : "switch"}
+      accessibilityLabel={label}
+      accessibilityState={
+        checked === undefined ? undefined : { checked }
+      }
+    >
+      {children}
+    </TouchableOpacity>
+  );
+}
+
+function getStatusText(
+  status: "connecting" | "ringing" | "connected",
+  duration: number,
+) {
+  switch (status) {
+    case "connecting":
+      return "Simulated connecting...";
+    case "ringing":
+      return "Simulated ringing...";
+    case "connected":
+      return `Simulated call ${formatDuration(duration)}`;
+    default:
+      return "";
+  }
+}
+
+function formatDuration(seconds: number) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, "0")}:${secs
+    .toString()
+    .padStart(2, "0")}`;
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BRAND_BG,
   },
   remoteVideoContainer: {
     flex: 1,
@@ -273,13 +304,14 @@ const styles = StyleSheet.create({
     position: "absolute",
   },
   videoPlaceholderText: {
-    fontSize: 16,
-    color: TEXT_SECONDARY,
+    marginHorizontal: 24,
+    fontSize: 15,
     fontWeight: "500",
-    backgroundColor: "rgba(15, 8, 20, 0.7)",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
+    textAlign: "center",
+    overflow: "hidden",
   },
   avatarContainer: {
     alignItems: "center",
@@ -290,7 +322,6 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: 70,
     borderWidth: 4,
-    borderColor: SURFACE,
   },
   header: {
     position: "absolute",
@@ -304,20 +335,12 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 24,
     fontWeight: "700",
-    color: WHITE,
     marginBottom: 4,
     textAlign: "center",
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
   callStatus: {
     fontSize: 14,
-    color: TEXT_SECONDARY,
     fontWeight: "500",
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
   localVideoContainer: {
     position: "absolute",
@@ -327,7 +350,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
     elevation: 8,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -338,7 +360,6 @@ const styles = StyleSheet.create({
   },
   localVideoContent: {
     flex: 1,
-    backgroundColor: BRAND_BG,
     borderRadius: 14,
     overflow: "hidden",
   },
@@ -346,18 +367,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(141, 105, 246, 0.2)",
   },
   localVideoText: {
     fontSize: 14,
-    color: WHITE,
     fontWeight: "600",
   },
   videoOffContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   controlsContainer: {
     position: "absolute",
@@ -365,7 +383,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: 32,
+  },
+  simulatedNotice: {
+    marginBottom: 16,
+    fontSize: 13,
+    fontFamily: "DMSans-Regular",
+    textAlign: "center",
   },
   controlsRow: {
     flexDirection: "row",
@@ -376,17 +400,12 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: SURFACE,
     alignItems: "center",
     justifyContent: "center",
     elevation: 4,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
-  },
-  controlButtonActive: {
-    backgroundColor: DANGER_RED,
   },
   endCallButton: {
     width: 64,
@@ -394,7 +413,6 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     overflow: "hidden",
     elevation: 8,
-    shadowColor: DANGER_RED,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 8,

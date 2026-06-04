@@ -1,9 +1,8 @@
 import React from "react";
-import { View, Text, StyleSheet, Dimensions, Platform } from "react-native";
-import { theme } from "@/src/theme";
+import { View, Text, StyleSheet, Platform } from "react-native";
+import { colors, theme, withAlpha } from "@/src/theme";
 
-const { width } = Dimensions.get("window");
-const TITLE_SIZE = Math.min(width * 0.08, 32);
+const TITLE_SIZE = 32;
 
 interface Props {
   title?: string;
@@ -36,7 +35,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: Platform.select({ ios: 15, android: 15, web: 15 }),
-    color: "rgba(255,255,255,0.85)",
+    color: withAlpha(colors.neutral.white, 0.85),
     fontFamily: theme.fontFamilies.body.regular,
     textAlign: "center",
     paddingHorizontal: theme.spacing.md,

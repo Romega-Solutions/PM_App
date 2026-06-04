@@ -4,7 +4,7 @@ import LocationItem from "@/src/components/location/LocationItem";
 import LocationsList from "@/src/components/location/LocationsList";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import type { UserType } from "@/src/features/auth/api/authApi";
-import { theme } from "@/src/theme";
+import { colors, theme, withAlpha } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { MapPin, Search } from "lucide-react-native";
@@ -22,6 +22,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { accountApi, SavedLocation } from "../api/accountApi";
 import { useLocationSearch } from "../hooks/useLocationSearch";
+
+const BRAND_BG = theme.lightColors.brandBackground;
+const BRAND_GRADIENT = [BRAND_BG, colors.dalisay[950]] as const;
 
 export default function LocationScreen() {
   const router = useRouter();
@@ -105,19 +108,19 @@ export default function LocationScreen() {
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={theme.colors.dalisay[950] ?? "#0F0814"}
+        backgroundColor={BRAND_BG}
       />
-      {Platform.OS === "ios" && (
+      {insets.top > 0 && (
         <View
           style={{
             height: insets.top,
-            backgroundColor: theme.colors.dalisay[950] ?? "#0F0814",
+            backgroundColor: BRAND_BG,
           }}
         />
       )}
 
       <LinearGradient
-        colors={[theme.colors.dalisay[950] ?? "#0F0814", "#1A0F1F"]}
+        colors={BRAND_GRADIENT}
         style={StyleSheet.absoluteFill}
       />
 
@@ -183,7 +186,7 @@ export default function LocationScreen() {
                 <View style={styles.emptyState}>
                   <MapPin
                     size={48}
-                    color="rgba(141,105,246,0.4)"
+                    color={withAlpha(colors.dalisay[500], 0.4)}
                     strokeWidth={1.5}
                   />
                   <Text style={styles.emptyTitle}>Start typing to search</Text>
@@ -196,8 +199,13 @@ export default function LocationScreen() {
             </View>
 
             {selectedLocation && !useCurrentLocation && (
-              <View style={styles.selectedBox}>
-                <MapPin size={18} color="#EF3E78" />
+              <View
+                style={styles.selectedBox}
+                accessible
+                accessibilityRole="text"
+                accessibilityLabel={`Selected location ${selectedLocation}`}
+              >
+                <MapPin size={18} color={theme.colors.amihan[500]} />
                 <Text style={styles.selectedText}>{selectedLocation}</Text>
               </View>
             )}
@@ -224,7 +232,7 @@ export default function LocationScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.dalisay[950] ?? "#0F0814" },
+  root: { flex: 1, backgroundColor: BRAND_BG },
   keyboardView: { flex: 1 },
   content: {
     paddingHorizontal: theme.spacing.lg ?? 24,
@@ -236,7 +244,7 @@ const styles = StyleSheet.create({
   header: { alignItems: "center", marginBottom: 24 },
   title: {
     fontSize: 28,
-    color: "#FFF",
+    color: colors.neutral.white,
     textAlign: "center",
     marginTop: 12,
     marginBottom: 8,
@@ -244,7 +252,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
-    color: "rgba(255,255,255,0.85)",
+    color: withAlpha(colors.neutral.white, 0.85),
     textAlign: "center",
     paddingHorizontal: 20,
   },
@@ -253,11 +261,11 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: withAlpha(colors.neutral.white, 0.15),
   },
   dividerText: {
     marginHorizontal: 12,
-    color: "rgba(255,255,255,0.6)",
+    color: withAlpha(colors.neutral.white, 0.6),
     fontSize: 13,
   },
   emptyState: {
@@ -268,14 +276,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    color: "rgba(255,255,255,0.9)",
+    color: withAlpha(colors.neutral.white, 0.9),
     fontWeight: "600",
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: "rgba(255,255,255,0.65)",
+    color: withAlpha(colors.neutral.white, 0.65),
     textAlign: "center",
     lineHeight: 20,
   },
@@ -284,21 +292,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     padding: 14,
-    backgroundColor: "rgba(239,62,120,0.12)",
+    backgroundColor: withAlpha(colors.amihan[500], 0.12),
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(239,62,120,0.28)",
+    borderColor: withAlpha(colors.amihan[500], 0.28),
     marginTop: 8,
   },
   selectedText: {
     flex: 1,
     fontSize: 15,
-    color: "#FFF",
+    color: colors.neutral.white,
     fontWeight: "600",
   },
   footer: {
     paddingHorizontal: theme.spacing.lg ?? 24,
     paddingTop: theme.spacing.md ?? 16,
-    backgroundColor: "rgba(15,8,20,0.95)",
+    backgroundColor: withAlpha(BRAND_BG, 0.95),
   },
 });

@@ -5,29 +5,24 @@ import SocialSignInButton from "@/src/components/auth/SocialSignInButton";
 import CustomTextInput from "@/src/components/forms/CustomTextInput";
 import FormDivider from "@/src/components/forms/FormDivider";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
-import { semanticColors, theme } from "@/src/theme";
+import { theme, useTheme, type SemanticColors } from "@/src/theme";
 import { useRouter } from "expo-router";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   Alert,
-  Dimensions,
-  Platform,
+  Pressable,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { useSignIn } from "../hooks/useSignIn";
 
-const { width } = Dimensions.get("window");
-const scale = (size: number) => (width / 375) * size;
-const moderateScale = (size: number, factor = 0.5) =>
-  size + (scale(size) - size) * factor;
-
 export default function SignInScreen() {
   const router = useRouter();
   const { signIn, loading } = useSignIn();
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   // Form state
   const [email, setEmail] = useState("");
@@ -57,9 +52,6 @@ export default function SignInScreen() {
     if (!password) {
       setPasswordError("Password is required");
       isValid = false;
-    } else if (password.length < 6) {
-      setPasswordError("Password must be at least 6 characters");
-      isValid = false;
     } else {
       setPasswordError("");
     }
@@ -82,9 +74,12 @@ export default function SignInScreen() {
     }
   };
 
-  // Handle Google sign in (placeholder)
+  // Handle Google sign in
   const handleGoogleSignIn = async () => {
-    Alert.alert("Coming Soon", "Google sign-in will be available soon!");
+    Alert.alert(
+      "Unavailable",
+      "Google sign-in is not available in this build.",
+    );
   };
 
   // Handle forgot password
@@ -93,13 +88,9 @@ export default function SignInScreen() {
   };
 
   return (
-    <AuthLayout showBackButton>
-      {/* Header */}
-      <AuthHeader
-        title="Welcome Back"
-        subtitle="Continue your journey to find love"
-        showLogo={true}
-      />
+    <AuthLayout scrollable={false}>
+      {/* Logo only — title/subtitle removed to keep the screen on one page */}
+      <AuthHeader showLogo={true} />
 
       {/* Form Container */}
       <View style={styles.formContainer}>
@@ -119,9 +110,23 @@ export default function SignInScreen() {
           error={emailError}
         />
 
+        {/* Password label row — "Forgot Password?" sits inline to the right */}
+        <View style={styles.passwordLabelRow}>
+          <Text style={styles.passwordLabel}>Password</Text>
+          <Pressable
+            onPress={handleForgotPassword}
+            style={styles.forgotPasswordButton}
+            hitSlop={theme.hitSlop.sm}
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel="Forgot password"
+          >
+            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+          </Pressable>
+        </View>
+
         {/* Password Input */}
         <CustomTextInput
-          label="Password"
           value={password}
           onChangeText={(text) => {
             setPassword(text);
@@ -134,18 +139,8 @@ export default function SignInScreen() {
           secureTextEntry={!showPassword}
           autoComplete="current-password"
           error={passwordError}
+          containerStyle={styles.passwordInput}
         />
-
-        {/* Forgot Password Link */}
-        <TouchableOpacity
-          onPress={handleForgotPassword}
-          style={styles.forgotPasswordContainer}
-          accessible
-          accessibilityRole="button"
-          accessibilityLabel="Forgot password"
-        >
-          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-        </TouchableOpacity>
 
         {/* Sign In Button */}
         <PrimaryButton
@@ -159,7 +154,11 @@ export default function SignInScreen() {
         <FormDivider text="Or continue with" />
 
         {/* Social Sign In */}
-        <SocialSignInButton provider="google" onPress={handleGoogleSignIn} />
+        <SocialSignInButton
+          provider="google"
+          onPress={handleGoogleSignIn}
+          unavailable
+        />
 
         {/* Sign Up Prompt */}
         <SignUpPrompt
@@ -171,19 +170,33 @@ export default function SignInScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  formContainer: {
-    paddingHorizontal: theme.spacing.lg,
-  },
-  forgotPasswordContainer: {
-    alignSelf: "flex-end",
-    marginBottom: theme.spacing.xl,
-    paddingVertical: moderateScale(4),
-  },
-  forgotPasswordText: {
-    color: semanticColors.primary,
-    fontSize: moderateScale(14),
-    fontFamily: theme.fontFamilies.body.semiBold,
-    letterSpacing: Platform.select({ ios: 0.2, android: 0.15, web: 0.2 }),
-  },
-});
+const createStyles = (colors: SemanticColors) =>
+  StyleSheet.create({
+    formContainer: {
+      paddingHorizontal: theme.spacing.lg,
+    },
+    passwordLabelRow: {
+      alignItems: "center",
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: theme.spacing.sm,
+    },
+    forgotPasswordButton: {
+      // Material 48dp touch target for the inline link.
+      minHeight: theme.componentSizes.iconButton,
+      justifyContent: "center",
+    },
+    passwordLabel: {
+      ...theme.textStyles.label,
+      color: colors.onPrimary,
+    },
+    passwordInput: {
+      marginBottom: theme.spacing.xl,
+    },
+    forgotPasswordText: {
+      color: colors.primary,
+      fontFamily: theme.fontFamilies.body.semiBold,
+      fontSize: 13,
+      letterSpacing: 0,
+    },
+  });

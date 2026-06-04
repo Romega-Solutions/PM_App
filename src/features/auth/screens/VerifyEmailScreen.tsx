@@ -2,9 +2,11 @@ import VerifyEmailActions from "@/src/components/auth/VerifyEmailActions";
 import VerifyEmailHeader from "@/src/components/auth/VerifyEmailHeader";
 import { authApi } from "@/src/features/auth/api/authApi";
 import { useSignupStore } from "@/src/stores/signupStore";
+import { colors, useTheme, withAlpha } from "@/src/theme";
 import { useFonts } from "expo-font";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { MailCheck, ShieldCheck } from "lucide-react-native";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -19,6 +21,7 @@ import {
 
 export default function VerifyEmailScreen() {
   const router = useRouter();
+  const { colors: themeColors } = useTheme();
   const params = useLocalSearchParams<{
     email?: string;
     firstName?: string;
@@ -185,9 +188,7 @@ export default function VerifyEmailScreen() {
                 } else {
                   Alert.alert(
                     "Not Verified Yet",
-                    "Your email hasn't been verified in Supabase yet.\n\nRun this in SQL Editor:\n\nUPDATE auth.users SET email_confirmed_at = NOW() WHERE email = '" +
-                      email +
-                      "'\n\nThen try again."
+                    "Your email has not been verified yet. Please tap the verification link in your inbox, then try again."
                   );
                   setIsCheckingManually(false);
                 }
@@ -199,9 +200,7 @@ export default function VerifyEmailScreen() {
                   errMsg === "Invalid login credentials"
                     ? "Wrong password. Please try again."
                     : errMsg === "Email not confirmed"
-                      ? "Your email hasn't been verified yet. Please verify it first in Supabase:\n\nUPDATE auth.users SET email_confirmed_at = NOW() WHERE email = '" +
-                        email +
-                        "'"
+                      ? "Your email has not been verified yet. Please tap the verification link in your inbox, then try again."
                       : "Sign in failed: " + errMsg;
                 Alert.alert("Sign In Failed", displayMsg);
                 setIsCheckingManually(false);
@@ -271,10 +270,10 @@ export default function VerifyEmailScreen() {
           flex: 1,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: "#340839",
+          backgroundColor: themeColors.brandBackground,
         }}
       >
-        <ActivityIndicator size="large" color="#fff" />
+        <ActivityIndicator size="large" color={colors.neutral.white} />
       </View>
     );
   }
@@ -288,7 +287,12 @@ export default function VerifyEmailScreen() {
       />
 
       <LinearGradient
-        colors={["#340839", "#8D69F6", "#EF3E78", "#340839"]}
+        colors={[
+          themeColors.brandBackground,
+          themeColors.secondary,
+          themeColors.primary,
+          themeColors.brandBackground,
+        ]}
         locations={[0, 0.4, 0.7, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -311,47 +315,48 @@ export default function VerifyEmailScreen() {
           onOpenEmailApp={openEmailApp}
           onResend={handleResend}
           onBackToSignIn={handleBackToSignIn}
-          onSkipToAccountSetup={() => {
-            console.log(
-              "⚡ Skipping email verification, going to account setup..."
-            );
-            router.replace({
-              pathname: "/(auth)/account-setup/basic-info",
-              params: {
-                userType: userType || "foreigner",
-                firstName: firstName || "User",
-              },
-            });
-          }}
         />
 
         <View style={{ marginTop: 32, width: "100%", maxWidth: 400 }}>
           <View
             style={{
               padding: 20,
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              backgroundColor: withAlpha(colors.neutral.white, 0.1),
               borderRadius: 16,
               borderWidth: 1,
-              borderColor: "rgba(255, 255, 255, 0.2)",
+              borderColor: withAlpha(colors.neutral.white, 0.2),
               alignItems: "center",
             }}
           >
-            <Text
+            <View
               style={{
-                color: "rgba(255,255,255,0.95)",
-                textAlign: "center",
-                fontSize: 16,
-                fontFamily: "DMSans",
-                lineHeight: 24,
-                fontWeight: "600",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
                 marginBottom: 8,
               }}
             >
-              📧 Check your email inbox
-            </Text>
+              <MailCheck
+                size={18}
+                color={themeColors.onPrimary}
+                style={{ marginRight: 6 }}
+              />
+              <Text
+                style={{
+                  color: withAlpha(colors.neutral.white, 0.95),
+                  textAlign: "center",
+                  fontSize: 16,
+                  fontFamily: "DMSans",
+                  lineHeight: 24,
+                  fontWeight: "600",
+                }}
+              >
+                Check your email inbox
+              </Text>
+            </View>
             <Text
               style={{
-                color: "rgba(255,255,255,0.75)",
+                color: withAlpha(colors.neutral.white, 0.75),
                 textAlign: "center",
                 fontSize: 14,
                 fontFamily: "DMSans",
@@ -370,95 +375,37 @@ export default function VerifyEmailScreen() {
             style={{
               marginTop: 20,
               padding: 16,
-              backgroundColor: "rgba(255, 255, 255, 0.08)",
+              backgroundColor: withAlpha(colors.neutral.white, 0.08),
               borderRadius: 12,
               borderWidth: 1,
-              borderColor: "rgba(255, 255, 255, 0.2)",
+              borderColor: withAlpha(colors.neutral.white, 0.2),
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
             {isCheckingManually ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color={colors.neutral.white} />
             ) : (
-              <Text
-                style={{
-                  color: "rgba(255,255,255,0.8)",
-                  fontFamily: "DMSans",
-                  fontSize: 14,
-                  fontWeight: "600",
-                }}
-              >
-                🔐 I&apos;ve verified in Supabase - Sign In
-              </Text>
+              <>
+                <ShieldCheck
+                  size={16}
+                  color={withAlpha(colors.neutral.white, 0.8)}
+                  style={{ marginRight: 6 }}
+                />
+                <Text
+                  style={{
+                    color: withAlpha(colors.neutral.white, 0.8),
+                    fontFamily: "DMSans",
+                    fontSize: 14,
+                    fontWeight: "600",
+                  }}
+                >
+                  I&apos;ve verified my email
+                </Text>
+              </>
             )}
           </TouchableOpacity>
-
-          <Text
-            style={{
-              color: "rgba(255,255,255,0.6)",
-              textAlign: "center",
-              marginTop: 12,
-              fontSize: 12,
-              fontFamily: "DMSans",
-              paddingHorizontal: 24,
-              lineHeight: 18,
-              fontStyle: "italic",
-            }}
-          >
-            After running the SQL command, click here to sign in
-          </Text>
-
-          {/* Skip to Account Setup Button */}
-          <TouchableOpacity
-            onPress={() => {
-              console.log("⏭️ Skipping to account setup...");
-              router.replace({
-                pathname: "/(auth)/account-setup/basic-info",
-                params: {
-                  userType: userType || "foreigner",
-                  firstName: firstName || "User",
-                },
-              });
-            }}
-            style={{
-              marginTop: 20,
-              padding: 16,
-              backgroundColor: "rgba(141, 105, 246, 0.2)",
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: "rgba(141, 105, 246, 0.4)",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Text
-              style={{
-                color: "rgba(141, 105, 246, 1)",
-                fontFamily: "DMSans",
-                fontSize: 14,
-                fontWeight: "700",
-              }}
-            >
-              ⚡ Skip & Continue to Account Setup
-            </Text>
-          </TouchableOpacity>
-
-          <Text
-            style={{
-              color: "rgba(255,255,255,0.5)",
-              textAlign: "center",
-              marginTop: 8,
-              fontSize: 11,
-              fontFamily: "DMSans",
-              paddingHorizontal: 24,
-              lineHeight: 16,
-            }}
-          >
-            You can verify your email later
-          </Text>
         </View>
       </View>
     </View>

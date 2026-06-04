@@ -12,6 +12,7 @@
  * - Action buttons (message, unmatch)
  */
 
+import { useTheme, withAlpha } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { Heart, MapPin, MessageCircle, Sparkles, X } from "lucide-react-native";
 import React from "react";
@@ -26,14 +27,6 @@ import {
 } from "react-native";
 
 const { width } = Dimensions.get("window");
-
-// Brand Colors
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const VERIFIED_GREEN = "#10B981";
-const WHITE = "#FFFFFF";
-const SURFACE = "rgba(255,255,255,0.06)";
-const SURFACE_BORDER = "rgba(141,105,246,0.18)";
 
 // Card dimensions
 const CARD_WIDTH = (width - 48) / 2; // 2 columns with padding
@@ -63,7 +56,11 @@ export const MatchCard: React.FC<MatchCardProps> = ({
   match,
   onMessage,
   onUnmatch,
-}) => (
+}) => {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
+  return (
   <View style={styles.card}>
     {/* Image Container */}
     <View style={styles.imageContainer}>
@@ -72,7 +69,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
       {/* Verified Badge */}
       {match.verified && (
         <View style={styles.verifiedBadge}>
-          <Sparkles size={10} color={WHITE} strokeWidth={2.5} />
+          <Sparkles size={10} color={colors.onStatus} strokeWidth={2.5} />
         </View>
       )}
 
@@ -81,8 +78,8 @@ export const MatchCard: React.FC<MatchCardProps> = ({
         <View style={styles.mutualBadge}>
           <Heart
             size={10}
-            color={ACCENT_PINK}
-            fill={ACCENT_PINK}
+            color={colors.primary}
+            fill={colors.primary}
             strokeWidth={2}
           />
         </View>
@@ -90,7 +87,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
 
       {/* Gradient Overlay */}
       <LinearGradient
-        colors={["transparent", "rgba(0, 0, 0, 0.7)"]}
+        colors={["transparent", colors.brandScrim]}
         style={styles.imageGradient}
       />
     </View>
@@ -104,7 +101,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
       </View>
 
       <View style={styles.locationRow}>
-        <MapPin size={12} color={ACCENT_PURPLE} strokeWidth={2} />
+        <MapPin size={12} color={colors.secondary} strokeWidth={2} />
         <Text style={styles.locationText} numberOfLines={1}>
           {match.location}
         </Text>
@@ -118,7 +115,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
           accessibilityRole="button"
           accessibilityLabel="Unmatch"
         >
-          <X size={16} color={ACCENT_PINK} strokeWidth={2.5} />
+          <X size={18} color={colors.primary} strokeWidth={2.5} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -127,27 +124,29 @@ export const MatchCard: React.FC<MatchCardProps> = ({
           accessibilityRole="button"
           accessibilityLabel="Send message"
         >
-          <MessageCircle size={16} color={WHITE} strokeWidth={2} />
+          <MessageCircle size={18} color={colors.onPrimary} strokeWidth={2} />
         </TouchableOpacity>
       </View>
     </View>
   </View>
-);
+  );
+};
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
+  StyleSheet.create({
   // Card
   card: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    backgroundColor: SURFACE,
+    backgroundColor: colors.brandSurface,
     borderRadius: 20,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: SURFACE_BORDER,
+    borderColor: colors.brandBorder,
     marginBottom: 0,
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
+        shadowColor: colors.brandScrim,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 12,
@@ -164,7 +163,7 @@ const styles = StyleSheet.create({
   cardImage: {
     width: "100%",
     height: "100%",
-    backgroundColor: "#1A1A1A",
+    backgroundColor: colors.raised,
   },
   verifiedBadge: {
     position: "absolute",
@@ -173,14 +172,14 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: VERIFIED_GREEN,
+    backgroundColor: colors.success,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1.5,
-    borderColor: WHITE,
+    borderColor: colors.onStatus,
     ...Platform.select({
       ios: {
-        shadowColor: VERIFIED_GREEN,
+        shadowColor: colors.success,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.4,
         shadowRadius: 4,
@@ -197,14 +196,14 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "rgba(239, 62, 120, 0.2)",
+    backgroundColor: withAlpha(colors.primary, 0.2),
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1.5,
-    borderColor: ACCENT_PINK,
+    borderColor: colors.primary,
     ...Platform.select({
       ios: {
-        shadowColor: ACCENT_PINK,
+        shadowColor: colors.primary,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 4,
@@ -236,8 +235,8 @@ const styles = StyleSheet.create({
   cardName: {
     fontSize: 16,
     fontFamily: "Lora-Bold",
-    color: WHITE,
-    letterSpacing: 0.3,
+    color: colors.onPrimary,
+    letterSpacing: 0,
     flex: 1,
   },
   locationRow: {
@@ -249,8 +248,8 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 12,
     fontFamily: "DMSans-Medium",
-    color: ACCENT_PURPLE,
-    letterSpacing: 0.2,
+    color: colors.secondary,
+    letterSpacing: 0,
     flex: 1,
   },
 
@@ -261,21 +260,21 @@ const styles = StyleSheet.create({
   },
   cardActionBtn: {
     flex: 1,
-    height: 36,
+    height: 44,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
   },
   unmatchBtn: {
-    backgroundColor: "rgba(239, 62, 120, 0.15)",
+    backgroundColor: withAlpha(colors.primary, 0.15),
     borderWidth: 1,
-    borderColor: "rgba(239, 62, 120, 0.3)",
+    borderColor: withAlpha(colors.primary, 0.3),
   },
   messageBtn: {
-    backgroundColor: ACCENT_PINK,
+    backgroundColor: colors.primary,
     ...Platform.select({
       ios: {
-        shadowColor: ACCENT_PINK,
+        shadowColor: colors.primary,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 4,

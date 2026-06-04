@@ -5,7 +5,7 @@ import PreferenceSection from "@/src/components/preferences/PreferenceSection";
 import RelationshipOption from "@/src/components/preferences/RelationshipOption";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import type { UserType } from "@/src/features/auth/api/authApi";
-import { theme } from "@/src/theme";
+import { colors, theme, withAlpha } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Calendar, Heart, MapPin } from "lucide-react-native";
@@ -20,6 +20,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePreferences } from "../hooks/usePreferences";
+
+const BRAND_BG = theme.lightColors.brandBackground;
+const BRAND_GRADIENT = [BRAND_BG, colors.dalisay[950]] as const;
 
 export default function PreferencesScreen() {
   const router = useRouter();
@@ -57,8 +60,11 @@ export default function PreferencesScreen() {
     if (!isValid) return;
     const res = await savePreferences();
     if (res?.ok) {
+      // Identity verification is skipped for now (OCR is still mocked). Go
+      // straight to the final step. To re-enable it, point this back at
+      // "/(auth)/account-setup/verification-upload".
       router.push({
-        pathname: "/(auth)/account-setup/verification-upload",
+        pathname: "/(auth)/account-setup/welcome-complete",
         params: { userType },
       });
     }
@@ -73,19 +79,19 @@ export default function PreferencesScreen() {
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={theme.colors.dalisay[950] ?? "#0F0814"}
+        backgroundColor={BRAND_BG}
       />
-      {Platform.OS === "ios" && (
+      {insets.top > 0 && (
         <View
           style={{
             height: insets.top,
-            backgroundColor: theme.colors.dalisay[950] ?? "#0F0814",
+            backgroundColor: BRAND_BG,
           }}
         />
       )}
 
       <LinearGradient
-        colors={[theme.colors.dalisay[950] ?? "#0F0814", "#1A0F1F"]}
+        colors={BRAND_GRADIENT}
         style={StyleSheet.absoluteFill}
       />
 
@@ -105,7 +111,12 @@ export default function PreferencesScreen() {
 
         <View style={styles.form}>
           {/* Auto-assigned: No need for selection */}
-          <View style={styles.autoAssignedBadge}>
+          <View
+            style={styles.autoAssignedBadge}
+            accessible
+            accessibilityRole="text"
+            accessibilityLabel={`Looking for ${interestedInText}`}
+          >
             <Heart size={18} color={theme.colors.dalisay[400]} />
             <Text style={styles.autoAssignedText}>
               Looking for:{" "}
@@ -167,7 +178,7 @@ export default function PreferencesScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.dalisay[950] ?? "#0F0814" },
+  root: { flex: 1, backgroundColor: BRAND_BG },
   content: {
     paddingHorizontal: theme.spacing.lg ?? 24,
     paddingTop:
@@ -186,7 +197,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
-    color: "rgba(255,255,255,0.85)",
+    color: withAlpha(colors.neutral.white, 0.85),
     textAlign: "center",
     paddingHorizontal: 20,
   },
@@ -195,16 +206,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "rgba(141,105,246,0.15)",
+    backgroundColor: withAlpha(colors.dalisay[500], 0.15),
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: "rgba(141,105,246,0.3)",
+    borderColor: withAlpha(colors.dalisay[500], 0.3),
   },
   autoAssignedText: {
     fontSize: 15,
-    color: "rgba(255,255,255,0.85)",
+    color: withAlpha(colors.neutral.white, 0.85),
     fontFamily: theme.fontFamilies.body.regular,
   },
   autoAssignedValue: {
@@ -214,6 +225,6 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: theme.spacing.lg ?? 24,
     paddingTop: theme.spacing.md ?? 16,
-    backgroundColor: "rgba(15,8,20,0.95)",
+    backgroundColor: withAlpha(BRAND_BG, 0.95),
   },
 });

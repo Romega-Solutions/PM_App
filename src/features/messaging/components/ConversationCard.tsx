@@ -16,16 +16,7 @@
 
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-
-// Brand Colors
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
-const ONLINE_GREEN = "#10B981";
-const SURFACE = "rgba(255,255,255,0.06)";
-const SURFACE_BORDER = "rgba(141,105,246,0.18)";
-const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
-const TEXT_MUTED = "rgba(255,255,255,0.5)";
+import { useTheme, withAlpha } from "@/src/theme";
 
 /**
  * Props for ConversationCard component
@@ -66,39 +57,73 @@ export const ConversationCard: React.FC<ConversationCardProps> = ({
   unreadCount,
   onPress,
 }) => {
+  const { colors } = useTheme();
+
   return (
     <TouchableOpacity
-      style={styles.container}
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.brandSurface,
+          borderColor: colors.brandBorder,
+        },
+      ]}
       activeOpacity={0.85}
       accessibilityRole="button"
-      accessibilityLabel={`Open chat with ${userName}`}
+      accessibilityLabel={`Open chat with ${userName}. ${unreadCount > 0 ? `${unreadCount} unread messages.` : "No unread messages."} ${isOnline ? "Active now." : "Offline."}`}
       onPress={onPress}
     >
       {/* Profile Image */}
       <View style={styles.imageContainer}>
-        <View style={styles.imageWrap}>
+        <View
+          style={[
+            styles.imageWrap,
+            {
+              backgroundColor: withAlpha(colors.secondary, 0.14),
+              borderColor: withAlpha(colors.secondary, 0.22),
+            },
+          ]}
+        >
           {userPhoto ? (
             <Image
               source={{ uri: userPhoto }}
               style={styles.image}
               resizeMode="cover"
+              accessibilityIgnoresInvertColors
             />
           ) : (
-            <View style={styles.placeholderAvatar}>
-              <Text style={styles.placeholderText}>
+            <View
+              style={[
+                styles.placeholderAvatar,
+                { backgroundColor: withAlpha(colors.secondary, 0.2) },
+              ]}
+            >
+              <Text style={[styles.placeholderText, { color: colors.secondary }]}>
                 {userName.charAt(0).toUpperCase()}
               </Text>
             </View>
           )}
         </View>
-        {isOnline && <View style={styles.onlineDot} />}
+        {isOnline && (
+          <View
+            style={[
+              styles.onlineDot,
+              {
+                backgroundColor: colors.success,
+                borderColor: colors.brandBackground,
+              },
+            ]}
+          />
+        )}
       </View>
 
       {/* Message Info */}
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.name}>{userName}</Text>
-          <Text style={styles.time}>{formatTimestamp(lastMessageTime)}</Text>
+          <Text style={[styles.name, { color: colors.onPrimary }]}>{userName}</Text>
+          <Text style={[styles.time, { color: withAlpha(colors.onPrimary, 0.55) }]}>
+            {formatTimestamp(lastMessageTime)}
+          </Text>
         </View>
 
         <View style={styles.footer}>
@@ -106,6 +131,12 @@ export const ConversationCard: React.FC<ConversationCardProps> = ({
             <Text
               style={[
                 styles.lastMessage,
+                {
+                  color:
+                    unreadCount > 0
+                      ? withAlpha(colors.onPrimary, 0.78)
+                      : withAlpha(colors.onPrimary, 0.55),
+                },
                 unreadCount > 0 && styles.lastMessageUnread,
               ]}
               numberOfLines={1}
@@ -115,8 +146,10 @@ export const ConversationCard: React.FC<ConversationCardProps> = ({
           </View>
 
           {unreadCount > 0 && (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadText}>{unreadCount}</Text>
+            <View style={[styles.unreadBadge, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.unreadText, { color: colors.onPrimary }]}>
+                {unreadCount}
+              </Text>
             </View>
           )}
         </View>
@@ -149,9 +182,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: SURFACE,
     borderWidth: 1,
-    borderColor: SURFACE_BORDER,
     borderRadius: 16,
     padding: 14,
     marginBottom: 12,
@@ -165,9 +196,7 @@ const styles = StyleSheet.create({
     height: 58,
     borderRadius: 29,
     padding: 2,
-    backgroundColor: `${ACCENT_PURPLE}22`,
     borderWidth: 2,
-    borderColor: `${ACCENT_PURPLE}30`,
   },
   image: {
     width: "100%",
@@ -178,14 +207,12 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     borderRadius: 26,
-    backgroundColor: `${ACCENT_PURPLE}33`,
     justifyContent: "center",
     alignItems: "center",
   },
   placeholderText: {
     fontSize: 22,
     fontFamily: "DMSans-Bold",
-    color: ACCENT_PURPLE,
   },
   onlineDot: {
     position: "absolute",
@@ -194,9 +221,7 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: ONLINE_GREEN,
     borderWidth: 2.5,
-    borderColor: "#0F0814",
   },
   content: {
     flex: 1,
@@ -211,14 +236,11 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
-    letterSpacing: 0.2,
     flex: 1,
   },
   time: {
     fontSize: 12,
     fontFamily: "DMSans-Regular",
-    color: TEXT_MUTED,
     marginLeft: 8,
   },
   footer: {
@@ -233,18 +255,15 @@ const styles = StyleSheet.create({
   lastMessage: {
     fontSize: 14,
     fontFamily: "DMSans-Regular",
-    color: TEXT_MUTED,
     lineHeight: 20,
   },
   lastMessageUnread: {
     fontFamily: "DMSans-Medium",
-    color: TEXT_SECONDARY,
   },
   unreadBadge: {
     minWidth: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: ACCENT_PINK,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 8,
@@ -252,7 +271,5 @@ const styles = StyleSheet.create({
   unreadText: {
     fontSize: 11,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
-    letterSpacing: 0.2,
   },
 });

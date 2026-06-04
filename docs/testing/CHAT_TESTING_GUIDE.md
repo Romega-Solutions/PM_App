@@ -43,8 +43,14 @@
 
 ### **Pre-requisites**
 
-1. ✅ Run the migration: `03_add_conversations_table.sql` in Supabase SQL Editor
-2. ✅ Verify migration success:
+1. Apply the active timestamped migrations:
+   ```bash
+   supabase init
+   supabase link --project-ref <project-ref>
+   supabase db push
+   supabase gen types typescript --linked > src/types/database.ts
+   ```
+2. Verify migration success:
    ```sql
    SELECT COUNT(*) FROM conversations;
    SELECT COUNT(*) FROM messages WHERE conversation_id IS NOT NULL;
@@ -279,7 +285,8 @@ const { data: conversationId } = await supabase.rpc(
 
 ### **Created**
 
-- `supabase/migrations/03_add_conversations_table.sql`
+- `supabase/migrations/20260530120004_messaging.sql`
+- `supabase/migrations/20260530120007_read_models.sql`
 - `src/features/messaging/api/messages.api.ts`
 - `src/features/messaging/api/realtime.api.ts`
 - `src/features/messaging/hooks/useMessages.ts`

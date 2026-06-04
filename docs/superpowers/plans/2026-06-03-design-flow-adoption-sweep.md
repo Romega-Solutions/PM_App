@@ -1,6 +1,6 @@
 # Design Flow Adoption Sweep Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking.
 
 **Goal:** Apply the design-flow adoption sweep from the approved spec so the app uses scheme-aware tokens, shared primitives, accessible controls, and honest product states.
 
@@ -42,16 +42,16 @@
 - Modify: `src/components/forms/FormDivider.tsx`
 - Test: `src/theme/__tests__/theme.test.ts`
 
-- [ ] Add `withAlpha(hex, alpha)` tests to `src/theme/__tests__/theme.test.ts`.
-- [ ] Run `npm test -- src/theme/__tests__/theme.test.ts` and confirm the new tests fail before adding the helper.
-- [ ] Implement `src/theme/colorUtils.ts` with clamped alpha conversion for 3-digit and 6-digit hex colors.
-- [ ] Export `withAlpha` from `src/theme/index.ts`.
-- [ ] Add app-shell semantic roles to both light and dark palettes: `brandBackground`, `brandSurface`, `brandSurfaceElevated`, `brandBorder`, `brandOverlay`, `brandScrim`, `tabBar`, `tabBarBorder`, `tabActive`, `tabInactive`, `chip`, `chipBorder`, `danger`, `dangerBg`, `dangerInk`.
-- [ ] Update theme contract tests so `lightColors` and `darkColors` still expose the same keys.
-- [ ] Convert shared buttons and form controls to `useTheme()` and `withAlpha()`.
-- [ ] Make `BackButton` and right-side input controls meet 44/48 touch target expectations or use `hitSlop`.
-- [ ] Run `npm test -- src/theme/__tests__/theme.test.ts`.
-- [ ] Run `npx tsc --noEmit`.
+- [x] Add `withAlpha(hex, alpha)` tests to `src/theme/__tests__/theme.test.ts`.
+- [x] Run `npm test -- src/theme/__tests__/theme.test.ts` and confirm the new tests fail before adding the helper.
+- [x] Implement `src/theme/colorUtils.ts` with clamped alpha conversion for 3-digit and 6-digit hex colors.
+- [x] Export `withAlpha` from `src/theme/index.ts`.
+- [x] Add app-shell semantic roles to both light and dark palettes: `brandBackground`, `brandSurface`, `brandSurfaceElevated`, `brandBorder`, `brandOverlay`, `brandScrim`, `tabBar`, `tabBarBorder`, `tabActive`, `tabInactive`, `chip`, `chipBorder`, `danger`, `dangerBg`, `dangerInk`.
+- [x] Update theme contract tests so `lightColors` and `darkColors` still expose the same keys.
+- [x] Convert shared buttons and form controls to `useTheme()` and `withAlpha()`.
+- [x] Make `BackButton` and right-side input controls meet 44/48 touch target expectations or use `hitSlop`.
+- [x] Run `npm test -- src/theme/__tests__/theme.test.ts`.
+- [x] Run `npx tsc --noEmit`.
 
 ## Task 2: Auth And Account Flow Cleanup
 
@@ -81,17 +81,17 @@
 - Modify: `src/features/auth/screens/VerificationSuccessScreen.tsx`
 - Modify: `src/features/account/screens/*.tsx`
 
-- [ ] Remove user-facing Supabase SQL/manual setup copy from verify-email screens.
-- [ ] Remove verification-bypass copy from the primary user path.
-- [ ] Fix verification success countdown and continue action.
-- [ ] Make verify-phone honest: either a non-production placeholder with clear unavailable state or a route that redirects away from the fake OTP flow.
-- [ ] Tokenize auth/account shared components with `useTheme()` and `withAlpha()`.
-- [ ] Replace emoji UI markers with lucide icons or accessible text.
-- [ ] Link welcome Terms/Privacy references to real routes.
-- [ ] Normalize account setup progress counts and scaffold styles.
-- [ ] Add/fix accessibility labels for photo remove/replace, verification cards, radios, sliders, and OTP actions.
-- [ ] Run `npx tsc --noEmit`.
-- [ ] Run `npm run lint`.
+- [x] Remove user-facing Supabase SQL/manual setup copy from verify-email screens.
+- [x] Remove verification-bypass copy from the primary user path.
+- [x] Fix verification success countdown and continue action.
+- [x] Make verify-phone honest: either a non-production placeholder with clear unavailable state or a route that redirects away from the fake OTP flow.
+- [x] Tokenize auth/account shared components with `useTheme()` and `withAlpha()`.
+- [x] Replace emoji UI markers with lucide icons or accessible text.
+- [x] Link welcome Terms/Privacy references to real routes.
+- [x] Normalize account setup progress counts and scaffold styles.
+- [x] Add/fix accessibility labels for photo remove/replace, verification cards, radios, sliders, and OTP actions.
+- [x] Run `npx tsc --noEmit`.
+- [x] Run `npm run lint`.
 
 ## Task 3: Main Navigation, Settings, Matching, And Profile
 
@@ -112,18 +112,18 @@
 - Modify: `src/features/profile/screens/EditProfileScreen.tsx`
 - Modify: `src/features/profile/components/*.tsx`
 
-- [ ] Move custom tab icon/pill UI out of `app/(main)/_layout.tsx`.
-- [ ] Tokenize main tab states and add accessible selected/label states.
-- [ ] Build shared settings scaffold and rows.
-- [ ] Migrate settings screens to shared settings components.
-- [ ] Make privacy/notification state honest: persist where supported or communicate local-only pending state.
-- [ ] Add delete-account confirmation UI.
-- [ ] Remove mock help `console.log` actions or mark them unavailable.
-- [ ] Tokenize matching cards/actions/modals and fix undersized close/action buttons.
-- [ ] Add reduced-motion-friendly paths for swipe/match modal effects.
-- [ ] Fix Profile settings icon behavior and edit-profile dirty/save feedback.
-- [ ] Run `npx tsc --noEmit`.
-- [ ] Run `npm run lint`.
+- [x] Move custom tab icon/pill UI out of `app/(main)/_layout.tsx`.
+- [x] Tokenize main tab states and add accessible selected/label states.
+- [x] Build shared settings scaffold and rows.
+- [x] Migrate settings screens to shared settings components.
+- [x] Make privacy/notification state honest: persist where supported or communicate local-only pending state.
+- [x] Add delete-account confirmation UI.
+- [x] Remove mock help `console.log` actions or mark them unavailable.
+- [x] Tokenize matching cards/actions/modals and fix undersized close/action buttons.
+- [x] Add reduced-motion-friendly paths for swipe/match modal effects.
+- [x] Fix Profile settings icon behavior and edit-profile dirty/save feedback.
+- [x] Run `npx tsc --noEmit`.
+- [x] Run `npm run lint`.
 
 ## Task 4: Messaging, Chat Decomposition, Calls, And Docs
 
@@ -141,29 +141,36 @@
 - Modify: `src/features/messaging/screens/VideoCallScreen.tsx`
 - Modify: `docs/chat/chatUIFlow.md`
 
-- [ ] Tokenize messages list, active users, and conversation cards.
-- [ ] Make messages filter either functionally filter results or visibly remove the nonfunctional filter behavior.
-- [ ] Add offline/reconnect, refresh, skeleton, and accessible search affordances where data already supports them.
-- [ ] Split `ChatScreen.tsx` into orchestration plus header/list/bubble/composer/state components.
-- [ ] Replace `window.location.reload()` with native-safe refresh behavior.
-- [ ] Add failed-message retry, upload preview/progress, and accessible typing announcements where current hooks support them.
-- [ ] Tokenize voice/video call screens and add control labels/roles/states.
-- [ ] Keep call screens honest about simulated state until real signaling exists.
-- [ ] Update chat docs to reference theme tokens, not hardcoded colors.
-- [ ] Run `npx tsc --noEmit`.
-- [ ] Run `npm run lint`.
+- [x] Tokenize messages list, active users, and conversation cards.
+- [x] Make messages filter either functionally filter results or visibly remove the nonfunctional filter behavior.
+- [x] Add offline/reconnect, refresh, skeleton, and accessible search affordances where data already supports them.
+- [x] Split `ChatScreen.tsx` into orchestration plus header/list/bubble/composer/state components.
+- [x] Replace `window.location.reload()` with native-safe refresh behavior.
+- [x] Add failed-message retry, upload preview/progress, and accessible typing announcements where current hooks support them.
+- [x] Tokenize voice/video call screens and add control labels/roles/states.
+- [x] Keep call screens honest about simulated state until real signaling exists.
+- [x] Update chat docs to reference theme tokens, not hardcoded colors.
+- [x] Run `npx tsc --noEmit`.
+- [x] Run `npm run lint`.
 
 ## Final Verification
 
-- [ ] Run `npx tsc --noEmit`.
-- [ ] Run `npm run lint`.
-- [ ] Run `npm test`.
-- [ ] Run `npm run build:web` if TypeScript, lint, and Jest pass.
-- [ ] Run hardcoded-token scan:
+- [x] Run `npx tsc --noEmit`.
+- [x] Run `npm run lint`.
+- [x] Run `npm test`.
+- [x] Run `npm run build:web` if TypeScript, lint, and Jest pass.
+- [x] Run hardcoded-token scan:
 
 ```bash
 rg -n "#[0-9A-Fa-f]{3,8}|rgba\\(" app src --glob '!src/theme/**' --glob '!**/__tests__/**'
 ```
 
-- [ ] Review remaining hits and document any intentional exceptions.
-- [ ] Run `git status --short`.
+- [x] Review remaining hits and document any intentional exceptions.
+- [x] Run `git status --short`.
+
+## Completion Notes
+
+- 2026-06-03: Completed the active implementation sweep in `feat/design-system-overhaul`.
+- Added focused regression checks for the user-type route boundary, sign-in/sign-up auth availability details, and the filters modal unavailable state.
+- Final verification passed: `npx tsc --noEmit`, `npm run lint`, `npm test -- --runInBand`, `npm run build:web`.
+- Hardcoded token scan returned no `#hex` or `rgba(...)` hits in `app` or `src` outside `src/theme/**` and tests.

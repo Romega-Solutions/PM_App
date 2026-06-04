@@ -1,4 +1,4 @@
-# ✅ FINAL SETUP - Email Verification Flow
+# Final Setup - Email Verification Flow
 
 ## 🎯 How It Works Now
 
@@ -22,14 +22,14 @@
 
 ---
 
-## ⚙️ Supabase Configuration
+## Supabase Configuration
 
 ### 1. Enable Email Provider & Verification
 
 Go to: **Authentication** → **Providers** → **Email**
 
-- ✅ **ENABLE** Email provider
-- ✅ **ENABLE** "Confirm email"
+- Enable Email provider.
+- Enable **Confirm email**.
 - Click **Save**
 
 ### 2. Add Redirect URLs
@@ -38,8 +38,11 @@ Go to: **Authentication** → **URL Configuration**
 
 **Site URL:**
 
+Set this to the production web URL when deployed. For local web development,
+use the Expo web origin, usually:
+
 ```
-http://localhost:3000
+http://localhost:8081
 ```
 
 **Redirect URLs (add these 3):**
@@ -47,31 +50,32 @@ http://localhost:3000
 ```
 exp://*
 pinaymate://*
-http://localhost:3000/*
+http://localhost:8081/*
 ```
+
+If Expo prints a different local redirect URL, add that exact origin too.
 
 ---
 
 ## 🗄️ Database Setup
 
-Run this SQL in Supabase SQL Editor:
+Use the Supabase CLI from the project root:
 
-**Copy from:** `supabase/migrations/00_complete_database_setup.sql`
+```bash
+supabase init
+supabase link --project-ref <project-ref>
+supabase db push
+supabase gen types typescript --linked > src/types/database.ts
+```
 
 **What it does:**
 
-- ✅ Creates `profiles` table
-- ✅ Creates trigger that runs when user's email is verified
-- ✅ Trigger creates profile with data from signup metadata
-- ✅ Sets up messages, likes, passes tables
-- ✅ Configures security policies
+- Creates the normalized profile, matching, messaging, safety, and storage schema.
+- Creates profile setup tables and read-model views.
+- Applies RLS policies and grants.
+- Seeds lookup data on local `supabase db reset`.
 
-**Important:** The trigger now runs **BOTH** on:
-
-1. User insert (if email already confirmed)
-2. User update (when email_confirmed_at changes from NULL to a timestamp)
-
-This ensures profile is created as soon as email is verified!
+Migration order is documented in `supabase/migrations/README.md`.
 
 ---
 
@@ -86,8 +90,7 @@ npx expo start --clear
 1. Select user type
 2. Fill signup form
 3. Click "Create Account"
-4. ✅ Should navigate to **"Verify Email"** screen
-5. ✅ Console shows: "📧 Email not verified yet"
+4. Should navigate to the **Verify Email** screen.
 
 ### Step 2: Check Email
 
@@ -97,10 +100,9 @@ npx expo start --clear
 
 ### Step 3: Verify in App
 
-1. ✅ Browser opens and redirects to app
-2. ✅ App shows **"Email Verified!"** screen
-3. ✅ After 2 seconds, navigates to **"Basic Info"** screen
-4. ✅ Profile created in database
+1. Browser opens and redirects to the app.
+2. App shows the verification success screen.
+3. App continues to the first incomplete account setup step.
 
 ---
 
@@ -134,9 +136,9 @@ WHERE email = 'your-email@example.com';
 
 **Expected:**
 
-- ✅ User has `email_confirmed_at` timestamp
-- ✅ Profile exists with correct data
-- ✅ `basic_info_completed` is `false` (not filled yet)
+- User has an `email_confirmed_at` timestamp.
+- Profile exists with correct metadata if the profile creation path has run.
+- Account setup flags reflect the next incomplete step.
 
 ---
 
@@ -146,7 +148,7 @@ WHERE email = 'your-email@example.com';
 
 - Shows "Check your email" message
 - Has "Resend email" button
-- Has "I've verified in Supabase - Sign In" button (for manual testing)
+- Has resend, open email app, and back-to-sign-in actions.
 - Polls every 5 seconds to check if email verified
 
 ### verification-success Screen:
@@ -206,8 +208,8 @@ SELECT tgname FROM pg_trigger WHERE tgname IN ('on_auth_user_created', 'on_auth_
 
 - [ ] Enabled Email provider in Supabase
 - [ ] **ENABLED** "Confirm email" setting
-- [ ] Set Site URL to `http://localhost:3000`
-- [ ] Added redirect URLs: `exp://*`, `pinaymate://*`, `http://localhost:3000/*`
+- [ ] Set Site URL to the active web origin or production URL
+- [ ] Added redirect URLs: `exp://*`, `pinaymate://*`, `http://localhost:8081/*`
 - [ ] Ran complete database setup SQL
 - [ ] Verified triggers exist (2 triggers)
 - [ ] Deleted any test users

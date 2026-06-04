@@ -14,16 +14,10 @@
  */
 
 import { UserType } from "@/src/features/auth/api/authApi";
+import { useTheme, withAlpha } from "@/src/theme";
 import { MapPin, Sparkles, User } from "lucide-react-native";
 import React from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
-
-// Brand Colors
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const VERIFIED_GREEN = "#10B981";
-const WARNING_YELLOW = "#F59E0B";
-const WHITE = "#FFFFFF";
 
 /**
  * Props for ProfileHeader component
@@ -59,6 +53,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   photoUri,
   isVerified,
 }) => {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
   const formatUserType = (type: UserType): string => {
     return type === "filipina" ? "Filipina" : "Foreigner";
   };
@@ -75,7 +72,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           />
         ) : (
           <View style={styles.avatarPlaceholder}>
-            <User size={48} color={ACCENT_PINK} strokeWidth={2} />
+            <User size={48} color={colors.primary} strokeWidth={2} />
           </View>
         )}
       </View>
@@ -94,14 +91,14 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
       {/* Location */}
       <View style={styles.locationRow}>
-        <MapPin size={16} color={ACCENT_PINK} strokeWidth={2.5} />
+        <MapPin size={16} color={colors.primary} strokeWidth={2.5} />
         <Text style={styles.locationText}>{location}</Text>
       </View>
 
       {/* Verification Badge */}
       {isVerified ? (
         <View style={styles.verifiedPill}>
-          <Sparkles size={12} color={WHITE} strokeWidth={2.5} />
+          <Sparkles size={12} color={colors.onStatus} strokeWidth={2.5} />
           <Text style={styles.verifiedText}>VERIFIED</Text>
         </View>
       ) : (
@@ -113,7 +110,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
+  StyleSheet.create({
   container: {
     alignItems: "center",
     paddingHorizontal: 24,
@@ -125,7 +123,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     borderWidth: 4,
-    borderColor: ACCENT_PURPLE,
+    borderColor: colors.secondary,
     padding: 4,
     marginBottom: 16,
   },
@@ -138,15 +136,15 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     borderRadius: 56,
-    backgroundColor: `${ACCENT_PURPLE}22`,
+    backgroundColor: withAlpha(colors.secondary, 0.14),
     justifyContent: "center",
     alignItems: "center",
   },
   name: {
-    color: WHITE,
+    color: colors.onPrimary,
     fontSize: 28,
     fontFamily: "DMSans-Bold",
-    letterSpacing: 0.5,
+    letterSpacing: 0,
     marginBottom: 8,
   },
   infoRow: {
@@ -156,7 +154,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   infoText: {
-    color: "rgba(255, 255, 255, 0.85)",
+    color: withAlpha(colors.onPrimary, 0.85),
     fontSize: 14,
     fontFamily: "DMSans-Medium",
   },
@@ -164,7 +162,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: ACCENT_PURPLE,
+    backgroundColor: colors.secondary,
   },
   locationRow: {
     flexDirection: "row",
@@ -173,14 +171,14 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   locationText: {
-    color: "rgba(255, 255, 255, 0.9)",
+    color: withAlpha(colors.onPrimary, 0.9),
     fontSize: 15,
     fontFamily: "DMSans-Medium",
-    letterSpacing: 0.2,
+    letterSpacing: 0,
   },
   verifiedPill: {
     marginTop: 12,
-    backgroundColor: VERIFIED_GREEN,
+    backgroundColor: colors.success,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -188,27 +186,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     borderWidth: 2,
-    borderColor: WHITE,
+    borderColor: colors.onStatus,
   },
   verifiedText: {
     fontSize: 10,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: colors.onStatus,
     letterSpacing: 1,
   },
   unverifiedPill: {
     marginTop: 12,
-    backgroundColor: "rgba(245, 158, 11, 0.2)",
+    backgroundColor: withAlpha(colors.warning, 0.2),
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 2,
-    borderColor: WARNING_YELLOW,
+    borderColor: colors.warning,
   },
   unverifiedText: {
     fontSize: 10,
     fontFamily: "DMSans-Bold",
-    color: WARNING_YELLOW,
+    color: colors.warning,
     letterSpacing: 1,
   },
 });

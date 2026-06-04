@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Image, Text, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
 import { X, Camera } from "lucide-react-native";
-import { theme } from "@/src/theme";
+import { colors, theme, useTheme, withAlpha } from "@/src/theme";
 
 const { width } = Dimensions.get("window");
 const ITEM_SIZE = Math.min(120, Math.floor((width - theme.spacing.lg * 2 - 12) / 3));
@@ -14,22 +14,61 @@ interface Props {
 }
 
 export default function PhotoPicker({ photos, onAdd, onRemove, canAdd = true }: Props) {
+  const { colors: themeColors } = useTheme();
+
   return (
     <View style={styles.container}>
       <View style={styles.grid}>
         {/* Add button as first tile */}
         {canAdd && (
-          <TouchableOpacity style={[styles.tile, styles.addTile]} onPress={onAdd} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Add photo">
-            <Camera size={28} color={theme.colors.dalisay[50]} />
+          <TouchableOpacity
+            style={[
+              styles.tile,
+              styles.addTile,
+              {
+                backgroundColor: withAlpha(colors.neutral.white, 0.04),
+                borderColor: withAlpha(colors.neutral.white, 0.08),
+              },
+            ]}
+            onPress={onAdd}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Add profile photo"
+            accessibilityHint="Opens your photo library to upload a profile photo"
+          >
+            <Camera size={28} color={themeColors.onPrimary} />
             <Text style={styles.addText}>Add</Text>
           </TouchableOpacity>
         )}
 
-        {photos.map((uri) => (
-          <View key={uri} style={styles.tile}>
-            <Image source={{ uri }} style={styles.image} resizeMode="cover" />
-            <TouchableOpacity style={styles.removeBtn} onPress={() => onRemove(uri)} accessibilityRole="button" accessibilityLabel="Remove photo" activeOpacity={0.8}>
-              <X size={14} color={theme.colors.neutral.white} />
+        {photos.map((uri, index) => (
+          <View
+            key={uri}
+            style={[
+              styles.tile,
+              { backgroundColor: withAlpha(colors.neutral.white, 0.04) },
+            ]}
+          >
+            <Image
+              source={{ uri }}
+              style={styles.image}
+              resizeMode="cover"
+              accessible
+              accessibilityLabel={`Profile photo ${index + 1}`}
+            />
+            <TouchableOpacity
+              style={[
+                styles.removeBtn,
+                { backgroundColor: withAlpha(colors.neutral.black, 0.55) },
+              ]}
+              onPress={() => onRemove(uri)}
+              accessibilityRole="button"
+              accessibilityLabel={`Remove profile photo ${index + 1}`}
+              accessibilityHint="Removes this photo from your profile"
+              hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+              activeOpacity={0.8}
+            >
+              <X size={14} color={colors.neutral.white} />
             </TouchableOpacity>
           </View>
         ))}
@@ -47,17 +86,15 @@ const styles = StyleSheet.create({
     height: ITEM_SIZE,
     borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.04)",
     justifyContent: "center",
     alignItems: "center",
   },
   addTile: {
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.06)",
   },
   addText: {
     marginTop: 8,
-    color: "rgba(255,255,255,0.9)",
+    color: withAlpha(colors.neutral.white, 0.9),
     fontSize: 12,
   },
   image: { width: "100%", height: "100%" },
@@ -65,7 +102,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 8,
     right: 8,
-    backgroundColor: "rgba(0,0,0,0.45)",
     width: 28,
     height: 28,
     borderRadius: 8,
@@ -73,7 +109,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   hint: {
-    color: "rgba(255,255,255,0.65)",
+    color: withAlpha(colors.neutral.white, 0.65),
     fontSize: 13,
     marginTop: 6,
   },

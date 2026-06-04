@@ -2,7 +2,6 @@ import { theme, useTheme, withAlpha } from "@/src/theme";
 import React from "react";
 import {
   ActivityIndicator,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -66,20 +65,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: theme.borderRadius.xl,
-    paddingVertical: Platform.OS === "ios" ? 16 : 14,
+    minHeight: theme.componentSizes.button,
+    paddingVertical: theme.spacing.related,
     paddingHorizontal: theme.spacing.lg,
-    minHeight: Platform.OS === "android" ? 52 : 56,
   },
   content: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: theme.spacing.touchGap,
   },
   text: {
     ...theme.textStyles.button,
     textAlign: "center",
   },
   icon: {
-    marginRight: 4,
+    marginRight: 0,
   },
 });

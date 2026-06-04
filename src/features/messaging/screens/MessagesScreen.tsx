@@ -22,14 +22,15 @@
 
 import { useRouter } from "expo-router";
 import {
-    Filter,
     MessageCircle,
+    RefreshCw,
     Search
 } from "lucide-react-native";
 import React, { useState } from "react";
 import {
     ActivityIndicator,
     Platform,
+    RefreshControl,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -43,17 +44,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useConversations } from "@/src/features/messaging/hooks/useConversations";
 import { useCurrentUserId } from "@/src/features/messaging/hooks/useCurrentUserId";
 import { useChatStore } from "@/src/stores/chatStore";
+import { useTheme, withAlpha } from "@/src/theme";
 import { ActiveUserCard } from "../components/ActiveUserCard";
 import { ConversationCard } from "../components/ConversationCard";
-
-// Brand Colors
-const BRAND_BG = "#0F0814";
-const ACCENT_PURPLE = "#8D69F6";
-const WHITE = "#FFFFFF";
-const SURFACE = "rgba(255,255,255,0.06)";
-const SURFACE_BORDER = "rgba(141,105,246,0.18)";
-const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
-const TEXT_MUTED = "rgba(255,255,255,0.5)";
 
 /**
  * MessagesScreen Component
@@ -64,8 +57,9 @@ const TEXT_MUTED = "rgba(255,255,255,0.5)";
 export const MessagesScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
-  const [, setFilterType] = useState<"all" | "unread" | "online">("all");
+  const [refreshing, setRefreshing] = useState(false);
 
   // Get global unread count from Zustand store
   const totalUnreadCount = useChatStore((state) => state.totalUnreadCount);
@@ -79,12 +73,26 @@ export const MessagesScreen: React.FC = () => {
     autoLoad: true,
   });
 
-  // Filter conversations based on search
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Filter conversations based on accessible search.
   const filteredConversations = conversations.filter((conv) => {
     if (!conv.other_user) return false;
     if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
     const firstName = conv.other_user.first_name || "";
-    return firstName.toLowerCase().includes(searchQuery.toLowerCase());
+    const lastMessage = conv.last_message_text || "";
+    return (
+      firstName.toLowerCase().includes(query) ||
+      lastMessage.toLowerCase().includes(query)
+    );
   });
 
   // Extract active users from online conversations
@@ -131,14 +139,20 @@ export const MessagesScreen: React.FC = () => {
   // Loading state
   if (loading && !conversations.length) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <StatusBar barStyle="light-content" backgroundColor={BRAND_BG} />
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.brandBackground }]}>
+        <StatusBar barStyle="light-content" backgroundColor={colors.brandBackground} />
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Messages</Text>
+          <Text style={[styles.headerTitle, { color: colors.onPrimary }]}>Messages</Text>
         </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={ACCENT_PURPLE} />
-          <Text style={styles.loadingText}>Loading conversations...</Text>
+        <View
+          style={styles.loadingContainer}
+          accessibilityRole="progressbar"
+          accessibilityLabel="Loading conversations"
+        >
+          <ActivityIndicator size="large" color={colors.secondary} />
+          <View style={[styles.skeletonLine, { backgroundColor: colors.brandSurfaceElevated }]} />
+          <View style={[styles.skeletonLineShort, { backgroundColor: colors.brandSurface }]} />
+          <Text style={[styles.loadingText, { color: withAlpha(colors.onPrimary, 0.72) }]}>Loading conversations...</Text>
         </View>
       </View>
     );
@@ -147,16 +161,21 @@ export const MessagesScreen: React.FC = () => {
   // Error state
   if (error) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <StatusBar barStyle="light-content" backgroundColor={BRAND_BG} />
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.brandBackground }]}>
+        <StatusBar barStyle="light-content" backgroundColor={colors.brandBackground} />
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Messages</Text>
+          <Text style={[styles.headerTitle, { color: colors.onPrimary }]}>Messages</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <Text style={styles.errorText}>Failed to load conversations</Text>
-          <Text style={styles.errorSubtext}>{error.message}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={refresh}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+          <Text style={[styles.errorText, { color: colors.errorInk }]}>Failed to load conversations</Text>
+          <Text style={[styles.errorSubtext, { color: withAlpha(colors.onPrimary, 0.62) }]}>{error.message}</Text>
+          <TouchableOpacity
+            style={[styles.retryButton, { backgroundColor: colors.secondary }]}
+            onPress={handleRefresh}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading conversations"
+          >
+            <Text style={[styles.retryButtonText, { color: colors.onSecondary }]}>Retry</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -164,42 +183,55 @@ export const MessagesScreen: React.FC = () => {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" backgroundColor={BRAND_BG} />
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.brandBackground }]}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.brandBackground} />
 
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>Messages</Text>
+          <Text style={[styles.headerTitle, { color: colors.onPrimary }]}>Messages</Text>
           {totalUnreadCount > 0 && (
-            <View style={styles.headerBadge}>
-              <Text style={styles.headerBadgeText}>{totalUnreadCount}</Text>
+            <View style={[styles.headerBadge, { backgroundColor: colors.secondary }]}>
+              <Text style={[styles.headerBadgeText, { color: colors.onSecondary }]}>{totalUnreadCount}</Text>
             </View>
           )}
         </View>
         <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => setFilterType("all")}
+          style={[
+            styles.headerButton,
+            { backgroundColor: colors.brandSurface, borderColor: colors.brandBorder },
+          ]}
+          onPress={handleRefresh}
+          accessibilityRole="button"
+          accessibilityLabel="Refresh conversations"
+          accessibilityState={{ busy: refreshing || loading }}
         >
-          <Filter size={22} color={WHITE} strokeWidth={2.5} />
+          {refreshing ? (
+            <ActivityIndicator size="small" color={colors.onPrimary} />
+          ) : (
+            <RefreshCw size={20} color={colors.onPrimary} strokeWidth={2.5} />
+          )}
         </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <View style={styles.searchInputWrapper}>
+        <View style={[styles.searchInputWrapper, { backgroundColor: colors.brandSurface, borderColor: colors.brandBorder }]}>
           <Search
             size={20}
-            color={TEXT_MUTED}
+            color={withAlpha(colors.onPrimary, 0.55)}
             strokeWidth={2.5}
             style={styles.searchIcon}
           />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.onPrimary }]}
             placeholder="Search conversations..."
-            placeholderTextColor={TEXT_MUTED}
+            placeholderTextColor={withAlpha(colors.onPrimary, 0.55)}
             value={searchQuery}
             onChangeText={setSearchQuery}
+            accessibilityLabel="Search conversations"
+            accessibilityHint="Search by contact name or last message"
+            returnKeyType="search"
           />
         </View>
       </View>
@@ -208,6 +240,15 @@ export const MessagesScreen: React.FC = () => {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.secondary}
+            colors={[colors.secondary]}
+            progressBackgroundColor={colors.brandSurfaceElevated}
+          />
+        }
       >
         {/* Active Users Section */}
         {activeUsers.length > 0 && (
@@ -215,11 +256,11 @@ export const MessagesScreen: React.FC = () => {
             <View style={styles.sectionHeader}>
               <MessageCircle
                 size={18}
-                color={ACCENT_PURPLE}
+                color={colors.secondary}
                 strokeWidth={2.5}
               />
-              <Text style={styles.sectionTitle}>Active Now</Text>
-              <Text style={styles.sectionCount}>({activeUsers.length})</Text>
+              <Text style={[styles.sectionTitle, { color: colors.onPrimary }]}>Active Now</Text>
+              <Text style={[styles.sectionCount, { color: withAlpha(colors.onPrimary, 0.55) }]}>({activeUsers.length})</Text>
             </View>
             <ScrollView
               horizontal
@@ -243,21 +284,21 @@ export const MessagesScreen: React.FC = () => {
         {/* Conversations Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>All Messages</Text>
-            <Text style={styles.sectionCount}>
+            <Text style={[styles.sectionTitle, { color: colors.onPrimary }]}>All Messages</Text>
+            <Text style={[styles.sectionCount, { color: withAlpha(colors.onPrimary, 0.55) }]}>
               ({filteredConversations.length})
             </Text>
           </View>
 
           {filteredConversations.length === 0 ? (
             <View style={styles.emptyState}>
-              <MessageCircle size={48} color={TEXT_MUTED} strokeWidth={1.5} />
-              <Text style={styles.emptyStateText}>
+              <MessageCircle size={48} color={withAlpha(colors.onPrimary, 0.5)} strokeWidth={1.5} />
+              <Text style={[styles.emptyStateText, { color: withAlpha(colors.onPrimary, 0.78) }]}>
                 {searchQuery
                   ? "No conversations found"
                   : "No conversations yet"}
               </Text>
-              <Text style={styles.emptyStateSubtext}>
+              <Text style={[styles.emptyStateSubtext, { color: withAlpha(colors.onPrimary, 0.55) }]}>
                 {searchQuery
                   ? "Try adjusting your search"
                   : "Start matching to begin chatting"}
@@ -292,7 +333,6 @@ export const MessagesScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BRAND_BG,
   },
   header: {
     flexDirection: "row",
@@ -308,15 +348,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
-    letterSpacing: 0.3,
   },
   headerBadge: {
     marginLeft: 12,
     minWidth: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: ACCENT_PURPLE,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 10,
@@ -324,15 +361,12 @@ const styles = StyleSheet.create({
   headerBadgeText: {
     fontSize: 13,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
   },
   headerButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: SURFACE,
     borderWidth: 1,
-    borderColor: SURFACE_BORDER,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -343,9 +377,7 @@ const styles = StyleSheet.create({
   searchInputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: SURFACE,
     borderWidth: 1,
-    borderColor: SURFACE_BORDER,
     borderRadius: 14,
     paddingHorizontal: 16,
     height: 50,
@@ -357,7 +389,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontFamily: "DMSans-Regular",
-    color: WHITE,
     paddingVertical: 0,
   },
   scrollView: {
@@ -378,14 +409,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
     marginLeft: 8,
-    letterSpacing: 0.3,
   },
   sectionCount: {
     fontSize: 14,
     fontFamily: "DMSans-Medium",
-    color: TEXT_MUTED,
     marginLeft: 6,
   },
   activeUsersContainer: {
@@ -403,14 +431,12 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 18,
     fontFamily: "DMSans-Bold",
-    color: TEXT_SECONDARY,
     marginTop: 20,
     textAlign: "center",
   },
   emptyStateSubtext: {
     fontSize: 14,
     fontFamily: "DMSans-Regular",
-    color: TEXT_MUTED,
     marginTop: 8,
     textAlign: "center",
     lineHeight: 20,
@@ -424,19 +450,28 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 14,
     fontFamily: "DMSans-Medium",
-    color: TEXT_SECONDARY,
     marginTop: 16,
+  },
+  skeletonLine: {
+    width: 220,
+    height: 18,
+    borderRadius: 9,
+    marginTop: 18,
+  },
+  skeletonLineShort: {
+    width: 150,
+    height: 14,
+    borderRadius: 7,
+    marginTop: 10,
   },
   errorText: {
     fontSize: 16,
     fontFamily: "DMSans-Bold",
-    color: TEXT_SECONDARY,
     textAlign: "center",
   },
   errorSubtext: {
     fontSize: 14,
     fontFamily: "DMSans-Regular",
-    color: TEXT_MUTED,
     marginTop: 8,
     textAlign: "center",
     paddingHorizontal: 40,
@@ -445,13 +480,10 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: ACCENT_PURPLE,
     borderRadius: 12,
   },
   retryButtonText: {
     fontSize: 14,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
-    letterSpacing: 0.3,
   },
 });

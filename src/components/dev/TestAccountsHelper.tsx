@@ -8,11 +8,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { theme, withAlpha } from "@/src/theme";
 
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
-const SURFACE = "rgba(255,255,255,0.08)";
+const ACCENT_PURPLE = theme.colors.dalisay[500];
+const ACCENT_PINK = theme.colors.amihan[500];
+const WHITE = theme.colors.neutral.white;
+const SURFACE = theme.lightColors.brandSurface;
 
 // Test accounts configuration
 const TEST_ACCOUNTS = [
@@ -106,7 +107,7 @@ export default function TestAccountsHelper({
 
           <View style={styles.infoBox}>
             <Text style={styles.infoText}>
-              💡 All test accounts use password:{" "}
+              All test accounts use password:{" "}
               <Text style={styles.infoTextBold}>test123</Text>
             </Text>
           </View>
@@ -131,7 +132,7 @@ const styles = StyleSheet.create({
     backgroundColor: SURFACE,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(141, 105, 246, 0.3)",
+    borderColor: withAlpha(ACCENT_PURPLE, 0.3),
   },
   toggleText: {
     fontSize: 13,
@@ -148,7 +149,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: 12,
-    color: "rgba(255, 255, 255, 0.6)",
+    color: withAlpha(WHITE, 0.6),
     textAlign: "center",
     marginBottom: 6,
     textTransform: "uppercase",
@@ -162,13 +163,13 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 12,
     borderWidth: 1,
-    borderColor: "rgba(141, 105, 246, 0.25)",
+    borderColor: withAlpha(ACCENT_PURPLE, 0.25),
   },
   accountIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(239, 62, 120, 0.15)",
+    backgroundColor: withAlpha(ACCENT_PINK, 0.15),
     justifyContent: "center",
     alignItems: "center",
   },
@@ -188,19 +189,19 @@ const styles = StyleSheet.create({
   },
   accountEmail: {
     fontSize: 11,
-    color: "rgba(255, 255, 255, 0.6)",
+    color: withAlpha(WHITE, 0.6),
   },
   infoBox: {
-    backgroundColor: "rgba(141, 105, 246, 0.1)",
+    backgroundColor: withAlpha(ACCENT_PURPLE, 0.1),
     borderRadius: 12,
     padding: 12,
     marginTop: 4,
     borderWidth: 1,
-    borderColor: "rgba(141, 105, 246, 0.2)",
+    borderColor: withAlpha(ACCENT_PURPLE, 0.2),
   },
   infoText: {
     fontSize: 12,
-    color: "rgba(255, 255, 255, 0.7)",
+    color: withAlpha(WHITE, 0.7),
     textAlign: "center",
     lineHeight: 18,
   },

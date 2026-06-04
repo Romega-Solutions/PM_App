@@ -11,6 +11,7 @@
  * @filesize ~350 lines (under 500 limit)
  */
 
+import { theme, useTheme, withAlpha } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import {
     ChevronDown,
@@ -39,12 +40,6 @@ import type { ProfileCardData } from "./ProfileCard";
 
 const { height } = Dimensions.get("window");
 
-// Brand Colors
-const BRAND_BG = "#0F0814";
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
-
 export interface ProfileDetailsModalProps {
   visible: boolean;
   profile: ProfileCardData | null;
@@ -58,6 +53,8 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
   onClose,
   panHandlers,
 }) => {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const [expandedSections, setExpandedSections] = useState({
     lookingFor: false,
     moreAbout: false,
@@ -74,7 +71,12 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
     >
       <View style={styles.modalContainer} {...panHandlers}>
         <LinearGradient
-          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+          colors={[
+            colors.brandBackground,
+            withAlpha(colors.secondaryDark, 0.32),
+            withAlpha(colors.primaryDark, 0.24),
+            colors.brandBackground,
+          ]}
           locations={[0, 0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
@@ -85,8 +87,13 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
           onPress={onClose}
           accessibilityRole="button"
           accessibilityLabel="Close profile details"
+          hitSlop={theme.hitSlop.sm}
         >
-          <X size={24} color={WHITE} strokeWidth={2.5} />
+          <X
+            size={theme.iconSizes.navigation}
+            color={colors.onPrimary}
+            strokeWidth={theme.strokeWidths.emphasis}
+          />
         </TouchableOpacity>
 
         {/* Scrollable Content */}
@@ -103,14 +110,18 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
               resizeMode="cover"
             />
             <LinearGradient
-              colors={["transparent", "rgba(0, 0, 0, 0.6)"]}
+              colors={["transparent", colors.brandScrim]}
               style={styles.modalImageGradient}
             />
 
             {/* Verified Badge */}
             {profile.verified && (
               <View style={styles.modalVerifiedBadge}>
-                <Sparkles size={16} color={WHITE} strokeWidth={2.5} />
+                <Sparkles
+                  size={theme.iconSizes.metadata}
+                  color={colors.onStatus}
+                  strokeWidth={theme.strokeWidths.emphasis}
+                />
               </View>
             )}
           </View>
@@ -125,7 +136,11 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
             {/* Location & Distance */}
             <View style={styles.modalLocationContainer}>
               <View style={styles.modalLocationRow}>
-                <MapPin size={18} color={ACCENT_PINK} strokeWidth={2.5} />
+                <MapPin
+                  size={theme.iconSizes.inline}
+                  color={colors.primary}
+                  strokeWidth={theme.strokeWidths.emphasis}
+                />
                 <Text style={styles.modalLocationText}>{profile.location}</Text>
               </View>
               <View style={styles.distanceRow}>
@@ -167,15 +182,15 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
                 <Text style={styles.modalSectionTitle}>Looking For</Text>
                 {expandedSections.lookingFor ? (
                   <ChevronUp
-                    size={18}
-                    color={ACCENT_PURPLE}
-                    strokeWidth={2.5}
+                    size={theme.iconSizes.inline}
+                    color={colors.secondary}
+                    strokeWidth={theme.strokeWidths.emphasis}
                   />
                 ) : (
                   <ChevronDown
-                    size={18}
-                    color={ACCENT_PURPLE}
-                    strokeWidth={2.5}
+                    size={theme.iconSizes.inline}
+                    color={colors.secondary}
+                    strokeWidth={theme.strokeWidths.emphasis}
                   />
                 )}
               </View>
@@ -204,15 +219,15 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
                 </Text>
                 {expandedSections.moreAbout ? (
                   <ChevronUp
-                    size={18}
-                    color={ACCENT_PURPLE}
-                    strokeWidth={2.5}
+                    size={theme.iconSizes.inline}
+                    color={colors.secondary}
+                    strokeWidth={theme.strokeWidths.emphasis}
                   />
                 ) : (
                   <ChevronDown
-                    size={18}
-                    color={ACCENT_PURPLE}
-                    strokeWidth={2.5}
+                    size={theme.iconSizes.inline}
+                    color={colors.secondary}
+                    strokeWidth={theme.strokeWidths.emphasis}
                   />
                 )}
               </View>
@@ -220,27 +235,35 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
               {expandedSections.moreAbout && (
                 <View style={styles.modalPillsContainer}>
                   <View style={styles.modalPill}>
-                    <Ruler size={14} color={ACCENT_PURPLE} strokeWidth={2} />
+                    <Ruler
+                      size={theme.iconSizes.metadata}
+                      color={colors.secondary}
+                      strokeWidth={theme.strokeWidths.default}
+                    />
                     <Text style={styles.modalPillText}>5&apos;6&quot;</Text>
                   </View>
                   <View style={styles.modalPill}>
                     <GraduationCap
-                      size={14}
-                      color={ACCENT_PURPLE}
-                      strokeWidth={2}
+                      size={theme.iconSizes.metadata}
+                      color={colors.secondary}
+                      strokeWidth={theme.strokeWidths.default}
                     />
                     <Text style={styles.modalPillText}>Bachelor&apos;s</Text>
                   </View>
                   <View style={styles.modalPill}>
                     <Languages
-                      size={14}
-                      color={ACCENT_PURPLE}
-                      strokeWidth={2}
+                      size={theme.iconSizes.metadata}
+                      color={colors.secondary}
+                      strokeWidth={theme.strokeWidths.default}
                     />
                     <Text style={styles.modalPillText}>English, Tagalog</Text>
                   </View>
                   <View style={styles.modalPill}>
-                    <Users size={14} color={ACCENT_PURPLE} strokeWidth={2} />
+                    <Users
+                      size={theme.iconSizes.metadata}
+                      color={colors.secondary}
+                      strokeWidth={theme.strokeWidths.default}
+                    />
                     <Text style={styles.modalPillText}>
                       Looking for Relationship
                     </Text>
@@ -255,20 +278,21 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
+  StyleSheet.create({
   modalContainer: {
     flex: 1,
-    backgroundColor: BRAND_BG,
+    backgroundColor: colors.brandBackground,
   },
   closeBtn: {
     position: "absolute",
     top: Platform.OS === "ios" ? 60 : 20,
     right: 20,
     zIndex: 100,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    width: theme.componentSizes.iconButton,
+    height: theme.componentSizes.iconButton,
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: colors.brandScrim,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -300,7 +324,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: Platform.OS === "ios" ? 60 : 20,
     left: 20,
-    backgroundColor: "#10B981",
+    backgroundColor: colors.success,
     borderRadius: 20,
     width: 36,
     height: 36,
@@ -316,8 +340,8 @@ const styles = StyleSheet.create({
   modalName: {
     fontSize: Platform.OS === "ios" ? 34 : 32,
     fontFamily: "Lora-Bold",
-    color: WHITE,
-    letterSpacing: 0.5,
+    color: colors.onPrimary,
+    letterSpacing: 0,
   },
 
   // Location
@@ -332,7 +356,7 @@ const styles = StyleSheet.create({
   modalLocationText: {
     fontSize: 18,
     fontFamily: "DMSans-Medium",
-    color: "rgba(255, 255, 255, 0.9)",
+    color: withAlpha(colors.onPrimary, 0.9),
   },
   distanceRow: {
     flexDirection: "row",
@@ -344,12 +368,12 @@ const styles = StyleSheet.create({
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: "rgba(255, 255, 255, 0.5)",
+    backgroundColor: withAlpha(colors.onPrimary, 0.5),
   },
   modalDistanceText: {
     fontSize: 15,
     fontFamily: "DMSans-Regular",
-    color: "rgba(255, 255, 255, 0.7)",
+    color: withAlpha(colors.onPrimary, 0.7),
   },
 
   // Sections
@@ -359,19 +383,19 @@ const styles = StyleSheet.create({
   modalSectionTitle: {
     fontSize: 18,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
-    letterSpacing: 0.3,
+    color: colors.onPrimary,
+    letterSpacing: 0,
   },
   modalBioText: {
     fontSize: 16,
     fontFamily: "DMSans-Regular",
-    color: "rgba(255, 255, 255, 0.85)",
+    color: withAlpha(colors.onPrimary, 0.85),
     lineHeight: 24,
   },
   modalSubText: {
     fontSize: 15,
     fontFamily: "DMSans-Regular",
-    color: "rgba(255, 255, 255, 0.75)",
+    color: withAlpha(colors.onPrimary, 0.75),
     lineHeight: 22,
     marginTop: 8,
   },
@@ -390,17 +414,17 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   modalInterestTag: {
-    backgroundColor: "rgba(141, 105, 246, 0.15)",
+    backgroundColor: withAlpha(colors.secondary, 0.15),
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: "rgba(141, 105, 246, 0.3)",
+    borderColor: withAlpha(colors.secondary, 0.3),
   },
   modalInterestText: {
     fontSize: 14,
     fontFamily: "DMSans-Medium",
-    color: ACCENT_PURPLE,
+    color: colors.secondary,
   },
 
   // Pills
@@ -414,16 +438,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "rgba(141, 105, 246, 0.12)",
+    backgroundColor: withAlpha(colors.secondary, 0.12),
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: "rgba(141, 105, 246, 0.25)",
+    borderColor: withAlpha(colors.secondary, 0.25),
   },
   modalPillText: {
     fontSize: 13,
     fontFamily: "DMSans-Medium",
-    color: "rgba(255, 255, 255, 0.85)",
+    color: withAlpha(colors.onPrimary, 0.85),
   },
 });

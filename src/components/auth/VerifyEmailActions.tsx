@@ -1,5 +1,5 @@
 import SecondaryButton from "@/src/components/ui/SecondaryButton";
-import { theme } from "@/src/theme";
+import { colors, theme, useTheme, withAlpha } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { Mail } from "lucide-react-native";
 import React from "react";
@@ -16,7 +16,6 @@ interface Props {
   onOpenEmailApp: () => void;
   onResend: () => void;
   onBackToSignIn: () => void;
-  onSkipToAccountSetup?: () => void;
 }
 
 export default function VerifyEmailActions({
@@ -24,8 +23,9 @@ export default function VerifyEmailActions({
   onOpenEmailApp,
   onResend,
   onBackToSignIn,
-  onSkipToAccountSetup,
 }: Props) {
+  const { colors: themeColors } = useTheme();
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -36,12 +36,12 @@ export default function VerifyEmailActions({
         accessibilityLabel="Open Email App"
       >
         <LinearGradient
-          colors={["#EF3E78", "#8D69F6"]}
+          colors={[themeColors.primary, themeColors.secondary]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={StyleSheet.absoluteFill}
         />
-        <Mail size={18} color="#FFF" style={{ marginRight: 8 }} />
+        <Mail size={18} color={themeColors.onPrimary} style={{ marginRight: 8 }} />
         <Text style={styles.openBtnText}>Open Email App</Text>
       </TouchableOpacity>
 
@@ -52,29 +52,20 @@ export default function VerifyEmailActions({
         accessibilityLabel="Resend Verification Email"
       />
 
-      {/* Skip to Account Setup Button */}
-      {onSkipToAccountSetup && (
-        <TouchableOpacity
-          style={styles.skipBtn}
-          onPress={onSkipToAccountSetup}
-          activeOpacity={0.86}
-          accessibilityRole="button"
-          accessibilityLabel="Skip to Account Setup"
-        >
-          <Text style={styles.skipBtnText}>⚡ Skip & Continue Setup</Text>
-        </TouchableOpacity>
-      )}
-
       <TouchableOpacity
         onPress={onBackToSignIn}
         style={styles.backLink}
         accessibilityRole="button"
       >
-        <Text style={styles.backText}>Back to Sign In</Text>
+        <Text style={[styles.backText, { color: withAlpha(colors.neutral.white, 0.8) }]}>
+          Back to Sign In
+        </Text>
       </TouchableOpacity>
 
       {countdown > 0 ? (
-        <Text style={styles.countdown}>Auto advancing in {countdown}s</Text>
+        <Text style={[styles.countdown, { color: withAlpha(colors.neutral.white, 0.75) }]}>
+          Auto advancing in {countdown}s
+        </Text>
       ) : null}
     </View>
   );
@@ -95,22 +86,8 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   openBtnText: {
-    color: "#FFFFFF",
+    color: colors.neutral.white,
     fontSize: 17,
-    fontFamily: theme.fontFamilies.body.bold,
-  },
-  skipBtn: {
-    height: Platform.select({ ios: 56, android: 52 }),
-    borderRadius: 28,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(141, 105, 246, 0.25)",
-    borderWidth: 2,
-    borderColor: "rgba(141, 105, 246, 0.6)",
-  },
-  skipBtnText: {
-    color: "#8D69F6",
-    fontSize: 16,
     fontFamily: theme.fontFamilies.body.bold,
   },
   backLink: {
@@ -118,12 +95,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   backText: {
-    color: "rgba(255,255,255,0.8)",
     textDecorationLine: "underline",
     fontFamily: theme.fontFamilies.body.regular,
   },
   countdown: {
-    color: "rgba(255,255,255,0.75)",
     textAlign: "center",
     marginTop: 6,
     fontFamily: theme.fontFamilies.body.regular,

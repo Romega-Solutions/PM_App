@@ -4,13 +4,12 @@ import VerificationStep from "@/src/components/account/VerificationStep";
 import GhostButton from "@/src/components/ui/GhostButton";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import type { UserType } from "@/src/features/auth/api/authApi";
-import { theme } from "@/src/theme";
+import { colors, theme, withAlpha } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Camera, FileText, Shield } from "lucide-react-native";
 import React, { useEffect } from "react";
 import {
-  Alert,
   Platform,
   ScrollView,
   StatusBar,
@@ -20,6 +19,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useVerificationUpload } from "../hooks/useVerificationUpload";
+
+const BRAND_BG = theme.lightColors.brandBackground;
+const BRAND_GRADIENT = [BRAND_BG, colors.dalisay[950]] as const;
 
 export default function VerificationUploadScreen() {
   const router = useRouter();
@@ -60,22 +62,13 @@ export default function VerificationUploadScreen() {
     }
   };
 
+  // Identity verification is optional for now (OCR is still mocked). Let the
+  // user skip straight to the final step.
   const handleSkip = () => {
-    Alert.alert(
-      "Skip verification",
-      "You can verify later in Settings. Verified profiles receive more visibility.",
-      [
-        {
-          text: "Skip for now",
-          onPress: () =>
-            router.push({
-              pathname: "/(auth)/account-setup/welcome-complete",
-              params: { userType },
-            }),
-        },
-        { text: "Continue setup", style: "cancel" },
-      ]
-    );
+    router.push({
+      pathname: "/(auth)/account-setup/welcome-complete",
+      params: { userType },
+    });
   };
 
   // Don't render if userType is invalid
@@ -87,19 +80,19 @@ export default function VerificationUploadScreen() {
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={theme.colors.dalisay[950] ?? "#0F0814"}
+        backgroundColor={BRAND_BG}
       />
-      {Platform.OS === "ios" && (
+      {insets.top > 0 && (
         <View
           style={{
             height: insets.top,
-            backgroundColor: theme.colors.dalisay[950] ?? "#0F0814",
+            backgroundColor: BRAND_BG,
           }}
         />
       )}
 
       <LinearGradient
-        colors={[theme.colors.dalisay[950] ?? "#0F0814", "#1A0F1F"]}
+        colors={BRAND_GRADIENT}
         style={StyleSheet.absoluteFill}
       />
 
@@ -113,7 +106,7 @@ export default function VerificationUploadScreen() {
       >
         <View style={styles.header}>
           <AccountProgress steps={5} activeIndex={4} />
-          <Shield size={28} color="#EF3E78" style={{ marginTop: 12 }} />
+          <Shield size={28} color={theme.colors.amihan[500]} style={{ marginTop: 12 }} />
           <Text style={styles.title}>Verify your identity</Text>
           <Text style={styles.subtitle}>
             Help keep the community safe. Verified accounts gain more trust.
@@ -161,7 +154,7 @@ export default function VerificationUploadScreen() {
         ) : null}
 
         <View style={styles.helper}>
-          <Shield size={16} color="rgba(255,255,255,0.85)" />
+          <Shield size={16} color={withAlpha(colors.neutral.white, 0.85)} />
           <Text style={styles.helperText}>
             Your files are encrypted and used only for verification. They are
             not shared with other users.
@@ -181,15 +174,19 @@ export default function VerificationUploadScreen() {
           disabled={!isVerified || loading}
           loading={loading}
         />
-        <View style={{ height: 10 }} />
-        <GhostButton title="Skip for now" onPress={handleSkip} />
+        <GhostButton
+          title="Skip for now"
+          onPress={handleSkip}
+          disabled={loading}
+          accessibilityHint="Skip identity verification and finish setting up your account"
+        />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.dalisay[950] ?? "#0F0814" },
+  root: { flex: 1, backgroundColor: BRAND_BG },
   content: {
     paddingHorizontal: 24,
     paddingTop: Platform.OS === "ios" ? 32 : 24,
@@ -197,7 +194,7 @@ const styles = StyleSheet.create({
   header: { alignItems: "center", marginBottom: 24 },
   title: {
     fontSize: 28,
-    color: "#FFF",
+    color: colors.neutral.white,
     textAlign: "center",
     marginTop: 12,
     marginBottom: 8,
@@ -205,39 +202,39 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
-    color: "rgba(255,255,255,0.85)",
+    color: withAlpha(colors.neutral.white, 0.85),
     textAlign: "center",
     paddingHorizontal: 20,
   },
   errorBox: {
     marginTop: 16,
     padding: 12,
-    backgroundColor: "rgba(239,68,68,0.12)",
+    backgroundColor: withAlpha(colors.error[600], 0.12),
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#EF4444",
+    borderColor: colors.error[600],
   },
-  errorText: { color: "#EF4444", fontSize: 13 },
+  errorText: { color: colors.error[600], fontSize: 13 },
   helper: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     marginTop: 20,
     padding: 12,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: withAlpha(colors.neutral.white, 0.08),
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: withAlpha(colors.neutral.white, 0.2),
   },
   helperText: {
     flex: 1,
     fontSize: 13,
-    color: "rgba(255,255,255,0.85)",
+    color: withAlpha(colors.neutral.white, 0.85),
     lineHeight: 19,
   },
   footer: {
     paddingHorizontal: 24,
     paddingTop: theme.spacing.md ?? 16,
-    backgroundColor: "rgba(15,8,20,0.95)",
+    backgroundColor: withAlpha(BRAND_BG, 0.95),
   },
 });

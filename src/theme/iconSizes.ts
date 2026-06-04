@@ -9,6 +9,13 @@ export const iconSizes = {
   base: 24, // default UI & tab bar
   lg: 28, // feature
   xl: 32, // empty-state / hero
+  metadata: 16,
+  chip: 18,
+  inline: 20,
+  control: 24,
+  navigation: 24,
+  feature: 28,
+  hero: 32,
 } as const;
 
 export type IconSize = keyof typeof iconSizes;

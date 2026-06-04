@@ -18,10 +18,11 @@
  */
 
 import { accountApi } from "@/src/features/account/api/accountApi";
+import { useTheme, withAlpha } from "@/src/theme";
 import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
-    Platform,
+    Alert,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -35,11 +36,10 @@ import { LikesHeader } from "../components/LikesHeader";
 import { Match, MatchCard } from "../components/MatchCard";
 import { useCurrentUser, useMatches } from "../hooks/useMatchingQueries";
 
-const BRAND_BG = "#0F0814";
-const ACCENT_PINK = "#EF3E78";
-
 export default function LikesScreen() {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const [filter, setFilter] = useState<"all" | "mutual">("all");
   const [, setUserType] = useState<string | null>(null);
 
@@ -86,17 +86,14 @@ export default function LikesScreen() {
     filter === "mutual" ? matches.filter((m) => m.mutual) : matches;
 
   const handleMessage = (id: string | number) => {
-    if (__DEV__) {
-      console.log("Message match:", id);
-    }
-    // TODO: Navigate to messages screen with this match
+    Alert.alert("Messaging unavailable", "Match messaging is not wired yet.");
   };
 
   const handleUnmatch = (id: string | number) => {
-    if (__DEV__) {
-      console.log("Unmatch:", id);
-    }
-    // TODO: Show confirmation dialog and remove match
+    Alert.alert(
+      "Unmatch unavailable",
+      "Removing a match is not wired yet.",
+    );
   };
 
   // Loading state
@@ -105,13 +102,13 @@ export default function LikesScreen() {
       <View style={[styles.root, styles.centerContent]}>
         <StatusBar
           barStyle="light-content"
-          backgroundColor={BRAND_BG}
+          backgroundColor={colors.brandBackground}
           translucent={false}
         />
-        {Platform.OS === "ios" && (
-          <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+        {insets.top > 0 && (
+          <View style={{ height: insets.top, backgroundColor: colors.brandBackground }} />
         )}
-        <ActivityIndicator size="large" color={ACCENT_PINK} />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>Loading matches...</Text>
       </View>
     );
@@ -121,11 +118,11 @@ export default function LikesScreen() {
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={BRAND_BG}
+        backgroundColor={colors.brandBackground}
         translucent={false}
       />
-      {Platform.OS === "ios" && (
-        <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+      {insets.top > 0 && (
+        <View style={{ height: insets.top, backgroundColor: colors.brandBackground }} />
       )}
 
       <LikesHeader matchCount={filteredMatches.length} filter={filter} />
@@ -157,10 +154,11 @@ export default function LikesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
+  StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: BRAND_BG,
+    backgroundColor: colors.brandBackground,
   },
   centerContent: {
     justifyContent: "center",
@@ -169,7 +167,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "rgba(255,255,255,0.85)",
+    color: withAlpha(colors.onPrimary, 0.85),
     fontFamily: "DMSans-Medium",
   },
   scrollView: {

@@ -26,7 +26,6 @@ import { Settings } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
-    Platform,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -39,18 +38,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { accountApi } from "@/src/features/account/api/accountApi";
 import { UserType } from "@/src/features/auth/api/authApi";
 import { useProfileStore } from "@/src/stores/profileStore";
+import { theme, useTheme, withAlpha } from "@/src/theme";
 import { useProfileScreen } from "../hooks/useProfileScreen";
 import { ProfileHeader } from "../components/ProfileHeader";
+import { ProfilePreferencesCard } from "../components/ProfilePreferencesCard";
 import {
     ProfileMenuList,
     getDefaultMenuItems,
 } from "../components/ProfileMenuList";
-
-// Brand Colors
-const BRAND_BG = "#0F0814";
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
 
 const TEST_GUEST_PROFILE: ProfileData = {
   firstName: "Guest",
@@ -60,6 +55,11 @@ const TEST_GUEST_PROFILE: ProfileData = {
   location: "Preview Mode",
   photoUri: null,
   isVerified: false,
+  interestedIn: null,
+  relationshipGoal: null,
+  ageMin: null,
+  ageMax: null,
+  maxDistanceKm: null,
 };
 
 /**
@@ -73,6 +73,11 @@ interface ProfileData {
   location: string;
   photoUri: string | null;
   isVerified: boolean;
+  interestedIn: string | null;
+  relationshipGoal: string | null;
+  ageMin: number | null;
+  ageMax: number | null;
+  maxDistanceKm: number | null;
 }
 
 /**
@@ -84,6 +89,8 @@ interface ProfileData {
 export const ProfileScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
 
   // Zustand store
@@ -103,10 +110,6 @@ export const ProfileScreen: React.FC = () => {
       return;
     }
 
-    if (__DEV__) {
-      console.log("✅ Profile loaded");
-    }
-
     const photosArray = profileRow.photos || [];
     const firstPhoto = photosArray.length > 0 ? photosArray[0] : null;
 
@@ -118,6 +121,11 @@ export const ProfileScreen: React.FC = () => {
       location: profileRow.location_name || "Unknown Location",
       photoUri: firstPhoto,
       isVerified: profileRow.is_verified || false,
+      interestedIn: profileRow.interested_in ?? null,
+      relationshipGoal: profileRow.relationship_goal ?? null,
+      ageMin: profileRow.age_min ?? null,
+      ageMax: profileRow.age_max ?? null,
+      maxDistanceKm: profileRow.max_distance_km ?? null,
     };
 
     setProfileData(data);
@@ -154,13 +162,14 @@ export const ProfileScreen: React.FC = () => {
       accountApi.clearPreferences();
       accountApi.clearVerification();
 
-      // TEMP TEST BYPASS: stay in the app shell after clearing auth state.
-      router.replace("/(main)");
+      // After sign-out, return to the auth entry (welcome → sign in).
+      router.replace("/(auth)/welcome");
     } catch (error) {
       if (__DEV__) {
         console.error("❌ Error during logout:", error);
       }
-      router.replace("/(main)");
+      // Even if sign-out errored, send the user back to the auth entry.
+      router.replace("/(auth)/welcome");
     }
   };
 
@@ -170,18 +179,23 @@ export const ProfileScreen: React.FC = () => {
       <View style={[styles.root, styles.centerContent]}>
         <StatusBar
           barStyle="light-content"
-          backgroundColor={BRAND_BG}
+          backgroundColor={colors.brandBackground}
           translucent={false}
         />
-        {Platform.OS === "ios" && (
-          <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+        {insets.top > 0 && (
+          <View style={{ height: insets.top, backgroundColor: colors.brandBackground }} />
         )}
         <LinearGradient
-          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+          colors={[
+            colors.brandBackground,
+            withAlpha(colors.secondaryDark, 0.32),
+            withAlpha(colors.primaryDark, 0.24),
+            colors.brandBackground,
+          ]}
           locations={[0, 0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
-        <ActivityIndicator size="large" color={ACCENT_PINK} />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>Loading profile...</Text>
       </View>
     );
@@ -193,14 +207,19 @@ export const ProfileScreen: React.FC = () => {
       <View style={[styles.root, styles.centerContent]}>
         <StatusBar
           barStyle="light-content"
-          backgroundColor={BRAND_BG}
+          backgroundColor={colors.brandBackground}
           translucent={false}
         />
-        {Platform.OS === "ios" && (
-          <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+        {insets.top > 0 && (
+          <View style={{ height: insets.top, backgroundColor: colors.brandBackground }} />
         )}
         <LinearGradient
-          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+          colors={[
+            colors.brandBackground,
+            withAlpha(colors.secondaryDark, 0.32),
+            withAlpha(colors.primaryDark, 0.24),
+            colors.brandBackground,
+          ]}
           locations={[0, 0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
@@ -222,16 +241,21 @@ export const ProfileScreen: React.FC = () => {
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={BRAND_BG}
+        backgroundColor={colors.brandBackground}
         translucent={false}
       />
-      {Platform.OS === "ios" && (
-        <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+      {insets.top > 0 && (
+        <View style={{ height: insets.top, backgroundColor: colors.brandBackground }} />
       )}
 
       {/* Brand gradient background */}
       <LinearGradient
-        colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+        colors={[
+          colors.brandBackground,
+          withAlpha(colors.secondaryDark, 0.32),
+          withAlpha(colors.primaryDark, 0.24),
+          colors.brandBackground,
+        ]}
         locations={[0, 0.3, 0.7, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -245,10 +269,17 @@ export const ProfileScreen: React.FC = () => {
         <View style={styles.header}>
           <Text style={styles.title}>Profile</Text>
           <TouchableOpacity
+            onPress={() => router.push("/(main)/profile-settings/preferences")}
+            style={styles.settingsButton}
+            hitSlop={theme.hitSlop.sm}
             accessibilityRole="button"
             accessibilityLabel="Settings"
           >
-            <Settings size={28} color={ACCENT_PURPLE} />
+            <Settings
+              size={theme.iconSizes.feature}
+              color={colors.secondary}
+              strokeWidth={theme.strokeWidths.default}
+            />
           </TouchableOpacity>
         </View>
 
@@ -261,6 +292,15 @@ export const ProfileScreen: React.FC = () => {
           location={profileData.location}
           photoUri={profileData.photoUri}
           isVerified={profileData.isVerified}
+        />
+
+        {/* Saved match preferences */}
+        <ProfilePreferencesCard
+          interestedIn={profileData.interestedIn}
+          relationshipGoal={profileData.relationshipGoal}
+          ageMin={profileData.ageMin}
+          ageMax={profileData.ageMax}
+          maxDistanceKm={profileData.maxDistanceKm}
         />
 
         {/* Menu List Component */}
@@ -276,10 +316,11 @@ export const ProfileScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
+  StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: BRAND_BG,
+    backgroundColor: colors.brandBackground,
   },
   centerContent: {
     justifyContent: "center",
@@ -289,30 +330,36 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingHorizontal: theme.spacing.screen,
+    paddingTop: theme.spacing.field,
+    paddingBottom: theme.spacing.related,
   },
   title: {
     fontSize: 32,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
-    letterSpacing: 0.5,
+    color: colors.onPrimary,
+    letterSpacing: 0,
+  },
+  settingsButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: theme.componentSizes.iconButton,
+    minWidth: theme.componentSizes.iconButton,
   },
   loadingText: {
     fontSize: 16,
     fontFamily: "DMSans-Medium",
-    color: "rgba(255, 255, 255, 0.75)",
+    color: withAlpha(colors.onPrimary, 0.75),
     marginTop: 16,
   },
   errorText: {
     fontSize: 18,
     fontFamily: "DMSans-Bold",
-    color: "rgba(255, 255, 255, 0.85)",
+    color: withAlpha(colors.onPrimary, 0.85),
     marginBottom: 20,
   },
   retryBtn: {
-    backgroundColor: ACCENT_PURPLE,
+    backgroundColor: colors.secondary,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 16,
@@ -320,6 +367,6 @@ const styles = StyleSheet.create({
   retryText: {
     fontSize: 16,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: colors.onSecondary,
   },
 });

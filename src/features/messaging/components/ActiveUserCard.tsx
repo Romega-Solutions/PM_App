@@ -16,11 +16,7 @@
 
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-
-// Brand Colors
-const ACCENT_PURPLE = "#8D69F6";
-const ONLINE_GREEN = "#10B981";
-const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
+import { useTheme, withAlpha } from "@/src/theme";
 
 /**
  * Props for ActiveUserCard component
@@ -51,32 +47,58 @@ export const ActiveUserCard: React.FC<ActiveUserCardProps> = ({
   isOnline,
   onPress,
 }) => {
+  const { colors } = useTheme();
+
   return (
     <TouchableOpacity
       style={styles.container}
       accessibilityRole="button"
-      accessibilityLabel={`Chat with ${name}`}
+      accessibilityLabel={`Chat with ${name}${isOnline ? ", active now" : ""}`}
       onPress={() => onPress(id)}
     >
       <View style={styles.imageContainer}>
-        <View style={styles.imageWrap}>
+        <View
+          style={[
+            styles.imageWrap,
+            {
+              backgroundColor: withAlpha(colors.secondary, 0.14),
+              borderColor: withAlpha(colors.secondary, 0.25),
+            },
+          ]}
+        >
           {image ? (
             <Image
               source={{ uri: image }}
               style={styles.image}
               resizeMode="cover"
+              accessibilityIgnoresInvertColors
             />
           ) : (
-            <View style={styles.placeholderAvatar}>
-              <Text style={styles.placeholderText}>
+            <View
+              style={[
+                styles.placeholderAvatar,
+                { backgroundColor: withAlpha(colors.secondary, 0.2) },
+              ]}
+            >
+              <Text style={[styles.placeholderText, { color: colors.secondary }]}>
                 {name.charAt(0).toUpperCase()}
               </Text>
             </View>
           )}
         </View>
-        {isOnline && <View style={styles.onlineBadge} />}
+        {isOnline && (
+          <View
+            style={[
+              styles.onlineBadge,
+              {
+                backgroundColor: colors.success,
+                borderColor: colors.brandBackground,
+              },
+            ]}
+          />
+        )}
       </View>
-      <Text style={styles.name} numberOfLines={1}>
+      <Text style={[styles.name, { color: withAlpha(colors.onPrimary, 0.72) }]} numberOfLines={1}>
         {name}
       </Text>
     </TouchableOpacity>
@@ -98,9 +120,7 @@ const styles = StyleSheet.create({
     height: 66,
     borderRadius: 33,
     padding: 3,
-    backgroundColor: `${ACCENT_PURPLE}22`,
     borderWidth: 2,
-    borderColor: `${ACCENT_PURPLE}40`,
   },
   image: {
     width: "100%",
@@ -111,14 +131,12 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     borderRadius: 30,
-    backgroundColor: `${ACCENT_PURPLE}33`,
     justifyContent: "center",
     alignItems: "center",
   },
   placeholderText: {
     fontSize: 24,
     fontFamily: "DMSans-Bold",
-    color: ACCENT_PURPLE,
   },
   onlineBadge: {
     position: "absolute",
@@ -127,14 +145,11 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: ONLINE_GREEN,
     borderWidth: 2.5,
-    borderColor: "#0F0814",
   },
   name: {
     fontSize: 12,
     fontFamily: "DMSans-Medium",
-    color: TEXT_SECONDARY,
     textAlign: "center",
   },
 });

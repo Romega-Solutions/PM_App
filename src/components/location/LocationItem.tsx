@@ -1,6 +1,7 @@
 import React from "react";
 import { TouchableOpacity, View, Text, StyleSheet, Platform } from "react-native";
 import { MapPin, Navigation } from "lucide-react-native";
+import { theme, withAlpha } from "@/src/theme";
 
 interface Props {
   label: string;
@@ -10,9 +11,9 @@ interface Props {
 }
 
 export default function LocationItem({ label, selected = false, onPress, isCurrent = false }: Props) {
-  const ACCENT_PINK = "#EF3E78";
-  const ACCENT_PURPLE = "#8D69F6";
-  const ICON_BG = "rgba(141,105,246,0.12)";
+  const ACCENT_PINK = theme.colors.amihan[500];
+  const ACCENT_PURPLE = theme.colors.dalisay[500];
+  const ICON_BG = withAlpha(ACCENT_PURPLE, 0.12);
 
   return (
     <TouchableOpacity
@@ -44,10 +45,10 @@ export default function LocationItem({ label, selected = false, onPress, isCurre
 
 const styles = StyleSheet.create({
   row: {
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: theme.lightColors.brandSurface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: theme.lightColors.brandBorder,
     paddingHorizontal: 14,
     paddingVertical: Platform.OS === "ios" ? 14 : 12,
     minHeight: Platform.OS === "ios" ? 56 : 52,
@@ -56,8 +57,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   rowActive: {
-    backgroundColor: "rgba(239,62,120,0.10)",
-    borderColor: "rgba(239,62,120,0.28)",
+    backgroundColor: withAlpha(theme.colors.amihan[500], 0.1),
+    borderColor: withAlpha(theme.colors.amihan[500], 0.28),
   },
   iconBox: {
     width: 36,
@@ -69,7 +70,7 @@ const styles = StyleSheet.create({
   },
   label: {
     flex: 1,
-    color: "#FFF",
+    color: theme.colors.neutral.white,
     fontSize: 15,
   },
   labelActive: {
@@ -80,7 +81,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.6)",
+    borderColor: withAlpha(theme.colors.neutral.white, 0.6),
     alignItems: "center",
     justifyContent: "center",
   },

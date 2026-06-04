@@ -1,10 +1,10 @@
-import { colors, semanticColors, theme } from "@/src/theme";
+import { useReduceMotion } from "@/src/hooks/useReduceMotion";
+import { theme, useTheme, withAlpha } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { Redirect } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Dimensions,
   Image,
   Platform,
   StatusBar,
@@ -13,37 +13,32 @@ import {
   View,
 } from "react-native";
 
-const { width, height } = Dimensions.get("window");
-
-// Responsive sizing helper
-const scale = (size: number) => (width / 375) * size; // Based on iPhone X width
-const verticalScale = (size: number) => (height / 812) * size; // Based on iPhone X height
-
 export default function Index() {
   const [showSplash, setShowSplash] = useState(true);
+  const { colors } = useTheme();
+  const reduceMotion = useReduceMotion();
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowSplash(false), 1800);
+    const timer = setTimeout(() => setShowSplash(false), reduceMotion ? 300 : 1800);
     return () => clearTimeout(timer);
-  }, []);
+  }, [reduceMotion]);
 
   if (showSplash) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.brandBackground }]}>
         <StatusBar
           barStyle="light-content"
-          backgroundColor={colors.dalisay[950]}
+          backgroundColor={colors.brandBackground}
           translucent={false}
         />
 
         <LinearGradient
-          colors={[colors.dalisay[950], colors.dalisay[500]]}
+          colors={[colors.brandBackground, colors.secondaryDark, colors.brandBackground]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradient}
         >
-          {/* Logo Container */}
-          <View style={styles.logoWrap}>
+          <View style={[styles.logoWrap, { shadowColor: colors.primary }]}>
             <Image
               source={require("../assets/logo-no-bg.png")}
               style={styles.logo}
@@ -51,16 +46,25 @@ export default function Index() {
             />
           </View>
 
-          {/* Brand Name */}
-          <Text style={styles.brandText}>PinayMate</Text>
+          <Text
+            style={[
+              styles.brandText,
+              {
+                color: colors.onPrimary,
+                textShadowColor: withAlpha(colors.primary, 0.85),
+              },
+            ]}
+          >
+            PinayMate
+          </Text>
 
-          {/* Tagline */}
-          <Text style={styles.tagline}>Elite Filipino Dating</Text>
+          <Text style={[styles.tagline, { color: withAlpha(colors.onPrimary, 0.88) }]}>
+            Elite Filipino Dating
+          </Text>
 
-          {/* Loading Indicator */}
           <ActivityIndicator
             size="large"
-            color={semanticColors.primary}
+            color={colors.primary}
             style={styles.loader}
           />
         </LinearGradient>
@@ -68,8 +72,6 @@ export default function Index() {
     );
   }
 
-  // Auth gate. Production defaults to the welcome/auth flow. Testers can skip
-  // straight into the app shell by setting EXPO_PUBLIC_BYPASS_AUTH=true in .env.
   const bypassAuth = process.env.EXPO_PUBLIC_BYPASS_AUTH === "true";
   return <Redirect href={bypassAuth ? "/(main)" : "/(auth)/welcome"} />;
 }
@@ -77,53 +79,41 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.dalisay[950],
   },
-
   gradient: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: theme.spacing.lg,
   },
-
   logoWrap: {
-    shadowColor: semanticColors.primary,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 30,
-    elevation: 15,
-    marginBottom: verticalScale(28),
+    shadowOpacity: 0.48,
+    shadowRadius: 28,
+    elevation: 14,
+    marginBottom: theme.spacing.xl,
   },
-
   logo: {
-    width: scale(140),
-    height: scale(140),
+    width: 140,
+    height: 140,
   },
-
   brandText: {
-    color: colors.neutral.white,
-    fontSize: scale(40),
+    ...theme.textStyles.h1,
     fontFamily: theme.fontFamilies.logo.bold,
-    letterSpacing: 1.2,
-    textShadowColor: `${semanticColors.primary}D9`, // 85% opacity
+    letterSpacing: 0,
     textShadowOffset: { width: 0, height: 3 },
     textShadowRadius: 8,
-    marginBottom: verticalScale(18),
+    marginBottom: theme.spacing.md,
     textAlign: "center",
   },
-
   tagline: {
-    color: colors.neutral.white,
-    opacity: 0.88,
-    fontSize: scale(15),
+    ...theme.textStyles.body,
     fontFamily: theme.fontFamilies.header.medium,
-    letterSpacing: 0.6,
+    letterSpacing: 0,
     textAlign: "center",
-    marginBottom: verticalScale(28),
+    marginBottom: theme.spacing.xl,
     paddingHorizontal: theme.spacing.xl,
   },
-
   loader: {
     transform: [{ scale: Platform.OS === "ios" ? 1.15 : 1.3 }],
   },

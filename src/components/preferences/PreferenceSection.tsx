@@ -10,7 +10,7 @@ interface Props {
 }
 
 export default function PreferenceSection({ Icon, title, children }: Props) {
-  const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
+  const ACCENT_PINK = theme.colors.amihan[500];
 
   return (
     <View style={styles.container}>

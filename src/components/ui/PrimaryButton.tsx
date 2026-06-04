@@ -73,9 +73,9 @@ export default function PrimaryButton({
 
         {showChevron && !loading ? (
           <ChevronRight
-            size={theme.iconSizes.base}
+            size={theme.iconSizes.control}
             color={colors.onPrimary}
-            strokeWidth={2.5}
+            strokeWidth={theme.strokeWidths.emphasis}
           />
         ) : null}
       </View>
@@ -85,7 +85,7 @@ export default function PrimaryButton({
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 56,
+    minHeight: theme.componentSizes.button,
     borderRadius: theme.borderRadius.full,
     flexDirection: "row",
     justifyContent: "center",
@@ -97,11 +97,11 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   content: {
-    minHeight: 56,
+    minHeight: theme.componentSizes.button,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: theme.spacing.sm,
+    gap: theme.spacing.touchGap,
     paddingHorizontal: theme.spacing.lg,
   },
   text: {

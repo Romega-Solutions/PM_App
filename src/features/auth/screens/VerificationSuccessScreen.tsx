@@ -2,14 +2,21 @@ import VerificationSuccessActions from "@/src/components/auth/VerificationSucces
 import VerificationSuccessHeader from "@/src/components/auth/VerificationSuccessHeader";
 import { authApi } from "@/src/features/auth/api/authApi";
 import { useSignupStore } from "@/src/stores/signupStore";
+import { colors, useTheme, withAlpha } from "@/src/theme";
 import { useFonts } from "expo-font";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Platform, StatusBar, View } from "react-native";
+
+type NextRoute = {
+  pathname: string;
+  params?: Record<string, string>;
+};
 
 export default function VerificationSuccessScreen() {
   const router = useRouter();
+  const { colors: themeColors } = useTheme();
   const params = useLocalSearchParams<{
     userType?: string;
     firstName?: string;
@@ -20,6 +27,15 @@ export default function VerificationSuccessScreen() {
   const [, setUserType] = useState(params.userType);
   const [, setFirstName] = useState(params.firstName);
   const [isChecking, setIsChecking] = useState(true);
+  const [nextRoute, setNextRoute] = useState<NextRoute | null>(null);
+  const [countdown, setCountdown] = useState(0);
+  const didNavigate = useRef(false);
+
+  const queueNextRoute = useCallback((route: NextRoute) => {
+    setNextRoute(route);
+    setCountdown(2);
+    setIsChecking(false);
+  }, []);
 
   const [fontsLoaded] = useFonts({
     Lora: require("@/assets/fonts/lora/Lora-SemiBold.ttf"),
@@ -54,7 +70,7 @@ export default function VerificationSuccessScreen() {
 
       if (!session?.user) {
         if (__DEV__) console.log("⚠️ No session found");
-        setIsChecking(false);
+        queueNextRoute({ pathname: "/(auth)/signin" });
         return;
       }
 
@@ -82,18 +98,14 @@ export default function VerificationSuccessScreen() {
 
         if (error && !profile) {
           if (__DEV__) console.error("❌ Profile error:", error);
-          // Even if profile creation/fetch fails, try to redirect to basic-info
           if (__DEV__) console.log("⚠️ Profile error, redirecting anyway...");
-          setTimeout(() => {
-            router.replace({
-              pathname: "/(auth)/account-setup/basic-info",
-              params: {
-                userType: finalUserType || (metadata.user_type as string) || "foreigner",
-                firstName: finalFirstName || (metadata.first_name as string) || "",
-              },
-            });
-          }, 2000);
-          setIsChecking(false);
+          queueNextRoute({
+            pathname: "/(auth)/account-setup/basic-info",
+            params: {
+              userType: finalUserType || (metadata.user_type as string) || "foreigner",
+              firstName: finalFirstName || (metadata.first_name as string) || "",
+            },
+          });
           return;
         }
 
@@ -109,16 +121,13 @@ export default function VerificationSuccessScreen() {
         if (__DEV__) console.error("❌ Exception ensuring profile:", error);
 
         // On any exception, redirect to basic-info
-        setTimeout(() => {
-          router.replace({
-            pathname: "/(auth)/account-setup/basic-info",
-            params: {
-              userType: finalUserType || (metadata.user_type as string) || "foreigner",
-              firstName: finalFirstName || (metadata.first_name as string) || "",
-            },
-          });
-        }, 2000);
-        setIsChecking(false);
+        queueNextRoute({
+          pathname: "/(auth)/account-setup/basic-info",
+          params: {
+            userType: finalUserType || (metadata.user_type as string) || "foreigner",
+            firstName: finalFirstName || (metadata.first_name as string) || "",
+          },
+        });
       }
     };
 
@@ -138,50 +147,41 @@ export default function VerificationSuccessScreen() {
       const finalUserType = userType || profile.user_type || "foreigner";
       const finalFirstName = firstName || profile.first_name || "";
 
-      // Determine which step is incomplete and redirect
+      let route: NextRoute;
+
       if (!profile.basic_info_completed) {
         if (__DEV__) console.log("📍 Redirecting to: basic-info (not completed)");
-        setTimeout(() => {
-          router.replace({
-            pathname: "/(auth)/account-setup/basic-info",
-            params: { userType: finalUserType, firstName: finalFirstName },
-          });
-        }, 2000);
+        route = {
+          pathname: "/(auth)/account-setup/basic-info",
+          params: { userType: finalUserType, firstName: finalFirstName },
+        };
       } else if (!profile.photos_completed) {
         if (__DEV__) console.log("📍 Redirecting to: profile-photos (not completed)");
-        setTimeout(() => {
-          router.replace({
-            pathname: "/(auth)/account-setup/profile-photos",
-            params: { userType: finalUserType },
-          });
-        }, 2000);
+        route = {
+          pathname: "/(auth)/account-setup/profile-photos",
+          params: { userType: finalUserType },
+        };
       } else if (!profile.location_completed) {
         if (__DEV__) console.log("📍 Redirecting to: location (not completed)");
-        setTimeout(() => {
-          router.replace({
-            pathname: "/(auth)/account-setup/location",
-            params: { userType: finalUserType },
-          });
-        }, 2000);
+        route = {
+          pathname: "/(auth)/account-setup/location",
+          params: { userType: finalUserType },
+        };
       } else if (!profile.preferences_completed) {
         if (__DEV__) console.log("📍 Redirecting to: preferences (not completed)");
-        setTimeout(() => {
-          router.replace({
-            pathname: "/(auth)/account-setup/preferences",
-            params: { userType: finalUserType },
-          });
-        }, 2000);
+        route = {
+          pathname: "/(auth)/account-setup/preferences",
+          params: { userType: finalUserType },
+        };
       } else {
         if (__DEV__) console.log("✅ All steps completed! Redirecting to welcome-complete");
-        setTimeout(() => {
-          router.replace({
-            pathname: "/(auth)/account-setup/welcome-complete",
-            params: { userType: finalUserType },
-          });
-        }, 2000);
+        route = {
+          pathname: "/(auth)/account-setup/welcome-complete",
+          params: { userType: finalUserType },
+        };
       }
 
-      setIsChecking(false);
+      queueNextRoute(route);
     };
 
     loadDataAndEnsureProfile();
@@ -189,11 +189,24 @@ export default function VerificationSuccessScreen() {
   }, []);
 
   const goNext = useCallback(() => {
-    // This will be triggered by redirectToIncompleteStep automatically
-    if (__DEV__) console.log("⏭️ Manual continue clicked (will use auto-redirect)");
-  }, []);
+    if (didNavigate.current || !nextRoute) return;
+    didNavigate.current = true;
+    router.replace(nextRoute as never);
+  }, [nextRoute, router]);
 
-  // Remove the old auto-advance useEffect since redirectToIncompleteStep handles it now
+  useEffect(() => {
+    if (!nextRoute || countdown <= 0) return;
+
+    const timer = setTimeout(() => {
+      if (countdown === 1) {
+        goNext();
+        return;
+      }
+      setCountdown((current) => current - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [countdown, goNext, nextRoute]);
 
   if (!fontsLoaded) {
     return (
@@ -202,10 +215,10 @@ export default function VerificationSuccessScreen() {
           flex: 1,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#340839",
+          backgroundColor: themeColors.brandBackground,
         }}
       >
-        <ActivityIndicator size="large" color="#fff" />
+        <ActivityIndicator size="large" color={colors.neutral.white} />
       </View>
     );
   }
@@ -218,7 +231,12 @@ export default function VerificationSuccessScreen() {
         backgroundColor="transparent"
       />
       <LinearGradient
-        colors={["#340839", "#8D69F6", "#EF3E78", "#340839"]}
+        colors={[
+          themeColors.brandBackground,
+          themeColors.secondary,
+          themeColors.primary,
+          themeColors.brandBackground,
+        ]}
         locations={[0, 0.4, 0.7, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -241,18 +259,18 @@ export default function VerificationSuccessScreen() {
             style={{
               marginVertical: 20,
               alignItems: "center",
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              backgroundColor: withAlpha(colors.neutral.white, 0.1),
               paddingHorizontal: 24,
               paddingVertical: 16,
               borderRadius: 12,
             }}
           >
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color={colors.neutral.white} />
           </View>
         )}
 
         <VerificationSuccessActions
-          countdown={0}
+          countdown={countdown}
           onContinue={goNext}
           onCancel={() => {
             router.replace("/(auth)/signin");

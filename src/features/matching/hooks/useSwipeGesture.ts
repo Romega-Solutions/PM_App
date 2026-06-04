@@ -9,8 +9,8 @@
  * KISS: Simple API - just provide callbacks
  */
 
-import { useRef } from "react";
-import { Animated, Dimensions, PanResponder } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { AccessibilityInfo, Animated, Dimensions, PanResponder } from "react-native";
 
 const { width, height } = Dimensions.get("window");
 
@@ -44,6 +44,17 @@ export function useSwipeGesture(
   // Animation values
   const pan = useRef(new Animated.ValueXY()).current;
   const swipeUpValue = useRef(new Animated.Value(0)).current;
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+    const subscription = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      setReduceMotion,
+    );
+
+    return () => subscription.remove();
+  }, []);
 
   // Rotation based on horizontal drag
   const rotate = pan.x.interpolate({
@@ -56,6 +67,12 @@ export function useSwipeGesture(
    * Reset card to center position
    */
   const resetPosition = () => {
+    if (reduceMotion) {
+      pan.setValue({ x: 0, y: 0 });
+      swipeUpValue.setValue(0);
+      return;
+    }
+
     Animated.spring(pan, {
       toValue: { x: 0, y: 0 },
       useNativeDriver: false,
@@ -83,6 +100,12 @@ export function useSwipeGesture(
       case "up":
         toValue = { x: 0, y: -height };
         break;
+    }
+
+    if (reduceMotion) {
+      pan.setValue(toValue);
+      pan.setValue({ x: 0, y: 0 });
+      return;
     }
 
     Animated.spring(pan, {

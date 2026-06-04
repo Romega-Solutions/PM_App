@@ -1,6 +1,15 @@
 import { lightColors, darkColors, getSemanticColors } from '../colors';
 import { withAlpha } from '../colorUtils';
+import {
+  componentSizes,
+  hitSlop,
+  motion,
+  strokeWidths,
+  touchTargets,
+} from '../interaction';
+import { iconSizes } from '../iconSizes';
 import { textStyles, lineHeightFor } from '../typography';
+import { spacing } from '../../shared/utils/spacing';
 
 // ── WCAG 2.x relative-contrast helpers ───────────────────────────────────────
 const srgb = (c: number) => {
@@ -74,5 +83,36 @@ describe('theme typography', () => {
       expect(s.lineHeight).toBeGreaterThanOrEqual(s.fontSize); // guards the unitless-ratio bug
       expect(s.lineHeight).toBeGreaterThan(3); // a ratio like 1.1 would fail this
     }
+  });
+});
+
+describe('Material interaction tokens', () => {
+  it('encodes Material and platform touch target floors', () => {
+    expect(touchTargets.android).toBeGreaterThanOrEqual(48);
+    expect(touchTargets.material).toBe(48);
+    expect(touchTargets.ios).toBeGreaterThanOrEqual(44);
+    expect(componentSizes.iconButton).toBeGreaterThanOrEqual(touchTargets.material);
+    expect(componentSizes.compactControl).toBeGreaterThanOrEqual(touchTargets.ios);
+  });
+
+  it('keeps icons on semantic Material-friendly sizes', () => {
+    expect(iconSizes.navigation).toBe(24);
+    expect(iconSizes.control).toBe(24);
+    expect(iconSizes.metadata).toBe(16);
+    expect(iconSizes.hero).toBeGreaterThanOrEqual(32);
+  });
+
+  it('keeps spacing and hit slop on the 4/8dp rhythm', () => {
+    expect(spacing.touchGap).toBe(8);
+    expect(spacing.screen).toBe(24);
+    expect(hitSlop.sm).toEqual({ top: 8, right: 8, bottom: 8, left: 8 });
+    expect(hitSlop.md).toEqual({ top: 12, right: 12, bottom: 12, left: 12 });
+  });
+
+  it('keeps strokes and motion consistent', () => {
+    expect(strokeWidths.default).toBe(2);
+    expect(strokeWidths.emphasis).toBe(2.5);
+    expect(motion.fast).toBeGreaterThanOrEqual(150);
+    expect(motion.standard).toBeLessThanOrEqual(300);
   });
 });

@@ -2,7 +2,7 @@ import AccountProgress from "@/src/components/account/AccountProgress";
 import PhotoPicker from "@/src/components/account/PhotoPicker";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import type { UserType } from "@/src/features/auth/api/authApi";
-import { theme } from "@/src/theme";
+import { colors, theme, withAlpha } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect } from "react";
@@ -16,6 +16,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useProfilePhotos } from "../hooks/useProfilePhotos";
+
+const BRAND_BG = theme.lightColors.brandBackground;
+const BRAND_GRADIENT = [BRAND_BG, colors.dalisay[950]] as const;
 
 export default function AccountProfilePhotosScreen() {
   const insets = useSafeAreaInsets();
@@ -73,19 +76,19 @@ export default function AccountProfilePhotosScreen() {
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={theme.colors.dalisay[950] ?? "#0F0814"}
+        backgroundColor={BRAND_BG}
       />
-      {Platform.OS === "ios" && (
+      {insets.top > 0 && (
         <View
           style={{
             height: insets.top,
-            backgroundColor: theme.colors.dalisay[950] ?? "#0F0814",
+            backgroundColor: BRAND_BG,
           }}
         />
       )}
 
       <LinearGradient
-        colors={[theme.colors.dalisay[950] ?? "#0F0814", "#1A0F1F"]}
+        colors={BRAND_GRADIENT}
         style={StyleSheet.absoluteFill}
       />
 
@@ -113,7 +116,7 @@ export default function AccountProfilePhotosScreen() {
         />
 
         <Text style={styles.helper}>
-          Tap a photo to replace it, or use the Add button to upload more
+          Remove a photo and use Add to upload a different one
         </Text>
       </ScrollView>
 
@@ -135,7 +138,7 @@ export default function AccountProfilePhotosScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.dalisay[950] ?? "#0F0814" },
+  root: { flex: 1, backgroundColor: BRAND_BG },
   content: {
     paddingHorizontal: theme.spacing.lg ?? 24,
     paddingTop:
@@ -154,12 +157,12 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
-    color: "rgba(255,255,255,0.85)",
+    color: withAlpha(colors.neutral.white, 0.85),
     textAlign: "center",
     paddingHorizontal: 20,
   },
   helper: {
-    color: "rgba(255,255,255,0.6)",
+    color: withAlpha(colors.neutral.white, 0.6),
     textAlign: "center",
     fontSize: 13,
     marginTop: 16,
@@ -168,6 +171,6 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: theme.spacing.lg ?? 24,
     paddingTop: theme.spacing.md ?? 16,
-    backgroundColor: "rgba(15,8,20,0.95)",
+    backgroundColor: withAlpha(BRAND_BG, 0.95),
   },
 });

@@ -19,8 +19,17 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CustomTextInput from "../../src/components/forms/CustomTextInput";
 import PrimaryButton from "../../src/components/ui/PrimaryButton";
 import SecondaryButton from "../../src/components/ui/SecondaryButton";
+import { authApi } from "../../src/features/auth/api/authApi";
+import { theme, withAlpha } from "../../src/theme";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const BRAND_BG = theme.colors.dalisay[950];
+const RESET_GRADIENT = [
+  theme.colors.dalisay[950],
+  withAlpha(theme.colors.dalisay[500], 0.15),
+  theme.colors.dalisay[950],
+] as const;
+const WHITE = theme.colors.neutral.white;
 
 export default function ForgotPassword() {
   const router = useRouter();
@@ -35,8 +44,7 @@ export default function ForgotPassword() {
     }
     try {
       setSubmitting(true);
-      // TODO: Call your reset API here (example for Supabase):
-      // await supabase.auth.resetPasswordForEmail(email, { redirectTo: "<your-app-scheme>://reset" });
+      await authApi.resetPassword(email.trim());
 
       Alert.alert(
         "Check your email",
@@ -51,7 +59,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#340839" }}>
+    <View style={{ flex: 1, backgroundColor: BRAND_BG }}>
       <StatusBar
         translucent
         barStyle="light-content"
@@ -60,7 +68,7 @@ export default function ForgotPassword() {
 
       {/* Full-screen brand gradient */}
       <LinearGradient
-        colors={["#340839", "rgba(141, 105, 246, 0.15)", "#340839"]}
+        colors={RESET_GRADIENT}
         locations={[0, 0.5, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -81,7 +89,7 @@ export default function ForgotPassword() {
         accessibilityRole="button"
         accessibilityLabel="Go back"
       >
-        <ArrowLeft size={24} color="#FFFFFF" strokeWidth={2.5} />
+        <ArrowLeft size={24} color={WHITE} strokeWidth={2.5} />
       </TouchableOpacity>
 
       <KeyboardAvoidingView
@@ -105,13 +113,13 @@ export default function ForgotPassword() {
             <Text
               style={{
                 fontSize: 32,
-                color: "#FFFFFF",
+                color: WHITE,
                 textAlign: "center",
                 marginBottom: 8,
-                textShadowColor: "rgba(239, 62, 120, 0.6)",
+                textShadowColor: withAlpha(theme.colors.amihan[500], 0.6),
                 textShadowOffset: { width: 0, height: 2 },
                 textShadowRadius: 8,
-                letterSpacing: -0.5,
+                letterSpacing: 0,
                 fontFamily: "Lora",
                 fontWeight: "600",
               }}
@@ -122,7 +130,7 @@ export default function ForgotPassword() {
             <Text
               style={{
                 fontSize: 16,
-                color: "rgba(255, 255, 255, 0.9)",
+                color: withAlpha(WHITE, 0.9),
                 textAlign: "center",
                 lineHeight: 24,
                 fontFamily: "DMSans",
@@ -177,7 +185,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    backgroundColor: theme.lightColors.brandSurfaceElevated,
     justifyContent: "center",
     alignItems: "center",
   },

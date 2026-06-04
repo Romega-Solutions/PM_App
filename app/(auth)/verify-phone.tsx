@@ -1,178 +1,108 @@
-// Create: app/(auth)/verify-phone.tsx
+import AuthLayout from "@/src/components/auth/AuthLayout";
+import AuthHeader from "@/src/components/auth/AuthHeader";
+import PrimaryButton from "@/src/components/ui/PrimaryButton";
+import SecondaryButton from "@/src/components/ui/SecondaryButton";
+import { colors, theme, useTheme, withAlpha } from "@/src/theme";
 import { useRouter } from "expo-router";
-import { Smartphone, RefreshCw } from "lucide-react-native";
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StatusBar,
-  Alert,
-} from "react-native";
+import { Smartphone, ShieldAlert } from "lucide-react-native";
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function VerifyPhone() {
   const router = useRouter();
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [countdown, setCountdown] = useState(60);
-  const [isResending, setIsResending] = useState(false);
-
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [countdown]);
-
-  const handleOtpChange = (value: string, index: number) => {
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-    
-    // Auto-focus next input
-    if (value && index < 5) {
-      // Focus next input logic here
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    const otpCode = otp.join('');
-    if (otpCode.length === 6) {
-      // TODO: Verify with Supabase
-      router.push("/(auth)/verification-success");
-    } else {
-      Alert.alert("Invalid OTP", "Please enter the complete 6-digit code");
-    }
-  };
-
-  const handleResendOtp = async () => {
-    setIsResending(true);
-    // TODO: Resend OTP via Supabase
-    setCountdown(60);
-    setIsResending(false);
-  };
+  const { colors: themeColors } = useTheme();
 
   return (
-    <View style={{ flex: 1, backgroundColor: "rgba(66, 32, 87, 1)" }}>
-      <StatusBar barStyle="light-content" />
-      
-      {/* Header */}
-      <View style={{ paddingTop: 60, paddingHorizontal: 24, alignItems: "center" }}>
-        <View style={{
-          backgroundColor: "rgba(244, 55, 109, 0.2)",
-          borderRadius: 25,
-          padding: 16,
-          marginBottom: 24,
-          borderWidth: 2,
-          borderColor: "rgba(168, 85, 247, 0.4)",
-        }}>
-          <Smartphone size={32} color="#F4376D" />
-        </View>
-        
-        <Text style={{
-          fontSize: 28,
-          fontWeight: "700",
-          color: "#FFFFFF",
-          textAlign: "center",
-          marginBottom: 12,
-        }}>
-          Verify Your Phone
-        </Text>
-        
-        <Text style={{
-          fontSize: 16,
-          color: "rgba(255, 255, 255, 0.8)",
-          textAlign: "center",
-          lineHeight: 24,
-        }}>
-          We&apos;ve sent a 6-digit code to{"\n"}+63 *** *** **89
-        </Text>
-      </View>
-
-      {/* OTP Input */}
-      <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 24 }}>
-        <View style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          marginBottom: 40,
-        }}>
-          {otp.map((digit, index) => (
-            <TextInput
-              key={index}
-              style={{
-                width: 50,
-                height: 60,
-                borderRadius: 12,
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-                borderWidth: 2,
-                borderColor: digit ? "#F4376D" : "rgba(168, 85, 247, 0.3)",
-                color: "#FFFFFF",
-                fontSize: 24,
-                fontWeight: "700",
-                textAlign: "center",
-              }}
-              value={digit}
-              onChangeText={(value) => handleOtpChange(value, index)}
-              keyboardType="numeric"
-              maxLength={1}
-              selectTextOnFocus
-            />
-          ))}
-        </View>
-
-        {/* Verify Button */}
-        <TouchableOpacity
-          style={{
-            backgroundColor: "#F4376D",
-            borderRadius: 28,
-            paddingVertical: 18,
-            marginBottom: 20,
-            shadowColor: "#A855F7",
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.3,
-            shadowRadius: 16,
-            elevation: 8,
-          }}
-          onPress={handleVerifyOtp}
+    <AuthLayout showBackButton onBackPress={() => router.back()}>
+      <View style={styles.container}>
+        <View
+          style={[
+            styles.iconWrap,
+            {
+              backgroundColor: withAlpha(themeColors.primary, 0.16),
+              borderColor: withAlpha(themeColors.primary, 0.28),
+            },
+          ]}
         >
-          <Text style={{
-            color: "#FFFFFF",
-            fontSize: 18,
-            fontWeight: "700",
-            textAlign: "center",
-          }}>
-            Verify Code
-          </Text>
-        </TouchableOpacity>
+          <Smartphone size={34} color={themeColors.primary} />
+        </View>
 
-        {/* Resend Section */}
-        <View style={{ alignItems: "center" }}>
-          {countdown > 0 ? (
-            <Text style={{
-              color: "rgba(255, 255, 255, 0.6)",
-              fontSize: 16,
-            }}>
-              Resend code in {countdown}s
-            </Text>
-          ) : (
-            <TouchableOpacity 
-              onPress={handleResendOtp}
-              disabled={isResending}
-              style={{ flexDirection: "row", alignItems: "center" }}
-            >
-              {isResending && <RefreshCw size={16} color="#F4376D" />}
-              <Text style={{
-                color: "#F4376D",
-                fontSize: 16,
-                fontWeight: "600",
-                marginLeft: isResending ? 8 : 0,
-              }}>
-                {isResending ? "Sending..." : "Resend Code"}
-              </Text>
-            </TouchableOpacity>
-          )}
+        <AuthHeader
+          title="Phone Verification"
+          subtitle="Phone sign-in is not available in this build."
+          showLogo={false}
+        />
+
+        <View
+          style={[
+            styles.notice,
+            {
+              backgroundColor: withAlpha(colors.neutral.white, 0.08),
+              borderColor: withAlpha(colors.neutral.white, 0.18),
+            },
+          ]}
+          accessible
+          accessibilityRole="text"
+          accessibilityLabel="Phone verification is unavailable. Use email verification to continue."
+        >
+          <ShieldAlert size={20} color={themeColors.warning} />
+          <Text style={styles.noticeText}>
+            We do not have a production phone OTP provider connected yet. Please
+            continue with email verification or sign in to your account.
+          </Text>
+        </View>
+
+        <View style={styles.actions}>
+          <PrimaryButton
+            title="Use Email Verification"
+            onPress={() => router.replace("/(auth)/verify-email")}
+            accessibilityLabel="Use email verification instead"
+          />
+          <SecondaryButton
+            title="Back to Sign In"
+            variant="white"
+            onPress={() => router.replace("/(auth)/signin")}
+            accessibilityLabel="Back to sign in"
+          />
         </View>
       </View>
-    </View>
+    </AuthLayout>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: theme.spacing.lg,
+  },
+  iconWrap: {
+    alignSelf: "center",
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: theme.spacing.lg,
+  },
+  notice: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: theme.spacing.sm,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.xl,
+  },
+  noticeText: {
+    flex: 1,
+    color: withAlpha(colors.neutral.white, 0.86),
+    fontFamily: theme.fontFamilies.body.regular,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  actions: {
+    gap: theme.spacing.md,
+  },
+});

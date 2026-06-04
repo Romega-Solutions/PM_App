@@ -1,9 +1,7 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
+import { View, Text, Image, StyleSheet } from "react-native";
 import { CheckCircle } from "lucide-react-native";
-import { theme } from "@/src/theme";
-
-const { width } = Dimensions.get("window");
+import { colors, theme, useTheme, withAlpha } from "@/src/theme";
 
 interface Props {
   title?: string;
@@ -14,6 +12,8 @@ export default function VerificationSuccessHeader({
   title = "Verified Successfully!",
   subtitle = "Great! Your email is verified. Let's set up your profile now.",
 }: Props) {
+  const { colors: themeColors } = useTheme();
+
   return (
     <View style={styles.container}>
       <View style={styles.logoWrap}>
@@ -24,12 +24,23 @@ export default function VerificationSuccessHeader({
         />
       </View>
 
-      <View style={styles.iconWrap}>
-        <CheckCircle size={48} color="#22c55e" strokeWidth={2} />
+      <View
+        style={[
+          styles.iconWrap,
+          {
+            backgroundColor: withAlpha(themeColors.success, 0.12),
+            borderColor: withAlpha(themeColors.success, 0.24),
+            shadowColor: themeColors.success,
+          },
+        ]}
+      >
+        <CheckCircle size={48} color={themeColors.success} strokeWidth={2} />
       </View>
 
       <Text style={styles.title}>{title}</Text>
-      <Text style={styles.subtitle}>{subtitle}</Text>
+      <Text style={[styles.subtitle, { color: withAlpha(colors.neutral.white, 0.9) }]}>
+        {subtitle}
+      </Text>
     </View>
   );
 }
@@ -39,28 +50,24 @@ const styles = StyleSheet.create({
   logoWrap: { width: 150, height: 150, justifyContent: "center", alignItems: "center", marginBottom: 16 },
   logo: { width: 140, height: 140 },
   iconWrap: {
-    backgroundColor: "rgba(34,197,94,0.12)",
     borderRadius: 48,
     padding: 18,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "rgba(34,197,94,0.24)",
-    shadowColor: "#22c55e",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 12,
     elevation: 8,
   },
   title: {
-    fontSize: Math.min(width * 0.08, 32),
-    color: "#FFFFFF",
+    fontSize: 32,
+    color: colors.neutral.white,
     marginBottom: 12,
     fontFamily: theme.fontFamilies.header.semiBold,
     textAlign: "center",
   },
   subtitle: {
-    fontSize: Math.min(width * 0.045, 18),
-    color: "rgba(255,255,255,0.9)",
+    fontSize: 17,
     textAlign: "center",
     lineHeight: 26,
     fontFamily: theme.fontFamilies.body.regular,

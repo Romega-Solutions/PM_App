@@ -1,5 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { theme, withAlpha } from "@/src/theme";
 
 interface Props {
   locations: string[];
@@ -36,16 +37,16 @@ export default function LocationsList({
 const styles = StyleSheet.create({
   container: { gap: 10 },
   button: {
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: withAlpha(theme.colors.neutral.white, 0.06),
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.06)",
+    borderColor: withAlpha(theme.colors.neutral.white, 0.06),
   },
-  buttonText: { color: "#FFF", fontSize: 15 },
+  buttonText: { color: theme.colors.neutral.white, fontSize: 15 },
   empty: {
-    color: "rgba(255,255,255,0.6)",
+    color: withAlpha(theme.colors.neutral.white, 0.6),
     fontSize: 14,
     textAlign: "center",
     paddingVertical: 8,

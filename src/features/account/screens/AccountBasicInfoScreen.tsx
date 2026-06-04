@@ -5,9 +5,9 @@ import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import { accountApi } from "@/src/features/account/api/accountApi";
 import type { UserType } from "@/src/features/auth/api/authApi";
 import { useSignupStore } from "@/src/stores/signupStore";
-import { theme } from "@/src/theme";
+import { colors, theme, withAlpha } from "@/src/theme";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Calendar, Heart, User } from "lucide-react-native";
+import { Calendar, Heart, Shield, User } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
     Alert,
@@ -207,7 +207,7 @@ export default function AccountBasicInfoScreen() {
         translucent={false}
         backgroundColor={theme.colors.dalisay[950]}
       />
-      {Platform.OS === "ios" && (
+      {insets.top > 0 && (
         <View
           style={{
             height: insets.top,
@@ -229,7 +229,7 @@ export default function AccountBasicInfoScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.top}>
-            <AccountProgress steps={6} activeIndex={0} />
+            <AccountProgress steps={5} activeIndex={0} />
             <AccountHeader
               title={`${getUserTypeLabel()} Account Setup`}
               subtitle="Tell us a bit about yourself"
@@ -289,9 +289,10 @@ export default function AccountBasicInfoScreen() {
           </View>
 
           <View style={styles.helperContainer}>
+            <Shield size={14} color={withAlpha(colors.neutral.white, 0.65)} />
             <Text style={styles.helperText}>
-              🔒 Your information is secure and will only be visible according
-              to your privacy settings
+              Your information is secure and will only be visible according to
+              your privacy settings
             </Text>
           </View>
         </ScrollView>
@@ -326,20 +327,20 @@ const styles = StyleSheet.create({
   infoBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(239,62,120,0.12)",
+    backgroundColor: withAlpha(colors.amihan[500], 0.12),
     borderRadius: 14,
     padding: 14,
     marginHorizontal: theme.spacing.md,
     marginBottom: theme.spacing.md,
     borderWidth: 1,
-    borderColor: "rgba(239,62,120,0.25)",
+    borderColor: withAlpha(colors.amihan[500], 0.25),
     gap: 10,
   },
   infoBannerText: {
     flex: 1,
     fontSize: 13,
     fontFamily: theme.fontFamilies.body.regular,
-    color: "rgba(255,255,255,0.85)",
+    color: withAlpha(colors.neutral.white, 0.85),
     lineHeight: 19,
   },
   infoBannerBold: {
@@ -347,19 +348,27 @@ const styles = StyleSheet.create({
     color: theme.colors.amihan[300],
   },
   formContainer: { gap: theme.spacing.sm },
-  helperContainer: { marginTop: theme.spacing.md, paddingHorizontal: 2 },
+  helperContainer: {
+    marginTop: theme.spacing.md,
+    paddingHorizontal: 2,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    gap: 6,
+  },
   helperText: {
+    flexShrink: 1,
     fontSize: 12,
     fontFamily: theme.fontFamilies.body.regular,
-    color: "rgba(255,255,255,0.65)",
+    color: withAlpha(colors.neutral.white, 0.65),
     textAlign: "center",
     lineHeight: 18,
   },
   footer: {
     paddingHorizontal: theme.spacing.md,
     paddingTop: theme.spacing.sm,
-    backgroundColor: "rgba(15, 8, 20, 0.95)",
+    backgroundColor: withAlpha(colors.dalisay[950], 0.95),
     borderTopWidth: 1,
-    borderTopColor: "rgba(141, 105, 246, 0.06)",
+    borderTopColor: withAlpha(colors.dalisay[500], 0.06),
   },
 });

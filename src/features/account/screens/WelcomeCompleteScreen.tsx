@@ -1,7 +1,7 @@
 import UserPreferences from "@/src/components/account/UserPreferences";
 import GhostButton from "@/src/components/ui/GhostButton";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
-import { theme } from "@/src/theme";
+import { theme, withAlpha } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   Sparkles,
   User,
-  Users, // Add this icon for user type
+  Users,
 } from "lucide-react-native";
 import React from "react";
 import {
@@ -29,13 +29,19 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useWelcomeData } from "../hooks/useWelcomeData";
 
-const ACCENT_PURPLE = theme.colors.dalisay?.[500] ?? "#8D69F6";
-const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
-const SUCCESS_GREEN = "#10B981";
-const GOLD = "#F59E0B";
-const WARNING_YELLOW = "#F59E0B";
-const WHITE = "#FFFFFF";
-const SURFACE = "rgba(255,255,255,0.12)";
+const BRAND_BG = theme.lightColors.brandBackground;
+const BRAND_GRADIENT = [
+  BRAND_BG,
+  theme.colors.dalisay[950],
+  theme.colors.dalisay[900],
+] as const;
+const ACCENT_PURPLE = theme.colors.dalisay[500];
+const ACCENT_PINK = theme.colors.amihan[500];
+const SUCCESS_GREEN = theme.colors.success[600];
+const GOLD = theme.colors.warning[600];
+const WARNING_YELLOW = theme.colors.warning[600];
+const WHITE = theme.colors.neutral.white;
+const SURFACE = theme.lightColors.brandSurfaceElevated;
 
 export default function WelcomeCompleteScreen() {
   const router = useRouter();
@@ -100,19 +106,19 @@ export default function WelcomeCompleteScreen() {
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={theme.colors.dalisay[950] ?? "#0F0814"}
+        backgroundColor={BRAND_BG}
       />
-      {Platform.OS === "ios" && (
+      {insets.top > 0 && (
         <View
           style={{
             height: insets.top,
-            backgroundColor: theme.colors.dalisay[950] ?? "#0F0814",
+            backgroundColor: BRAND_BG,
           }}
         />
       )}
 
       <LinearGradient
-        colors={[theme.colors.dalisay[950] ?? "#0F0814", "#1A0F1F", "#2D1B35"]}
+        colors={BRAND_GRADIENT}
         style={StyleSheet.absoluteFill}
       />
 
@@ -288,7 +294,7 @@ export default function WelcomeCompleteScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.dalisay[950] ?? "#0F0814" },
+  root: { flex: 1, backgroundColor: BRAND_BG },
   content: {
     paddingHorizontal: 24,
     paddingTop: Platform.OS === "ios" ? 32 : 24,
@@ -310,7 +316,7 @@ const styles = StyleSheet.create({
   },
   welcomeSubtitle: {
     fontSize: 16,
-    color: "rgba(255,255,255,0.85)",
+    color: withAlpha(WHITE, 0.85),
     textAlign: "center",
     lineHeight: 24,
   },
@@ -320,7 +326,7 @@ const styles = StyleSheet.create({
     padding: 24,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "rgba(141,105,246,0.25)",
+    borderColor: withAlpha(ACCENT_PURPLE, 0.25),
   },
   profileHeader: {
     flexDirection: "row",
@@ -328,14 +334,14 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.15)",
+    borderBottomColor: withAlpha(WHITE, 0.15),
   },
   avatarContainer: { position: "relative", marginRight: 16 },
   avatar: {
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: "rgba(239,62,120,0.2)",
+    backgroundColor: withAlpha(ACCENT_PINK, 0.2),
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 3,
@@ -353,7 +359,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: theme.colors.dalisay[950],
+    borderColor: BRAND_BG,
   },
   profileHeaderInfo: { flex: 1 },
   profileName: {
@@ -363,7 +369,7 @@ const styles = StyleSheet.create({
     fontFamily: theme.fontFamilies.header?.bold,
   },
   profileAgeRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  profileAge: { fontSize: 15, color: "rgba(255,255,255,0.8)" },
+  profileAge: { fontSize: 15, color: withAlpha(WHITE, 0.8) },
   verifiedBadge: {
     backgroundColor: SUCCESS_GREEN,
     borderRadius: 10,
@@ -388,7 +394,7 @@ const styles = StyleSheet.create({
   detailItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: withAlpha(WHITE, 0.06),
     padding: 14,
     borderRadius: 14,
   },
@@ -396,22 +402,22 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "rgba(239,62,120,0.15)",
+    backgroundColor: withAlpha(ACCENT_PINK, 0.15),
     justifyContent: "center",
     alignItems: "center",
     marginRight: 14,
   },
-  detailText: { flex: 1, fontSize: 14, color: "rgba(255,255,255,0.9)" },
+  detailText: { flex: 1, fontSize: 14, color: withAlpha(WHITE, 0.9) },
   warningBanner: {
     flexDirection: "row",
     alignItems: "flex-start",
-    backgroundColor: "rgba(245,158,11,0.15)",
+    backgroundColor: withAlpha(WARNING_YELLOW, 0.15),
     borderRadius: 18,
     padding: 20,
     marginBottom: 24,
     marginTop: 20,
     borderWidth: 1.5,
-    borderColor: "rgba(245,158,11,0.3)",
+    borderColor: withAlpha(WARNING_YELLOW, 0.3),
     gap: 12,
   },
   warningTextContainer: { flex: 1 },
@@ -423,19 +429,19 @@ const styles = StyleSheet.create({
   },
   warningSubtitle: {
     fontSize: 13,
-    color: "rgba(255,255,255,0.85)",
+    color: withAlpha(WHITE, 0.85),
     lineHeight: 19,
   },
   successBanner: {
     flexDirection: "row",
     alignItems: "flex-start",
-    backgroundColor: "rgba(16,185,129,0.15)",
+    backgroundColor: withAlpha(SUCCESS_GREEN, 0.15),
     borderRadius: 18,
     padding: 20,
     marginBottom: 24,
     marginTop: 20,
     borderWidth: 1.5,
-    borderColor: "rgba(16,185,129,0.3)",
+    borderColor: withAlpha(SUCCESS_GREEN, 0.3),
     gap: 12,
   },
   successTextContainer: { flex: 1 },
@@ -447,7 +453,7 @@ const styles = StyleSheet.create({
   },
   successSubtitle: {
     fontSize: 13,
-    color: "rgba(255,255,255,0.85)",
+    color: withAlpha(WHITE, 0.85),
     lineHeight: 19,
   },
   statsContainer: { alignItems: "center", marginBottom: 16 },
@@ -460,16 +466,16 @@ const styles = StyleSheet.create({
   },
   statsSubtext: {
     fontSize: 13,
-    color: "rgba(255,255,255,0.65)",
+    color: withAlpha(WHITE, 0.65),
     textAlign: "center",
   },
   buttonContainer: {
     paddingHorizontal: 24,
     paddingTop: 20,
     gap: 14,
-    backgroundColor: "rgba(15,8,20,0.95)",
+    backgroundColor: withAlpha(BRAND_BG, 0.95),
     borderTopWidth: 1,
-    borderTopColor: "rgba(141,105,246,0.15)",
+    borderTopColor: withAlpha(ACCENT_PURPLE, 0.15),
   },
-  loadingText: { marginTop: 16, fontSize: 16, color: "rgba(255,255,255,0.85)" },
+  loadingText: { marginTop: 16, fontSize: 16, color: withAlpha(WHITE, 0.85) },
 });

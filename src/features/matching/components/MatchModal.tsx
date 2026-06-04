@@ -6,6 +6,7 @@
  * KISS: Simple match display with action
  */
 
+import { useTheme, withAlpha } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { Heart, MessageCircle } from "lucide-react-native";
 import React from "react";
@@ -21,10 +22,6 @@ import {
 } from "react-native";
 
 const { width } = Dimensions.get("window");
-
-// Brand Colors
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
 
 export interface MatchedProfile {
   id: string;
@@ -45,6 +42,9 @@ export const MatchModal: React.FC<MatchModalProps> = ({
   onKeepSwiping,
   onSendMessage,
 }) => {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
   if (!matchedProfile) return null;
 
   const profileImage = matchedProfile.photos?.[0]
@@ -60,7 +60,10 @@ export const MatchModal: React.FC<MatchModalProps> = ({
     >
       <View style={styles.matchModalContainer}>
         <LinearGradient
-          colors={["rgba(15, 8, 20, 0.95)", "rgba(45, 27, 53, 0.95)"]}
+          colors={[
+            withAlpha(colors.brandBackground, 0.96),
+            withAlpha(colors.primaryDark, 0.9),
+          ]}
           style={StyleSheet.absoluteFill}
         />
 
@@ -70,8 +73,8 @@ export const MatchModal: React.FC<MatchModalProps> = ({
           <View style={styles.heartsContainer}>
             <Heart
               size={80}
-              color={ACCENT_PINK}
-              fill={ACCENT_PINK}
+              color={colors.primary}
+              fill={colors.primary}
               strokeWidth={2}
             />
           </View>
@@ -95,7 +98,7 @@ export const MatchModal: React.FC<MatchModalProps> = ({
               accessibilityRole="button"
               accessibilityLabel="Send message"
             >
-              <MessageCircle size={20} color={WHITE} strokeWidth={2.5} />
+              <MessageCircle size={20} color={colors.onPrimary} strokeWidth={2.5} />
               <Text style={styles.sendMessageBtnText}>Send Message</Text>
             </TouchableOpacity>
 
@@ -114,7 +117,8 @@ export const MatchModal: React.FC<MatchModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
+  StyleSheet.create({
   matchModalContainer: {
     flex: 1,
     justifyContent: "center",
@@ -136,13 +140,13 @@ const styles = StyleSheet.create({
   matchTitle: {
     fontSize: 42,
     fontFamily: "Lora-Bold",
-    color: ACCENT_PINK,
-    letterSpacing: 1,
+    color: colors.primary,
+    letterSpacing: 0,
   },
   matchSubtitle: {
     fontSize: 18,
     fontFamily: "DMSans-Regular",
-    color: "rgba(255, 255, 255, 0.85)",
+    color: withAlpha(colors.onPrimary, 0.85),
     textAlign: "center",
     lineHeight: 26,
   },
@@ -154,7 +158,7 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     overflow: "hidden",
     borderWidth: 4,
-    borderColor: ACCENT_PINK,
+    borderColor: colors.primary,
     marginVertical: 20,
   },
   matchImage: {
@@ -177,10 +181,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sendMessageBtn: {
-    backgroundColor: ACCENT_PINK,
+    backgroundColor: colors.primary,
     ...Platform.select({
       ios: {
-        shadowColor: ACCENT_PINK,
+        shadowColor: colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.4,
         shadowRadius: 12,
@@ -193,17 +197,17 @@ const styles = StyleSheet.create({
   sendMessageBtnText: {
     fontSize: 17,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
-    letterSpacing: 0.5,
+    color: colors.onPrimary,
+    letterSpacing: 0,
   },
   keepSwipingBtn: {
     backgroundColor: "transparent",
     borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: withAlpha(colors.onPrimary, 0.2),
   },
   keepSwipingBtnText: {
     fontSize: 16,
     fontFamily: "DMSans-SemiBold",
-    color: "rgba(255, 255, 255, 0.8)",
+    color: withAlpha(colors.onPrimary, 0.8),
   },
 });

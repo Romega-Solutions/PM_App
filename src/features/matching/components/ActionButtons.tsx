@@ -9,6 +9,7 @@
  * KISS: Simple button rendering with callbacks
  */
 
+import { theme, useTheme, withAlpha } from "@/src/theme";
 import { Heart, Info, Star, X } from "lucide-react-native";
 import React from "react";
 import {
@@ -17,12 +18,6 @@ import {
     TouchableOpacity,
     View
 } from "react-native";
-
-// Brand Colors
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const SUPER_LIKE_GOLD = "#F59E0B";
-const WHITE = "#FFFFFF";
 
 export interface ActionButtonsProps {
   onPass: () => void;
@@ -39,6 +34,10 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   onInfo,
   disabled = false,
 }) => {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+  const superLikeColor = colors.warning;
+
   return (
     <View style={styles.actionsContainer}>
       {/* Pass Button */}
@@ -49,7 +48,11 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         accessibilityRole="button"
         accessibilityLabel="Pass on this profile"
       >
-        <X size={28} color={ACCENT_PINK} strokeWidth={2.5} />
+        <X
+          size={theme.iconSizes.feature}
+          color={colors.primary}
+          strokeWidth={theme.strokeWidths.emphasis}
+        />
       </TouchableOpacity>
 
       {/* Super Like Button */}
@@ -60,7 +63,11 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         accessibilityRole="button"
         accessibilityLabel="Super like this profile"
       >
-        <Star size={24} color={SUPER_LIKE_GOLD} strokeWidth={2.5} />
+        <Star
+          size={theme.iconSizes.control}
+          color={superLikeColor}
+          strokeWidth={theme.strokeWidths.emphasis}
+        />
       </TouchableOpacity>
 
       {/* Like Button */}
@@ -71,7 +78,11 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         accessibilityRole="button"
         accessibilityLabel="Like this profile"
       >
-        <Heart size={28} color={WHITE} strokeWidth={2.5} />
+        <Heart
+          size={theme.iconSizes.feature}
+          color={colors.onPrimary}
+          strokeWidth={theme.strokeWidths.emphasis}
+        />
       </TouchableOpacity>
 
       {/* Info Button */}
@@ -82,31 +93,36 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         accessibilityRole="button"
         accessibilityLabel="View profile details"
       >
-        <Info size={24} color={ACCENT_PURPLE} strokeWidth={2.5} />
+        <Info
+          size={theme.iconSizes.control}
+          color={colors.secondary}
+          strokeWidth={theme.strokeWidths.emphasis}
+        />
       </TouchableOpacity>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
+  StyleSheet.create({
   actionsContainer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 16,
-    paddingHorizontal: 24,
-    paddingBottom: 24,
+    gap: theme.spacing.field,
+    paddingHorizontal: theme.spacing.screen,
+    paddingBottom: theme.spacing.screen,
   },
   actionBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: theme.componentSizes.iconButton + theme.spacing.touchGap,
+    height: theme.componentSizes.iconButton + theme.spacing.touchGap,
+    borderRadius: theme.borderRadius.full,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
+        shadowColor: colors.brandScrim,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.25,
         shadowRadius: 8,
@@ -117,22 +133,22 @@ const styles = StyleSheet.create({
     }),
   },
   passBtn: {
-    backgroundColor: "rgba(239, 62, 120, 0.12)",
-    borderColor: ACCENT_PINK,
+    backgroundColor: withAlpha(colors.primary, 0.12),
+    borderColor: colors.primary,
   },
   likeBtn: {
-    backgroundColor: ACCENT_PINK,
-    borderColor: ACCENT_PINK,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+    width: theme.componentSizes.iconButton + theme.spacing.field,
+    height: theme.componentSizes.iconButton + theme.spacing.field,
+    borderRadius: theme.borderRadius.full,
   },
   superLikeBtn: {
-    backgroundColor: "rgba(245, 158, 11, 0.12)",
-    borderColor: SUPER_LIKE_GOLD,
+    backgroundColor: withAlpha(colors.warning, 0.12),
+    borderColor: colors.warning,
   },
   infoBtn: {
-    backgroundColor: "rgba(141, 105, 246, 0.12)",
-    borderColor: ACCENT_PURPLE,
+    backgroundColor: withAlpha(colors.secondary, 0.12),
+    borderColor: colors.secondary,
   },
 });

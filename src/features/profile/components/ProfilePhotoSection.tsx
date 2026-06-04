@@ -10,6 +10,7 @@
  * - Upload progress overlay
  */
 
+import { useTheme } from "@/src/theme";
 import { Camera, User } from "lucide-react-native";
 import React from "react";
 import {
@@ -20,11 +21,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-const ACCENT_PINK = "#EF3E78";
-const ACCENT_PURPLE = "#8D69F6";
-const WHITE = "#FFFFFF";
-const SURFACE_STRONG = "rgba(255, 255, 255, 0.08)";
 
 interface ProfilePhotoSectionProps {
   photoUri: string | null;
@@ -39,6 +35,9 @@ export const ProfilePhotoSection: React.FC<ProfilePhotoSectionProps> = ({
   uploadProgress,
   onChangePhoto,
 }) => {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.photoSection}>
       <View style={styles.photoWrap}>
@@ -46,12 +45,12 @@ export const ProfilePhotoSection: React.FC<ProfilePhotoSectionProps> = ({
           <Image source={{ uri: photoUri }} style={styles.photo} />
         ) : (
           <View style={styles.photoPlaceholder}>
-            <User size={32} color={ACCENT_PINK} />
+            <User size={32} color={colors.primary} />
           </View>
         )}
         {isUploading && (
           <View style={styles.uploadOverlay}>
-            <ActivityIndicator size="large" color={WHITE} />
+            <ActivityIndicator size="large" color={colors.onPrimary} />
             <Text style={styles.uploadProgress}>{uploadProgress}%</Text>
           </View>
         )}
@@ -60,8 +59,11 @@ export const ProfilePhotoSection: React.FC<ProfilePhotoSectionProps> = ({
         style={styles.changePhotoBtn}
         onPress={onChangePhoto}
         disabled={isUploading}
+        accessibilityRole="button"
+        accessibilityLabel={isUploading ? "Uploading profile photo" : "Change profile photo"}
+        accessibilityState={{ disabled: isUploading, busy: isUploading }}
       >
-        <Camera size={16} color={WHITE} />
+        <Camera size={16} color={colors.onPrimary} />
         <Text style={styles.changePhotoText}>
           {isUploading ? "Uploading..." : "Change Photo"}
         </Text>
@@ -70,7 +72,8 @@ export const ProfilePhotoSection: React.FC<ProfilePhotoSectionProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
+  StyleSheet.create({
   photoSection: {
     alignItems: "center",
     marginTop: 20,
@@ -82,7 +85,7 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     overflow: "hidden",
     borderWidth: 3,
-    borderColor: ACCENT_PINK,
+    borderColor: colors.primary,
     marginBottom: 12,
   },
   photo: {
@@ -92,7 +95,7 @@ const styles = StyleSheet.create({
   photoPlaceholder: {
     width: "100%",
     height: "100%",
-    backgroundColor: SURFACE_STRONG,
+    backgroundColor: colors.brandSurface,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -104,19 +107,19 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   changePhotoText: {
-    color: ACCENT_PURPLE,
+    color: colors.secondary,
     fontSize: 14,
     fontFamily: "DMSans-SemiBold",
   },
   uploadOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    backgroundColor: colors.brandScrim,
     justifyContent: "center",
     alignItems: "center",
     gap: 8,
   },
   uploadProgress: {
-    color: WHITE,
+    color: colors.onPrimary,
     fontSize: 16,
     fontFamily: "DMSans-Bold",
   },

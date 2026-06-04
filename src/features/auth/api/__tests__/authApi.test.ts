@@ -21,6 +21,7 @@ jest.mock("@/src/config/supabase", () => ({
       signOut: jest.fn(),
       getUser: jest.fn(),
       resend: jest.fn(),
+      resetPasswordForEmail: jest.fn(),
       getSession: jest.fn(),
       refreshSession: jest.fn(),
     },
@@ -227,6 +228,38 @@ describe("authApi.resendVerificationEmail", () => {
     await expect(
       authApi.resendVerificationEmail("user@example.com")
     ).rejects.toThrow("Rate limit exceeded");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resetPassword
+// ---------------------------------------------------------------------------
+describe("authApi.resetPassword", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("requests a password reset email with the app redirect URL", async () => {
+    (supabase.auth.resetPasswordForEmail as jest.Mock).mockResolvedValue({
+      error: null,
+    });
+
+    const result = await authApi.resetPassword("user@example.com");
+
+    expect(result).toEqual({ success: true });
+    expect(supabase.auth.resetPasswordForEmail).toHaveBeenCalledWith(
+      "user@example.com",
+      { redirectTo: "https://example.com/redirect" }
+    );
+  });
+
+  it("throws when Supabase rejects the password reset request", async () => {
+    const resetError = new Error("Rate limit exceeded");
+    (supabase.auth.resetPasswordForEmail as jest.Mock).mockResolvedValue({
+      error: resetError,
+    });
+
+    await expect(authApi.resetPassword("user@example.com")).rejects.toThrow(
+      "Rate limit exceeded"
+    );
   });
 });
 
