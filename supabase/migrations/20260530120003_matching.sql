@@ -1,82 +1,53 @@
 -- =============================================================================
--- 0003 · MATCHING domain — swipes + matches
---   swipes : one directional action per (swiper, swipee)
---   matches: a distinct entity, stored with ordered participants (a < b)
+-- 0003 · MATCHING — likes (with an is_match flag) + passes.
+--        A "match" is mutual likes flipped to is_match = true; the app
+--        (matchingApi) detects mutuality and flips both rows, so no server
+--        trigger is required here.
 -- =============================================================================
 
-create table public.swipes (
-  id         uuid primary key default gen_random_uuid(),
-  swiper_id  uuid not null references public.profiles (id) on delete cascade,
-  swipee_id  uuid not null references public.profiles (id) on delete cascade,
-  direction  public.swipe_direction not null,
-  created_at timestamptz not null default now(),
-  unique (swiper_id, swipee_id),
-  constraint no_self_swipe check (swiper_id <> swipee_id)
+create table public.likes (
+  id           uuid primary key default uuid_generate_v4(),
+  from_user_id uuid not null references public.profiles (id) on delete cascade,
+  to_user_id   uuid not null references public.profiles (id) on delete cascade,
+  is_match     boolean not null default false,
+  matched_at   timestamptz,
+  created_at   timestamptz default now(),
+  constraint likes_unique_pair unique (from_user_id, to_user_id)
 );
-create index idx_swipes_swiper on public.swipes (swiper_id);
-create index idx_swipes_swipee on public.swipes (swipee_id);
-create index idx_swipes_incoming_likes on public.swipes (swipee_id, swiper_id)
-  where direction in ('like', 'superlike');
+create index idx_likes_from  on public.likes (from_user_id);
+create index idx_likes_to    on public.likes (to_user_id);
+create index idx_likes_match on public.likes (is_match) where is_match;
 
-create table public.matches (
-  id           uuid primary key default gen_random_uuid(),
-  profile_a_id uuid not null references public.profiles (id) on delete cascade,
-  profile_b_id uuid not null references public.profiles (id) on delete cascade,
-  is_active    boolean not null default true,           -- false after an unmatch
-  created_at   timestamptz not null default now(),
-  unique (profile_a_id, profile_b_id),
-  constraint match_pair_ordered check (profile_a_id < profile_b_id)
+create table public.passes (
+  id           uuid primary key default uuid_generate_v4(),
+  from_user_id uuid not null references public.profiles (id) on delete cascade,
+  to_user_id   uuid not null references public.profiles (id) on delete cascade,
+  created_at   timestamptz default now(),
+  constraint passes_unique_pair unique (from_user_id, to_user_id)
 );
-create index idx_matches_a on public.matches (profile_a_id) where is_active;
-create index idx_matches_b on public.matches (profile_b_id) where is_active;
-
--- Create a match when a like/superlike completes a mutual like -----------------
-create or replace function public.create_match_on_mutual_like()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_a uuid;
-  v_b uuid;
-begin
-  if new.direction in ('like', 'superlike')
-     and exists (
-       select 1 from public.swipes s
-        where s.swiper_id = new.swipee_id
-          and s.swipee_id = new.swiper_id
-          and s.direction in ('like', 'superlike')
-     )
-  then
-    v_a := least(new.swiper_id, new.swipee_id);
-    v_b := greatest(new.swiper_id, new.swipee_id);
-    insert into public.matches (profile_a_id, profile_b_id)
-    values (v_a, v_b)
-    on conflict (profile_a_id, profile_b_id) do update set is_active = true;
-  end if;
-  return new;
-end;
-$$;
-
-create trigger trg_create_match_on_mutual_like
-  after insert on public.swipes
-  for each row execute function public.create_match_on_mutual_like();
+create index idx_passes_from on public.passes (from_user_id);
 
 -- Row Level Security ----------------------------------------------------------
-alter table public.swipes  enable row level security;
-alter table public.matches enable row level security;
+alter table public.likes  enable row level security;
+alter table public.passes enable row level security;
 
-create policy "read own swipes" on public.swipes
-  for select to authenticated using (swiper_id = (select auth.uid()));
-create policy "create own swipes" on public.swipes
-  for insert to authenticated with check (swiper_id = (select auth.uid()));
-
--- matches are created by the (security definer) trigger, so no client INSERT policy.
-create policy "read own matches" on public.matches
+-- likes: see rows involving you; create only your own; update rows involving
+-- you (so a mutual like can flip is_match on both your row and theirs).
+create policy "read likes involving you" on public.likes
   for select to authenticated
-  using (profile_a_id = (select auth.uid()) or profile_b_id = (select auth.uid()));
-create policy "unmatch own matches" on public.matches
+  using (from_user_id = (select auth.uid()) or to_user_id = (select auth.uid()));
+create policy "insert own likes" on public.likes
+  for insert to authenticated
+  with check (from_user_id = (select auth.uid()));
+create policy "update likes involving you" on public.likes
   for update to authenticated
-  using (profile_a_id = (select auth.uid()) or profile_b_id = (select auth.uid()))
-  with check (profile_a_id = (select auth.uid()) or profile_b_id = (select auth.uid()));
+  using (from_user_id = (select auth.uid()) or to_user_id = (select auth.uid()))
+  with check (from_user_id = (select auth.uid()) or to_user_id = (select auth.uid()));
+
+-- passes: private to the actor
+create policy "read own passes" on public.passes
+  for select to authenticated
+  using (from_user_id = (select auth.uid()));
+create policy "insert own passes" on public.passes
+  for insert to authenticated
+  with check (from_user_id = (select auth.uid()));
