@@ -2,9 +2,21 @@
 
 ## Senior Software Engineer Comprehensive Analysis
 
-**Date:** January 20, 2026  
-**Project:** Pinaymate Dating Mobile Application  
+**Date:** January 20, 2026
+**Project:** Pinaymate Dating Mobile Application
 **Status:** Pre-Production / Development Phase
+**Latest Re-review:** 2026-06-10 (documentation sync)
+
+## Document Governance (2026-06-10)
+
+This is a historical technical audit and baseline review. It is **not** a live launch-completion certificate.
+Use this report for architectural context and migration backlog, then align launch decisions with:
+
+- `PM_App/docs/RELEASE_READINESS.md`
+- `PM_App/README.md`
+- `PM_App/SETUP_CHECKLIST.md` (environment bootstrap)
+
+**2026-06-10 release-hardening update:** migration `99_final_release_security_hardening.sql` now reasserts the final production contract after older setup/fix scripts. It protects profile approval columns from client writes, moves match creation to the `like_profile` RPC, denies blocked conversation/media access, and extends the safety smoke test to cover direct match-forging rejection.
 
 ---
 
@@ -12,16 +24,16 @@
 
 ### Current System Completeness: **~65% Complete**
 
-**Database Layer:** 75% ✅  
-**Security Layer:** 60% ⚠️  
-**Backend Integration:** 45% ⚠️  
-**Frontend UI:** 85% ✅  
-**Real-time Features:** 20% ❌  
+**Database Layer:** 75% ✅
+**Security Layer:** 60% ⚠️
+**Backend Integration:** 45% ⚠️
+**Frontend UI:** 85% ✅
+**Real-time Features:** 20% ❌
 **Testing & QA:** 10% ❌
 
 ### Critical Finding
 
-> **The live chat was NEVER fully implemented with Supabase.** The current ChatScreen uses mock data with TODO comments for Supabase integration. The UI works perfectly, but no messages are being saved to or retrieved from the database.
+> **Chat media pipeline is now partially modernized for Supabase:** image message media writes durable `chat-images` storage paths into `messages.image_url` and hydrates to signed URLs at display time. Full end-to-end chat persistence/realtime readiness remains launch-gated and is not claimed as live-verified in this doc.
 
 ---
 
@@ -103,26 +115,26 @@ Current Structure:
 
 **Critical Issues:**
 
-1. ❌ **No message_type field** - Can't distinguish text vs images
-2. ❌ **No image_url field** - Can't store image messages
-3. ❌ **No status field** - Can't track sending/sent/delivered/read states
+1. ✅ **message_type field supported in current chat media flow** (via `type` in `messages`)
+2. ✅ **`image_url` used for chat media storage path**
+3. ✅ **`status` tracking exists for message lifecycle**
 4. ❌ **conversation_id has no FK** - Data integrity risk
 5. ❌ **No soft delete** - Can't support "delete for me" feature
 6. ❌ **receiver_id should be recipient_id** - Inconsistent naming in code vs DB
 
-**ChatScreen Expectations vs DB Reality:**
+**Chat media state (code-path evidence in repo):**
 
 ```typescript
-// ChatScreen expects:
+// Current chat media expectations:
 type Message = {
   status: 'sending' | 'sent' | 'delivered' | 'read',
   type: 'text' | 'image',
   imageUri?: string
 }
 
-// But DB only has:
-- content (text only)
-- is_read (boolean only)
+// DB message path strategy now:
+// - image_url stores durable storage path
+// - display layer generates signed URL at render/fetch time
 ```
 
 **Recommended Refactoring:**
@@ -247,27 +259,11 @@ CREATE TABLE passes (
 
 ### 3. **Missing Database Features**
 
-#### **❌ NO REALTIME SUBSCRIPTIONS IMPLEMENTED**
+#### **⚠️ REALTIME SUBSCRIPTIONS NEED RELEASE VERIFICATION**
 
-```typescript
-// Chat needs realtime but it's not set up:
-// Should have:
-supabase
-  .channel("messages")
-  .on(
-    "postgres_changes",
-    {
-      event: "INSERT",
-      schema: "public",
-      table: "messages",
-      filter: `recipient_id=eq.${userId}`,
-    },
-    handleNewMessage,
-  )
-  .subscribe();
-```
+Realtime hooks are present in current chat service/client flow, but production release verification is still required for message delivery behavior under release gates.
 
-#### **❌ NO STORAGE BUCKET FOR IMAGES**
+#### **⚠️ STORAGE BUCKETS ARE IMPLEMENTATION GATE**
 
 - Chat images need storage bucket: `chat-images`
 - Profile photos need storage bucket: `profile-photos`
@@ -322,14 +318,14 @@ CREATE TABLE user_activity (
 
 ### Row Level Security (RLS) Analysis
 
-#### **Profiles Table RLS** ⚠️ **NEEDS STRENGTHENING**
+#### **Profiles Table RLS** ⚠️ **MIGRATION 04 PREPARED, LIVE PROOF PENDING**
 
-**Current Policies:**
+**Historical baseline policy:**
 
 ```sql
 1. "Public profiles are viewable by everyone"
    → USING (is_active = TRUE)
-   ⚠️ Issue: Exposes ALL active profiles to anonymous users
+   ⚠️ Pre-migration issue: Direct profile reads were too broad for a dating app
 
 2. "Users can update own profile"
    → USING (auth.uid() = id)
@@ -340,13 +336,25 @@ CREATE TABLE user_activity (
    ✅ Good: Users can only create their own profile
 ```
 
-**Security Gaps:**
+**Repository mitigation now prepared:**
 
-1. ❌ **Anyone can read verification status** - Should be hidden
-2. ❌ **Email addresses visible to all** - Privacy violation
-3. ❌ **No rate limiting on profile reads** - Can scrape database
-4. ❌ **Inactive profiles still readable** - Should return 404
-5. ❌ **No DELETE policy** - Users can't delete their own profiles
+- Migration 04 routes discovery through a safer `discoverable_profiles` view.
+- The discovery view is marked `security_invoker` so underlying RLS still applies.
+- The view exposes only profile-card fields, not private account data.
+- Blocked users and self profiles are filtered out of discovery.
+- Explicit grants/revokes are included for report, block, unmatch, and chat-safety tables/functions.
+
+**Still required before calling this production-verified:**
+
+- Apply migrations through `99_final_release_security_hardening.sql` to local/staging Supabase.
+- Run `supabase/tests/04_safety_smoke_test.sql`.
+- Record proof that report, block, unmatch, discovery filtering, and blocked-chat enforcement pass.
+
+**Remaining security gaps to validate or design:**
+
+1. ⚠️ **Rate limiting on profile reads** - Needed to reduce scraping risk.
+2. ⚠️ **Production deletion/export policy** - User data deletion/export flow still needs product/legal confirmation.
+3. ⚠️ **Live Supabase grants** - Must be verified after migration, not assumed from local SQL alone.
 
 **Recommended Policy Updates:**
 
@@ -548,29 +556,18 @@ ALTER TABLE profiles ADD COLUMN match_count INT DEFAULT 0;
 ❌ No "undo" swipe feature
 ```
 
-### **Messaging API** ⚠️ **35% Complete**
+### **Messaging API** ⚠️ **50% Complete**
 
 ```typescript
 ✅ getConversations() - Fetches conversation list
-❌ sendMessage() - NOT IMPLEMENTED (still using mock data)
-❌ subscribeToMessages() - NO REALTIME
-❌ markAsRead() - NOT IMPLEMENTED
-❌ deleteMessage() - NOT IMPLEMENTED
-❌ sendImage() - NOT IMPLEMENTED
+✅ sendMessage() - Implemented for text
+✅ subscribeToMessages() - Realtime insert subscription path exists
+✅ markAsRead() - Implemented
+✅ deleteMessage() - Implemented
+✅ sendImage() - Implemented with storage-path persistence (`messages.image_url`)
 ```
 
-**Critical Gap: Chat is NOT connected to database**
-
-```typescript
-// Current ChatScreen.tsx code:
-const handleSend = () => {
-  // TODO: Replace with Supabase integration
-  // await supabase.from('messages').insert({ ... });
-
-  // Currently just updates local state with mock data
-  setMessages((prev) => [...prev, newMessage]);
-};
-```
+**Chat status note:** Core send/realtime flows are wired through Supabase, and chat image messages now persist storage paths and hydrate to signed URLs at render-time. This doc does not claim full production verification or post-gate sign-off.
 
 ### **Profile API** ✅ **90% Complete**
 
@@ -600,7 +597,7 @@ const handleSend = () => {
 - ✅ Home/Discover (Swipe interface)
 - ✅ Likes/Matches
 - ✅ Messages (List view)
-- ✅ Chat (Full UI, no backend)
+- ✅ Chat (UI + Supabase-backed media message persistence path)
 - ✅ Profile
 - ✅ Settings
 - ✅ Onboarding Flow
@@ -629,9 +626,9 @@ const handleSend = () => {
    - Fix: Run migration
    - Time: 5 minutes
 
-3. **🔴 Chat has NO database integration**
-   - Impact: No persistent chat history
-   - Fix: Implement sendMessage(), subscribeToMessages()
+3. **🟡 Chat database integration is partially in place**
+   - Impact: Chat media is now persisted and signed for display; release validation still pending for end-to-end reliability
+   - Fix: Run migration, auth, and QA verification gates
    - Time: 4-6 hours
 
 4. **🔴 No blocked users system**
@@ -656,9 +653,9 @@ const handleSend = () => {
    - Fix: Create reports table + admin panel
    - Time: 12-16 hours
 
-8. **🟡 No realtime subscriptions**
-   - Impact: Must refresh to see new messages
-   - Fix: Implement Supabase realtime
+8. **🟡 Realtime behavior should be release-verified**
+   - Impact: Message delivery and ordering still need release environment validation
+   - Fix: Capture pass/fail after launch QA
    - Time: 4-6 hours
 
 9. **🟡 No storage buckets configured**
@@ -878,12 +875,14 @@ export const uploadChatImage = async (
     .from("chat-images")
     .upload(fileName, blob);
 
-  // 3. Get public URL
+  // 3. Get a short-lived signed URL from the private chat-images bucket
   const {
-    data: { publicUrl },
-  } = supabase.storage.from("chat-images").getPublicUrl(fileName);
+    data: { signedUrl },
+  } = await supabase.storage
+    .from("chat-images")
+    .createSignedUrl(data?.path || fileName, 60 * 60);
 
-  return { url: publicUrl, error };
+  return { url: signedUrl, error };
 };
 ```
 
@@ -950,10 +949,10 @@ export const uploadChatImage = async (
 
 ### **Critical Technical Debt:**
 
-1. 🔴 Chat isn't connected (biggest gap)
+1. 🔴 End-to-end chat launch readiness still needs production-like verification and migration gate pass
 2. 🔴 No error handling strategy
 3. 🔴 No testing strategy
-4. 🔴 Mock data still in production code
+4. 🔴 Some legacy mock-data assumptions remain in older screens/notes and should be cleared as code is verified
 5. 🔴 Security policies too permissive
 
 ### **Architecture Concerns:**
@@ -978,22 +977,23 @@ export const uploadChatImage = async (
 
 **Overall System Assessment: Pre-Production Ready at 65%**
 
-The application has a **solid foundation** with excellent UI/UX and a well-designed database schema. However, it has **critical gaps** in backend integration, particularly the chat system which is entirely non-functional despite appearing to work.
+The application has a **solid foundation** with excellent UI/UX and a well-designed database schema. Chat media handling is now implemented end-to-end in the documented flow (durable path storage + signed URL hydration), while broader launch readiness remains gated by migration QA and device/release validation.
 
-**Key Takeaway:** You thought the live chat was working because the UI is complete and responsive. However, it's using mock data with TODO comments. Every message you send is lost on app restart because nothing is saved to Supabase.
+**Key Takeaway:** Chat media flow has moved from UI-only behavior to Supabase-integrated media persistence. Remaining work is release verification and policy/migration gates rather than core path plumbing.
 
 **Immediate Next Steps:**
 
 1. ✅ Run database migrations (5 minutes)
 2. ✅ Fix security policies (2-3 hours)
-3. 🔴 Implement chat backend (4-6 hours) ← CRITICAL
-4. 🔴 Add realtime subscriptions (4-6 hours)
+3. ✅ Update chat media persistence contract in launch/docs artifacts (completed in this pass)
+4. 🔴 Validate end-to-end chat launch gate (4-6 hours, includes migration + device QA)
 5. 🔴 Set up storage buckets (1 hour)
 
 **Estimated Time to Production-Ready:** 3-4 weeks of focused development
 
 ---
 
-**Report Prepared By:** Senior Software Engineer (AI)  
-**Methodology:** Static code analysis, schema review, security audit, completeness assessment  
+**Report Prepared By:** Senior Software Engineer (AI)
+**Methodology:** Static code analysis, schema review, security audit, completeness assessment
 **Next Review:** After Phase 1 completion (Week 1)
+**Live Verification Blocker Note:** Supabase migration execution, storage/security policy behavior, and app runtime QA remain required before launch.

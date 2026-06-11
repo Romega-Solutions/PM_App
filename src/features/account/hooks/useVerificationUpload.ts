@@ -5,9 +5,28 @@ import { accountApi, VerificationData } from "../api/accountApi";
 
 export type VerificationStatus =
   | "pending"
+  | "captured"
   | "processing"
+  | "submitted"
   | "verified"
   | "rejected";
+
+type VerificationFailureState = {
+  documentUri: string;
+  documentStatus: VerificationStatus;
+  error: string;
+};
+
+export const getVerificationFailureState = (
+  err: unknown,
+): VerificationFailureState => ({
+  documentUri: "",
+  documentStatus: "rejected",
+  error:
+    err instanceof Error
+      ? err.message
+      : "We could not read the document. Try again with a clearer photo.",
+});
 
 export const useVerificationUpload = () => {
   const [selfieUri, setSelfieUri] = useState<string>("");
@@ -32,12 +51,16 @@ export const useVerificationUpload = () => {
     });
     if (res.canceled) return;
     setSelfieUri(res.assets[0].uri);
-    setSelfieStatus("processing");
-    // Simulate validation
-    setTimeout(() => setSelfieStatus("verified"), 1500);
+    setSelfieStatus("captured");
+    setError("");
   }, []);
 
   const uploadDocument = useCallback(async () => {
+    if (!selfieUri) {
+      setError("Take a verification selfie before uploading an ID document.");
+      return;
+    }
+
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
       setError("Gallery permission required");
@@ -73,7 +96,7 @@ export const useVerificationUpload = () => {
           lastName: ocrResult.lastName,
           age: extractedAge ?? undefined,
         },
-        storedInfo
+        storedInfo,
       );
 
       // 5) Save verification result
@@ -83,28 +106,32 @@ export const useVerificationUpload = () => {
         extractedFirstName: ocrResult.firstName,
         extractedLastName: ocrResult.lastName,
         extractedAge: extractedAge ?? undefined,
-        isVerified: comparison.match,
+        isVerified: false,
         mismatchReasons: comparison.reasons,
       };
 
       await accountApi.saveVerification(verificationPayload);
 
       if (comparison.match) {
-        setDocumentStatus("verified");
+        setDocumentStatus("submitted");
+        setError("");
       } else {
-        setDocumentStatus("rejected");
-        setError(comparison.reasons.join("; "));
+        setDocumentStatus("submitted");
+        setError(
+          `Submitted for manual review. We found details that need a reviewer to check: ${comparison.reasons.join("; ")}`,
+        );
       }
     } catch (err) {
-      setDocumentStatus("rejected");
-      setError(err instanceof Error ? err.message : "OCR failed");
+      const failureState = getVerificationFailureState(err);
+      setDocumentUri(failureState.documentUri);
+      setDocumentStatus(failureState.documentStatus);
+      setError(failureState.error);
     } finally {
       setLoading(false);
     }
   }, [selfieUri]);
 
-  const isVerified =
-    selfieStatus === "verified" && documentStatus === "verified";
+  const isSubmittedForReview = documentStatus === "submitted";
 
   return {
     selfieUri,
@@ -115,6 +142,6 @@ export const useVerificationUpload = () => {
     error,
     takeSelfie,
     uploadDocument,
-    isVerified,
+    isSubmittedForReview,
   } as const;
 };

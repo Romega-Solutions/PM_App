@@ -13,40 +13,53 @@
  */
 
 import { LinearGradient } from "expo-linear-gradient";
-import { Heart, MapPin, MessageCircle, Sparkles, X } from "lucide-react-native";
+import {
+  Flag,
+  Heart,
+  MapPin,
+  MessageCircle,
+  Sparkles,
+  UserRound,
+  X,
+} from "lucide-react-native";
 import React from "react";
 import {
-    Dimensions,
-    Image,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from "react-native";
 
-const { width } = Dimensions.get("window");
-
 // Brand Colors
-const BRAND_BG = "#0F0814";
 const ACCENT_PURPLE = "#8D69F6";
 const ACCENT_PINK = "#EF3E78";
 const VERIFIED_GREEN = "#10B981";
 const WHITE = "#FFFFFF";
 const SURFACE = "rgba(255,255,255,0.06)";
 const SURFACE_BORDER = "rgba(141,105,246,0.18)";
+const ACTION_HIT_SLOP = { top: 6, right: 6, bottom: 6, left: 6 };
 
-// Card dimensions
-const CARD_WIDTH = (width - 48) / 2; // 2 columns with padding
-const CARD_HEIGHT = CARD_WIDTH * 1.4;
-const IMAGE_HEIGHT = CARD_WIDTH * 0.85;
+function formatMatchedAt(value?: string) {
+  if (!value) return "Recently matched";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Recently matched";
+
+  return `Matched ${date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  })}`;
+}
 
 // Match type
 export type Match = {
   id: string | number;
   name: string;
   age: number;
-  image: any;
+  image?: any;
   location: string;
   verified: boolean;
   mutual: boolean;
@@ -58,88 +71,188 @@ interface MatchCardProps {
   match: Match;
   onMessage: () => void;
   onUnmatch: () => void;
+  onReport: () => void;
 }
 
 export const MatchCard: React.FC<MatchCardProps> = ({
   match,
   onMessage,
   onUnmatch,
-}) => (
-  <View style={styles.card}>
-    {/* Image Container */}
-    <View style={styles.imageContainer}>
-      <Image source={match.image} style={styles.cardImage} resizeMode="cover" />
+  onReport,
+}) => {
+  const { width } = useWindowDimensions();
+  const cardWidth = Math.min((width - 48) / 2, 196);
+  const cardHeight = Math.max(cardWidth * 1.9, 306);
+  const imageHeight = Math.max(cardWidth * 0.86, 134);
+  const matchedAtLabel = formatMatchedAt(match.matchedAt);
 
-      {/* Verified Badge */}
-      {match.verified && (
-        <View style={styles.verifiedBadge}>
-          <Sparkles size={10} color={WHITE} strokeWidth={2.5} />
-        </View>
-      )}
-
-      {/* Mutual Match Badge */}
-      {match.mutual && (
-        <View style={styles.mutualBadge}>
-          <Heart
-            size={10}
-            color={ACCENT_PINK}
-            fill={ACCENT_PINK}
-            strokeWidth={2}
+  return (
+    <View style={[styles.card, { width: cardWidth, minHeight: cardHeight }]}>
+      {/* Image Container */}
+      <View style={[styles.imageContainer, { height: imageHeight }]}>
+        {match.image ? (
+          <Image
+            source={match.image}
+            style={styles.cardImage}
+            resizeMode="cover"
+            accessible
+            accessibilityLabel={`${match.name}'s profile photo`}
           />
+        ) : (
+          <View
+            style={styles.cardImageFallback}
+            accessible
+            accessibilityLabel={`${match.name} has no profile photo`}
+          >
+            <UserRound size={38} color="rgba(255,255,255,0.72)" />
+            <Text style={styles.cardImageFallbackText}>No photo</Text>
+          </View>
+        )}
+
+        {/* Verified Badge */}
+        {match.verified && (
+          <View
+            style={styles.verifiedBadge}
+            accessible
+            accessibilityLabel="Verification reviewed"
+          >
+            <Sparkles size={10} color={WHITE} strokeWidth={2.5} />
+          </View>
+        )}
+
+        {/* Mutual Match Badge */}
+        {match.mutual && (
+          <View
+            style={styles.mutualBadge}
+            accessible
+            accessibilityLabel="Mutual match"
+          >
+            <Heart
+              size={10}
+              color={ACCENT_PINK}
+              fill={ACCENT_PINK}
+              strokeWidth={2}
+            />
+          </View>
+        )}
+
+        {/* Gradient Overlay */}
+        <LinearGradient
+          colors={["transparent", "rgba(0, 0, 0, 0.7)"]}
+          style={styles.imageGradient}
+        />
+      </View>
+
+      {/* Card Info */}
+      <View style={styles.cardInfo}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardName} numberOfLines={1} adjustsFontSizeToFit>
+            {match.name}, {match.age}
+          </Text>
         </View>
-      )}
 
-      {/* Gradient Overlay */}
-      <LinearGradient
-        colors={["transparent", "rgba(0, 0, 0, 0.7)"]}
-        style={styles.imageGradient}
-      />
-    </View>
-
-    {/* Card Info */}
-    <View style={styles.cardInfo}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardName} numberOfLines={1}>
-          {match.name}, {match.age}
+        <View style={styles.locationRow}>
+          <MapPin size={12} color={ACCENT_PURPLE} strokeWidth={2} />
+          <Text style={styles.locationText} numberOfLines={1}>
+            {match.location}
+          </Text>
+        </View>
+        <Text style={styles.trustText} numberOfLines={1}>
+          {match.verified ? "Verification reviewed" : "Report concerns anytime"}
         </Text>
-      </View>
+        <View style={styles.matchMetaRow}>
+          <View
+            style={[
+              styles.statusPill,
+              match.mutual ? styles.statusPillMutual : styles.statusPillQuiet,
+            ]}
+          >
+            <Heart
+              size={11}
+              color={match.mutual ? WHITE : "rgba(255,255,255,0.72)"}
+              fill={match.mutual ? WHITE : "transparent"}
+              strokeWidth={2}
+            />
+            <Text
+              style={[
+                styles.statusPillText,
+                match.mutual && styles.statusPillTextActive,
+              ]}
+              numberOfLines={1}
+            >
+              {match.mutual ? "Mutual" : "Matched"}
+            </Text>
+          </View>
+          <Text style={styles.matchedAtText} numberOfLines={1}>
+            {matchedAtLabel}
+          </Text>
+        </View>
 
-      <View style={styles.locationRow}>
-        <MapPin size={12} color={ACCENT_PURPLE} strokeWidth={2} />
-        <Text style={styles.locationText} numberOfLines={1}>
-          {match.location}
-        </Text>
-      </View>
+        {/* Action Buttons */}
+        <View style={styles.cardActions}>
+          <View style={styles.secondaryActions}>
+            <TouchableOpacity
+              style={[
+                styles.cardActionBtn,
+                styles.secondaryActionBtn,
+                styles.unmatchBtn,
+              ]}
+              onPress={onUnmatch}
+              activeOpacity={0.82}
+              hitSlop={ACTION_HIT_SLOP}
+              accessibilityRole="button"
+              accessibilityLabel={`Unmatch with ${match.name}`}
+              accessibilityHint="Opens the unmatch action for this match"
+            >
+              <X size={16} color={ACCENT_PINK} strokeWidth={2.5} />
+              <Text style={[styles.actionLabel, styles.unmatchActionLabel]}>
+                Unmatch
+              </Text>
+            </TouchableOpacity>
 
-      {/* Action Buttons */}
-      <View style={styles.cardActions}>
-        <TouchableOpacity
-          style={[styles.cardActionBtn, styles.unmatchBtn]}
-          onPress={onUnmatch}
-          accessibilityRole="button"
-          accessibilityLabel="Unmatch"
-        >
-          <X size={16} color={ACCENT_PINK} strokeWidth={2.5} />
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.cardActionBtn,
+                styles.secondaryActionBtn,
+                styles.reportBtn,
+              ]}
+              onPress={onReport}
+              activeOpacity={0.82}
+              hitSlop={ACTION_HIT_SLOP}
+              accessibilityRole="button"
+              accessibilityLabel={`Report or block ${match.name}`}
+              accessibilityHint="Opens a private report form for this match"
+            >
+              <Flag size={16} color="#FFB4B4" strokeWidth={2.5} />
+              <Text style={[styles.actionLabel, styles.reportActionLabel]}>
+                Report
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-        <TouchableOpacity
-          style={[styles.cardActionBtn, styles.messageBtn]}
-          onPress={onMessage}
-          accessibilityRole="button"
-          accessibilityLabel="Send message"
-        >
-          <MessageCircle size={16} color={WHITE} strokeWidth={2} />
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.cardActionBtn, styles.messageBtn]}
+            onPress={onMessage}
+            activeOpacity={0.86}
+            hitSlop={ACTION_HIT_SLOP}
+            accessibilityRole="button"
+            accessibilityLabel={`Message ${match.name}`}
+            accessibilityHint="Opens a conversation with this match"
+          >
+            <MessageCircle size={16} color={WHITE} strokeWidth={2} />
+            <Text style={[styles.actionLabel, styles.messageActionLabel]}>
+              Message
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
-  </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   // Card
   card: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
     backgroundColor: SURFACE,
     borderRadius: 20,
     overflow: "hidden",
@@ -160,12 +273,26 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     position: "relative",
-    height: IMAGE_HEIGHT,
   },
   cardImage: {
     width: "100%",
     height: "100%",
     backgroundColor: "#1A1A1A",
+  },
+  cardImageFallback: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.08)",
+  },
+  cardImageFallbackText: {
+    marginTop: 8,
+    color: "rgba(255,255,255,0.68)",
+    fontSize: 12,
+    fontFamily: "DMSans-Bold",
   },
   verifiedBadge: {
     position: "absolute",
@@ -254,25 +381,94 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     flex: 1,
   },
+  trustText: {
+    minHeight: 18,
+    fontSize: 11,
+    fontFamily: "DMSans-Bold",
+    color: "rgba(255, 255, 255, 0.68)",
+  },
+  matchMetaRow: {
+    minHeight: 28,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  statusPill: {
+    minHeight: 24,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderWidth: 1,
+  },
+  statusPillMutual: {
+    backgroundColor: "rgba(239, 62, 120, 0.82)",
+    borderColor: "rgba(255, 255, 255, 0.22)",
+  },
+  statusPillQuiet: {
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderColor: "rgba(255, 255, 255, 0.14)",
+  },
+  statusPillText: {
+    fontSize: 10,
+    fontFamily: "DMSans-Bold",
+    color: "rgba(255, 255, 255, 0.72)",
+  },
+  statusPillTextActive: {
+    color: WHITE,
+  },
+  matchedAtText: {
+    flex: 1,
+    fontSize: 10,
+    fontFamily: "DMSans-Medium",
+    color: "rgba(255, 255, 255, 0.58)",
+  },
 
   // Card Actions
   cardActions: {
+    gap: 8,
+  },
+  secondaryActions: {
     flexDirection: "row",
     gap: 8,
   },
   cardActionBtn: {
-    flex: 1,
-    height: 36,
+    minHeight: 48,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
+    gap: 3,
+  },
+  secondaryActionBtn: {
+    flex: 1,
+  },
+  actionLabel: {
+    fontSize: 10,
+    fontFamily: "DMSans-Bold",
+    textAlign: "center",
+  },
+  unmatchActionLabel: {
+    color: ACCENT_PINK,
+  },
+  reportActionLabel: {
+    color: "#FFB4B4",
+  },
+  messageActionLabel: {
+    color: WHITE,
   },
   unmatchBtn: {
     backgroundColor: "rgba(239, 62, 120, 0.15)",
     borderWidth: 1,
     borderColor: "rgba(239, 62, 120, 0.3)",
   },
+  reportBtn: {
+    backgroundColor: "rgba(255, 180, 180, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 180, 180, 0.28)",
+  },
   messageBtn: {
+    width: "100%",
     backgroundColor: ACCENT_PINK,
     ...Platform.select({
       ios: {

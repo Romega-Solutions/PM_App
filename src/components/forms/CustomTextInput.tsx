@@ -34,6 +34,7 @@ interface CustomTextInputProps
   LeftIcon?: LucideIcon;
   RightIcon?: LucideIcon;
   onRightIconPress?: () => void;
+  rightIconAccessibilityLabel?: string;
   secureTextEntry?: boolean;
   keyboardType?: KeyboardTypeOptions;
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
@@ -94,6 +95,7 @@ export default function CustomTextInput({
   LeftIcon,
   RightIcon,
   onRightIconPress,
+  rightIconAccessibilityLabel,
   secureTextEntry = false,
   keyboardType = "default",
   autoCapitalize = "sentences",
@@ -109,6 +111,7 @@ export default function CustomTextInput({
 }: CustomTextInputProps) {
   const [focused, setFocused] = useState(false);
   const hasValue = !!value?.length;
+  const inputAccessibilityLabel = label ?? placeholder ?? "Text input";
 
   // Fixed: Remove type annotations to let TypeScript infer
   const handleFocus = (e: any) => {
@@ -158,12 +161,20 @@ export default function CustomTextInput({
           onFocus={handleFocus}
           onBlur={handleBlur}
           selectionColor={`${semanticColors.secondary}E6`} // 90% opacity
+          accessibilityLabel={inputAccessibilityLabel}
+          accessibilityHint={error ? `Error: ${error}` : undefined}
+          accessibilityState={{ disabled: props.editable === false }}
+          maxFontSizeMultiplier={1.3}
           {...props}
         />
 
         {/* Left icon */}
         {LeftIcon ? (
-          <View style={styles.leftIconWrap}>
+          <View
+            style={styles.leftIconWrap}
+            accessible={false}
+            importantForAccessibility="no"
+          >
             <LeftIcon
               size={moderateScale(20)}
               color={`${semanticColors.primary}B3`} // 70% opacity
@@ -177,9 +188,16 @@ export default function CustomTextInput({
           <TouchableOpacity
             onPress={onRightIconPress}
             style={styles.rightIconWrap}
+            disabled={!onRightIconPress}
             accessible
             accessibilityRole="button"
-            accessibilityLabel="Toggle input option"
+            accessibilityLabel={
+              rightIconAccessibilityLabel ??
+              (label ? `Toggle ${label}` : "Toggle input option")
+            }
+            accessibilityHint="Changes the input visibility or option."
+            accessibilityState={{ disabled: !onRightIconPress }}
+            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
           >
             <RightIcon
               size={moderateScale(20)}
@@ -191,7 +209,15 @@ export default function CustomTextInput({
       </View>
 
       {/* Error text */}
-      {error ? <Text style={[styles.error, errorStyle]}>{error}</Text> : null}
+      {error ? (
+        <Text
+          style={[styles.error, errorStyle]}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -205,7 +231,7 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(15),
     color: colors.neutral.white,
     marginBottom: theme.spacing.sm,
-    letterSpacing: Platform.select({ ios: 0.3, android: 0.2, web: 0.3 }),
+    letterSpacing: 0,
     fontFamily: theme.fontFamilies.body.semiBold,
   },
 
@@ -226,7 +252,7 @@ const styles = StyleSheet.create({
       web: moderateScale(52),
     }),
     fontFamily: theme.fontFamilies.body.regular,
-    letterSpacing: Platform.select({ ios: 0.2, android: 0.15, web: 0.2 }),
+    letterSpacing: 0,
   },
 
   leftIconWrap: {
@@ -245,6 +271,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: "center",
     alignItems: "center",
+    minWidth: 44,
+    minHeight: 44,
     padding: moderateScale(4),
   },
 
@@ -254,6 +282,6 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.xs,
     marginLeft: moderateScale(4),
     fontFamily: theme.fontFamilies.body.regular,
-    letterSpacing: Platform.select({ ios: 0.2, android: 0.15, web: 0.2 }),
+    letterSpacing: 0,
   },
 });

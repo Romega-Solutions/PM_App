@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { getCurrentUserProfile, ProfileData } from "../api/profileApi";
 
+const PROFILE_LOAD_ERROR =
+  "Profile could not be loaded. Check your connection and try again.";
+
 export function useProfile(autoLoad = true) {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(autoLoad);
@@ -16,11 +19,11 @@ export function useProfile(autoLoad = true) {
       if (data) {
         setProfile(data);
       } else {
-        setError(new Error("Failed to load profile"));
+        setError(new Error(PROFILE_LOAD_ERROR));
       }
     } catch (err) {
-      console.error("❌ Error loading profile:", err);
-      setError(err instanceof Error ? err : new Error("Unknown error"));
+      console.error("Error loading profile.");
+      setError(new Error(PROFILE_LOAD_ERROR));
     } finally {
       setLoading(false);
     }

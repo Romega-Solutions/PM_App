@@ -1,13 +1,11 @@
 import AuthHeader from "@/src/components/auth/AuthHeader";
 import AuthLayout from "@/src/components/auth/AuthLayout";
 import SignUpPrompt from "@/src/components/auth/SignUpPrompt";
-import SocialSignInButton from "@/src/components/auth/SocialSignInButton";
 import CustomTextInput from "@/src/components/forms/CustomTextInput";
-import FormDivider from "@/src/components/forms/FormDivider";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import { semanticColors, theme } from "@/src/theme";
 import { useRouter } from "expo-router";
-import { Eye, EyeOff, Lock, Mail } from "lucide-react-native";
+import { Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   Alert,
@@ -77,14 +75,11 @@ export default function SignInScreen() {
     } catch (error) {
       Alert.alert(
         "Sign In Failed",
-        error instanceof Error ? error.message : "An error occurred"
+        error instanceof Error
+          ? error.message
+          : "Sign in failed. Check your connection and try again.",
       );
     }
-  };
-
-  // Handle Google sign in (placeholder)
-  const handleGoogleSignIn = async () => {
-    Alert.alert("Coming Soon", "Google sign-in will be available soon!");
   };
 
   // Handle forgot password
@@ -96,8 +91,8 @@ export default function SignInScreen() {
     <AuthLayout showBackButton>
       {/* Header */}
       <AuthHeader
-        title="Welcome Back"
-        subtitle="Continue your journey to find love"
+        title="Welcome back"
+        subtitle="Sign in to continue your profile setup, verification, and match access."
         showLogo={true}
       />
 
@@ -131,10 +126,29 @@ export default function SignInScreen() {
           LeftIcon={Lock}
           RightIcon={showPassword ? EyeOff : Eye}
           onRightIconPress={() => setShowPassword(!showPassword)}
+          rightIconAccessibilityLabel={
+            showPassword ? "Hide password" : "Show password"
+          }
           secureTextEntry={!showPassword}
           autoComplete="current-password"
           error={passwordError}
         />
+
+        <View
+          style={styles.trustCard}
+          accessible
+          accessibilityLabel="Account safety note. PinayMate keeps sign in focused on verified profiles and launch-stage safety checks."
+        >
+          <ShieldCheck
+            size={18}
+            color={theme.colors.amihan[300]}
+            strokeWidth={2.4}
+          />
+          <Text style={styles.trustCardText}>
+            We keep sign in focused on verified profiles, safety review, and
+            clear account recovery before matching access.
+          </Text>
+        </View>
 
         {/* Forgot Password Link */}
         <TouchableOpacity
@@ -143,6 +157,7 @@ export default function SignInScreen() {
           accessible
           accessibilityRole="button"
           accessibilityLabel="Forgot password"
+          accessibilityHint="Opens account recovery for your PinayMate email"
         >
           <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
         </TouchableOpacity>
@@ -155,16 +170,11 @@ export default function SignInScreen() {
           showChevron={true}
         />
 
-        {/* Divider */}
-        <FormDivider text="Or continue with" />
-
-        {/* Social Sign In */}
-        <SocialSignInButton provider="google" onPress={handleGoogleSignIn} />
-
         {/* Sign Up Prompt */}
         <SignUpPrompt
           questionText="New to PinayMate?"
           actionText="Create Account"
+          onPress={() => router.push("/(auth)/user-type-selection")}
         />
       </View>
     </AuthLayout>
@@ -175,10 +185,30 @@ const styles = StyleSheet.create({
   formContainer: {
     paddingHorizontal: theme.spacing.lg,
   },
+  trustCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(141,105,246,0.24)",
+    backgroundColor: "rgba(141,105,246,0.1)",
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+  },
+  trustCardText: {
+    flex: 1,
+    color: "rgba(255,255,255,0.78)",
+    fontSize: moderateScale(13),
+    lineHeight: moderateScale(19),
+    fontFamily: theme.fontFamilies.body.regular,
+  },
   forgotPasswordContainer: {
     alignSelf: "flex-end",
     marginBottom: theme.spacing.xl,
-    paddingVertical: moderateScale(4),
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: moderateScale(4),
   },
   forgotPasswordText: {
     color: semanticColors.primary,

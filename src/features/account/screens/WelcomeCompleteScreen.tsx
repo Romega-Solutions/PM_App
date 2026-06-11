@@ -65,8 +65,14 @@ export default function WelcomeCompleteScreen() {
           styles.root,
           { justifyContent: "center", alignItems: "center" },
         ]}
+        accessible
+        accessibilityLabel="Loading your completed profile summary"
       >
-        <ActivityIndicator size="large" color={ACCENT_PINK} />
+        <ActivityIndicator
+          size="large"
+          color={ACCENT_PINK}
+          accessibilityLabel="Loading completed profile summary"
+        />
         <Text style={styles.loadingText}>Loading your profile...</Text>
       </View>
     );
@@ -129,6 +135,8 @@ export default function WelcomeCompleteScreen() {
             source={require("@/assets/logo-no-bg.png")}
             style={styles.logo}
             resizeMode="contain"
+            accessible
+            accessibilityLabel="PinayMate logo"
           />
         </View>
 
@@ -140,8 +148,10 @@ export default function WelcomeCompleteScreen() {
             <Sparkles size={24} color={GOLD} fill={GOLD} />
           </View>
           <Text style={styles.welcomeSubtitle}>
-            Your profile is{" "}
-            {isVerified ? "complete and ready to shine!" : "almost complete!"}
+            Your setup is{" "}
+            {isVerified
+              ? "ready for launch-stage discovery, with verification approved."
+              : "ready for launch-stage discovery, with verification still pending or not approved."}
           </Text>
         </View>
 
@@ -154,13 +164,19 @@ export default function WelcomeCompleteScreen() {
                   <Image
                     source={{ uri: photos[0] }}
                     style={StyleSheet.absoluteFill}
+                    accessible
+                    accessibilityLabel={`${firstName}'s profile photo`}
                   />
                 ) : (
                   <User size={32} color={ACCENT_PINK} strokeWidth={2.5} />
                 )}
               </View>
               {photoCount > 0 && (
-                <View style={styles.photoBadge}>
+                <View
+                  style={styles.photoBadge}
+                  accessible={false}
+                  importantForAccessibility="no"
+                >
                   <Camera size={12} color={WHITE} strokeWidth={2.5} />
                 </View>
               )}
@@ -173,12 +189,20 @@ export default function WelcomeCompleteScreen() {
               <View style={styles.profileAgeRow}>
                 <Text style={styles.profileAge}>{age} years old</Text>
                 {isVerified ? (
-                  <View style={styles.verifiedBadge}>
+                  <View
+                    style={styles.verifiedBadge}
+                    accessible
+                    accessibilityLabel="Verification approved after review"
+                  >
                     <ShieldCheck size={12} color={WHITE} strokeWidth={2.5} />
                     <Text style={styles.verifiedText}>VERIFIED</Text>
                   </View>
                 ) : (
-                  <View style={styles.unverifiedBadge}>
+                  <View
+                    style={styles.unverifiedBadge}
+                    accessible
+                    accessibilityLabel="Verification not approved yet"
+                  >
                     <AlertCircle size={12} color={WHITE} strokeWidth={2.5} />
                     <Text style={styles.unverifiedText}>UNVERIFIED</Text>
                   </View>
@@ -236,13 +260,18 @@ export default function WelcomeCompleteScreen() {
 
         {/* Verification Warning (if not verified) */}
         {!isVerified && (
-          <View style={styles.warningBanner}>
+          <View
+            style={styles.warningBanner}
+            accessible
+            accessibilityLabel="Verification not approved yet. You can continue using launch-stage features and submit verification again from Settings when available."
+          >
             <AlertCircle size={20} color={WARNING_YELLOW} strokeWidth={2.5} />
             <View style={styles.warningTextContainer}>
-              <Text style={styles.warningTitle}>Profile Not Verified</Text>
+              <Text style={styles.warningTitle}>Verification not approved yet</Text>
               <Text style={styles.warningSubtitle}>
-                Verified profiles get more visibility and trust. You can verify
-                anytime in Settings.
+                You can continue using launch-stage features and return to
+                verification from Settings when available. A verified badge is
+                a reviewed signal, not a guarantee that someone is safe.
               </Text>
             </View>
           </View>
@@ -250,25 +279,68 @@ export default function WelcomeCompleteScreen() {
 
         {/* Success Banner (if verified) */}
         {isVerified && (
-          <View style={styles.successBanner}>
+          <View
+            style={styles.successBanner}
+            accessible
+            accessibilityLabel="Profile basics complete. Your profile can be considered for early discovery when matching is available for your test group."
+          >
             <Sparkles size={20} color={SUCCESS_GREEN} fill={SUCCESS_GREEN} />
             <View style={styles.successTextContainer}>
-              <Text style={styles.successTitle}>Profile Complete!</Text>
+              <Text style={styles.successTitle}>Profile basics complete</Text>
               <Text style={styles.successSubtitle}>
-                You're all set to start connecting with amazing Filipino singles
-                worldwide!
+                Your profile can be considered for early discovery when
+                matching is available for your test group.
               </Text>
             </View>
           </View>
         )}
 
+        <View
+          style={styles.readinessPanel}
+          accessible
+          accessibilityLabel="Launch-stage profile ready. Your profile has the basics needed for early-access discovery when matching is available. This does not guarantee visibility, matches, verification, or paid feature access."
+        >
+          <Text style={styles.readinessEyebrow}>
+            Launch-stage profile ready
+          </Text>
+          <Text style={styles.readinessTitle}>
+            Your profile now has the basics needed to be considered for
+            early-access discovery when matching is available. This does not
+            guarantee profile visibility, a match, a verified badge, or paid
+            feature access. It also does not guarantee profile visibility,
+            verified badge, or paid feature access.
+          </Text>
+          <View style={styles.readinessGrid}>
+            <View style={styles.readinessItem}>
+              <View style={styles.readinessIcon}>
+                <User size={16} color={ACCENT_PINK} strokeWidth={2.4} />
+              </View>
+              <Text style={styles.readinessLabel}>Profile</Text>
+            </View>
+            <View style={styles.readinessItem}>
+              <View style={styles.readinessIcon}>
+                <Heart size={16} color={ACCENT_PINK} strokeWidth={2.4} />
+              </View>
+              <Text style={styles.readinessLabel}>Intent</Text>
+            </View>
+            <View style={styles.readinessItem}>
+              <View style={styles.readinessIcon}>
+                <ShieldCheck size={16} color={ACCENT_PINK} strokeWidth={2.4} />
+              </View>
+              <Text style={styles.readinessLabel}>Trust</Text>
+            </View>
+          </View>
+        </View>
+
         {/* Stats */}
         <View style={styles.statsContainer}>
           <Text style={styles.statsText}>
-            Join 50,000+ verified Filipino singles
+            Early PinayMate members can review intent, profile detail, and
+            trust signals before making match decisions.
           </Text>
           <Text style={styles.statsSubtext}>
-            Ready to find meaningful connections
+            Continue into the app to review settings, report concerns, block
+            contact when needed, and use your own judgment before meeting.
           </Text>
         </View>
       </ScrollView>
@@ -280,8 +352,18 @@ export default function WelcomeCompleteScreen() {
           { paddingBottom: Math.max(insets.bottom + 16, 32) },
         ]}
       >
-        <PrimaryButton title="Start Dating" onPress={handleStartDating} />
-        <GhostButton title="Explore the App First" onPress={handleExploreApp} />
+        <PrimaryButton
+          title="Enter launch-stage app"
+          onPress={handleStartDating}
+          accessibilityLabel="Enter the launch-stage app"
+          accessibilityHint="Opens the main app while matching and paid feature availability remain launch-stage"
+        />
+        <GhostButton
+          title="Review settings first"
+          onPress={handleExploreApp}
+          accessibilityLabel="Review safety and settings before matching"
+          accessibilityHint="Opens the main app so you can review settings, reporting, and blocking controls before making match decisions"
+        />
       </View>
     </View>
   );
@@ -437,6 +519,58 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "rgba(16,185,129,0.3)",
     gap: 12,
+  },
+  readinessPanel: {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 22,
+    padding: 20,
+    marginBottom: 22,
+    borderWidth: 1,
+    borderColor: "rgba(239,62,120,0.22)",
+  },
+  readinessEyebrow: {
+    fontSize: 12,
+    fontFamily: theme.fontFamilies.body?.semiBold,
+    color: ACCENT_PINK,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+  readinessTitle: {
+    fontSize: 17,
+    fontFamily: theme.fontFamilies.body?.semiBold,
+    color: WHITE,
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  readinessGrid: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  readinessItem: {
+    flex: 1,
+    minHeight: 72,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 8,
+  },
+  readinessIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(239,62,120,0.14)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  readinessLabel: {
+    fontSize: 13,
+    fontFamily: theme.fontFamilies.body?.semiBold,
+    color: "rgba(255,255,255,0.86)",
+    textAlign: "center",
   },
   successTextContainer: { flex: 1 },
   successTitle: {

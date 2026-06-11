@@ -1,6 +1,36 @@
 import { authApi, SignUpMetadata } from "@/src/features/auth/api/authApi";
 import { useState } from "react";
 
+function getSafeSignUpError(err: unknown): string {
+  const message = err instanceof Error ? err.message.toLowerCase() : "";
+
+  if (message.includes("user type is required")) {
+    return "Choose your account type before creating a profile.";
+  }
+
+  if (message.includes("first name is required")) {
+    return "First name is required.";
+  }
+
+  if (
+    message.includes("already") ||
+    message.includes("registered") ||
+    message.includes("exists")
+  ) {
+    return "An account may already use this email. Try signing in or resetting your password.";
+  }
+
+  if (message.includes("password")) {
+    return "Use a stronger password and try again.";
+  }
+
+  if (message.includes("rate") || message.includes("too many")) {
+    return "Too many attempts. Please wait a moment and try again.";
+  }
+
+  return "We could not create your account. Check your connection and try again.";
+}
+
 export const useSignUp = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -8,7 +38,7 @@ export const useSignUp = () => {
   const signUp = async (
     email: string,
     password: string,
-    metadata: SignUpMetadata
+    metadata: SignUpMetadata,
   ) => {
     try {
       setLoading(true);
@@ -23,23 +53,15 @@ export const useSignUp = () => {
         throw new Error("First name is required");
       }
 
-      console.log("🚀 Signing up with metadata:", metadata);
-
       const result = await authApi.signUp(email, password, metadata);
-
-      console.log("✅ Signup successful:", {
-        email: result.user.email,
-        userType: result.user.metadata.userType,
-        firstName: result.user.metadata.firstName,
-      });
 
       // Return result with metadata preserved
       return result;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Sign up failed";
+      const message = getSafeSignUpError(err);
       setError(message);
-      console.error("❌ Signup error:", message);
-      throw err;
+      console.error("Signup failed.");
+      throw new Error(message);
     } finally {
       setLoading(false);
     }

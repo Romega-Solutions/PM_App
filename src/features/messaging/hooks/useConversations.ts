@@ -19,6 +19,9 @@ import { useCallback, useEffect, useState } from "react";
 import { getConversationsForUser } from "../api/conversations.api";
 import type { ConversationWithUser } from "../types/messaging.types";
 
+const CONVERSATIONS_LOAD_ERROR =
+  "Conversations could not be loaded. Check your connection and try again.";
+
 interface UseConversationsProps {
   userId: string;
   autoLoad?: boolean;
@@ -41,8 +44,7 @@ export function useConversations({
   const [error, setError] = useState<Error | null>(null);
 
   // Global state from Zustand
-  const { activeConversations, setActiveConversations, totalUnreadCount } =
-    useChatStore();
+  const { setActiveConversations, totalUnreadCount } = useChatStore();
 
   // Use local state for conversations (feature-specific)
   const [conversations, setConversations] = useState<ConversationWithUser[]>(
@@ -56,19 +58,9 @@ export function useConversations({
     setError(null);
 
     try {
-      console.log(
-        `🔄 useConversations: Loading conversations for user ${userId}`,
-      );
       const { data, error: fetchError } = await getConversationsForUser(userId);
 
       if (fetchError) throw fetchError;
-
-      console.log(
-        `✅ useConversations: Loaded ${data?.length || 0} conversations`,
-      );
-      if (data && data.length > 0) {
-        console.log(`📋 First conversation:`, JSON.stringify(data[0], null, 2));
-      }
 
       // Update local state
       setConversations(data || []);
@@ -88,14 +80,12 @@ export function useConversations({
         setActiveConversations(activeConvs);
       }
     } catch (err) {
-      console.error("❌ Error loading conversations:", err);
-      setError(
-        err instanceof Error ? err : new Error("Failed to load conversations"),
-      );
+      console.error("Failed to load conversations.");
+      setError(new Error(CONVERSATIONS_LOAD_ERROR));
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [setActiveConversations, userId]);
 
   const refresh = useCallback(async () => {
     await loadConversations();

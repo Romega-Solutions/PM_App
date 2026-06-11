@@ -7,7 +7,7 @@ import type { UserType } from "@/src/features/auth/api/authApi";
 import { theme } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { MapPin, Search } from "lucide-react-native";
+import { AlertCircle, MapPin, Search } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -21,7 +21,13 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { accountApi, SavedLocation } from "../api/accountApi";
-import { useLocationSearch } from "../hooks/useLocationSearch";
+import {
+  getManualLocationFromQuery,
+  useLocationSearch,
+} from "../hooks/useLocationSearch";
+
+const formatLocationLabel = (location: { city: string; country?: string }) =>
+  location.country ? `${location.city}, ${location.country}` : location.city;
 
 export default function LocationScreen() {
   const router = useRouter();
@@ -31,10 +37,21 @@ export default function LocationScreen() {
   // Get userType from params
   const userType = params.userType as UserType;
 
-  const { query, setQuery, filteredLocations } = useLocationSearch();
+  const {
+    query,
+    setQuery,
+    filteredLocations,
+    getCurrentLocation,
+    saving: locating,
+  } = useLocationSearch();
 
   const [selectedLocation, setSelectedLocation] = useState<string>("");
+  const [selectedCoordinates, setSelectedCoordinates] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [useCurrentLocation, setUseCurrentLocation] = useState(false);
+  const [locationNotice, setLocationNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Redirect if no userType
@@ -45,37 +62,80 @@ export default function LocationScreen() {
     }
   }, [userType, router]);
 
-  const handleUseCurrentLocation = useCallback(() => {
-    setUseCurrentLocation(true);
-    setSelectedLocation("Current Location");
-    Alert.alert(
-      "Location Access",
-      "We'll use your current location to find matches nearby.",
-      [{ text: "OK" }]
-    );
-  }, []);
+  const handleUseCurrentLocation = useCallback(async () => {
+    try {
+      const currentLocation = await getCurrentLocation();
+      if (!currentLocation) return;
 
-  // ✅ Fixed: Accept location object instead of string
-  const handleSelect = useCallback(
-    (location: { city: string; country: string }) => {
-      setUseCurrentLocation(false);
-      const locationString = `${location.city}, ${location.country}`;
+      const locationString = currentLocation.country
+        ? `${currentLocation.city}, ${currentLocation.country}`
+        : currentLocation.city;
+
+      setUseCurrentLocation(true);
       setSelectedLocation(locationString);
+      setSelectedCoordinates(currentLocation.coordinates ?? null);
+      setLocationNotice(null);
+      setQuery("");
+    } catch (err) {
+      setUseCurrentLocation(false);
+      setLocationNotice(
+        err instanceof Error
+          ? err.message
+          : "We could not get your current location. Type your city manually to continue.",
+      );
+      Alert.alert(
+        "Location unavailable",
+        err instanceof Error
+          ? err.message
+          : "We could not get your current location. Type your city manually to continue.",
+      );
+    }
+  }, [getCurrentLocation, setQuery]);
+
+  const handleSelect = useCallback(
+    (location: {
+      city: string;
+      country: string;
+      coordinates?: { lat: number; lng: number };
+    }) => {
+      setUseCurrentLocation(false);
+      const locationString = formatLocationLabel(location);
+      setSelectedLocation(locationString);
+      setSelectedCoordinates(location.coordinates ?? null);
+      setLocationNotice(
+        location.coordinates
+          ? null
+          : "Saved as a manual city. PinayMate will not treat this as exact GPS.",
+      );
       setQuery("");
     },
-    [setQuery]
+    [setQuery],
   );
 
-  const isValid = () => selectedLocation !== "" || useCurrentLocation;
+  const hasSelectedLocation = selectedLocation !== "" || useCurrentLocation;
+  const manualLocation = getManualLocationFromQuery(query);
+  const manualLocationLabel = manualLocation
+    ? formatLocationLabel(manualLocation)
+    : "";
+  const hasExactManualMatch =
+    !!manualLocationLabel &&
+    filteredLocations.some(
+      (loc) =>
+        formatLocationLabel(loc).toLowerCase() ===
+        manualLocationLabel.toLowerCase(),
+    );
+  const selectedLocationPrivacyLabel = useCurrentLocation
+    ? "Current location selected. Approximate coordinates may be saved for matching preferences."
+    : "Manual city selected. PinayMate will not treat this as exact GPS.";
 
   const handleNext = useCallback(async () => {
-    if (!isValid()) return;
+    if (!hasSelectedLocation) return;
     setSaving(true);
     try {
       const payload: SavedLocation = {
         locationType: useCurrentLocation ? "current" : "manual",
         locationName: selectedLocation,
-        coordinates: null,
+        coordinates: selectedCoordinates,
         timestamp: new Date().toISOString(),
       };
       await accountApi.saveLocation(payload);
@@ -86,12 +146,19 @@ export default function LocationScreen() {
     } catch (err) {
       Alert.alert(
         "Save failed",
-        err instanceof Error ? err.message : "Unexpected error"
+        err instanceof Error ? err.message : "Unexpected error",
       );
     } finally {
       setSaving(false);
     }
-  }, [selectedLocation, useCurrentLocation, router, userType]);
+  }, [
+    selectedLocation,
+    selectedCoordinates,
+    hasSelectedLocation,
+    useCurrentLocation,
+    router,
+    userType,
+  ]);
 
   // Don't render if userType is invalid
   if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
@@ -134,7 +201,8 @@ export default function LocationScreen() {
             <AccountProgress steps={5} activeIndex={2} />
             <Text style={styles.title}>Where are you located?</Text>
             <Text style={styles.subtitle}>
-              This helps us find matches near you
+              City-level location is enough to continue. Exact GPS is optional
+              and can be denied.
             </Text>
           </View>
 
@@ -145,6 +213,25 @@ export default function LocationScreen() {
               selected={useCurrentLocation}
               onPress={handleUseCurrentLocation}
             />
+
+            <View style={styles.privacyNote}>
+              <MapPin size={16} color="rgba(255,255,255,0.82)" />
+              <Text style={styles.privacyNoteText}>
+                If permission fails or you prefer not to share GPS, type your
+                city below and use the manual result.
+              </Text>
+            </View>
+
+            {locationNotice ? (
+              <View
+                style={styles.noticeBox}
+                accessibilityRole="alert"
+                accessibilityLabel={`Location notice. ${locationNotice}`}
+              >
+                <AlertCircle size={16} color="#F59E0B" strokeWidth={2.4} />
+                <Text style={styles.noticeText}>{locationNotice}</Text>
+              </View>
+            ) : null}
 
             <View style={styles.dividerRow}>
               <View style={styles.dividerLine} />
@@ -164,18 +251,34 @@ export default function LocationScreen() {
 
             <View style={{ marginTop: 10 }}>
               {query.trim() !== "" ? (
-                <LocationsList
-                  // ✅ Fixed: Map Location objects to strings
-                  locations={filteredLocations.map(
-                    (loc) => `${loc.city}, ${loc.country}`
-                  )}
-                  // ✅ Fixed: Parse string back to location object
-                  onSelect={(locStr) => {
-                    const [city, country] = locStr.split(", ");
-                    handleSelect({ city, country });
-                  }}
-                  emptyLabel="No cities found. Try a different search."
-                />
+                <View style={styles.searchResults}>
+                  <LocationsList
+                    locations={filteredLocations.map(formatLocationLabel)}
+                    onSelect={(locStr) => {
+                      const fallbackParts = locStr.split(", ");
+                      const location = filteredLocations.find(
+                        (loc) => formatLocationLabel(loc) === locStr,
+                      ) ?? {
+                        city: fallbackParts[0] ?? locStr,
+                        country: fallbackParts[1] ?? "",
+                      };
+                      handleSelect(location);
+                    }}
+                    emptyLabel="No curated city match yet."
+                  />
+
+                  {manualLocation && !hasExactManualMatch ? (
+                    <View style={styles.manualLocationWrap}>
+                      <Text style={styles.manualLocationHint}>
+                        Not listed? Save your typed city manually.
+                      </Text>
+                      <LocationItem
+                        label={`Use "${manualLocationLabel}"`}
+                        onPress={() => handleSelect(manualLocation)}
+                      />
+                    </View>
+                  ) : null}
+                </View>
               ) : (
                 <View style={styles.emptyState}>
                   <MapPin
@@ -185,17 +288,26 @@ export default function LocationScreen() {
                   />
                   <Text style={styles.emptyTitle}>Start typing to search</Text>
                   <Text style={styles.emptySubtitle}>
-                    Enter the name of your city or use your current location
-                    above
+                    Enter any city name. If it is not listed, you can still save
+                    it manually.
                   </Text>
                 </View>
               )}
             </View>
 
-            {selectedLocation && !useCurrentLocation && (
-              <View style={styles.selectedBox}>
+            {selectedLocation && (
+              <View
+                style={styles.selectedBox}
+                accessible
+                accessibilityLabel={`Selected location: ${selectedLocation}. ${selectedLocationPrivacyLabel}`}
+              >
                 <MapPin size={18} color="#EF3E78" />
-                <Text style={styles.selectedText}>{selectedLocation}</Text>
+                <View style={styles.selectedCopy}>
+                  <Text style={styles.selectedText}>{selectedLocation}</Text>
+                  <Text style={styles.selectedPrivacyText}>
+                    {selectedLocationPrivacyLabel}
+                  </Text>
+                </View>
               </View>
             )}
           </View>
@@ -210,8 +322,8 @@ export default function LocationScreen() {
           <PrimaryButton
             title="Continue"
             onPress={handleNext}
-            disabled={!isValid() || saving}
-            loading={saving}
+            disabled={!hasSelectedLocation || saving || locating}
+            loading={saving || locating}
             accessibilityLabel="Continue to next step"
           />
         </View>
@@ -246,6 +358,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   form: { gap: 12 },
+  privacyNote: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+  },
+  privacyNoteText: {
+    flex: 1,
+    color: "rgba(255,255,255,0.78)",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  noticeBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: "rgba(245,158,11,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(245,158,11,0.32)",
+  },
+  noticeText: {
+    flex: 1,
+    color: "rgba(255,255,255,0.86)",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  searchResults: { gap: 12 },
+  manualLocationWrap: { gap: 8 },
+  manualLocationHint: {
+    color: "rgba(255,255,255,0.68)",
+    fontSize: 13,
+    lineHeight: 18,
+  },
   dividerRow: { flexDirection: "row", alignItems: "center", marginVertical: 8 },
   dividerLine: {
     flex: 1,
@@ -288,10 +439,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   selectedText: {
-    flex: 1,
     fontSize: 15,
     color: "#FFF",
     fontWeight: "600",
+  },
+  selectedCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  selectedPrivacyText: {
+    color: "rgba(255,255,255,0.68)",
+    fontSize: 12,
+    lineHeight: 17,
   },
   footer: {
     paddingHorizontal: theme.spacing.lg ?? 24,

@@ -1,0 +1,5 @@
+[functions.ocr]
+verify_jwt = true
+
+[functions.waitlist-signup]
+verify_jwt = false

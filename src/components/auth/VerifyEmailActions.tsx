@@ -16,7 +16,6 @@ interface Props {
   onOpenEmailApp: () => void;
   onResend: () => void;
   onBackToSignIn: () => void;
-  onSkipToAccountSetup?: () => void;
 }
 
 export default function VerifyEmailActions({
@@ -24,7 +23,6 @@ export default function VerifyEmailActions({
   onOpenEmailApp,
   onResend,
   onBackToSignIn,
-  onSkipToAccountSetup,
 }: Props) {
   return (
     <View style={styles.container}>
@@ -34,6 +32,7 @@ export default function VerifyEmailActions({
         activeOpacity={0.86}
         accessibilityRole="button"
         accessibilityLabel="Open Email App"
+        accessibilityHint="Opens your email app so you can tap the latest PinayMate verification link"
       >
         <LinearGradient
           colors={["#EF3E78", "#8D69F6"]}
@@ -50,25 +49,15 @@ export default function VerifyEmailActions({
         variant="white"
         onPress={onResend}
         accessibilityLabel="Resend Verification Email"
+        accessibilityHint="Sends a new verification link to your signup email"
       />
-
-      {/* Skip to Account Setup Button */}
-      {onSkipToAccountSetup && (
-        <TouchableOpacity
-          style={styles.skipBtn}
-          onPress={onSkipToAccountSetup}
-          activeOpacity={0.86}
-          accessibilityRole="button"
-          accessibilityLabel="Skip to Account Setup"
-        >
-          <Text style={styles.skipBtnText}>⚡ Skip & Continue Setup</Text>
-        </TouchableOpacity>
-      )}
 
       <TouchableOpacity
         onPress={onBackToSignIn}
         style={styles.backLink}
         accessibilityRole="button"
+        accessibilityLabel="Back to sign in"
+        accessibilityHint="Returns to sign in if your email is already verified"
       >
         <Text style={styles.backText}>Back to Sign In</Text>
       </TouchableOpacity>
@@ -99,23 +88,11 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontFamily: theme.fontFamilies.body.bold,
   },
-  skipBtn: {
-    height: Platform.select({ ios: 56, android: 52 }),
-    borderRadius: 28,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(141, 105, 246, 0.25)",
-    borderWidth: 2,
-    borderColor: "rgba(141, 105, 246, 0.6)",
-  },
-  skipBtnText: {
-    color: "#8D69F6",
-    fontSize: 16,
-    fontFamily: theme.fontFamilies.body.bold,
-  },
   backLink: {
+    minHeight: 44,
     paddingVertical: 12,
     alignItems: "center",
+    justifyContent: "center",
   },
   backText: {
     color: "rgba(255,255,255,0.8)",

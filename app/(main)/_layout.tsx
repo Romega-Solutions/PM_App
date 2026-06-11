@@ -1,68 +1,107 @@
-// app/(tabs)/_layout.tsx
-import { Tabs } from "expo-router";
+// app/(main)/_layout.tsx
+import { useRequireAuth } from "@/src/hooks/useAuthPersistence";
+import { Redirect, Tabs } from "expo-router";
 import { Heart, Home, MessageCircle, User } from "lucide-react-native";
 import React from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Brand Colors
 const BRAND_BG = "#0F0814";
 const TAB_BAR_BG = "#1A0F1F"; // Slightly lighter than brand bg
-const ACCENT_PURPLE = "#8D69F6";
 const ACCENT_PINK = "#EF3E78";
-const INACTIVE_TINT = "rgba(255, 255, 255, 0.5)";
+const INACTIVE_TINT = "rgba(255, 255, 255, 0.62)";
+const TAB_BORDER = "rgba(255, 255, 255, 0.1)";
+const ACTIVE_TAB_SURFACE = "rgba(239, 62, 120, 0.18)";
 
 // Platform-specific constants
-const TAB_BAR_HEIGHT = Platform.OS === "ios" ? 88 : 68;
-const TAB_PADDING_BOTTOM = Platform.OS === "ios" ? 28 : 12;
-const TAB_PADDING_TOP = Platform.OS === "ios" ? 12 : 8;
-const ICON_SIZE = Platform.OS === "ios" ? 24 : 22;
-const LABEL_FONT_SIZE = Platform.OS === "ios" ? 11 : 10;
-const FOCUSED_CONTAINER_WIDTH = Platform.OS === "ios" ? 56 : 52;
-const FOCUSED_CONTAINER_HEIGHT = Platform.OS === "ios" ? 36 : 34;
+const TAB_BAR_HEIGHT = Platform.OS === "ios" ? 86 : 72;
+const TAB_PADDING_TOP = Platform.OS === "ios" ? 10 : 8;
+const ICON_SIZE = 23;
+const LABEL_FONT_SIZE = 11;
+const FOCUSED_CONTAINER_WIDTH = 58;
+const FOCUSED_CONTAINER_HEIGHT = 36;
 
 interface TabIconProps {
   focused: boolean;
-  color: string;
   children: React.ReactNode;
 }
 
-// Reusable Tab Icon Container Component
 const TabIconContainer: React.FC<TabIconProps> = ({
   focused,
-  color,
   children,
 }) => (
   <View
     style={[
       styles.iconContainer,
       {
-        backgroundColor: focused ? "rgba(239, 62, 120, 0.15)" : "transparent",
-        borderWidth: focused ? 1.5 : 0,
-        borderColor: focused ? ACCENT_PINK : "transparent",
+        backgroundColor: focused ? ACTIVE_TAB_SURFACE : "transparent",
+        borderColor: focused ? "rgba(239, 62, 120, 0.64)" : "transparent",
       },
     ]}
   >
-    {children}
     {focused && (
       <View
         style={[
           StyleSheet.absoluteFill,
           {
-            borderRadius: 16,
-            backgroundColor: "rgba(141, 105, 246, 0.08)",
+            borderRadius: 18,
+            backgroundColor: "rgba(255, 255, 255, 0.05)",
           },
         ]}
       />
     )}
+    {children}
   </View>
 );
 
 export default function MainLayout() {
+  const { isAuthenticated, isLoading } = useRequireAuth();
+  const insets = useSafeAreaInsets();
+
+  if (isLoading) {
+    return (
+      <View
+        style={[styles.authGate, { backgroundColor: BRAND_BG }]}
+        accessibilityLiveRegion="polite"
+      >
+        <View style={styles.authGateMark}>
+          <Heart size={30} color={ACCENT_PINK} fill={ACCENT_PINK} />
+        </View>
+        <ActivityIndicator
+          size="large"
+          color={ACCENT_PINK}
+          accessibilityLabel="Checking session"
+        />
+        <Text style={styles.authGateTitle}>Getting PinayMate ready</Text>
+        <Text style={styles.authGateText}>
+          Checking your secure session before opening the app.
+        </Text>
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect href="/(auth)/welcome" />;
+  }
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            height: TAB_BAR_HEIGHT + Math.max(insets.bottom, 10),
+            paddingBottom: Math.max(insets.bottom, 12),
+          },
+        ],
         tabBarActiveTintColor: ACCENT_PINK,
         tabBarInactiveTintColor: INACTIVE_TINT,
         tabBarLabelStyle: styles.tabBarLabel,
@@ -76,8 +115,9 @@ export default function MainLayout() {
         name="index"
         options={{
           title: "Discover",
+          tabBarAccessibilityLabel: "Discover tab. Browse suggested profiles.",
           tabBarIcon: ({ focused, color }) => (
-            <TabIconContainer focused={focused} color={color}>
+            <TabIconContainer focused={focused}>
               <Home
                 size={ICON_SIZE}
                 color={color}
@@ -91,9 +131,10 @@ export default function MainLayout() {
       <Tabs.Screen
         name="likes"
         options={{
-          title: "Likes",
+          title: "Liked You",
+          tabBarAccessibilityLabel: "Liked You tab. See people who liked you.",
           tabBarIcon: ({ focused, color }) => (
-            <TabIconContainer focused={focused} color={color}>
+            <TabIconContainer focused={focused}>
               <Heart
                 size={ICON_SIZE}
                 color={color}
@@ -109,8 +150,9 @@ export default function MainLayout() {
         name="messages"
         options={{
           title: "Messages",
+          tabBarAccessibilityLabel: "Messages tab. Open your conversations.",
           tabBarIcon: ({ focused, color }) => (
-            <TabIconContainer focused={focused} color={color}>
+            <TabIconContainer focused={focused}>
               <MessageCircle
                 size={ICON_SIZE}
                 color={color}
@@ -130,9 +172,11 @@ export default function MainLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
+          title: "You",
+          tabBarAccessibilityLabel:
+            "You tab. Open your profile and account settings.",
           tabBarIcon: ({ focused, color }) => (
-            <TabIconContainer focused={focused} color={color}>
+            <TabIconContainer focused={focused}>
               <User
                 size={ICON_SIZE}
                 color={color}
@@ -187,21 +231,50 @@ export default function MainLayout() {
 }
 
 const styles = StyleSheet.create({
+  authGate: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  authGateMark: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(239, 62, 120, 0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(239, 62, 120, 0.34)",
+    marginBottom: 22,
+  },
+  authGateTitle: {
+    marginTop: 18,
+    color: "#FFFFFF",
+    fontFamily: "DMSans-Bold",
+    fontSize: 18,
+    textAlign: "center",
+  },
+  authGateText: {
+    marginTop: 8,
+    color: "rgba(255, 255, 255, 0.72)",
+    fontFamily: "DMSans-Regular",
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: "center",
+  },
   tabBar: {
     backgroundColor: TAB_BAR_BG,
-    paddingBottom: TAB_PADDING_BOTTOM,
     paddingTop: TAB_PADDING_TOP,
-    height: TAB_BAR_HEIGHT,
     position: "relative",
-    // Gradient border effect
-    borderTopColor: "rgba(141, 105, 246, 0.15)",
+    borderTopColor: TAB_BORDER,
     borderTopWidth: StyleSheet.hairlineWidth,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
+        shadowOffset: { width: 0, height: -6 },
+        shadowOpacity: 0.34,
+        shadowRadius: 18,
       },
       android: {
         elevation: 16,
@@ -212,18 +285,20 @@ const styles = StyleSheet.create({
     fontSize: LABEL_FONT_SIZE,
     fontFamily: "DMSans-SemiBold",
     fontWeight: "600",
-    marginTop: Platform.OS === "ios" ? 6 : 4,
-    letterSpacing: 0.3,
+    marginTop: 5,
+    letterSpacing: 0,
     textTransform: "capitalize",
   },
   tabBarItem: {
-    paddingVertical: Platform.OS === "ios" ? 6 : 4,
-    gap: Platform.OS === "ios" ? 4 : 2,
+    minHeight: 56,
+    paddingVertical: 4,
+    gap: 3,
   },
   iconContainer: {
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 16,
+    borderRadius: 18,
+    borderWidth: 1,
     width: FOCUSED_CONTAINER_WIDTH,
     height: FOCUSED_CONTAINER_HEIGHT,
     ...Platform.select({

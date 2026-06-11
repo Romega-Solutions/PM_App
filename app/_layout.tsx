@@ -1,3 +1,4 @@
+import "@/src/config/consoleGuard";
 import { setupDeepLinking } from "@/src/config/deepLinking";
 import { useAuthPersistence } from "@/src/hooks/useAuthPersistence";
 import { semanticColors } from "@/src/theme";
@@ -55,7 +56,6 @@ export default function RootLayout() {
 
   // Setup deep linking for email verification
   useEffect(() => {
-    console.log("🚀 Initializing deep link handler...");
     const cleanup = setupDeepLinking();
     return cleanup;
   }, []);

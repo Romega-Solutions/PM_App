@@ -19,7 +19,6 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 // Brand Colors
 const ACCENT_PURPLE = "#8D69F6";
-const WHITE = "#FFFFFF";
 const ONLINE_GREEN = "#10B981";
 const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
 
@@ -56,7 +55,9 @@ export const ActiveUserCard: React.FC<ActiveUserCardProps> = ({
     <TouchableOpacity
       style={styles.container}
       accessibilityRole="button"
-      accessibilityLabel={`Chat with ${name}`}
+      accessibilityLabel={`Chat with ${name}, active now`}
+      accessibilityHint="Opens a chat conversation"
+      activeOpacity={0.84}
       onPress={() => onPress(id)}
     >
       <View style={styles.imageContainer}>
@@ -66,6 +67,7 @@ export const ActiveUserCard: React.FC<ActiveUserCardProps> = ({
               source={{ uri: image }}
               style={styles.image}
               resizeMode="cover"
+              accessibilityLabel={`${name} profile photo`}
             />
           ) : (
             <View style={styles.placeholderAvatar}>
@@ -75,7 +77,13 @@ export const ActiveUserCard: React.FC<ActiveUserCardProps> = ({
             </View>
           )}
         </View>
-        {isOnline && <View style={styles.onlineBadge} />}
+        {isOnline && (
+          <View
+            style={styles.onlineBadge}
+            accessible
+            accessibilityLabel={`${name} is active now`}
+          />
+        )}
       </View>
       <Text style={styles.name} numberOfLines={1}>
         {name}

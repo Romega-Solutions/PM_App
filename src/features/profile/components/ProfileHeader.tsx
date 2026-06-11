@@ -30,15 +30,15 @@ const WHITE = "#FFFFFF";
  */
 export interface ProfileHeaderProps {
   /** User's first name */
-  firstName: string;
+  firstName: string | null;
   /** User's last name */
-  lastName: string;
+  lastName: string | null;
   /** User's age */
-  age: number;
+  age: number | null;
   /** User type (filipina or foreigner) */
-  userType: UserType;
+  userType: UserType | null;
   /** User's location */
-  location: string;
+  location: string | null;
   /** Profile photo URI */
   photoUri: string | null;
   /** Whether user is verified */
@@ -59,9 +59,13 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   photoUri,
   isVerified,
 }) => {
-  const formatUserType = (type: UserType): string => {
+  const formatUserType = (type: UserType | null): string | null => {
+    if (!type) return null;
     return type === "filipina" ? "Filipina" : "Foreigner";
   };
+  const displayName = [firstName, lastName].filter(Boolean).join(" ");
+  const userTypeLabel = formatUserType(userType);
+  const hasProfileDetails = age !== null || userTypeLabel !== null;
 
   return (
     <View style={styles.container}>
@@ -72,41 +76,54 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             source={{ uri: photoUri }}
             style={styles.avatar}
             resizeMode="cover"
+            accessibilityLabel="Profile photo"
           />
         ) : (
-          <View style={styles.avatarPlaceholder}>
+          <View
+            style={styles.avatarPlaceholder}
+            accessible
+            accessibilityLabel="No profile photo added"
+          >
             <User size={48} color={ACCENT_PINK} strokeWidth={2} />
           </View>
         )}
       </View>
 
       {/* Name */}
-      <Text style={styles.name}>
-        {firstName} {lastName}
-      </Text>
+      <Text style={styles.name}>{displayName || "Complete your profile"}</Text>
 
       {/* Age and User Type */}
-      <View style={styles.infoRow}>
-        <Text style={styles.infoText}>{age} years old</Text>
-        <View style={styles.infoDot} />
-        <Text style={styles.infoText}>{formatUserType(userType)}</Text>
-      </View>
+      {hasProfileDetails ? (
+        <View style={styles.infoRow}>
+          {age !== null && <Text style={styles.infoText}>{age} years old</Text>}
+          {age !== null && userTypeLabel !== null && (
+            <View style={styles.infoDot} />
+          )}
+          {userTypeLabel !== null && (
+            <Text style={styles.infoText}>{userTypeLabel}</Text>
+          )}
+        </View>
+      ) : (
+        <Text style={styles.infoText}>Profile details not added yet</Text>
+      )}
 
       {/* Location */}
       <View style={styles.locationRow}>
         <MapPin size={16} color={ACCENT_PINK} strokeWidth={2.5} />
-        <Text style={styles.locationText}>{location}</Text>
+        <Text style={styles.locationText}>
+          {location || "Location not added yet"}
+        </Text>
       </View>
 
       {/* Verification Badge */}
       {isVerified ? (
         <View style={styles.verifiedPill}>
           <Sparkles size={12} color={WHITE} strokeWidth={2.5} />
-          <Text style={styles.verifiedText}>VERIFIED</Text>
+          <Text style={styles.verifiedText}>VERIFIED PROFILE</Text>
         </View>
       ) : (
         <View style={styles.unverifiedPill}>
-          <Text style={styles.unverifiedText}>NOT VERIFIED</Text>
+          <Text style={styles.unverifiedText}>VERIFICATION NOT COMPLETED</Text>
         </View>
       )}
     </View>
@@ -148,6 +165,7 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-Bold",
     letterSpacing: 0.5,
     marginBottom: 8,
+    textAlign: "center",
   },
   infoRow: {
     flexDirection: "row",
@@ -159,6 +177,7 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.85)",
     fontSize: 14,
     fontFamily: "DMSans-Medium",
+    textAlign: "center",
   },
   infoDot: {
     width: 4,
@@ -177,6 +196,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "DMSans-Medium",
     letterSpacing: 0.2,
+    textAlign: "center",
+    flexShrink: 1,
   },
   verifiedPill: {
     marginTop: 12,

@@ -1,6 +1,7 @@
 import VerifyEmailActions from "@/src/components/auth/VerifyEmailActions";
 import VerifyEmailHeader from "@/src/components/auth/VerifyEmailHeader";
 import { supabase } from "@/src/config/supabase";
+import { authApi } from "@/src/features/auth/api/authApi";
 import { useSignupStore } from "@/src/stores/signupStore";
 import { useFonts } from "expo-font";
 import { LinearGradient } from "expo-linear-gradient";
@@ -44,16 +45,13 @@ export default function VerifyEmailScreen() {
   // 📦 Load from Zustand if params missing
   useEffect(() => {
     if (!email || !firstName || !userType) {
-      console.log("⚠️ Missing params, loading from Zustand...");
       const storedData = getSignupData();
 
       if (storedData) {
-        console.log("✅ Loaded signup data from Zustand:", storedData);
         setEmail(storedData.email);
         setFirstName(storedData.firstName);
         setUserType(storedData.userType);
       } else {
-        console.log("❌ No stored data, redirecting to signup...");
         Alert.alert("Session Expired", "Please sign up again.", [
           {
             text: "OK",
@@ -62,22 +60,15 @@ export default function VerifyEmailScreen() {
         ]);
       }
     }
-  }, []);
+  }, [email, firstName, getSignupData, router, userType]);
 
   const goNext = useCallback(
     (metadata?: any) => {
       if (didNavigate.current) return;
       didNavigate.current = true;
 
-      console.log("📧 Email verified! Navigating to verification success...");
-
       const finalFirstName = metadata?.first_name || firstName || "";
       const finalUserType = metadata?.user_type || userType || "";
-
-      console.log("📦 Passing params:", {
-        firstName: finalFirstName,
-        userType: finalUserType,
-      });
 
       router.replace({
         pathname: "/(auth)/verification-success",
@@ -87,42 +78,31 @@ export default function VerifyEmailScreen() {
         },
       });
     },
-    [router, firstName, userType]
+    [router, firstName, userType],
   );
 
   useEffect(() => {
     const checkExistingSession = async () => {
-      console.log("🔍 Checking for existing verified session...");
-
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
       if (session?.user?.email_confirmed_at) {
-        console.log("✅ Found existing verified session!");
-        console.log("👤 User metadata:", session.user.user_metadata);
-
         setTimeout(() => {
           goNext(session.user.user_metadata);
         }, 1000);
-      } else {
-        console.log("ℹ️ No verified session found yet");
       }
     };
 
     checkExistingSession();
 
     // 🔄 Start auto-polling every 5 seconds to check if email was verified
-    console.log("🔄 Starting auto-verification polling...");
     pollingIntervalRef.current = setInterval(async () => {
-      console.log("🔄 Auto-checking verification status...");
-
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
       if (session?.user?.email_confirmed_at) {
-        console.log("✅ Email verified detected by polling!");
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current);
         }
@@ -141,111 +121,54 @@ export default function VerifyEmailScreen() {
   const handleManualCheck = async () => {
     try {
       setIsCheckingManually(true);
-      console.log("🔍 Manually checking verification status...");
 
-      if (!email) {
-        Alert.alert("Error", "No email found");
-        setIsCheckingManually(false);
-        return;
-      }
-
-      // First, try to refresh the current session
-      console.log("🔄 Refreshing session to check verification...");
       const {
-        data: { session: refreshedSession },
-        error: refreshError,
-      } = await supabase.auth.refreshSession();
+        data: { session: currentSession },
+      } = await supabase.auth.getSession();
 
-      if (refreshedSession?.user?.email_confirmed_at) {
-        console.log("✅ Email verified! Session is active!");
-        goNext(refreshedSession.user.user_metadata);
+      let verifiedSession = currentSession;
+
+      if (currentSession) {
+        const {
+          data: { session: refreshedSession },
+        } = await supabase.auth.refreshSession();
+
+        verifiedSession = refreshedSession ?? currentSession;
+      }
+
+      if (verifiedSession?.user?.email_confirmed_at) {
+        goNext(verifiedSession.user.user_metadata);
         return;
       }
 
-      // If no session or not verified, prompt for password to sign in
-      console.log("⚠️ No active session, prompting for password...");
-
-      Alert.prompt(
-        "Enter Password",
-        "To continue, please enter your password:",
+      Alert.alert(
+        "Verification still pending",
+        "For security, continue from the newest PinayMate verification email on this device. If you already verified in another browser, go back to sign in with the same email.",
         [
           {
-            text: "Cancel",
-            style: "cancel",
-            onPress: () => setIsCheckingManually(false),
+            text: "Open Email",
+            onPress: openEmailApp,
           },
           {
-            text: "Sign In",
-            onPress: async (password?: string) => {
-              if (!password) {
-                Alert.alert("Error", "Password is required");
-                setIsCheckingManually(false);
-                return;
-              }
-
-              try {
-                console.log("🔐 Signing in with password...");
-                const { data, error } = await supabase.auth.signInWithPassword({
-                  email: email,
-                  password: password,
-                });
-
-                if (error) {
-                  console.error("❌ Sign in error:", error);
-                  const errorMsg =
-                    error.message === "Invalid login credentials"
-                      ? "Wrong password. Please try again."
-                      : error.message === "Email not confirmed"
-                        ? "Your email hasn't been verified yet. Please verify it first in Supabase:\n\nUPDATE auth.users SET email_confirmed_at = NOW() WHERE email = '" +
-                          email +
-                          "'"
-                        : "Sign in failed: " + error.message;
-
-                  Alert.alert("Sign In Failed", errorMsg);
-                  setIsCheckingManually(false);
-                  return;
-                }
-
-                if (data.session?.user?.email_confirmed_at) {
-                  console.log("✅ Signed in successfully with verified email!");
-                  console.log(
-                    "👤 User metadata:",
-                    data.session.user.user_metadata
-                  );
-                  goNext(data.session.user.user_metadata);
-                } else {
-                  Alert.alert(
-                    "Not Verified Yet",
-                    "Your email hasn't been verified in Supabase yet.\n\nRun this in SQL Editor:\n\nUPDATE auth.users SET email_confirmed_at = NOW() WHERE email = '" +
-                      email +
-                      "'\n\nThen try again."
-                  );
-                  setIsCheckingManually(false);
-                }
-              } catch (err) {
-                console.error("❌ Exception:", err);
-                Alert.alert("Error", "Something went wrong");
-                setIsCheckingManually(false);
-              }
-            },
+            text: "Back to Sign In",
+            onPress: handleBackToSignIn,
+          },
+          {
+            text: "OK",
+            style: "cancel",
           },
         ],
-        "secure-text"
       );
-    } catch (error) {
-      console.error("❌ Manual check error:", error);
-      Alert.alert("Error", "Something went wrong. Please try again.");
+    } catch {
+      console.error("Manual email verification check failed.");
+      Alert.alert(
+        "Could not check verification",
+        "Please try again, open your email app, or return to sign in if you already verified.",
+      );
+    } finally {
       setIsCheckingManually(false);
     }
   };
-
-  useEffect(() => {
-    console.log("📧 VerifyEmail screen loaded with params:", {
-      email,
-      firstName,
-      userType,
-    });
-  }, [email, firstName, userType]);
 
   const openEmailApp = async () => {
     try {
@@ -260,39 +183,26 @@ export default function VerifyEmailScreen() {
         return;
       }
       await Linking.openURL("https://mail.google.com");
-    } catch (error) {
-      console.error("Error opening email app:", error);
+    } catch {
+      console.error("Error opening email app.");
     }
   };
 
   const handleResend = async () => {
     if (!email) {
-      console.error("❌ No email available for resend");
       Alert.alert("Error", "No email address found");
       return;
     }
 
     try {
-      console.log("📧 Resending verification email to:", email);
+      await authApi.resendVerificationEmail(email);
 
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: email,
-      });
-
-      if (error) {
-        console.error("❌ Error resending email:", error);
-        Alert.alert("Error", "Failed to resend verification email");
-        return;
-      }
-
-      console.log("✅ Verification email resent successfully");
       Alert.alert(
         "Success",
-        "New verification email sent! Check your inbox. Link expires in 1 hour."
+        "New verification email sent! Check your inbox. Link expires in 1 hour.",
       );
-    } catch (error) {
-      console.error("❌ Exception resending email:", error);
+    } catch {
+      console.error("Verification email resend failed.");
       Alert.alert("Error", "Something went wrong. Please try again.");
     }
   };
@@ -348,18 +258,6 @@ export default function VerifyEmailScreen() {
           onOpenEmailApp={openEmailApp}
           onResend={handleResend}
           onBackToSignIn={handleBackToSignIn}
-          onSkipToAccountSetup={() => {
-            console.log(
-              "⚡ Skipping email verification, going to account setup..."
-            );
-            router.replace({
-              pathname: "/(auth)/account-setup/basic-info",
-              params: {
-                userType: userType || "foreigner",
-                firstName: firstName || "User",
-              },
-            });
-          }}
         />
 
         <View style={{ marginTop: 32, width: "100%", maxWidth: 400 }}>
@@ -384,7 +282,7 @@ export default function VerifyEmailScreen() {
                 marginBottom: 8,
               }}
             >
-              📧 Check your email inbox
+              Check your email inbox
             </Text>
             <Text
               style={{
@@ -396,18 +294,45 @@ export default function VerifyEmailScreen() {
                 lineHeight: 22,
               }}
             >
-              Click the verification link in your email and you'll be
-              automatically redirected back to this app to continue
+              Open the latest verification link from this device. PinayMate will
+              return here automatically when the link is accepted.
+            </Text>
+            <Text
+              style={{
+                color: "rgba(255,255,255,0.62)",
+                textAlign: "center",
+                fontSize: 13,
+                fontFamily: "DMSans",
+                paddingHorizontal: 12,
+                lineHeight: 20,
+                marginTop: 14,
+              }}
+            >
+              Email verification confirms sign-in for launch preparation. It
+              does not publish your profile, enable matching, approve identity
+              verification, or open paid features.
             </Text>
           </View>
 
           <TouchableOpacity
             onPress={handleManualCheck}
             disabled={isCheckingManually}
+            activeOpacity={0.84}
+            accessibilityRole="button"
+            accessibilityLabel={
+              isCheckingManually
+                ? "Checking email verification"
+                : "Check email verification again"
+            }
+            accessibilityHint="Checks whether the latest verification link has been accepted"
+            accessibilityState={{ disabled: isCheckingManually }}
             style={{
               marginTop: 20,
+              minHeight: 56,
               padding: 16,
-              backgroundColor: "rgba(255, 255, 255, 0.08)",
+              backgroundColor: isCheckingManually
+                ? "rgba(255, 255, 255, 0.05)"
+                : "rgba(255, 255, 255, 0.08)",
               borderRadius: 12,
               borderWidth: 1,
               borderColor: "rgba(255, 255, 255, 0.2)",
@@ -427,7 +352,7 @@ export default function VerifyEmailScreen() {
                   fontWeight: "600",
                 }}
               >
-                🔐 I've verified in Supabase - Sign In
+                I opened the link - Check again
               </Text>
             )}
           </TouchableOpacity>
@@ -444,57 +369,8 @@ export default function VerifyEmailScreen() {
               fontStyle: "italic",
             }}
           >
-            After running the SQL command, click here to sign in
-          </Text>
-
-          {/* Skip to Account Setup Button */}
-          <TouchableOpacity
-            onPress={() => {
-              console.log("⏭️ Skipping to account setup...");
-              router.replace({
-                pathname: "/(auth)/account-setup/basic-info",
-                params: {
-                  userType: userType || "foreigner",
-                  firstName: firstName || "User",
-                },
-              });
-            }}
-            style={{
-              marginTop: 20,
-              padding: 16,
-              backgroundColor: "rgba(141, 105, 246, 0.2)",
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: "rgba(141, 105, 246, 0.4)",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Text
-              style={{
-                color: "rgba(141, 105, 246, 1)",
-                fontFamily: "DMSans",
-                fontSize: 14,
-                fontWeight: "700",
-              }}
-            >
-              ⚡ Skip & Continue to Account Setup
-            </Text>
-          </TouchableOpacity>
-
-          <Text
-            style={{
-              color: "rgba(255,255,255,0.5)",
-              textAlign: "center",
-              marginTop: 8,
-              fontSize: 11,
-              fontFamily: "DMSans",
-              paddingHorizontal: 24,
-              lineHeight: 16,
-            }}
-          >
-            You can verify your email later
+            Already verified somewhere else? Go back to sign in with the same
+            email.
           </Text>
         </View>
       </View>

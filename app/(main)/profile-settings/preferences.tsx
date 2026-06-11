@@ -1,7 +1,7 @@
-import { supabase } from "@/src/config/supabase";
+import { accountApi } from "@/src/features/account/api/accountApi";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Save } from "lucide-react-native";
+import { AlertCircle, ArrowLeft, RefreshCw, Save } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -18,80 +18,120 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const BRAND_BG = "#0F0814";
-const ACCENT_PURPLE = "#8D69F6";
 const ACCENT_PINK = "#EF3E78";
 const WHITE = "#FFFFFF";
+const TEXT_SECONDARY = "rgba(255, 255, 255, 0.74)";
+const TEXT_MUTED = "rgba(255, 255, 255, 0.56)";
 const SURFACE_STRONG = "rgba(255, 255, 255, 0.08)";
 const TILE_BORDER = "rgba(168, 85, 247, 0.13)";
+const COMPLETE_BASIC_INFO_MESSAGE =
+  "Complete basic info before saving preferences.";
+const SAVE_PREFERENCES_ERROR =
+  "Failed to update preferences. Check your connection and try again.";
 
 export default function PreferencesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [ageMin, setAgeMin] = useState("18");
   const [ageMax, setAgeMax] = useState("35");
   const [maxDistance, setMaxDistance] = useState("50");
-  const [lookingFor, setLookingFor] = useState("");
+  const [relationshipGoal, setRelationshipGoal] = useState("");
 
   useEffect(() => {
     fetchPreferences();
   }, []);
 
   const fetchPreferences = async () => {
+    setLoading(true);
+    setLoadError(null);
+    setSaveError(null);
+
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+      const preferences = await accountApi.getPreferences();
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("age_min, age_max, max_distance_km, interested_in")
-        .eq("id", user.id)
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        setAgeMin(data.age_min?.toString() || "18");
-        setAgeMax(data.age_max?.toString() || "35");
-        setMaxDistance(data.max_distance_km?.toString() || "50");
-        setLookingFor(data.interested_in || "");
+      if (preferences) {
+        setAgeMin(preferences.ageMin?.toString() || "18");
+        setAgeMax(preferences.ageMax?.toString() || "35");
+        setMaxDistance(preferences.maxDistanceKm?.toString() || "50");
+        setRelationshipGoal(
+          preferences.relationshipGoal?.replace(/_/g, " ") || "",
+        );
       }
-    } catch (error) {
-      console.error("Error fetching preferences:", error);
+    } catch {
+      console.error("Error fetching preferences.");
+      setLoadError(
+        "Saved preferences did not load. You can retry, or edit the default values before saving.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleSave = async () => {
+    const parsedAgeMin = Number.parseInt(ageMin, 10);
+    const parsedAgeMax = Number.parseInt(ageMax, 10);
+    const parsedMaxDistance = Number.parseInt(maxDistance, 10);
+    const trimmedGoal = relationshipGoal.trim();
+
+    setSaveError(null);
+
+    if (!Number.isFinite(parsedAgeMin) || parsedAgeMin < 18) {
+      setSaveError("Minimum age must be 18 or higher.");
+      return;
+    }
+
+    if (!Number.isFinite(parsedAgeMax) || parsedAgeMax > 100) {
+      setSaveError("Maximum age must be 100 or lower.");
+      return;
+    }
+
+    if (parsedAgeMin > parsedAgeMax) {
+      setSaveError("Minimum age cannot be higher than maximum age.");
+      return;
+    }
+
+    if (
+      !Number.isFinite(parsedMaxDistance) ||
+      parsedMaxDistance < 1 ||
+      parsedMaxDistance > 500
+    ) {
+      setSaveError("Maximum distance must be between 1 and 500 km.");
+      return;
+    }
+
+    if (!trimmedGoal) {
+      setSaveError(
+        "Add the kind of connection you want before saving preferences.",
+      );
+      return;
+    }
+
     setSaving(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      const basicInfo = await accountApi.getBasicInfo();
+      if (!basicInfo?.userType) {
+        setSaveError(COMPLETE_BASIC_INFO_MESSAGE);
+        return;
+      }
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          age_min: parseInt(ageMin),
-          age_max: parseInt(ageMax),
-          max_distance_km: parseInt(maxDistance),
-          interested_in: lookingFor,
-        })
-        .eq("id", user.id);
-
-      if (error) throw error;
+      await accountApi.savePreferences({
+        ageMin: parsedAgeMin,
+        ageMax: parsedAgeMax,
+        maxDistanceKm: parsedMaxDistance,
+        relationshipGoal: trimmedGoal.toLowerCase().replace(/\s+/g, "_"),
+        userType: basicInfo.userType,
+      });
 
       Alert.alert("Success", "Preferences updated successfully!");
       router.back();
-    } catch (error) {
-      console.error("Error saving preferences:", error);
-      Alert.alert("Error", "Failed to update preferences");
+    } catch {
+      console.error("Error saving preferences.");
+      setSaveError(SAVE_PREFERENCES_ERROR);
     } finally {
       setSaving(false);
     }
@@ -99,14 +139,27 @@ export default function PreferencesScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.root, styles.centered]}>
+      <View
+        style={[styles.root, styles.centered]}
+        accessibilityLiveRegion="polite"
+      >
         <StatusBar barStyle="light-content" backgroundColor={BRAND_BG} />
         <LinearGradient
           colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
           locations={[0, 0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
-        <ActivityIndicator size="large" color={ACCENT_PINK} />
+        <View style={styles.loadingCard}>
+          <ActivityIndicator
+            size="large"
+            color={ACCENT_PINK}
+            accessibilityLabel="Loading match preferences"
+          />
+          <Text style={styles.loadingTitle}>Loading preferences</Text>
+          <Text style={styles.loadingText}>
+            Pulling your saved match settings before you edit them.
+          </Text>
+        </View>
       </View>
     );
   }
@@ -128,11 +181,24 @@ export default function PreferencesScreen() {
         <TouchableOpacity
           onPress={() => router.push("/(main)/profile")}
           style={styles.backBtn}
+          activeOpacity={0.78}
+          accessibilityRole="button"
+          accessibilityLabel="Back to profile"
+          accessibilityHint="Returns to your profile screen"
         >
           <ArrowLeft size={24} color={WHITE} />
         </TouchableOpacity>
-        <Text style={styles.title}>Preferences</Text>
-        <TouchableOpacity onPress={handleSave} disabled={saving}>
+        <Text style={styles.title}>Match Preferences</Text>
+        <TouchableOpacity
+          onPress={handleSave}
+          disabled={saving}
+          style={[styles.iconBtn, saving && styles.disabledControl]}
+          accessibilityRole="button"
+          accessibilityLabel={
+            saving ? "Saving preferences" : "Save preferences"
+          }
+          accessibilityState={{ disabled: saving }}
+        >
           {saving ? (
             <ActivityIndicator size="small" color={ACCENT_PINK} />
           ) : (
@@ -141,8 +207,52 @@ export default function PreferencesScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={[
+          styles.contentBody,
+          { paddingBottom: Math.max(insets.bottom, 24) },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.sectionTitle}>Match Preferences</Text>
+        <Text style={styles.sectionSubtitle}>
+          Keep these accurate so Discover can show better matches and avoid
+          mismatched expectations.
+        </Text>
+
+        <View
+          style={styles.guidanceCard}
+          accessible
+          accessibilityLabel="Match preference guidance. Preferences guide discovery and do not guarantee matches."
+        >
+          <Text style={styles.guidanceTitle}>Preference signals, not promises</Text>
+          <Text style={styles.guidanceText}>
+            These settings help shape who appears in Discover. They do not
+            guarantee matches, conversations, or outcomes.
+          </Text>
+        </View>
+
+        {loadError ? (
+          <View
+            style={styles.noticeCard}
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+          >
+            <AlertCircle size={18} color={ACCENT_PINK} strokeWidth={2.4} />
+            <Text style={styles.noticeText}>{loadError}</Text>
+            <TouchableOpacity
+              onPress={fetchPreferences}
+              style={styles.retryButton}
+              activeOpacity={0.84}
+              accessibilityRole="button"
+              accessibilityLabel="Retry loading saved preferences"
+            >
+              <RefreshCw size={15} color={WHITE} strokeWidth={2.4} />
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         <View style={styles.form}>
           <View style={styles.fieldWrap}>
@@ -154,6 +264,9 @@ export default function PreferencesScreen() {
               placeholder="18"
               placeholderTextColor="rgba(255,255,255,0.4)"
               keyboardType="numeric"
+              accessibilityLabel="Minimum match age"
+              accessibilityHint="Enter the youngest age you want to see in matches"
+              maxLength={3}
             />
           </View>
 
@@ -166,6 +279,9 @@ export default function PreferencesScreen() {
               placeholder="35"
               placeholderTextColor="rgba(255,255,255,0.4)"
               keyboardType="numeric"
+              accessibilityLabel="Maximum match age"
+              accessibilityHint="Enter the oldest age you want to see in matches"
+              maxLength={3}
             />
           </View>
 
@@ -178,25 +294,66 @@ export default function PreferencesScreen() {
               placeholder="50"
               placeholderTextColor="rgba(255,255,255,0.4)"
               keyboardType="numeric"
+              accessibilityLabel="Maximum match distance"
+              accessibilityHint="Enter the farthest distance in kilometers for suggested matches"
+              maxLength={3}
             />
+            <Text style={styles.helper}>
+              Distance is saved in kilometers. Wider distance can show more
+              people.
+            </Text>
           </View>
 
           <View style={styles.fieldWrap}>
-            <Text style={styles.label}>Looking For</Text>
+            <Text style={styles.label}>Relationship Goal</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
-              value={lookingFor}
-              onChangeText={setLookingFor}
+              value={relationshipGoal}
+              onChangeText={setRelationshipGoal}
               placeholder="E.g. Serious relationship, friendship, casual dating..."
               placeholderTextColor="rgba(255,255,255,0.4)"
               multiline
               numberOfLines={3}
               textAlignVertical="top"
+              accessibilityLabel="Relationship goal"
+              accessibilityHint="Describe the type of relationship or connection you want"
+              maxLength={80}
             />
+            <Text style={styles.helper}>
+              Be specific and honest. This helps avoid mismatched expectations.
+            </Text>
           </View>
         </View>
 
-        <View style={{ height: 40 }} />
+        {saveError ? (
+          <View
+            style={styles.errorCard}
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+          >
+            <AlertCircle size={17} color={ACCENT_PINK} strokeWidth={2.4} />
+            <Text style={styles.errorText}>{saveError}</Text>
+          </View>
+        ) : null}
+
+        <TouchableOpacity
+          onPress={handleSave}
+          disabled={saving}
+          style={[styles.primaryButton, saving && styles.disabledControl]}
+          accessibilityRole="button"
+          accessibilityLabel={
+            saving ? "Saving preferences" : "Save preferences"
+          }
+          accessibilityHint="Saves age, distance, and relationship goal preferences"
+          accessibilityState={{ disabled: saving, busy: saving }}
+          activeOpacity={0.86}
+        >
+          {saving ? (
+            <ActivityIndicator color={WHITE} />
+          ) : (
+            <Text style={styles.primaryButtonText}>Save preferences</Text>
+          )}
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -210,6 +367,32 @@ const styles = StyleSheet.create({
   centered: {
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  loadingCard: {
+    width: "100%",
+    maxWidth: 320,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    padding: 24,
+    alignItems: "center",
+  },
+  loadingTitle: {
+    marginTop: 16,
+    color: WHITE,
+    fontFamily: "DMSans-Bold",
+    fontSize: 18,
+    textAlign: "center",
+  },
+  loadingText: {
+    marginTop: 8,
+    color: TEXT_SECONDARY,
+    fontFamily: "DMSans-Regular",
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: "center",
   },
   header: {
     flexDirection: "row",
@@ -219,23 +402,101 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   backBtn: {
-    padding: 4,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  disabledControl: {
+    opacity: 0.65,
   },
   title: {
+    flex: 1,
     fontSize: 20,
     color: WHITE,
     fontFamily: "DMSans-Bold",
+    textAlign: "center",
   },
   content: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  contentBody: {
+    paddingBottom: 24,
   },
   sectionTitle: {
     fontSize: 18,
     color: ACCENT_PINK,
     fontFamily: "DMSans-Bold",
     marginTop: 20,
-    marginBottom: 20,
+    marginBottom: 8,
+  },
+  sectionSubtitle: {
+    color: TEXT_SECONDARY,
+    fontSize: 15,
+    fontFamily: "DMSans-Regular",
+    lineHeight: 22,
+    marginBottom: 18,
+  },
+  noticeCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "rgba(239, 62, 120, 0.3)",
+    backgroundColor: "rgba(239, 62, 120, 0.12)",
+    padding: 14,
+    gap: 10,
+    marginBottom: 18,
+  },
+  guidanceCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+    backgroundColor: "rgba(255,255,255,0.07)",
+    padding: 14,
+    marginBottom: 18,
+  },
+  guidanceTitle: {
+    color: WHITE,
+    fontFamily: "DMSans-Bold",
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 4,
+  },
+  guidanceText: {
+    color: TEXT_MUTED,
+    fontFamily: "DMSans-Regular",
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  noticeText: {
+    color: TEXT_SECONDARY,
+    fontFamily: "DMSans-Medium",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  retryButton: {
+    alignSelf: "flex-start",
+    minHeight: 44,
+    borderRadius: 14,
+    backgroundColor: ACCENT_PINK,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  retryButtonText: {
+    color: WHITE,
+    fontFamily: "DMSans-Bold",
+    fontSize: 14,
   },
   form: {
     gap: 20,
@@ -248,6 +509,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "DMSans-SemiBold",
   },
+  helper: {
+    color: TEXT_MUTED,
+    fontFamily: "DMSans-Regular",
+    fontSize: 13,
+    lineHeight: 18,
+  },
   input: {
     backgroundColor: SURFACE_STRONG,
     borderRadius: 12,
@@ -259,7 +526,38 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-Regular",
   },
   textArea: {
-    height: 80,
+    minHeight: 92,
     paddingTop: 16,
+  },
+  errorCard: {
+    marginTop: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(239, 62, 120, 0.3)",
+    backgroundColor: "rgba(239, 62, 120, 0.12)",
+    padding: 12,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  errorText: {
+    flex: 1,
+    color: TEXT_SECONDARY,
+    fontFamily: "DMSans-Bold",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  primaryButton: {
+    minHeight: 54,
+    borderRadius: 18,
+    backgroundColor: ACCENT_PINK,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 24,
+  },
+  primaryButtonText: {
+    color: WHITE,
+    fontFamily: "DMSans-Bold",
+    fontSize: 16,
   },
 });

@@ -1,15 +1,19 @@
-/**
- * Preferences API
- * 
- * Handles user matching preferences (age range, distance, relationship goals).
- * Single Responsibility: Preferences operations only.
- */
-
 import { supabase } from "@/src/config/supabase";
 import { UserType } from "../../auth/api/authApi";
 
+const PREFERENCES_SIGN_IN_ERROR =
+  "Please sign in before saving match preferences.";
+const PREFERENCES_SAVE_ERROR =
+  "Preferences did not save. Check your connection and try again.";
+
 function getInterestedInFromUserType(userType: UserType): string {
   return userType === "filipina" ? "Men" : "Women";
+}
+
+function getLookingForGenderFromUserType(
+  userType: UserType,
+): "male" | "female" {
+  return userType === "filipina" ? "male" : "female";
 }
 
 export type PreferencesPayload = {
@@ -23,30 +27,40 @@ export type PreferencesPayload = {
 };
 
 export async function savePreferences(
-  payload: Omit<PreferencesPayload, "interestedIn"> & { userType: UserType }
+  payload: Omit<PreferencesPayload, "interestedIn"> & { userType: UserType },
 ): Promise<{ ok: true; data: PreferencesPayload }> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
     if (userError || !user) {
-      throw new Error("Not authenticated");
+      throw new Error(PREFERENCES_SIGN_IN_ERROR);
     }
 
     const interestedIn = getInterestedInFromUserType(payload.userType);
+    const lookingForGender = getLookingForGenderFromUserType(payload.userType);
 
     const { error } = await supabase
-      .from('profiles')
+      .from("profiles")
       .update({
         interested_in: interestedIn,
         age_min: payload.ageMin,
         age_max: payload.ageMax,
         max_distance_km: payload.maxDistanceKm,
+        looking_for_gender: lookingForGender,
+        age_preference_min: payload.ageMin,
+        age_preference_max: payload.ageMax,
+        distance_preference_km: payload.maxDistanceKm,
         relationship_goal: payload.relationshipGoal,
         preferences_completed: true,
       })
-      .eq('id', user.id);
+      .eq("id", user.id);
 
-    if (error) throw error;
+    if (error) {
+      throw new Error(PREFERENCES_SAVE_ERROR);
+    }
 
     const record: PreferencesPayload = {
       ...payload,
@@ -54,26 +68,37 @@ export async function savePreferences(
       createdAt: new Date().toISOString(),
     };
 
-    console.log("✅ Saved preferences to Supabase:", record);
     return { ok: true, data: record };
   } catch (error) {
-    console.error("❌ Error saving preferences:", error);
-    throw error;
+    console.error("Error saving preferences.");
+    if (
+      error instanceof Error &&
+      error.message === PREFERENCES_SIGN_IN_ERROR
+    ) {
+      throw error;
+    }
+
+    throw new Error(PREFERENCES_SAVE_ERROR);
   }
 }
 
 export async function getPreferences(): Promise<PreferencesPayload | null> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
     if (userError || !user) {
       return null;
     }
 
     const { data, error } = await supabase
-      .from('profiles')
-      .select('interested_in, age_min, age_max, max_distance_km, relationship_goal, user_type, created_at')
-      .eq('id', user.id)
+      .from("profiles")
+      .select(
+        "interested_in, age_min, age_max, max_distance_km, looking_for_gender, age_preference_min, age_preference_max, distance_preference_km, relationship_goal, user_type, created_at",
+      )
+      .eq("id", user.id)
       .single();
 
     if (error || !data) {
@@ -82,30 +107,32 @@ export async function getPreferences(): Promise<PreferencesPayload | null> {
 
     return {
       interestedIn: data.interested_in,
-      ageMin: data.age_min,
-      ageMax: data.age_max,
-      maxDistanceKm: data.max_distance_km,
+      ageMin: data.age_preference_min ?? data.age_min,
+      ageMax: data.age_preference_max ?? data.age_max,
+      maxDistanceKm: data.distance_preference_km ?? data.max_distance_km,
       relationshipGoal: data.relationship_goal,
       userType: data.user_type as UserType,
       createdAt: data.created_at,
     };
-  } catch (error) {
-    console.error("❌ Error fetching preferences:", error);
+  } catch {
+    console.error("Error fetching preferences.");
     return null;
   }
 }
 
 export async function clearPreferences(): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (user) {
       await supabase
-        .from('profiles')
+        .from("profiles")
         .update({ preferences_completed: false })
-        .eq('id', user.id);
+        .eq("id", user.id);
     }
-  } catch (error) {
-    console.error("❌ Error clearing preferences:", error);
+  } catch {
+    console.error("Error clearing preferences.");
   }
 }

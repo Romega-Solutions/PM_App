@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
     getMessages,
+    getMessagesByConversationId,
     markConversationAsRead,
     sendImageMessage,
     sendTextMessage,
@@ -27,8 +28,8 @@ interface UseMessagesReturn {
   messages: Message[];
   loading: boolean;
   error: Error | null;
-  sendText: (text: string) => Promise<void>;
-  sendImage: (imageUrl: string) => Promise<void>;
+  sendText: (text: string) => Promise<Message | null>;
+  sendImage: (imageUrl: string) => Promise<Message | null>;
   markAsRead: () => Promise<void>;
   refresh: () => Promise<void>;
   addMessage: (message: Message) => void;
@@ -48,35 +49,37 @@ export function useMessages({
    * Load messages from database
    */
   const loadMessages = useCallback(async () => {
-    if (!userId || !recipientId) return;
+    if (!userId || (!conversationId && !recipientId)) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const { data, error: fetchError } = await getMessages(
-        userId,
-        recipientId,
-        100,
-      );
+      const { data, error: fetchError } = conversationId
+        ? await getMessagesByConversationId(conversationId, 100)
+        : await getMessages(
+            userId,
+            recipientId,
+            100,
+          );
 
       if (fetchError) throw fetchError;
 
       setMessages(data || []);
     } catch (err) {
-      console.error("❌ Error loading messages:", err);
+      console.error("Error loading messages.");
       setError(err as Error);
     } finally {
       setLoading(false);
     }
-  }, [userId, recipientId]);
+  }, [userId, recipientId, conversationId]);
 
   /**
    * Send text message
    */
   const sendText = useCallback(
     async (text: string) => {
-      if (!text.trim()) return;
+      if (!text.trim()) return null;
 
       try {
         const { data, error: sendError } = await sendTextMessage(
@@ -91,8 +94,10 @@ export function useMessages({
         if (data) {
           setMessages((prev) => [...prev, data]);
         }
+
+        return data;
       } catch (err) {
-        console.error("❌ Error sending message:", err);
+        console.error("Error sending message.");
         setError(err as Error);
         throw err;
       }
@@ -106,6 +111,12 @@ export function useMessages({
   const sendImage = useCallback(
     async (imageUrl: string) => {
       try {
+        if (!conversationId) {
+          throw new Error(
+            "Photo sharing needs an active matched conversation before sending.",
+          );
+        }
+
         const { data, error: sendError } = await sendImageMessage(
           userId,
           recipientId,
@@ -118,8 +129,10 @@ export function useMessages({
         if (data) {
           setMessages((prev) => [...prev, data]);
         }
+
+        return data;
       } catch (err) {
-        console.error("❌ Error sending image:", err);
+        console.error("Error sending image.");
         setError(err as Error);
         throw err;
       }
@@ -144,8 +157,8 @@ export function useMessages({
             : msg,
         ),
       );
-    } catch (err) {
-      console.error("❌ Error marking as read:", err);
+    } catch {
+      console.error("Error marking as read.");
     }
   }, [conversationId, userId]);
 

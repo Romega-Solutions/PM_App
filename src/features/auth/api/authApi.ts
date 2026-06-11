@@ -1,4 +1,8 @@
-import { getRedirectUrl, supabase } from "@/src/config/supabase";
+import {
+  getPasswordResetRedirectUrl,
+  getRedirectUrl,
+  supabase,
+} from "@/src/config/supabase";
 
 export type UserType = "filipina" | "foreigner";
 
@@ -26,14 +30,25 @@ export type SignInResult = {
   };
 };
 
+const AUTH_SIGNUP_ERROR =
+  "We could not create your account. Check your connection and try again.";
+const AUTH_SIGNIN_ERROR =
+  "Email or password is incorrect, or sign in is temporarily unavailable.";
+const AUTH_SIGNOUT_ERROR =
+  "Sign out did not complete. Check your connection and try again.";
+const AUTH_RESEND_ERROR =
+  "Verification email could not be resent. Check your email and try again.";
+const AUTH_PASSWORD_RESET_ERROR =
+  "Password reset email could not be sent. Check your email and try again.";
+const AUTH_PASSWORD_UPDATE_ERROR =
+  "Password could not be updated. Check your connection and try again.";
+
 export const authApi = {
   signUp: async (
     email: string,
     password: string,
-    metadata: SignUpMetadata
+    metadata: SignUpMetadata,
   ): Promise<SignUpResult> => {
-    console.log("🚀 Supabase sign up with:", { email, ...metadata });
-
     if (!metadata.firstName || !metadata.firstName.trim()) {
       throw new Error("First name is required");
     }
@@ -44,7 +59,6 @@ export const authApi = {
 
     try {
       const redirectUrl = getRedirectUrl();
-      console.log("🔗 Using redirect URL:", redirectUrl);
 
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -59,20 +73,13 @@ export const authApi = {
       });
 
       if (error) {
-        console.error("❌ Supabase signup error:", error);
-        throw error;
+        console.error("Supabase signup failed.");
+        throw new Error(AUTH_SIGNUP_ERROR);
       }
 
       if (!data.user) {
-        throw new Error("Failed to create user");
+        throw new Error(AUTH_SIGNUP_ERROR);
       }
-
-      console.log("✅ Supabase signup successful:", {
-        userId: data.user.id,
-        needsVerification: !data.session,
-        emailConfirmed: !!data.user.email_confirmed_at,
-        redirectUrl: redirectUrl,
-      });
 
       return {
         user: {
@@ -85,8 +92,16 @@ export const authApi = {
           : "Verification email sent. Please check your inbox.",
       };
     } catch (error) {
-      console.error("❌ Signup error:", error);
-      throw error;
+      console.error("Signup failed.");
+      if (
+        error instanceof Error &&
+        (error.message === "First name is required" ||
+          error.message === "Please select a valid account type")
+      ) {
+        throw error;
+      }
+
+      throw new Error(AUTH_SIGNUP_ERROR);
     }
   },
 
@@ -94,8 +109,6 @@ export const authApi = {
    * Sign in existing user
    */
   signIn: async (email: string, password: string): Promise<SignInResult> => {
-    console.log("🔐 Supabase sign in with:", email);
-
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -103,15 +116,13 @@ export const authApi = {
       });
 
       if (error) {
-        console.error("❌ Supabase signin error:", error);
-        throw error;
+        console.error("Supabase signin failed.");
+        throw new Error(AUTH_SIGNIN_ERROR);
       }
 
       if (!data.session || !data.user) {
-        throw new Error("Sign in failed");
+        throw new Error(AUTH_SIGNIN_ERROR);
       }
-
-      console.log("✅ Supabase signin successful");
 
       return {
         user: {
@@ -123,8 +134,8 @@ export const authApi = {
         },
       };
     } catch (error) {
-      console.error("❌ Signin error:", error);
-      throw error;
+      console.error("Signin failed.");
+      throw new Error(AUTH_SIGNIN_ERROR);
     }
   },
 
@@ -132,9 +143,8 @@ export const authApi = {
    * Sign out current user
    */
   signOut: async (): Promise<void> => {
-    console.log("👋 Signing out user");
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    if (error) throw new Error(AUTH_SIGNOUT_ERROR);
   },
 
   /**
@@ -160,16 +170,43 @@ export const authApi = {
    * Resend verification email
    */
   resendVerificationEmail: async (
-    email: string
+    email: string,
   ): Promise<{ success: boolean }> => {
-    console.log("📧 Resending verification email to:", email);
+    const normalizedEmail = email.trim().toLowerCase();
+    const redirectUrl = getRedirectUrl();
 
     const { error } = await supabase.auth.resend({
       type: "signup",
-      email,
+      email: normalizedEmail,
+      options: {
+        emailRedirectTo: redirectUrl,
+      },
     });
 
-    if (error) throw error;
+    if (error) throw new Error(AUTH_RESEND_ERROR);
+    return { success: true };
+  },
+
+  requestPasswordReset: async (
+    email: string,
+  ): Promise<{ success: boolean }> => {
+    const redirectUrl = getPasswordResetRedirectUrl();
+
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      email.trim().toLowerCase(),
+      {
+        redirectTo: redirectUrl,
+      },
+    );
+
+    if (error) throw new Error(AUTH_PASSWORD_RESET_ERROR);
+    return { success: true };
+  },
+
+  updatePassword: async (password: string): Promise<{ success: boolean }> => {
+    const { error } = await supabase.auth.updateUser({ password });
+
+    if (error) throw new Error(AUTH_PASSWORD_UPDATE_ERROR);
     return { success: true };
   },
 };
@@ -182,6 +219,21 @@ export const authValidation = {
   isValidPassword: (password: string): { valid: boolean; error?: string } => {
     if (password.length < 8) {
       return { valid: false, error: "Password must be at least 8 characters" };
+    }
+    if (!/[a-z]/.test(password)) {
+      return { valid: false, error: "Password must contain lowercase letter" };
+    }
+    if (!/[A-Z]/.test(password)) {
+      return { valid: false, error: "Password must contain uppercase letter" };
+    }
+    if (!/[0-9]/.test(password)) {
+      return { valid: false, error: "Password must contain number" };
+    }
+    if (!/[^a-zA-Z0-9]/.test(password)) {
+      return {
+        valid: false,
+        error: "Password must contain special character",
+      };
     }
     return { valid: true };
   },

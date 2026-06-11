@@ -7,23 +7,24 @@
  */
 
 import { LinearGradient } from "expo-linear-gradient";
-import { Heart, MessageCircle } from "lucide-react-native";
+import { Heart, MessageCircle, ShieldCheck } from "lucide-react-native";
 import React from "react";
 import {
-    Dimensions,
-    Image,
-    Modal,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Image,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 // Brand Colors
-const BRAND_BG = "#0F0814";
 const ACCENT_PURPLE = "#8D69F6";
 const ACCENT_PINK = "#EF3E78";
 const WHITE = "#FFFFFF";
@@ -47,11 +48,13 @@ export const MatchModal: React.FC<MatchModalProps> = ({
   onKeepSwiping,
   onSendMessage,
 }) => {
+  const insets = useSafeAreaInsets();
+
   if (!matchedProfile) return null;
 
   const profileImage = matchedProfile.photos?.[0]
     ? { uri: matchedProfile.photos[0] }
-    : require("@/assets/girls/ai1.jpg");
+    : null;
 
   return (
     <Modal
@@ -59,58 +62,109 @@ export const MatchModal: React.FC<MatchModalProps> = ({
       animationType="fade"
       transparent
       onRequestClose={onKeepSwiping}
+      accessibilityViewIsModal
     >
-      <View style={styles.matchModalContainer}>
+      <View
+        style={[
+          styles.matchModalContainer,
+          {
+            paddingTop: Math.max(insets.top + 24, 32),
+            paddingBottom: Math.max(insets.bottom + 24, 32),
+          },
+        ]}
+      >
         <LinearGradient
           colors={["rgba(15, 8, 20, 0.95)", "rgba(45, 27, 53, 0.95)"]}
           style={StyleSheet.absoluteFill}
         />
 
-        {/* Match Content */}
-        <View style={styles.matchContent}>
-          {/* Hearts Animation */}
-          <View style={styles.heartsContainer}>
-            <Heart
-              size={80}
-              color={ACCENT_PINK}
-              fill={ACCENT_PINK}
-              strokeWidth={2}
-            />
-          </View>
-
-          {/* Match Text */}
-          <Text style={styles.matchTitle}>It's a Match!</Text>
-          <Text style={styles.matchSubtitle}>
-            You and {matchedProfile.first_name} liked each other
-          </Text>
-
-          {/* Profile Image */}
-          <View style={styles.matchImageContainer}>
-            <Image source={profileImage} style={styles.matchImage} />
-          </View>
-
-          {/* Actions */}
-          <View style={styles.matchActions}>
-            <TouchableOpacity
-              style={[styles.matchBtn, styles.sendMessageBtn]}
-              onPress={onSendMessage}
-              accessibilityRole="button"
-              accessibilityLabel="Send message"
+        <ScrollView
+          contentContainerStyle={styles.matchScrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Match Content */}
+          <View style={styles.matchContent}>
+            {/* Hearts Animation */}
+            <View
+              style={styles.heartsContainer}
+              accessible={false}
+              importantForAccessibility="no"
             >
-              <MessageCircle size={20} color={WHITE} strokeWidth={2.5} />
-              <Text style={styles.sendMessageBtnText}>Send Message</Text>
-            </TouchableOpacity>
+              <Heart
+                size={80}
+                color={ACCENT_PINK}
+                fill={ACCENT_PINK}
+                strokeWidth={2}
+              />
+            </View>
 
-            <TouchableOpacity
-              style={[styles.matchBtn, styles.keepSwipingBtn]}
-              onPress={onKeepSwiping}
-              accessibilityRole="button"
-              accessibilityLabel="Keep swiping"
+            {/* Match Text */}
+            <Text style={styles.matchTitle}>It's a Match!</Text>
+            <Text style={styles.matchSubtitle}>
+              You and {matchedProfile.first_name} liked each other. Open the
+              match when chat access is available, and start respectfully when
+              you are ready.
+            </Text>
+
+            <View
+              style={styles.safetyNote}
+              accessible
+              accessibilityLabel="Safety note. Keep chats in PinayMate until you feel comfortable, and do not rush into sharing private details."
             >
-              <Text style={styles.keepSwipingBtnText}>Keep Swiping</Text>
-            </TouchableOpacity>
+              <ShieldCheck size={16} color={ACCENT_PURPLE} strokeWidth={2.4} />
+              <Text style={styles.safetyNoteText}>
+                Keep chats in PinayMate until you feel comfortable. Do not rush
+                into sharing private details.
+              </Text>
+            </View>
+
+            {/* Profile Image */}
+            <View style={styles.matchImageContainer}>
+              {profileImage ? (
+                <Image
+                  source={profileImage}
+                  style={styles.matchImage}
+                  accessible
+                  accessibilityLabel={`${matchedProfile.first_name}'s profile photo`}
+                />
+              ) : (
+                <View
+                  style={[styles.matchImage, styles.matchImagePlaceholder]}
+                  accessible
+                  accessibilityLabel={`${matchedProfile.first_name} has not added a profile photo yet`}
+                >
+                  <Text style={styles.matchImagePlaceholderText}>No photo</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Actions */}
+            <View style={styles.matchActions}>
+              <TouchableOpacity
+                style={[styles.matchBtn, styles.sendMessageBtn]}
+                onPress={onSendMessage}
+                activeOpacity={0.86}
+                accessibilityRole="button"
+                accessibilityLabel={`Open ${matchedProfile.first_name} in matches`}
+                accessibilityHint="Takes you to your matches. Messaging may depend on launch availability and account state."
+              >
+                <MessageCircle size={20} color={WHITE} strokeWidth={2.5} />
+                <Text style={styles.sendMessageBtnText}>Open Match</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.matchBtn, styles.keepSwipingBtn]}
+                onPress={onKeepSwiping}
+                activeOpacity={0.78}
+                accessibilityRole="button"
+                accessibilityLabel="Keep swiping"
+                accessibilityHint="Closes this match and returns to discover"
+              >
+                <Text style={styles.keepSwipingBtnText}>Keep Swiping</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </View>
     </Modal>
   );
@@ -119,19 +173,23 @@ export const MatchModal: React.FC<MatchModalProps> = ({
 const styles = StyleSheet.create({
   matchModalContainer: {
     flex: 1,
+    paddingHorizontal: 24,
+  },
+  matchScrollContent: {
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 24,
+    paddingVertical: 32,
   },
   matchContent: {
     alignItems: "center",
-    gap: 20,
+    gap: 16,
     maxWidth: width - 48,
   },
 
   // Hearts
   heartsContainer: {
-    marginBottom: 20,
+    marginBottom: 8,
   },
 
   // Text
@@ -148,33 +206,63 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 26,
   },
+  safetyNote: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: "rgba(141, 105, 246, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(141, 105, 246, 0.24)",
+  },
+  safetyNoteText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "DMSans-Medium",
+    color: "rgba(255, 255, 255, 0.78)",
+    lineHeight: 18,
+  },
 
   // Image
   matchImageContainer: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    width: Math.min(180, width * 0.46, height * 0.24),
+    height: Math.min(180, width * 0.46, height * 0.24),
+    borderRadius: 90,
     overflow: "hidden",
     borderWidth: 4,
     borderColor: ACCENT_PINK,
-    marginVertical: 20,
+    marginVertical: 10,
   },
   matchImage: {
     width: "100%",
     height: "100%",
+  },
+  matchImagePlaceholder: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+  },
+  matchImagePlaceholderText: {
+    color: WHITE,
+    fontSize: 16,
+    fontWeight: "700",
   },
 
   // Actions
   matchActions: {
     width: "100%",
     gap: 12,
-    marginTop: 20,
+    marginTop: 10,
   },
   matchBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 16,
+    minHeight: 56,
     borderRadius: 16,
     gap: 8,
   },

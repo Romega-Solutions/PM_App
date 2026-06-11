@@ -28,6 +28,87 @@ export interface UpdateProfileData {
   location_name?: string;
 }
 
+const PROFILE_UPDATE_FIELDS = [
+  "first_name",
+  "last_name",
+  "age",
+  "occupation",
+  "education",
+  "location_name",
+] as const satisfies readonly (keyof UpdateProfileData)[];
+
+type ProfileAction = "update" | "upload" | "photos" | "delete";
+const MAX_PROFILE_PHOTO_BYTES = 6 * 1024 * 1024;
+const PROFILE_PHOTO_TYPES: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  heic: "image/heic",
+};
+
+function getSafeProfileError(action: ProfileAction): string {
+  if (action === "upload") {
+    return "Photo upload failed. Check your connection and try again.";
+  }
+
+  if (action === "photos") {
+    return "Profile photos did not save. Check your connection and try again.";
+  }
+
+  if (action === "delete") {
+    return "Photo could not be removed. Check your connection and try again.";
+  }
+
+  return "Profile changes did not save. Check your connection and try again.";
+}
+
+function sanitizeProfileUpdates(
+  updates: UpdateProfileData,
+): Partial<UpdateProfileData> {
+  const sanitized: Partial<UpdateProfileData> = {};
+
+  for (const field of PROFILE_UPDATE_FIELDS) {
+    if (updates[field] !== undefined) {
+      sanitized[field] = updates[field] as never;
+    }
+  }
+
+  return sanitized;
+}
+
+function getProfilePhotoUploadType(uri: string) {
+  const cleanUri = uri.split("?")[0].split("#")[0];
+  const extension = cleanUri.split(".").pop()?.toLowerCase() ?? "";
+  const contentType = PROFILE_PHOTO_TYPES[extension];
+
+  if (!contentType) {
+    throw new Error("Unsupported profile photo type");
+  }
+
+  return {
+    extension: extension === "jpeg" ? "jpg" : extension,
+    contentType,
+  };
+}
+
+async function assertProfilePhotoUpload(uri: string) {
+  const uploadType = getProfilePhotoUploadType(uri);
+  const fileInfo = await FileSystem.getInfoAsync(uri);
+
+  if (!fileInfo.exists) {
+    throw new Error("Profile photo file does not exist");
+  }
+
+  const size = "size" in fileInfo ? fileInfo.size : null;
+
+  if (typeof size !== "number" || size <= 0 || size > MAX_PROFILE_PHOTO_BYTES) {
+    throw new Error("Profile photo size is not allowed");
+  }
+
+  return uploadType;
+}
+
 /**
  * Get current user's profile
  */
@@ -37,7 +118,6 @@ export async function getCurrentUserProfile(): Promise<ProfileData | null> {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      console.log("❌ No authenticated user");
       return null;
     }
 
@@ -48,14 +128,13 @@ export async function getCurrentUserProfile(): Promise<ProfileData | null> {
       .single();
 
     if (error) {
-      console.error("❌ Error fetching profile:", error);
+      console.error("Error fetching profile.");
       return null;
     }
 
-    console.log("✅ Profile fetched:", data);
     return data;
-  } catch (error) {
-    console.error("❌ Failed to get user profile:", error);
+  } catch {
+    console.error("Failed to get user profile.");
     return null;
   }
 }
@@ -71,27 +150,26 @@ export async function updateUserProfile(
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      return { success: false, error: "Not authenticated" };
+      return { success: false, error: "Please sign in to update your profile." };
     }
 
     const { error } = await supabase
       .from("profiles")
       .update({
-        ...updates,
+        ...sanitizeProfileUpdates(updates),
         updated_at: new Date().toISOString(),
       })
       .eq("id", user.id);
 
     if (error) {
-      console.error("❌ Error updating profile:", error);
-      return { success: false, error: error.message };
+      console.error("Error updating profile.");
+      return { success: false, error: getSafeProfileError("update") };
     }
 
-    console.log("✅ Profile updated successfully");
     return { success: true };
-  } catch (error: any) {
-    console.error("❌ Failed to update profile:", error);
-    return { success: false, error: error.message || "Unknown error" };
+  } catch {
+    console.error("Failed to update profile.");
+    return { success: false, error: getSafeProfileError("update") };
   }
 }
 
@@ -103,26 +181,27 @@ export async function uploadProfilePhoto(
   userId: string,
 ): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
+    const { extension, contentType } = await assertProfilePhotoUpload(uri);
+
     // Read file as base64
     const base64 = await FileSystem.readAsStringAsync(uri, {
       encoding: "base64",
     });
 
     // Generate unique filename
-    const fileExt = uri.split(".").pop();
-    const fileName = `${userId}/${Date.now()}.${fileExt}`;
+    const fileName = `${userId}/${Date.now()}.${extension}`;
 
     // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from("profile-photos")
       .upload(fileName, decode(base64), {
-        contentType: `image/${fileExt}`,
+        contentType,
         upsert: true,
       });
 
     if (error) {
-      console.error("❌ Upload error:", error);
-      return { success: false, error: error.message };
+      console.error("Profile photo upload failed.");
+      return { success: false, error: getSafeProfileError("upload") };
     }
 
     // Get public URL
@@ -130,11 +209,10 @@ export async function uploadProfilePhoto(
       data: { publicUrl },
     } = supabase.storage.from("profile-photos").getPublicUrl(fileName);
 
-    console.log("✅ Photo uploaded:", publicUrl);
     return { success: true, url: publicUrl };
-  } catch (error: any) {
-    console.error("❌ Failed to upload photo:", error);
-    return { success: false, error: error.message || "Upload failed" };
+  } catch {
+    console.error("Failed to upload photo.");
+    return { success: false, error: getSafeProfileError("upload") };
   }
 }
 
@@ -149,7 +227,7 @@ export async function updateProfilePhotos(
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      return { success: false, error: "Not authenticated" };
+      return { success: false, error: "Please sign in to update your photos." };
     }
 
     const { error } = await supabase
@@ -158,15 +236,14 @@ export async function updateProfilePhotos(
       .eq("id", user.id);
 
     if (error) {
-      console.error("❌ Error updating photos:", error);
-      return { success: false, error: error.message };
+      console.error("Error updating photos.");
+      return { success: false, error: getSafeProfileError("photos") };
     }
 
-    console.log("✅ Photos updated successfully");
     return { success: true };
-  } catch (error: any) {
-    console.error("❌ Failed to update photos:", error);
-    return { success: false, error: error.message || "Unknown error" };
+  } catch {
+    console.error("Failed to update photos.");
+    return { success: false, error: getSafeProfileError("photos") };
   }
 }
 
@@ -180,7 +257,7 @@ export async function deleteProfilePhoto(
     // Extract file path from URL
     const urlParts = photoUrl.split("/profile-photos/");
     if (urlParts.length < 2) {
-      return { success: false, error: "Invalid photo URL" };
+      return { success: false, error: getSafeProfileError("delete") };
     }
 
     const filePath = urlParts[1];
@@ -190,14 +267,13 @@ export async function deleteProfilePhoto(
       .remove([filePath]);
 
     if (error) {
-      console.error("❌ Error deleting photo:", error);
-      return { success: false, error: error.message };
+      console.error("Error deleting photo.");
+      return { success: false, error: getSafeProfileError("delete") };
     }
 
-    console.log("✅ Photo deleted successfully");
     return { success: true };
-  } catch (error: any) {
-    console.error("❌ Failed to delete photo:", error);
-    return { success: false, error: error.message || "Unknown error" };
+  } catch {
+    console.error("Failed to delete photo.");
+    return { success: false, error: getSafeProfileError("delete") };
   }
 }

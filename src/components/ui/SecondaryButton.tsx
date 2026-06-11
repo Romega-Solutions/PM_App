@@ -23,6 +23,7 @@ interface SecondaryButtonProps {
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
+  loadingLabel?: string;
   width?: DimensionValue;
   variant?: "purple" | "pink" | "white";
   accessibilityLabel?: string;
@@ -34,12 +35,17 @@ export default function SecondaryButton({
   onPress,
   disabled = false,
   loading = false,
+  loadingLabel,
   width: customWidth = "100%",
   variant = "purple",
   accessibilityLabel,
   accessibilityHint,
 }: SecondaryButtonProps) {
   const isDisabled = disabled || loading;
+  const visibleTitle = loading ? (loadingLabel ?? "Working...") : title;
+  const screenReaderLabel = loading
+    ? `${accessibilityLabel || title}. ${loadingLabel ?? "In progress."}`
+    : accessibilityLabel || title;
 
   const variantStyles = getVariantStyles(variant);
 
@@ -58,16 +64,24 @@ export default function SecondaryButton({
       disabled={isDisabled}
       accessible
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel || title}
+      accessibilityLabel={screenReaderLabel}
       accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
+      accessibilityLiveRegion={loading ? "polite" : "none"}
     >
       <View style={styles.content}>
         {loading ? (
           <ActivityIndicator size="small" color={colors.neutral.white} />
         ) : null}
 
-        <Text style={[styles.text, variantStyles.text]}>
-          {loading ? "Loading..." : title}
+        <Text
+          style={[styles.text, variantStyles.text]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.82}
+          maxFontSizeMultiplier={1.25}
+        >
+          {visibleTitle}
         </Text>
       </View>
     </TouchableOpacity>
@@ -115,6 +129,7 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: moderateScale(28),
     height: moderateScale(56),
+    minHeight: 52,
     borderWidth: Platform.select({ ios: 1.5, android: 2, web: 1.5 }),
     justifyContent: "center",
     alignItems: "center",
@@ -127,16 +142,21 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: moderateScale(8),
     paddingHorizontal: theme.spacing.md,
+    minHeight: 52,
+    width: "100%",
   },
 
   text: {
     color: colors.neutral.white,
-    fontSize: moderateScale(18),
+    fontSize: 17,
     fontFamily: theme.fontFamilies.body.semiBold,
-    letterSpacing: Platform.select({ ios: 0.5, android: 0.3, web: 0.4 }),
+    letterSpacing: 0,
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
+    flexShrink: 1,
+    textAlign: "center",
   },
 });

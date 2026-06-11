@@ -6,13 +6,23 @@
  */
 
 import { supabase } from "@/src/config/supabase";
+import {
+  deleteProfilePhoto,
+  uploadProfilePhoto,
+} from "../../profile/api/profileApi";
+
+const PHOTO_SIGN_IN_ERROR = "Please sign in before changing profile photos.";
+const PHOTO_SAVE_ERROR =
+  "Profile photo did not save. Check your connection and try again.";
+const PHOTO_REMOVE_ERROR =
+  "Profile photo could not be removed. Check your connection and try again.";
 
 export async function saveProfilePhoto(uri: string): Promise<{ ok: true; data: { photos: string[] } }> {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
-      throw new Error("Not authenticated");
+      throw new Error(PHOTO_SIGN_IN_ERROR);
     }
 
     // Get existing photos
@@ -22,8 +32,13 @@ export async function saveProfilePhoto(uri: string): Promise<{ ok: true; data: {
       .eq('id', user.id)
       .single();
 
+    const uploadResult = await uploadProfilePhoto(uri, user.id);
+    if (!uploadResult.success || !uploadResult.url) {
+      throw new Error(PHOTO_SAVE_ERROR);
+    }
+
     const existingPhotos = profile?.photos || [];
-    const newPhotos = [uri, ...existingPhotos].slice(0, 6);
+    const newPhotos = [uploadResult.url, ...existingPhotos].slice(0, 6);
 
     // Update photos array
     const { error } = await supabase
@@ -34,13 +49,19 @@ export async function saveProfilePhoto(uri: string): Promise<{ ok: true; data: {
       })
       .eq('id', user.id);
 
-    if (error) throw error;
+    if (error) {
+      await deleteProfilePhoto(uploadResult.url).catch(() => undefined);
+      throw new Error(PHOTO_SAVE_ERROR);
+    }
 
-    console.log("✅ Saved photo to Supabase");
     return { ok: true, data: { photos: newPhotos } };
   } catch (error) {
-    console.error("❌ Error saving photo:", error);
-    throw error;
+    console.error("Error saving photo.");
+    if (error instanceof Error && error.message === PHOTO_SIGN_IN_ERROR) {
+      throw error;
+    }
+
+    throw new Error(PHOTO_SAVE_ERROR);
   }
 }
 
@@ -63,8 +84,8 @@ export async function getProfilePhotos(): Promise<string[]> {
     }
 
     return data.photos || [];
-  } catch (error) {
-    console.error("❌ Error fetching photos:", error);
+  } catch {
+    console.error("Error fetching photos.");
     return [];
   }
 }
@@ -74,7 +95,7 @@ export async function removeProfilePhoto(uri: string): Promise<{ ok: true; data:
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
-      throw new Error("Not authenticated");
+      throw new Error(PHOTO_SIGN_IN_ERROR);
     }
 
     const { data: profile } = await supabase
@@ -82,6 +103,13 @@ export async function removeProfilePhoto(uri: string): Promise<{ ok: true; data:
       .select('photos')
       .eq('id', user.id)
       .single();
+
+    if (uri.includes("/profile-photos/")) {
+      const deleteResult = await deleteProfilePhoto(uri);
+      if (!deleteResult.success) {
+        throw new Error(PHOTO_REMOVE_ERROR);
+      }
+    }
 
     const existingPhotos = profile?.photos || [];
     const newPhotos = existingPhotos.filter((p: string) => p !== uri);
@@ -94,12 +122,17 @@ export async function removeProfilePhoto(uri: string): Promise<{ ok: true; data:
       })
       .eq('id', user.id);
 
-    if (error) throw error;
+    if (error) {
+      throw new Error(PHOTO_REMOVE_ERROR);
+    }
 
-    console.log("✅ Removed photo from Supabase");
     return { ok: true, data: newPhotos };
   } catch (error) {
-    console.error("❌ Error removing photo:", error);
-    throw error;
+    console.error("Error removing photo.");
+    if (error instanceof Error && error.message === PHOTO_SIGN_IN_ERROR) {
+      throw error;
+    }
+
+    throw new Error(PHOTO_REMOVE_ERROR);
   }
 }

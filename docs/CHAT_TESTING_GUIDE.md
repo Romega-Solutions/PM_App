@@ -1,7 +1,7 @@
-# 🎉 Chat Integration Complete - Testing Guide
+# Chat Integration Testing Guide
 
 **Date:** January 21, 2026  
-**Status:** ✅ Days 1-3 Complete - Ready for Testing
+**Status:** Launch-stage source guide. Runtime proof is still required before production claims.
 
 ---
 
@@ -9,12 +9,13 @@
 
 ### **Database Layer**
 
-- ✅ Conversations table created
-- ✅ conversation_id column added to messages
-- ✅ Helper functions: `get_or_create_conversation()`, `reset_unread_count()`
-- ✅ Auto-update trigger for last message
-- ✅ RLS policies set up
-- ✅ 49 existing messages backfilled
+- Conversations table created
+- `conversation_id` column added to messages
+- `send_message` is the client-facing message creation RPC
+- `get_or_create_conversation()` is a private helper used by `send_message`, not a client API
+- Auto-update trigger for last message
+- RLS policies set up
+- Legacy messages backfilled when migration data exists
 
 ### **API Layer**
 
@@ -55,8 +56,8 @@
 1. Open the app and navigate to a chat
 2. Type a message and send
 3. ✅ Should see message instantly in UI
-4. ✅ Check Supabase dashboard: message saved in `messages` table
-5. ✅ Check `conversations` table: `last_message_text` updated
+4. Check Supabase dashboard: message saved in `messages` table by `send_message`
+5. Check `conversations` table: a conversation exists only after a real message send and `last_message_text` updated
 
 ### **Test 2: Receive Realtime Message**
 
@@ -72,7 +73,7 @@
 3. ✅ Should see upload progress
 4. ✅ Image appears in chat
 5. ✅ Check Supabase Storage: `chat-images` bucket has file
-6. ✅ Check `messages` table: `image_url` field populated
+6. ✅ Check `messages` table: `image_url` field stores the `chat-images` storage path, not a public URL
 
 ### **Test 4: Typing Indicators**
 
@@ -122,18 +123,13 @@ console.log("Messages:", data, "Error:", error);
 ### **Messages Not Saving?**
 
 ```sql
--- Check RLS policies
+-- Check RLS policies and RPC grants
 SELECT * FROM pg_policies WHERE tablename = 'messages';
-
--- Test insert permission
-INSERT INTO messages (sender_id, recipient_id, text, type)
-VALUES (
-  'your-user-id',
-  'recipient-id',
-  'Test message',
-  'text'
-);
+SELECT has_function_privilege('authenticated', 'public.send_message(uuid, text, text, text, uuid)', 'EXECUTE');
+SELECT has_function_privilege('authenticated', 'public.get_or_create_conversation(uuid, uuid)', 'EXECUTE');
 ```
+
+Expected: `send_message` is executable by authenticated users. `get_or_create_conversation` is not directly executable.
 
 ### **Realtime Not Working?**
 
@@ -220,13 +216,18 @@ ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
 ### **Issue: "Conversation not found"**
 
-**Solution:** Call `get_or_create_conversation()` first:
+**Solution:** Do not call `get_or_create_conversation()` from the client. It is private. Send a text message through `send_message`; the database creates or reuses the conversation as part of that message send.
 
 ```typescript
-const { data: conversationId } = await supabase.rpc(
-  "get_or_create_conversation",
-  { p_user1_id: userId, p_user2_id: recipientId },
-);
+const { data: message, error } = await supabase.rpc("send_message", {
+  p_recipient_id: recipientId,
+  p_content: "Hello",
+  p_message_type: "text",
+  p_image_url: null,
+  p_conversation_id: null,
+});
+
+const conversationId = message?.conversation_id;
 ```
 
 ---

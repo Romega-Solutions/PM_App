@@ -42,14 +42,25 @@ export default function AboutScreen() {
         <TouchableOpacity
           onPress={() => router.push("/(main)/profile")}
           style={styles.backBtn}
+          activeOpacity={0.78}
+          accessibilityRole="button"
+          accessibilityLabel="Back to profile"
+          accessibilityHint="Returns to your profile screen"
         >
           <ArrowLeft size={24} color={WHITE} />
         </TouchableOpacity>
-        <Text style={styles.title}>About</Text>
-        <View style={{ width: 24 }} />
+        <Text style={styles.title}>About PinayMate</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={[
+          styles.contentBody,
+          { paddingBottom: Math.max(insets.bottom, 24) },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.logoSection}>
           <View style={styles.logoBg}>
             <Heart size={48} color={ACCENT_PINK} fill={ACCENT_PINK} />
@@ -59,27 +70,37 @@ export default function AboutScreen() {
         </View>
 
         <Text style={styles.description}>
-          PinayMate is a modern dating platform designed to connect Filipina
-          women with foreign men seeking meaningful relationships. Our mission
-          is to create authentic connections based on shared values and mutual
-          respect.
+          PinayMate is being built as a dating platform for Filipina women and
+          foreign men seeking meaningful relationships. The current app should
+          be treated as launch-stage: account, privacy, verification, matching,
+          messaging, and support behavior must follow the readiness evidence
+          shown in-app and on the launch website.
         </Text>
+
+        <View style={styles.launchCard}>
+          <Text style={styles.launchCardTitle}>Launch-stage app</Text>
+          <Text style={styles.launchCardText}>
+            Your account can use the features available in this build, but
+            public matching, calls, paid plans, store availability, and final
+            safety operations depend on release sign-off.
+          </Text>
+        </View>
 
         <View style={styles.featureCard}>
           <Shield size={32} color={ACCENT_PURPLE} />
-          <Text style={styles.featureTitle}>Safe & Secure</Text>
+          <Text style={styles.featureTitle}>Privacy and safety controls</Text>
           <Text style={styles.featureDesc}>
-            Your privacy and safety are our top priorities. We use advanced
-            security measures to protect your data.
+            Privacy and safety controls help protect your account, reports, and
+            messages while launch checks continue.
           </Text>
         </View>
 
         <View style={styles.featureCard}>
           <Sparkles size={32} color={ACCENT_PURPLE} />
-          <Text style={styles.featureTitle}>Verified Profiles</Text>
+          <Text style={styles.featureTitle}>Verification Review</Text>
           <Text style={styles.featureDesc}>
-            All profiles go through a verification process to ensure
-            authenticity and create a trusted community.
+            Verification submissions are reviewed before a verified badge is
+            shown. A badge is a trust signal, not a safety guarantee.
           </Text>
         </View>
 
@@ -87,14 +108,18 @@ export default function AboutScreen() {
           <Heart size={32} color={ACCENT_PURPLE} />
           <Text style={styles.featureTitle}>Meaningful Connections</Text>
           <Text style={styles.featureDesc}>
-            We focus on helping you find genuine relationships built on shared
-            interests and values.
+            We focus on helping people understand relationship intent, shared
+            interests, and values before they choose to connect.
           </Text>
         </View>
 
         <TouchableOpacity
           style={styles.websiteBtn}
           onPress={() => Linking.openURL("https://pinaymate.com")}
+          activeOpacity={0.84}
+          accessibilityRole="button"
+          accessibilityLabel="Visit the PinayMate website"
+          accessibilityHint="Opens pinaymate.com in your browser"
         >
           <Globe size={20} color={WHITE} />
           <Text style={styles.websiteBtnText}>Visit Our Website</Text>
@@ -104,10 +129,8 @@ export default function AboutScreen() {
           <Text style={styles.footerText}>
             © 2025 PinayMate. All rights reserved.
           </Text>
-          <Text style={styles.footerText}>Made with ❤️ in the Philippines</Text>
+          <Text style={styles.footerText}>Made in the Philippines</Text>
         </View>
-
-        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
@@ -126,16 +149,29 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   backBtn: {
-    padding: 4,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
+    flex: 1,
     fontSize: 20,
     color: WHITE,
     fontFamily: "DMSans-Bold",
+    textAlign: "center",
+  },
+  headerSpacer: {
+    width: 44,
+    height: 44,
   },
   content: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  contentBody: {
+    paddingBottom: 24,
   },
   logoSection: {
     alignItems: "center",
@@ -181,6 +217,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
+  launchCard: {
+    backgroundColor: "rgba(239, 62, 120, 0.1)",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(239, 62, 120, 0.28)",
+    padding: 18,
+    marginBottom: 18,
+  },
+  launchCardTitle: {
+    color: WHITE,
+    fontSize: 16,
+    fontFamily: "DMSans-Bold",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  launchCardText: {
+    color: "rgba(255,255,255,0.72)",
+    fontSize: 14,
+    fontFamily: "DMSans-Regular",
+    lineHeight: 21,
+    textAlign: "center",
+  },
   featureTitle: {
     color: WHITE,
     fontSize: 18,
@@ -198,7 +256,8 @@ const styles = StyleSheet.create({
   websiteBtn: {
     backgroundColor: ACCENT_PURPLE,
     borderRadius: 12,
-    padding: 16,
+    minHeight: 54,
+    paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

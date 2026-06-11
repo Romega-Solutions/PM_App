@@ -14,14 +14,14 @@
  */
 
 import {
-    Bell,
-    ChevronRight,
-    Edit,
-    HelpCircle,
-    Info,
-    Lock,
-    LogOut,
-    SlidersHorizontal,
+  Bell,
+  ChevronRight,
+  Edit,
+  HelpCircle,
+  Info,
+  Lock,
+  LogOut,
+  SlidersHorizontal,
 } from "lucide-react-native";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -40,6 +40,8 @@ const DANGER_BG = "rgba(239, 62, 120, 0.12)";
 export interface MenuItem {
   /** Menu item title */
   title: string;
+  /** Screen reader hint for the action */
+  hint: string;
   /** Menu item icon */
   icon: React.ReactNode;
   /** Route to navigate to */
@@ -71,14 +73,15 @@ export const ProfileMenuList: React.FC<ProfileMenuListProps> = ({
   return (
     <View style={styles.container}>
       {/* Menu Items */}
-      {items.map((item, idx) => (
+      {items.map((item) => (
         <TouchableOpacity
-          key={idx}
+          key={item.route}
           style={styles.listItem}
           activeOpacity={0.75}
           onPress={() => onItemPress(item.route)}
           accessibilityRole="button"
           accessibilityLabel={item.title}
+          accessibilityHint={item.hint}
         >
           <View style={styles.iconContainer}>{item.icon}</View>
           <Text style={styles.listItemText}>{item.title}</Text>
@@ -92,10 +95,11 @@ export const ProfileMenuList: React.FC<ProfileMenuListProps> = ({
         onPress={onLogout}
         activeOpacity={0.85}
         accessibilityRole="button"
-        accessibilityLabel="Logout"
+        accessibilityLabel="Log out"
+        accessibilityHint="Signs out of this account on this device"
       >
         <LogOut size={20} color={ACCENT_PINK} />
-        <Text style={styles.logoutText}>Logout</Text>
+        <Text style={styles.logoutText}>Log out</Text>
       </TouchableOpacity>
     </View>
   );
@@ -107,31 +111,37 @@ export const ProfileMenuList: React.FC<ProfileMenuListProps> = ({
 export const getDefaultMenuItems = (): MenuItem[] => [
   {
     title: "Edit Profile",
+    hint: "Opens your profile details for review and editing",
     icon: <Edit size={22} color={ACCENT_PURPLE} />,
     route: "/(main)/profile-settings/edit",
   },
   {
     title: "Preferences",
+    hint: "Opens your match preference settings",
     icon: <SlidersHorizontal size={22} color={ACCENT_PURPLE} />,
     route: "/(main)/profile-settings/preferences",
   },
   {
     title: "Privacy",
+    hint: "Opens privacy controls for your profile and activity",
     icon: <Lock size={22} color={ACCENT_PURPLE} />,
     route: "/(main)/profile-settings/privacy",
   },
   {
     title: "Notifications",
+    hint: "Opens notification settings",
     icon: <Bell size={22} color={ACCENT_PURPLE} />,
     route: "/(main)/profile-settings/notifications",
   },
   {
-    title: "Help & Support",
+    title: "Help & Safety",
+    hint: "Opens help and safety information",
     icon: <HelpCircle size={22} color={ACCENT_PURPLE} />,
     route: "/(main)/profile-settings/help",
   },
   {
     title: "About",
+    hint: "Opens app information",
     icon: <Info size={22} color={ACCENT_PURPLE} />,
     route: "/(main)/profile-settings/about",
   },
@@ -144,6 +154,7 @@ const styles = StyleSheet.create({
   listItem: {
     backgroundColor: SURFACE_STRONG,
     borderRadius: 18,
+    minHeight: 56,
     padding: 18,
     marginBottom: 14,
     flexDirection: "row",
@@ -164,6 +175,7 @@ const styles = StyleSheet.create({
   logoutBtn: {
     backgroundColor: DANGER_BG,
     borderRadius: 18,
+    minHeight: 56,
     padding: 18,
     marginTop: 8,
     marginBottom: 36,

@@ -7,6 +7,10 @@
 
 import { supabase } from "@/src/config/supabase";
 
+const LOCATION_SIGN_IN_ERROR = "Please sign in before saving your location.";
+const LOCATION_SAVE_ERROR =
+  "Location did not save. Check your connection and try again.";
+
 export type SavedLocation = {
   locationType: "current" | "manual";
   locationName: string;
@@ -19,7 +23,7 @@ export async function saveLocation(payload: SavedLocation): Promise<{ ok: true; 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
-      throw new Error("Not authenticated");
+      throw new Error(LOCATION_SIGN_IN_ERROR);
     }
 
     const record = { ...payload, timestamp: new Date().toISOString() };
@@ -35,13 +39,18 @@ export async function saveLocation(payload: SavedLocation): Promise<{ ok: true; 
       })
       .eq('id', user.id);
 
-    if (error) throw error;
+    if (error) {
+      throw new Error(LOCATION_SAVE_ERROR);
+    }
 
-    console.log("✅ Saved location to Supabase");
     return { ok: true, data: record };
   } catch (error) {
-    console.error("❌ Error saving location:", error);
-    throw error;
+    console.error("Error saving location.");
+    if (error instanceof Error && error.message === LOCATION_SIGN_IN_ERROR) {
+      throw error;
+    }
+
+    throw new Error(LOCATION_SAVE_ERROR);
   }
 }
 
@@ -69,8 +78,8 @@ export async function getLocation(): Promise<SavedLocation | null> {
       coordinates: data.location_coordinates,
       timestamp: data.location_timestamp,
     };
-  } catch (error) {
-    console.error("❌ Error fetching location:", error);
+  } catch {
+    console.error("Error fetching location.");
     return null;
   }
 }
@@ -90,7 +99,7 @@ export async function clearLocation(): Promise<void> {
         })
         .eq('id', user.id);
     }
-  } catch (error) {
-    console.error("❌ Error clearing location:", error);
+  } catch {
+    console.error("Error clearing location.");
   }
 }

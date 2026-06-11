@@ -18,17 +18,22 @@
  */
 
 import { supabase } from "@/src/config/supabase";
-import { accountApi } from "@/src/features/account/api/accountApi";
 import { getMatches } from "@/src/features/matching/api/matchingApi";
-import React, { useEffect, useState } from "react";
+import { unmatchUser } from "@/src/features/safety/api/safetyApi";
+import { useRouter } from "expo-router";
+import { RefreshCw, ShieldCheck } from "lucide-react-native";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  AccessibilityInfo,
+  Alert,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { EmptyMatchesState } from "../components/EmptyMatchesState";
@@ -38,6 +43,7 @@ import { Match, MatchCard } from "../components/MatchCard";
 
 const BRAND_BG = "#0F0814";
 const ACCENT_PINK = "#EF3E78";
+const WHITE = "#FFFFFF";
 
 function isMissingAuthSession(error: unknown) {
   return (
@@ -50,99 +56,182 @@ function isMissingAuthSession(error: unknown) {
 
 export default function LikesScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [filter, setFilter] = useState<"all" | "mutual">("all");
-  const [userType, setUserType] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const fetchMatches = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+
+    try {
+      // Get current user
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        if (userError && !isMissingAuthSession(userError)) {
+          console.error("Failed to fetch user.");
+        }
+        const message = "Please sign in to view your matches.";
+        setLoadError(message);
+        AccessibilityInfo.announceForAccessibility(message);
+        setMatches([]);
+        return;
+      }
+
+      // Fetch matches from database
+      const { data: dbMatches, error: matchesError } = await getMatches(
+        user.id,
+      );
+
+      if (matchesError) {
+        console.error("Failed to fetch matches.");
+        const message =
+          "We could not refresh your matches. Check your connection and try again.";
+        setLoadError(message);
+        AccessibilityInfo.announceForAccessibility(message);
+        // Show empty state - no fallback to mock data
+        setMatches([]);
+      } else if (dbMatches && dbMatches.length > 0) {
+        // Convert database matches to display format
+        const displayMatches: Match[] = dbMatches.map((match) => ({
+          id: match.profile.id,
+          name: match.profile.first_name,
+          age: match.profile.age,
+          location: match.profile.city || "Location hidden",
+          image: match.profile.photos?.[0]
+            ? { uri: match.profile.photos[0] }
+            : undefined,
+          verified: match.profile.is_verified,
+          mutual: match.is_mutual,
+          gender:
+            match.profile.gender === "other" ? "female" : match.profile.gender,
+          matchedAt: match.matched_at,
+        }));
+        setMatches(displayMatches);
+      } else {
+        // No matches in database
+        setMatches([]);
+      }
+    } catch {
+      console.error("Failed to fetch data.");
+      const message =
+        "We could not refresh your matches. Check your connection and try again.";
+      setLoadError(message);
+      AccessibilityInfo.announceForAccessibility(message);
+      // Show empty state - no fallback to mock data
+      setMatches([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // Fetch user data and matches on mount
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Get current user
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-
-        if (userError || !user) {
-          // TEMP TEST BYPASS: unauthenticated testers can inspect the app shell.
-          // Keep auth code intact; restore login gates before production testing.
-          if (userError && !isMissingAuthSession(userError)) {
-            console.error("Failed to fetch user:", userError);
-          }
-          setLoading(false);
-          return;
-        }
-
-        setUserId(user.id);
-
-        // Get user type
-        const basicInfo = await accountApi.getBasicInfo();
-        setUserType(basicInfo?.userType ?? null);
-
-        // Fetch matches from database
-        const { data: dbMatches, error: matchesError } = await getMatches(
-          user.id,
-        );
-
-        if (matchesError) {
-          console.error("Failed to fetch matches:", matchesError);
-          // Show empty state - no fallback to mock data
-          setMatches([]);
-        } else if (dbMatches && dbMatches.length > 0) {
-          // Convert database matches to display format
-          const displayMatches: Match[] = dbMatches.map((match) => ({
-            id: match.profile.id,
-            name: match.profile.first_name,
-            age: match.profile.age,
-            location: match.profile.city || "Philippines",
-            image: match.profile.photos?.[0]
-              ? { uri: match.profile.photos[0] }
-              : require("../../../../assets/girls/ai1.jpg"),
-            verified: match.profile.is_verified,
-            mutual: match.is_mutual,
-            gender:
-              match.profile.gender === "other"
-                ? "female"
-                : match.profile.gender,
-            matchedAt: match.matched_at,
-          }));
-          setMatches(displayMatches);
-        } else {
-          // No matches in database
-          setMatches([]);
-        }
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-        // Show empty state - no fallback to mock data
-        setMatches([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+    fetchMatches();
+  }, [fetchMatches]);
 
   const filteredMatches =
     filter === "mutual" ? matches.filter((m) => m.mutual) : matches;
 
-  const handleMessage = (id: string | number) => {
-    console.log("Message match:", id);
-    // TODO: Navigate to messages screen with this match
+  const handleMessage = async (id: string | number) => {
+    const match = matches.find((item) => item.id === id);
+
+    if (!match) {
+      Alert.alert("Conversation unavailable", "This match could not be found.");
+      return;
+    }
+
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        Alert.alert("Sign in required", "Please sign in to message matches.");
+        return;
+      }
+
+      router.push({
+        pathname: "/chat",
+        params: {
+          userId: String(id),
+          userName: match.name,
+          userImage:
+            typeof match.image === "object" && "uri" in match.image
+              ? match.image.uri
+              : undefined,
+          isOnline: "false",
+        },
+      });
+    } catch {
+      Alert.alert(
+        "Chat unavailable",
+        "We could not open this match yet. Check your connection and try again.",
+      );
+    }
   };
 
   const handleUnmatch = (id: string | number) => {
-    console.log("Unmatch:", id);
-    // TODO: Show confirmation dialog and remove match
+    const match = matches.find((item) => item.id === id);
+    const matchName = match?.name || "this member";
+
+    Alert.alert(
+      `Unmatch ${matchName}?`,
+      "This removes the match from your list and closes the chat for you. If something unsafe happened, report first so support can review it.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Unmatch",
+          style: "destructive",
+          onPress: async () => {
+            const result = await unmatchUser(String(id));
+
+            if (!result.success) {
+              Alert.alert(
+                "Unmatch failed",
+                result.error ||
+                  "The match was not removed. Check your connection and try again.",
+              );
+              return;
+            }
+
+            setMatches((current) => current.filter((item) => item.id !== id));
+          },
+        },
+      ],
+    );
+  };
+
+  const handleReport = (id: string | number) => {
+    const match = matches.find((item) => item.id === id);
+
+    router.push({
+      pathname: "/(modals)/report-user",
+      params: {
+        userId: String(id),
+        userName: match?.name || "this member",
+        source: "likes",
+      },
+    });
   };
 
   // Loading state
   if (loading) {
     return (
-      <View style={[styles.root, styles.centerContent]}>
+      <View
+        style={[
+          styles.root,
+          styles.centerContent,
+          { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 },
+        ]}
+      >
         <StatusBar
           barStyle="light-content"
           backgroundColor={BRAND_BG}
@@ -151,8 +240,18 @@ export default function LikesScreen() {
         {Platform.OS === "ios" && (
           <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
         )}
-        <ActivityIndicator size="large" color={ACCENT_PINK} />
-        <Text style={styles.loadingText}>Loading matches...</Text>
+        <View style={styles.loadingPanel}>
+          <ActivityIndicator
+            size="large"
+            color={ACCENT_PINK}
+            accessibilityLabel="Loading matches"
+          />
+          <Text style={styles.loadingText}>Checking your matches...</Text>
+          <Text style={styles.loadingSubtext}>
+            We are loading confirmed matches and keeping chat access tied to
+            the matched conversation flow.
+          </Text>
+        </View>
       </View>
     );
   }
@@ -169,7 +268,27 @@ export default function LikesScreen() {
       )}
 
       <LikesHeader matchCount={filteredMatches.length} filter={filter} />
-      <LikesFilter filter={filter} onFilterChange={setFilter} />
+      <LikesFilter
+        filter={filter}
+        onFilterChange={setFilter}
+        allCount={matches.length}
+        mutualCount={matches.filter((match) => match.mutual).length}
+      />
+
+      <View
+        style={styles.matchSafetyNote}
+        accessible
+        accessibilityLabel="Matched messaging safety note. Message opens the chat, and your first text starts the conversation after match checks pass. Keep private details private and use report or unmatch controls when needed."
+      >
+        <View style={styles.matchSafetyIcon}>
+          <ShieldCheck size={15} color={WHITE} strokeWidth={2.4} />
+        </View>
+        <Text style={styles.matchSafetyText}>
+          Tap Message to open the chat. Your first text starts the conversation
+          only after match checks pass. Keep private details private, and report
+          before unmatching if support should review the interaction.
+        </Text>
+      </View>
 
       {/* Matches Grid */}
       <ScrollView
@@ -186,12 +305,35 @@ export default function LikesScreen() {
               match={match}
               onMessage={() => handleMessage(match.id)}
               onUnmatch={() => handleUnmatch(match.id)}
+              onReport={() => handleReport(match.id)}
             />
           ))}
         </View>
 
         {/* Empty State */}
-        {filteredMatches.length === 0 && <EmptyMatchesState />}
+        {filteredMatches.length === 0 && (
+          <EmptyMatchesState
+            variant={
+              loadError ? "error" : filter === "mutual" ? "filtered" : "empty"
+            }
+            message={loadError ?? undefined}
+            onAction={loadError ? fetchMatches : undefined}
+          />
+        )}
+
+        {matches.length > 0 && (
+          <TouchableOpacity
+            style={styles.refreshButton}
+            onPress={fetchMatches}
+            activeOpacity={0.82}
+            accessibilityRole="button"
+            accessibilityLabel="Refresh matches"
+            accessibilityHint="Checks for new mutual matches"
+          >
+            <RefreshCw size={16} color={WHITE} strokeWidth={2.4} />
+            <Text style={styles.refreshButtonText}>Refresh matches</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </View>
   );
@@ -205,12 +347,33 @@ const styles = StyleSheet.create({
   centerContent: {
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 32,
+  },
+  loadingPanel: {
+    width: "100%",
+    maxWidth: 318,
+    padding: 22,
+    borderRadius: 24,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.14)",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
     color: "rgba(255,255,255,0.85)",
     fontFamily: "DMSans-Medium",
+    textAlign: "center",
+  },
+  loadingSubtext: {
+    marginTop: 8,
+    maxWidth: 286,
+    fontSize: 14,
+    lineHeight: 20,
+    color: "rgba(255,255,255,0.58)",
+    fontFamily: "DMSans-Regular",
+    textAlign: "center",
   },
   scrollView: {
     flex: 1,
@@ -221,5 +384,53 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 16,
     justifyContent: "space-between",
+  },
+  refreshButton: {
+    alignSelf: "center",
+    minHeight: 46,
+    marginTop: 10,
+    marginBottom: 12,
+    paddingHorizontal: 18,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: "rgba(239, 62, 120, 0.28)",
+    backgroundColor: "rgba(239, 62, 120, 0.12)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  refreshButtonText: {
+    fontSize: 14,
+    fontFamily: "DMSans-Bold",
+    color: WHITE,
+  },
+  matchSafetyNote: {
+    marginHorizontal: 20,
+    marginBottom: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 18,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.14)",
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  matchSafetyIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "rgba(239, 62, 120, 0.7)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  matchSafetyText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: "DMSans-Medium",
+    color: "rgba(255, 255, 255, 0.72)",
   },
 });

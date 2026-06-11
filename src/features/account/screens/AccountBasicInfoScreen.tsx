@@ -10,16 +10,22 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Calendar, Heart, User } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const profileBasicsGuidance = [
+  "PinayMate is for adults 18 and older.",
+  "Use truthful profile details so future matches know who they are meeting.",
+  "Keep IDs, screenshots, and private records out of these fields.",
+];
 
 type FormState = {
   firstName: string;
@@ -58,22 +64,20 @@ export default function AccountBasicInfoScreen() {
   // 📦 Load firstName from Zustand if missing
   useEffect(() => {
     if (!params.firstName) {
-      console.log("⚠️ Missing firstName param, loading from Zustand...");
       const storedData = getSignupData();
 
       if (storedData) {
-        console.log("✅ Loaded from Zustand:", storedData);
         setForm((prev) => ({ ...prev, firstName: storedData.firstName }));
       }
     }
-  }, []);
+  }, [getSignupData, params.firstName]);
 
   useEffect(() => {
     if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
       Alert.alert("Error", "User type not found. Please start from signup.");
       router.replace("/(auth)/user-type-selection");
     }
-  }, [userType]);
+  }, [router, userType]);
 
   const getUserTypeLabel = (): string => {
     if (userType === "filipina") return "Filipina";
@@ -89,7 +93,7 @@ export default function AccountBasicInfoScreen() {
 
   const validateField = (
     field: keyof FormState,
-    value: string
+    value: string,
   ): string | undefined => {
     switch (field) {
       case "firstName":
@@ -120,7 +124,7 @@ export default function AccountBasicInfoScreen() {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    (Object.keys(form) as Array<keyof FormState>).forEach((field) => {
+    (Object.keys(form) as (keyof FormState)[]).forEach((field) => {
       const error = validateField(field, form[field]);
       if (error) newErrors[field] = error;
     });
@@ -164,11 +168,8 @@ export default function AccountBasicInfoScreen() {
       });
 
       if (result?.ok) {
-        console.log("✅ Basic info saved:", result.data);
-
         // 🗑️ CLEAR ZUSTAND STORE AFTER SUCCESSFUL SAVE
         clearSignupData();
-        console.log("🗑️ Signup data cleared from Zustand");
 
         router.push({
           pathname: "/(auth)/account-setup/profile-photos",
@@ -180,7 +181,7 @@ export default function AccountBasicInfoScreen() {
         "Error",
         error instanceof Error
           ? error.message
-          : "Failed to save profile information"
+          : "Failed to save profile information",
       );
     } finally {
       setLoading(false);
@@ -247,6 +248,20 @@ export default function AccountBasicInfoScreen() {
             </Text>
           </View>
 
+          <View
+            style={styles.guidanceCard}
+            accessible
+            accessibilityLabel="Profile basics guidance. PinayMate is for adults 18 and older. Use truthful profile details for future matches. Keep IDs, screenshots, and private records out of these fields."
+          >
+            <Text style={styles.guidanceTitle}>Profile basics</Text>
+            {profileBasicsGuidance.map((item) => (
+              <View key={item} style={styles.guidanceRow}>
+                <View style={styles.guidanceDot} />
+                <Text style={styles.guidanceText}>{item}</Text>
+              </View>
+            ))}
+          </View>
+
           <View style={styles.formContainer}>
             <CustomTextInput
               label="First Name"
@@ -289,8 +304,8 @@ export default function AccountBasicInfoScreen() {
 
           <View style={styles.helperContainer}>
             <Text style={styles.helperText}>
-              🔒 Your information is secure and will only be visible according
-              to your privacy settings
+              Verification documents belong only in protected review steps, not
+              ordinary profile fields.
             </Text>
           </View>
         </ScrollView>
@@ -346,6 +361,41 @@ const styles = StyleSheet.create({
     color: theme.colors.amihan[300],
   },
   formContainer: { gap: theme.spacing.sm },
+  guidanceCard: {
+    gap: 8,
+    backgroundColor: "rgba(141,105,246,0.1)",
+    borderRadius: 14,
+    padding: 14,
+    marginHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: "rgba(141,105,246,0.24)",
+  },
+  guidanceTitle: {
+    fontSize: 14,
+    fontFamily: theme.fontFamilies.body.semiBold,
+    color: theme.colors.neutral.white,
+    lineHeight: 20,
+  },
+  guidanceRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  guidanceDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 7,
+    backgroundColor: theme.colors.amihan[300],
+  },
+  guidanceText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: theme.fontFamilies.body.regular,
+    color: "rgba(255,255,255,0.8)",
+    lineHeight: 19,
+  },
   helperContainer: { marginTop: theme.spacing.md, paddingHorizontal: 2 },
   helperText: {
     fontSize: 12,

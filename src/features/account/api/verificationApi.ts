@@ -1,11 +1,13 @@
 /**
  * Verification API
- * 
+ *
  * Handles identity verification (selfie + document upload, OCR extraction, verification status).
  * Single Responsibility: Verification operations only.
  */
 
 import { supabase } from "@/src/config/supabase";
+import { decode } from "base64-arraybuffer";
+import * as FileSystem from "expo-file-system/legacy";
 import { BasicInfoPayload } from "./basicInfoApi";
 
 export type VerificationData = {
@@ -19,77 +21,186 @@ export type VerificationData = {
   mismatchReasons?: string[];
 };
 
+const VERIFICATION_BUCKET = "verification-docs";
+const VERIFICATION_SIGN_IN_ERROR =
+  "Please sign in before submitting verification.";
+const VERIFICATION_UPLOAD_ERROR =
+  "Verification upload failed. Check your files and connection, then try again.";
+const VERIFICATION_SUBMIT_ERROR =
+  "Verification was not submitted. Check your connection and try again.";
+const MAX_VERIFICATION_IMAGE_BYTES = 6 * 1024 * 1024;
+
+function getImageExtension(uri: string): string {
+  const cleanUri = uri.split("?")[0].split("#")[0];
+  const extension = cleanUri.split(".").pop()?.toLowerCase();
+
+  if (!extension || extension === cleanUri || extension.length > 5) {
+    return "jpg";
+  }
+
+  if (["jpg", "jpeg", "png", "webp", "heic"].includes(extension)) {
+    return extension;
+  }
+
+  return "jpg";
+}
+
+function getImageContentType(extension: string): string {
+  if (extension === "jpg" || extension === "jpeg") {
+    return "image/jpeg";
+  }
+
+  return `image/${extension}`;
+}
+
+async function uploadVerificationImage(
+  userId: string,
+  uri: string,
+  kind: "selfie" | "document",
+): Promise<string> {
+  const fileInfo = await FileSystem.getInfoAsync(uri);
+
+  if (
+    !fileInfo.exists ||
+    (typeof fileInfo.size === "number" &&
+      fileInfo.size > MAX_VERIFICATION_IMAGE_BYTES)
+  ) {
+    throw new Error(VERIFICATION_UPLOAD_ERROR);
+  }
+
+  const extension = getImageExtension(uri);
+  const filePath = `${userId}/${kind}-${Date.now()}.${extension}`;
+  const base64 = await FileSystem.readAsStringAsync(uri, {
+    encoding: "base64",
+  });
+
+  const { error } = await supabase.storage
+    .from(VERIFICATION_BUCKET)
+    .upload(filePath, decode(base64), {
+      contentType: getImageContentType(extension),
+      upsert: false,
+    });
+
+  if (error) {
+    throw new Error(VERIFICATION_UPLOAD_ERROR);
+  }
+
+  return filePath;
+}
+
 export function compareVerificationData(
   extracted: { firstName?: string; lastName?: string; age?: number },
-  stored: BasicInfoPayload | null
+  stored: BasicInfoPayload | null,
 ): { match: boolean; reasons: string[] } {
   if (!stored) return { match: false, reasons: ["No basic info found"] };
   const reasons: string[] = [];
   const normalize = (s: string) => s.trim().toLowerCase();
-  
-  if (extracted.firstName && normalize(extracted.firstName) !== normalize(stored.firstName)) {
-    reasons.push(`First name mismatch: "${extracted.firstName}" vs "${stored.firstName}"`);
+
+  if (!extracted.firstName) {
+    reasons.push("Could not read first name from document");
   }
-  if (extracted.lastName && normalize(extracted.lastName) !== normalize(stored.lastName)) {
-    reasons.push(`Last name mismatch: "${extracted.lastName}" vs "${stored.lastName}"`);
+  if (!extracted.lastName) {
+    reasons.push("Could not read last name from document");
+  }
+  if (extracted.age === undefined) {
+    reasons.push("Could not read birth date or age from document");
+  }
+
+  if (
+    extracted.firstName &&
+    normalize(extracted.firstName) !== normalize(stored.firstName)
+  ) {
+    reasons.push("First name needs manual review");
+  }
+  if (
+    extracted.lastName &&
+    normalize(extracted.lastName) !== normalize(stored.lastName)
+  ) {
+    reasons.push("Last name needs manual review");
   }
   if (extracted.age !== undefined && extracted.age !== stored.age) {
-    reasons.push(`Age mismatch: ${extracted.age} vs ${stored.age}`);
+    reasons.push("Age needs manual review");
   }
-  
+
   return { match: reasons.length === 0, reasons };
 }
 
-export async function saveVerification(payload: VerificationData): Promise<{ ok: true; data: VerificationData }> {
+export async function saveVerification(
+  payload: VerificationData,
+): Promise<{ ok: true; data: VerificationData }> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
     if (userError || !user) {
-      throw new Error("Not authenticated");
+      throw new Error(VERIFICATION_SIGN_IN_ERROR);
     }
 
-    const record = { 
-      ...payload, 
-      verifiedAt: payload.isVerified ? new Date().toISOString() : undefined 
+    const selfieStoragePath = await uploadVerificationImage(
+      user.id,
+      payload.selfieUri,
+      "selfie",
+    );
+    const documentStoragePath = await uploadVerificationImage(
+      user.id,
+      payload.documentUri,
+      "document",
+    );
+
+    const record = {
+      ...payload,
+      selfieUri: selfieStoragePath,
+      documentUri: documentStoragePath,
+      isVerified: false,
+      verifiedAt: undefined,
     };
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        verification_selfie: record.selfieUri,
-        verification_document: record.documentUri,
-        verification_extracted_first_name: record.extractedFirstName,
-        verification_extracted_last_name: record.extractedLastName,
-        verification_extracted_age: record.extractedAge,
-        is_verified: record.isVerified,
-        verified_at: record.verifiedAt,
-        verification_mismatch_reasons: record.mismatchReasons,
-        verification_completed: true,
-      })
-      .eq('id', user.id);
+    const { error } = await supabase.rpc("submit_verification", {
+      p_selfie_uri: record.selfieUri,
+      p_document_uri: record.documentUri,
+      p_extracted_first_name: record.extractedFirstName ?? null,
+      p_extracted_last_name: record.extractedLastName ?? null,
+      p_extracted_age: record.extractedAge ?? null,
+      p_mismatch_reasons: record.mismatchReasons ?? null,
+    });
 
-    if (error) throw error;
+    if (error) {
+      throw new Error(VERIFICATION_SUBMIT_ERROR);
+    }
 
-    console.log("✅ Saved verification to Supabase");
     return { ok: true, data: record };
   } catch (error) {
-    console.error("❌ Error saving verification:", error);
-    throw error;
+    if (
+      error instanceof Error &&
+      (error.message === VERIFICATION_SIGN_IN_ERROR ||
+        error.message === VERIFICATION_UPLOAD_ERROR)
+    ) {
+      throw error;
+    }
+
+    throw new Error(VERIFICATION_SUBMIT_ERROR);
   }
 }
 
 export async function getVerification(): Promise<VerificationData | null> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
     if (userError || !user) {
       return null;
     }
 
     const { data, error } = await supabase
-      .from('profiles')
-      .select('verification_selfie, verification_document, verification_extracted_first_name, verification_extracted_last_name, verification_extracted_age, is_verified, verified_at, verification_mismatch_reasons')
-      .eq('id', user.id)
+      .from("profiles")
+      .select(
+        "verification_selfie, verification_document, verification_extracted_first_name, verification_extracted_last_name, verification_extracted_age, is_verified, verified_at, verification_mismatch_reasons",
+      )
+      .eq("id", user.id)
       .single();
 
     if (error || !data || !data.verification_selfie) {
@@ -106,28 +217,23 @@ export async function getVerification(): Promise<VerificationData | null> {
       verifiedAt: data.verified_at,
       mismatchReasons: data.verification_mismatch_reasons,
     };
-  } catch (error) {
-    console.error("❌ Error fetching verification:", error);
+  } catch {
+    console.error("Error fetching verification.");
     return null;
   }
 }
 
 export async function clearVerification(): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (user) {
-      await supabase
-        .from('profiles')
-        .update({
-          verification_completed: false,
-          is_verified: false,
-          verification_selfie: null,
-          verification_document: null,
-        })
-        .eq('id', user.id);
+      const { error } = await supabase.rpc("clear_verification_submission");
+      if (error) throw error;
     }
-  } catch (error) {
-    console.error("❌ Error clearing verification:", error);
+  } catch {
+    console.error("Error clearing verification.");
   }
 }

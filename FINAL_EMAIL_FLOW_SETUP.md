@@ -1,232 +1,151 @@
-# ✅ FINAL SETUP - Email Verification Flow
+# PinayMate Email Auth Flow
 
-## 🎯 How It Works Now
+Status: launch-stage. This document describes the intended production-safe email verification and password recovery flows, plus the evidence required before launch.
 
-### User Journey:
+## Current user journey
 
-```
-1. User signs up
-   ↓
-2. User sees "Verify Email" screen (stays in app)
-   ↓
-3. User checks email and clicks verification link
-   ↓
-4. Link opens → Browser redirects back to app
-   ↓
-5. App shows "Email Verified!" screen
-   ↓
-6. Database trigger creates profile automatically
-   ↓
-7. User continues to "Account Setup" (Basic Info)
+### Signup verification
+
+```text
+1. User selects account type.
+2. User signs up with email and password.
+3. User sees the verify-email screen.
+4. User clicks the Supabase verification email.
+5. Redirect opens the app or configured web callback with a Supabase PKCE `code`.
+6. verification-success ensures the profile exists through ensureUserProfile.
+7. User continues to account setup.
+8. Basic info is saved through save_basic_info RPC.
 ```
 
----
+### Password recovery
 
-## ⚙️ Supabase Configuration
-
-### 1. Enable Email Provider & Verification
-
-Go to: **Authentication** → **Providers** → **Email**
-
-- ✅ **ENABLE** Email provider
-- ✅ **ENABLE** "Confirm email"
-- Click **Save**
-
-### 2. Add Redirect URLs
-
-Go to: **Authentication** → **URL Configuration**
-
-**Site URL:**
-
-```
-http://localhost:3000
+```text
+1. User taps Forgot Password on sign-in.
+2. App calls Supabase resetPasswordForEmail with the reset-password redirect.
+3. User opens the recovery email.
+4. Redirect opens reset-password in the app or configured web callback with a Supabase PKCE `code`.
+5. User enters and confirms a new password.
+6. App calls Supabase updateUser, then signs the user out.
+7. User signs in again with the new password.
 ```
 
-**Redirect URLs (add these 3):**
+## Supabase configuration
 
-```
+Supabase Dashboard -> Authentication -> Providers -> Email
+
+- Enable Email provider.
+- Enable Confirm email.
+- Configure sender/domain settings for the target environment.
+- Keep redirect URLs environment-specific.
+
+Supabase Dashboard -> Authentication -> URL Configuration
+
+Development can include:
+
+```text
 exp://*
-pinaymate://*
 http://localhost:3000/*
+http://localhost:8081/*
+pinaymate://*
 ```
 
----
+Staging/production must use final deployed destinations:
 
-## 🗄️ Database Setup
-
-Run this SQL in Supabase SQL Editor:
-
-**Copy from:** `supabase/migrations/00_complete_database_setup.sql`
-
-**What it does:**
-
-- ✅ Creates `profiles` table
-- ✅ Creates trigger that runs when user's email is verified
-- ✅ Trigger creates profile with data from signup metadata
-- ✅ Sets up messages, likes, passes tables
-- ✅ Configures security policies
-
-**Important:** The trigger now runs **BOTH** on:
-
-1. User insert (if email already confirmed)
-2. User update (when email_confirmed_at changes from NULL to a timestamp)
-
-This ensures profile is created as soon as email is verified!
-
----
-
-## 🧪 Testing Flow
-
-### Step 1: Sign Up
-
-```bash
-npx expo start --clear
+```text
+https://<staging-pinaymate-domain>/*
+https://<production-pinaymate-domain>/*
+pinaymate://*
 ```
 
-1. Select user type
-2. Fill signup form
-3. Click "Create Account"
-4. ✅ Should navigate to **"Verify Email"** screen
-5. ✅ Console shows: "📧 Email not verified yet"
+Do not use localhost as the production Site URL.
 
-### Step 2: Check Email
+## Database setup
 
-1. Open your email inbox
-2. Find Supabase verification email
-3. Click the verification link
+Launch setup must apply the ordered migration set, not just the old baseline SQL.
 
-### Step 3: Verify in App
+Required launch migrations include:
 
-1. ✅ Browser opens and redirects to app
-2. ✅ App shows **"Email Verified!"** screen
-3. ✅ After 2 seconds, navigates to **"Basic Info"** screen
-4. ✅ Profile created in database
+- `04_production_security_hardening.sql`
+- `99_final_release_security_hardening.sql`
+- `20260610094806_add_pinaymate_storage_buckets.sql`
+- `20260610100323_add_ocr_rate_limit.sql`
+- `20260610100523_add_basic_info_rpc.sql`
 
----
+After migrations are applied, run:
 
-## 🔍 Verify Database
-
-After clicking email link, run this in Supabase SQL Editor:
-
-```sql
--- Check user verification
-SELECT
-  id,
-  email,
-  email_confirmed_at,
-  raw_user_meta_data->>'first_name' as first_name,
-  raw_user_meta_data->>'user_type' as user_type
-FROM auth.users
-WHERE email = 'your-email@example.com';
-
--- Check profile creation
-SELECT
-  id,
-  email,
-  first_name,
-  user_type,
-  gender,
-  basic_info_completed,
-  created_at
-FROM public.profiles
-WHERE email = 'your-email@example.com';
+```powershell
+psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f .\supabase\tests\04_safety_smoke_test.sql
 ```
 
-**Expected:**
+Or run the same SQL in the Supabase SQL Editor with a privileged database role.
 
-- ✅ User has `email_confirmed_at` timestamp
-- ✅ Profile exists with correct data
-- ✅ `basic_info_completed` is `false` (not filled yet)
+## Verification points
 
----
+### App behavior
 
-## 📱 App Flow Details
+- Signup navigates to verify-email.
+- Email link opens the correct app/web callback.
+- PKCE `code` callbacks are exchanged through Supabase before routing.
+- `verification-success` uses `ensureUserProfile` and does not directly insert unsafe server-owned fields.
+- Forgot-password sends the recovery email through Supabase instead of showing fake success.
+- Password recovery links route to `reset-password`, not `verification-success`.
+- Reset-password validates the new password, calls Supabase `updateUser`, and returns to sign-in.
+- Basic info saves through `save_basic_info` RPC.
+- Account type cannot be silently changed after setup completion.
 
-### verify-email Screen:
+### Database behavior
 
-- Shows "Check your email" message
-- Has "Resend email" button
-- Has "I've verified in Supabase - Sign In" button (for manual testing)
-- Polls every 5 seconds to check if email verified
+- `submit_verification` owns verification submission.
+- `claim_ocr_attempt` records OCR quota use before provider calls.
+- `profile-photos` bucket exists for public profile photos.
+- `verification-docs` bucket is private for selfie/document review evidence.
+- `04_safety_smoke_test.sql` passes in staging and production.
 
-### verification-success Screen:
+### Native production behavior
 
-- Shows "Email Verified!" message
-- Checks if profile exists
-- If no profile, creates it
-- Checks which setup step is incomplete
-- Auto-redirects to first incomplete step after 2 seconds
+- Production app build handles `pinaymate://*` callbacks.
+- Camera/photo permission prompts use the launch-approved copy in `app.json`.
+- Expo Go success is not enough for launch signoff.
 
-### account-setup/basic-info Screen:
+## Troubleshooting
 
-- First step after email verification
-- User fills: First Name, Last Name, Age
-- Gender auto-assigned based on user_type
-- Saves to `profiles` table
-- Sets `basic_info_completed = true`
-- Continues to next step (photos)
+### Email signups are disabled
 
----
+Enable Email provider and Confirm email in Supabase Auth settings.
 
-## 🐛 Troubleshooting
+### Email does not redirect back to app
 
-### Issue: "Email signups are disabled"
+- Confirm the environment-specific redirect URL is registered.
+- Confirm the production Site URL is not localhost.
+- Test from a production or staging build, not only Expo Go.
 
-**Fix:** Enable Email provider in Supabase (Step 1)
+### Password reset link opens the wrong screen
 
-### Issue: Email doesn't redirect back to app
+- Confirm `pinaymate://*` and the final web callback are in the Supabase redirect allow list.
+- Confirm forgot-password uses the reset-password redirect, while signup uses verification-success.
+- Ask for a fresh reset email because old recovery links can expire.
 
-**Fix:**
+### Profile does not exist after verification
 
-- Add `exp://*` to redirect URLs
-- Restart Expo with `--clear`
-- Make sure app is running when you click link
+- Confirm the auth trigger and `ensureUserProfile` path are active.
+- Confirm migrations have been applied in order.
+- Confirm `save_basic_info` exists and authenticated users can execute it.
 
-### Issue: Profile not created after verification
+### Basic info fails after hardening
 
-**Fix:**
+- Confirm `20260610100523_add_basic_info_rpc.sql` is applied.
+- Confirm the app calls `save_basic_info`, not direct `profiles.update` for `user_type` or `gender`.
 
-- Re-run the database setup SQL
-- Check triggers exist:
+## Launch signoff checklist
 
-```sql
-SELECT tgname FROM pg_trigger WHERE tgname IN ('on_auth_user_created', 'on_auth_user_verified');
-```
-
-### Issue: Goes directly to account setup without email
-
-**Fix:**
-
-- This means email confirmation is disabled
-- Enable it in Supabase: Authentication → Providers → Email → Confirm email = ON
-
----
-
-## 📋 Complete Checklist
-
-- [ ] Enabled Email provider in Supabase
-- [ ] **ENABLED** "Confirm email" setting
-- [ ] Set Site URL to `http://localhost:3000`
-- [ ] Added redirect URLs: `exp://*`, `pinaymate://*`, `http://localhost:3000/*`
-- [ ] Ran complete database setup SQL
-- [ ] Verified triggers exist (2 triggers)
-- [ ] Deleted any test users
-- [ ] Restarted Expo with `--clear`
-- [ ] Tested: signup → verify-email screen → check email → click link → app opens → verification-success → basic-info
-
----
-
-## 🎉 Success Indicators
-
-You'll know everything works when:
-
-1. ✅ Signup navigates to **verify-email screen** (not directly to account setup)
-2. ✅ Email arrives in inbox
-3. ✅ Click link → app opens automatically
-4. ✅ **verification-success screen** shows briefly
-5. ✅ Auto-redirects to **basic-info screen**
-6. ✅ Profile exists in database with correct data
-
----
-
-**🚀 Your email verification flow is now complete!**
+- [ ] Email provider enabled.
+- [ ] Confirm email enabled.
+- [ ] Production Site URL uses the real production domain.
+- [ ] Production redirect URLs include final web/native callbacks.
+- [ ] Password reset email opens reset-password in the target build.
+- [ ] Ordered migrations applied in staging.
+- [ ] `04_safety_smoke_test.sql` passes in staging.
+- [ ] Ordered migrations applied in production.
+- [ ] `04_safety_smoke_test.sql` passes in production.
+- [ ] Production build redirect test completed.
+- [ ] Evidence copied into `docs/LAUNCH_SIGNOFF_CHECKLIST.md`.

@@ -50,15 +50,13 @@ export function useAuthPersistence() {
 
     const initializeAuth = async () => {
       try {
-        console.log("🔄 Initializing auth...");
         await initialize();
 
         if (mounted) {
           setIsReady(true);
-          console.log("✅ Auth initialized successfully");
         }
-      } catch (error) {
-        console.error("❌ Auth initialization error:", error);
+      } catch {
+        console.error("Auth initialization failed.");
         if (mounted) {
           setIsReady(true); // Continue anyway
         }
@@ -70,34 +68,28 @@ export function useAuthPersistence() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [initialize]);
 
   // Listen to Supabase auth changes
   useEffect(() => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("🔔 Auth event:", event);
-
       switch (event) {
         case "SIGNED_IN":
           setSession(session);
-          console.log("✅ User signed in:", session?.user.email);
           break;
 
         case "SIGNED_OUT":
           setSession(null);
-          console.log("✅ User signed out");
           break;
 
         case "TOKEN_REFRESHED":
           setSession(session);
-          console.log("✅ Token refreshed");
           break;
 
         case "USER_UPDATED":
           setSession(session);
-          console.log("✅ User updated");
           break;
 
         default:
@@ -119,8 +111,6 @@ export function useAuthPersistence() {
           appState.current.match(/inactive|background/) &&
           nextAppState === "active"
         ) {
-          console.log("🔄 App came to foreground, checking session...");
-
           // Refresh session when app becomes active
           await refreshSession();
         }
@@ -141,7 +131,6 @@ export function useAuthPersistence() {
     const REFRESH_INTERVAL = 55 * 60 * 1000; // 55 minutes
 
     const interval = setInterval(() => {
-      console.log("🔄 Periodic session refresh...");
       refreshSession();
     }, REFRESH_INTERVAL);
 

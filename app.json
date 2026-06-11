@@ -14,7 +14,9 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "associatedDomains": ["applinks:*.supabase.co"]
+      "associatedDomains": [
+        "applinks:*.supabase.co"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -40,7 +42,10 @@
               "scheme": "pinaymate"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -62,7 +67,29 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Pinaymate to use your location to find nearby compatible matches.",
+          "locationAlwaysAndWhenInUsePermission": "Allow Pinaymate to use your location to find nearby compatible matches."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow Pinaymate to use your camera for your verification selfie.",
+          "photosPermission": "Allow Pinaymate to access your photos when you choose an ID document for verification review.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-web-browser",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
