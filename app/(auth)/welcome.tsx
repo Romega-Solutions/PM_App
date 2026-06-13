@@ -129,7 +129,7 @@ export default function Welcome() {
             title="Start Profile Setup"
             onPress={() => router.push("/(auth)/user-type-selection")}
             accessibilityLabel="Start PinayMate profile setup"
-            accessibilityHint="Starts onboarding for launch-stage matching"
+            accessibilityHint="Starts onboarding for your PinayMate profile"
           />
           <SecondaryButton
             title="Sign In"
@@ -140,7 +140,7 @@ export default function Welcome() {
           />
           <View style={styles.legalWrap}>
             <Text style={[styles.legal, { fontFamily: "DMSans-Regular" }]}>
-              By continuing, you agree to PinayMate's early access policies.
+              By continuing, you agree to PinayMate's terms and privacy policy.
             </Text>
             <View style={styles.legalLinks}>
               <Pressable

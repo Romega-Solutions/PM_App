@@ -34,8 +34,6 @@ const BRAND_BG = "#0F0814";
 const ACCENT_PURPLE = "#8D69F6";
 const ACCENT_PINK = "#EF3E78";
 const WHITE = "#FFFFFF";
-const SURFACE_STRONG = "rgba(255, 255, 255, 0.08)";
-const TILE_BORDER = "rgba(168, 85, 247, 0.13)";
 const NOTIFICATION_LOAD_ERROR =
   "Notification preferences could not be loaded. Check your connection and try again.";
 const NOTIFICATION_SAVE_ERROR =
@@ -83,7 +81,7 @@ export default function NotificationsScreen() {
   } | null>(null);
   const [reloadAttempt, setReloadAttempt] = useState(0);
   const deliveryStatus =
-    "Launch-stage preference only. Production delivery requires notification provider and support routing sign-off.";
+    "Preference saved for your account. Delivery depends on your device and contact settings.";
   const updatedAtLabel = React.useMemo(
     () => formatNotificationUpdatedAt(preferences.updatedAt),
     [preferences.updatedAt],
@@ -107,7 +105,7 @@ export default function NotificationsScreen() {
       } catch {
         if (isMounted) {
           setLoadError(NOTIFICATION_LOAD_ERROR);
-          Alert.alert("Notification preferences unavailable", NOTIFICATION_LOAD_ERROR);
+          Alert.alert("Could not load notification preferences", NOTIFICATION_LOAD_ERROR);
         }
       } finally {
         if (isMounted) {
@@ -198,23 +196,23 @@ export default function NotificationsScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <LaunchStateNotice
           testID="notification-settings-launch-state-notice"
-title="Launch-stage controls"
-          message="These switches save notification preferences to your PinayMate account for QA and launch planning. Production push and email delivery still require provider setup, mailbox routing, and release sign-off."
+          title="Notification controls"
+          message="Choose which PinayMate reminders you want. Push and email delivery depend on your device settings and the contact details on your account."
           meta={updatedAtLabel ? `Last saved ${updatedAtLabel}` : null}
-          accessibilityLabel="Notification launch note. These preferences are saved to your PinayMate account for this launch build and do not prove production push or email delivery."
+          accessibilityLabel="Notification note. These preferences are saved to your PinayMate account. Delivery depends on your device settings and account contact details."
         />
 
         {isLoadingPreferences ? (
-          <View style={styles.statusCard}>
+          <View style={styles.statusRow}>
             <ActivityIndicator size="small" color={ACCENT_PINK} />
-            <Text style={styles.statusCardText}>
+            <Text style={styles.statusRowText}>
               Loading notification preferences...
             </Text>
           </View>
         ) : null}
 
         {loadError ? (
-          <View style={styles.errorCard} accessibilityRole="alert">
+          <View style={styles.errorStrip} accessibilityRole="alert">
             <AlertCircle size={20} color="#FFB4B4" strokeWidth={2.4} />
             <View style={styles.errorCopy}>
               <Text style={styles.errorTitle}>Preferences need to reload</Text>
@@ -262,7 +260,7 @@ title="Launch-stage controls"
               <View style={styles.settingText}>
                 <Text style={styles.settingTitle}>Enable Push Notifications</Text>
                 <Text style={styles.settingDesc}>
-                  Save your device-notification preference for launch QA
+                  Save your device-notification preference.
                 </Text>
               </View>
             </View>
@@ -323,7 +321,7 @@ title="Launch-stage controls"
               <View style={styles.settingText}>
                 <Text style={styles.settingTitle}>New Matches</Text>
                 <Text style={styles.settingDesc}>
-                  Preference for mutual-match alerts after delivery is wired
+                  Get alerts when a mutual match is available.
                 </Text>
               </View>
             </View>
@@ -386,7 +384,7 @@ title="Launch-stage controls"
               <View style={styles.settingText}>
                 <Text style={styles.settingTitle}>New Messages</Text>
                 <Text style={styles.settingDesc}>
-                  Preference for matched-message alerts after delivery is wired
+                  Get alerts for messages from people you match with.
                 </Text>
               </View>
             </View>
@@ -449,7 +447,7 @@ title="Launch-stage controls"
               <View style={styles.settingText}>
                 <Text style={styles.settingTitle}>New Likes</Text>
                 <Text style={styles.settingDesc}>
-                  Preference for like alerts after delivery is wired
+                  Get alerts when someone likes your profile.
                 </Text>
               </View>
             </View>
@@ -496,7 +494,7 @@ title="Launch-stage controls"
             accessibilityLabel={`Email updates: ${
               emailNotifications ? "on" : "off"
             }`}
-            accessibilityHint="Launch-stage preference only. Production email delivery requires mailbox and provider sign-off."
+            accessibilityHint="Preference saved for your account. Email delivery depends on the email address on your account."
             accessibilityState={{
               checked: emailNotifications,
               disabled: isPreferenceLocked,
@@ -508,8 +506,7 @@ title="Launch-stage controls"
               <View style={styles.settingText}>
                 <Text style={styles.settingTitle}>Email Updates</Text>
                 <Text style={styles.settingDesc}>
-                  Preference for launch and support updates after email routing is
-                  confirmed
+                  Get account, safety, and product updates by email.
                 </Text>
               </View>
             </View>
@@ -581,63 +578,25 @@ const styles = StyleSheet.create({
   settingBlock: {
     marginBottom: 12,
   },
-  noticeCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "rgba(239, 62, 120, 0.24)",
-    backgroundColor: "rgba(239, 62, 120, 0.1)",
-    padding: 14,
-    marginTop: 12,
-    marginBottom: 6,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  noticeCopy: {
-    flex: 1,
-  },
-  noticeTitle: {
-    color: WHITE,
-    fontSize: 14,
-    fontFamily: "DMSans-Bold",
-    marginBottom: 4,
-  },
-  noticeText: {
-    color: "rgba(255,255,255,0.72)",
-    fontSize: 13,
-    fontFamily: "DMSans-Regular",
-    lineHeight: 19,
-  },
-  noticeMeta: {
-    color: "rgba(255,255,255,0.58)",
-    fontSize: 12,
-    fontFamily: "DMSans-SemiBold",
-    lineHeight: 17,
-    marginTop: 10,
-  },
-  statusCard: {
-    backgroundColor: SURFACE_STRONG,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: TILE_BORDER,
-    padding: 16,
+  statusRow: {
+    paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     marginTop: 12,
     marginBottom: 4,
   },
-  statusCardText: {
+  statusRowText: {
     color: "rgba(255,255,255,0.72)",
     fontSize: 13,
     fontFamily: "DMSans-Regular",
   },
-  errorCard: {
+  errorStrip: {
     backgroundColor: "rgba(255, 107, 107, 0.12)",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 107, 107, 0.35)",
-    padding: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: "#FFB4B4",
+    paddingLeft: 14,
+    paddingVertical: 12,
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
@@ -677,11 +636,9 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-Bold",
   },
   settingItem: {
-    backgroundColor: SURFACE_STRONG,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: TILE_BORDER,
-    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.1)",
+    paddingVertical: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",

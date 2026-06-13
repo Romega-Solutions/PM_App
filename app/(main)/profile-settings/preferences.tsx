@@ -149,7 +149,7 @@ export default function PreferencesScreen() {
           locations={[0, 0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
-        <View style={styles.loadingCard}>
+        <View style={styles.loadingState}>
           <ActivityIndicator
             size="large"
             color={ACCENT_PINK}
@@ -222,7 +222,7 @@ export default function PreferencesScreen() {
         </Text>
 
         <View
-          style={styles.guidanceCard}
+          style={styles.guidanceStrip}
           accessible
           accessibilityLabel="Match preference guidance. Preferences guide discovery and do not guarantee matches."
         >
@@ -235,7 +235,7 @@ export default function PreferencesScreen() {
 
         {loadError ? (
           <View
-            style={styles.noticeCard}
+            style={styles.noticeStrip}
             accessibilityRole="alert"
             accessibilityLiveRegion="polite"
           >
@@ -327,7 +327,7 @@ export default function PreferencesScreen() {
 
         {saveError ? (
           <View
-            style={styles.errorCard}
+            style={styles.errorStrip}
             accessibilityRole="alert"
             accessibilityLiveRegion="polite"
           >
@@ -369,14 +369,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 24,
   },
-  loadingCard: {
+  loadingState: {
     width: "100%",
     maxWidth: 320,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-    backgroundColor: "rgba(255,255,255,0.08)",
-    padding: 24,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     alignItems: "center",
   },
   loadingTitle: {
@@ -446,21 +443,20 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 18,
   },
-  noticeCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "rgba(239, 62, 120, 0.3)",
-    backgroundColor: "rgba(239, 62, 120, 0.12)",
-    padding: 14,
+  noticeStrip: {
+    borderLeftWidth: 3,
+    borderLeftColor: ACCENT_PINK,
+    backgroundColor: "rgba(239, 62, 120, 0.08)",
+    paddingLeft: 14,
+    paddingVertical: 12,
     gap: 10,
     marginBottom: 18,
   },
-  guidanceCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
-    backgroundColor: "rgba(255,255,255,0.07)",
-    padding: 14,
+  guidanceStrip: {
+    borderLeftWidth: 3,
+    borderLeftColor: "rgba(141, 105, 246, 0.78)",
+    paddingLeft: 14,
+    paddingVertical: 4,
     marginBottom: 18,
   },
   guidanceTitle: {
@@ -529,13 +525,13 @@ const styles = StyleSheet.create({
     minHeight: 92,
     paddingTop: 16,
   },
-  errorCard: {
+  errorStrip: {
     marginTop: 18,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(239, 62, 120, 0.3)",
-    backgroundColor: "rgba(239, 62, 120, 0.12)",
-    padding: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: ACCENT_PINK,
+    backgroundColor: "rgba(239, 62, 120, 0.08)",
+    paddingLeft: 12,
+    paddingVertical: 10,
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,

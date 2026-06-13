@@ -40,9 +40,9 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
   return (
     <View style={styles.form}>
       <View
-        style={styles.safetyCard}
+        style={styles.safetyStrip}
         accessible
-        accessibilityLabel="Profile editing privacy note. These fields may help future discovery when launch settings allow it. Do not add ID numbers, payment details, exact addresses, or private contact details."
+        accessibilityLabel="Profile editing privacy note. These fields may help discovery when account visibility allows it. Do not add ID numbers, payment details, exact addresses, or private contact details."
       >
         <Text style={styles.safetyTitle}>Profile details for discovery</Text>
         <Text style={styles.safetyText}>
@@ -60,7 +60,7 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
           placeholder="Enter first name"
           placeholderTextColor="rgba(255,255,255,0.4)"
           accessibilityLabel="First name"
-          accessibilityHint="Enter the first name shown on your launch-stage profile"
+          accessibilityHint="Enter the first name shown on your profile"
           autoCapitalize="words"
           autoComplete="given-name"
           textContentType="givenName"
@@ -147,13 +147,13 @@ const styles = StyleSheet.create({
   form: {
     gap: 20,
   },
-  safetyCard: {
+  safetyStrip: {
     gap: 6,
     backgroundColor: "rgba(141, 105, 246, 0.12)",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(141, 105, 246, 0.28)",
-    padding: 14,
+    borderLeftWidth: 3,
+    borderLeftColor: "rgba(141, 105, 246, 0.86)",
+    paddingLeft: 14,
+    paddingVertical: 12,
   },
   safetyTitle: {
     color: WHITE,

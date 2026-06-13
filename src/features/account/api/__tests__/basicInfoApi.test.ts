@@ -72,7 +72,44 @@ describe("basicInfoApi", () => {
         age: 28,
         userType: "filipina",
       }),
-    ).rejects.toThrow("Not authenticated");
+    ).rejects.toThrow("Please sign in before saving basic profile information.");
+
+    expect(supabase.rpc).not.toHaveBeenCalled();
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid profile basics before the RPC boundary", async () => {
+    (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "user-123" } },
+      error: null,
+    });
+
+    await expect(
+      saveBasicInfo({
+        firstName: "   ",
+        lastName: "Santos",
+        age: 28,
+        userType: "filipina",
+      }),
+    ).rejects.toThrow("Check your basic profile information and try again.");
+
+    await expect(
+      saveBasicInfo({
+        firstName: "Maria",
+        lastName: "Santos",
+        age: 17,
+        userType: "filipina",
+      }),
+    ).rejects.toThrow("Check your basic profile information and try again.");
+
+    await expect(
+      saveBasicInfo({
+        firstName: "Maria",
+        lastName: "Santos",
+        age: 28,
+        userType: "admin" as never,
+      }),
+    ).rejects.toThrow("Check your basic profile information and try again.");
 
     expect(supabase.rpc).not.toHaveBeenCalled();
     expect(supabase.from).not.toHaveBeenCalled();

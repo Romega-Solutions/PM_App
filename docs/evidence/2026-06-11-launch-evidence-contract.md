@@ -1,7 +1,7 @@
 # Launch Evidence Contract
 
 Date: 2026-06-11
-Status: Source gate added - expected to fail until real launch evidence is filled
+Status: Gate run - failed until real launch evidence is filled
 
 ## What changed
 
@@ -26,4 +26,6 @@ The launch packet already says evidence rows need result, owner, date, and proof
 
 ## Verification
 
-Not run in this pass. The gate is expected to fail until real staging, OCR, native, production-web, safety, and final signoff evidence is filled.
+`npm run check:launch-evidence-contract` was run on 2026-06-11 and failed as intended because real staging, OCR, native, production-web, safety, and final signoff evidence is still missing.
+
+This failure is a release blocker, not a code-local failure.

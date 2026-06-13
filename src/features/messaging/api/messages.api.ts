@@ -22,8 +22,10 @@ const CHAT_IMAGE_TYPES: Record<string, string> = {
   "image/webp": "webp",
   "image/heic": "heic",
 };
+const MAX_TEXT_MESSAGE_LENGTH = 1000;
 const MESSAGE_SEND_ERROR =
   "Message did not send. Check your connection and try again.";
+const SELF_MESSAGE_ERROR = "Choose a different member to message.";
 const MESSAGE_LOAD_ERROR =
   "Messages could not be loaded. Check your connection and try again.";
 const MESSAGE_READ_ERROR =
@@ -75,6 +77,16 @@ function assertConversationImagePath(
   return normalizedPath;
 }
 
+function assertChatImageDeletePath(imageUrlOrPath: string): string {
+  const filePath = getChatImageStoragePath(imageUrlOrPath);
+
+  if (!filePath || filePath.includes("..") || filePath.startsWith("/")) {
+    throw new Error("Invalid chat image path");
+  }
+
+  return filePath;
+}
+
 function getImageTypeFromUri(uri: string): string | null {
   const extension = uri
     .split("?")[0]
@@ -106,6 +118,19 @@ function assertChatImageUpload(blob: Blob, imageUri: string) {
     contentType,
     extension: CHAT_IMAGE_TYPES[contentType],
   };
+}
+
+function normalizeTextMessageContent(content: string): string {
+  const normalizedContent = content.trim();
+
+  if (
+    !normalizedContent ||
+    normalizedContent.length > MAX_TEXT_MESSAGE_LENGTH
+  ) {
+    throw new Error("Invalid message content");
+  }
+
+  return normalizedContent;
 }
 
 export async function hydrateMessageMedia(message: Message): Promise<Message> {
@@ -190,14 +215,20 @@ export async function sendTextMessage(
   conversationId?: string,
 ): Promise<{ data: Message | null; error: Error | null }> {
   try {
-    await getAuthenticatedUserId();
+    const authUserId = await getAuthenticatedUserId();
     void senderId;
     assertUuid(recipientId, "recipient ID");
+
+    if (authUserId === recipientId) {
+      return { data: null, error: new Error(SELF_MESSAGE_ERROR) };
+    }
+
     assertOptionalUuid(conversationId, "conversation ID");
+    const normalizedContent = normalizeTextMessageContent(content);
 
     const { data, error } = await supabase.rpc("send_message", {
       p_recipient_id: recipientId,
-      p_content: content,
+      p_content: normalizedContent,
       p_message_type: "text",
       p_image_url: null,
       p_conversation_id: conversationId ?? null,
@@ -206,7 +237,7 @@ export async function sendTextMessage(
     if (error) throw error;
 
     return { data: data as Message, error: null };
-  } catch (error) {
+  } catch {
     console.error("Error sending text message.");
     return { data: null, error: new Error(MESSAGE_SEND_ERROR) };
   }
@@ -223,9 +254,14 @@ export async function sendImageMessage(
   conversationId: string,
 ): Promise<{ data: Message | null; error: Error | null }> {
   try {
-    await getAuthenticatedUserId();
+    const authUserId = await getAuthenticatedUserId();
     void senderId;
     assertUuid(recipientId, "recipient ID");
+
+    if (authUserId === recipientId) {
+      return { data: null, error: new Error(SELF_MESSAGE_ERROR) };
+    }
+
     assertUuid(conversationId, "conversation ID");
     const normalizedImagePath = assertConversationImagePath(
       imageStoragePath,
@@ -243,7 +279,7 @@ export async function sendImageMessage(
     if (error) throw error;
 
     return { data: await hydrateMessageMedia(data as Message), error: null };
-  } catch (error) {
+  } catch {
     console.error("Error sending image message.");
     return { data: null, error: new Error(MESSAGE_SEND_ERROR) };
   }
@@ -275,7 +311,7 @@ export async function getMessages(
     if (error) throw error;
 
     return { data: await hydrateMessagesMedia(data as Message[]), error: null };
-  } catch (error) {
+  } catch {
     console.error("Error fetching messages.");
     return { data: null, error: new Error(MESSAGE_LOAD_ERROR) };
   }
@@ -303,7 +339,7 @@ export async function getMessagesByConversationId(
     if (error) throw error;
 
     return { data: await hydrateMessagesMedia(data as Message[]), error: null };
-  } catch (error) {
+  } catch {
     console.error("Error fetching messages by conversation.");
     return { data: null, error: new Error(MESSAGE_LOAD_ERROR) };
   }
@@ -329,7 +365,7 @@ export async function markMessagesAsRead(
     if (error) throw error;
 
     return { success: true, error: null };
-  } catch (error) {
+  } catch {
     console.error("Error marking messages as read.");
     return { success: false, error: new Error(MESSAGE_READ_ERROR) };
   }
@@ -355,7 +391,7 @@ export async function markConversationAsRead(
     if (error) throw error;
 
     return { success: true, error: null };
-  } catch (error) {
+  } catch {
     console.error("Error marking conversation as read.");
     return { success: false, error: new Error(MESSAGE_READ_ERROR) };
   }
@@ -381,7 +417,7 @@ export async function updateMessageStatus(
     if (error) throw error;
 
     return { success: true, error: null };
-  } catch (error) {
+  } catch {
     console.error("Error updating message status.");
     return { success: false, error: new Error(MESSAGE_STATUS_ERROR) };
   }
@@ -419,7 +455,7 @@ export async function deleteMessage(
     }
 
     return { success: true, error: null };
-  } catch (error) {
+  } catch {
     console.error("Error deleting message.");
     return { success: false, error: new Error(MESSAGE_DELETE_ERROR) };
   }
@@ -445,7 +481,7 @@ export async function getUnreadCount(
     if (error) throw error;
 
     return { count: count || 0, error: null };
-  } catch (error) {
+  } catch {
     console.error("Error getting unread count.");
     return { count: 0, error: new Error(MESSAGE_UNREAD_ERROR) };
   }
@@ -489,7 +525,7 @@ export async function uploadChatImage(
 
     const storedPath = data?.path || fileName;
     return { path: storedPath, error: null };
-  } catch (error) {
+  } catch {
     console.error("Error uploading image.");
     return { path: null, error: new Error(CHAT_IMAGE_UPLOAD_ERROR) };
   }
@@ -502,11 +538,8 @@ export async function deleteChatImage(
   imageUrlOrPath: string,
 ): Promise<{ success: boolean; error: Error | null }> {
   try {
-    const filePath = getChatImageStoragePath(imageUrlOrPath);
-
-    if (!filePath) {
-      throw new Error(CHAT_IMAGE_DELETE_ERROR);
-    }
+    await getAuthenticatedUserId();
+    const filePath = assertChatImageDeletePath(imageUrlOrPath);
 
     const { error } = await supabase.storage
       .from(CHAT_IMAGES_BUCKET)
@@ -515,7 +548,7 @@ export async function deleteChatImage(
     if (error) throw error;
 
     return { success: true, error: null };
-  } catch (error) {
+  } catch {
     console.error("Error deleting image.");
     return { success: false, error: new Error(CHAT_IMAGE_DELETE_ERROR) };
   }

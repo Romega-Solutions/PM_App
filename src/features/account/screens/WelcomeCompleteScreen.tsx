@@ -150,8 +150,8 @@ export default function WelcomeCompleteScreen() {
           <Text style={styles.welcomeSubtitle}>
             Your setup is{" "}
             {isVerified
-              ? "ready for launch-stage discovery, with verification approved."
-              : "ready for launch-stage discovery, with verification still pending or not approved."}
+              ? "ready, and your verification has been approved."
+              : "ready, with verification still available from Settings."}
           </Text>
         </View>
 
@@ -263,15 +263,15 @@ export default function WelcomeCompleteScreen() {
           <View
             style={styles.warningBanner}
             accessible
-            accessibilityLabel="Verification not approved yet. You can continue using launch-stage features and submit verification again from Settings when available."
+            accessibilityLabel="Verification not approved yet. You can continue using PinayMate and submit verification again from Settings."
           >
             <AlertCircle size={20} color={WARNING_YELLOW} strokeWidth={2.5} />
             <View style={styles.warningTextContainer}>
               <Text style={styles.warningTitle}>Verification not approved yet</Text>
               <Text style={styles.warningSubtitle}>
-                You can continue using launch-stage features and return to
-                verification from Settings when available. A verified badge is
-                a reviewed signal, not a guarantee that someone is safe.
+                You can continue using PinayMate and return to verification
+                from Settings. A verified badge is a reviewed signal, not a
+                guarantee that someone is safe.
               </Text>
             </View>
           </View>
@@ -282,52 +282,48 @@ export default function WelcomeCompleteScreen() {
           <View
             style={styles.successBanner}
             accessible
-            accessibilityLabel="Profile basics complete. Your profile can be considered for early discovery when matching is available for your test group."
+            accessibilityLabel="Profile basics complete. Your profile has the context needed for discovery when matching is available to you."
           >
             <Sparkles size={20} color={SUCCESS_GREEN} fill={SUCCESS_GREEN} />
             <View style={styles.successTextContainer}>
               <Text style={styles.successTitle}>Profile basics complete</Text>
               <Text style={styles.successSubtitle}>
-                Your profile can be considered for early discovery when
-                matching is available for your test group.
+                Your profile has the context needed for discovery when matching
+                is available to you.
               </Text>
             </View>
           </View>
         )}
 
         <View
-          style={styles.readinessPanel}
+          style={styles.setupPanel}
           accessible
-          accessibilityLabel="Launch-stage profile ready. Your profile has the basics needed for early-access discovery when matching is available. This does not guarantee visibility, matches, verification, or paid feature access."
+          accessibilityLabel="Profile setup complete. You added the essentials for clearer discovery, better intent matching, and trust review."
         >
-          <Text style={styles.readinessEyebrow}>
-            Launch-stage profile ready
+          <Text style={styles.setupEyebrow}>Profile setup complete</Text>
+          <Text style={styles.setupTitle}>
+            You added the essentials for clearer discovery, better intent
+            matching, and trust review. Matching can still vary by privacy
+            settings, review status, distance, and who is available.
           </Text>
-          <Text style={styles.readinessTitle}>
-            Your profile now has the basics needed to be considered for
-            early-access discovery when matching is available. This does not
-            guarantee profile visibility, a match, a verified badge, or paid
-            feature access. It also does not guarantee profile visibility,
-            verified badge, or paid feature access.
-          </Text>
-          <View style={styles.readinessGrid}>
-            <View style={styles.readinessItem}>
-              <View style={styles.readinessIcon}>
+          <View style={styles.setupGrid}>
+            <View style={styles.setupItem}>
+              <View style={styles.setupIcon}>
                 <User size={16} color={ACCENT_PINK} strokeWidth={2.4} />
               </View>
-              <Text style={styles.readinessLabel}>Profile</Text>
+              <Text style={styles.setupLabel}>Profile</Text>
             </View>
-            <View style={styles.readinessItem}>
-              <View style={styles.readinessIcon}>
+            <View style={styles.setupItem}>
+              <View style={styles.setupIcon}>
                 <Heart size={16} color={ACCENT_PINK} strokeWidth={2.4} />
               </View>
-              <Text style={styles.readinessLabel}>Intent</Text>
+              <Text style={styles.setupLabel}>Intent</Text>
             </View>
-            <View style={styles.readinessItem}>
-              <View style={styles.readinessIcon}>
+            <View style={styles.setupItem}>
+              <View style={styles.setupIcon}>
                 <ShieldCheck size={16} color={ACCENT_PINK} strokeWidth={2.4} />
               </View>
-              <Text style={styles.readinessLabel}>Trust</Text>
+              <Text style={styles.setupLabel}>Trust</Text>
             </View>
           </View>
         </View>
@@ -353,10 +349,10 @@ export default function WelcomeCompleteScreen() {
         ]}
       >
         <PrimaryButton
-          title="Enter launch-stage app"
+          title="Enter PinayMate"
           onPress={handleStartDating}
-          accessibilityLabel="Enter the launch-stage app"
-          accessibilityHint="Opens the main app while matching and paid feature availability remain launch-stage"
+          accessibilityLabel="Enter PinayMate"
+          accessibilityHint="Opens the main app"
         />
         <GhostButton
           title="Review settings first"
@@ -520,7 +516,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(16,185,129,0.3)",
     gap: 12,
   },
-  readinessPanel: {
+  setupPanel: {
     backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: 22,
     padding: 20,
@@ -528,25 +524,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(239,62,120,0.22)",
   },
-  readinessEyebrow: {
+  setupEyebrow: {
     fontSize: 12,
     fontFamily: theme.fontFamilies.body?.semiBold,
     color: ACCENT_PINK,
     textTransform: "uppercase",
     marginBottom: 8,
   },
-  readinessTitle: {
+  setupTitle: {
     fontSize: 17,
     fontFamily: theme.fontFamilies.body?.semiBold,
     color: WHITE,
     lineHeight: 24,
     marginBottom: 16,
   },
-  readinessGrid: {
+  setupGrid: {
     flexDirection: "row",
     gap: 10,
   },
-  readinessItem: {
+  setupItem: {
     flex: 1,
     minHeight: 72,
     borderRadius: 16,
@@ -557,7 +553,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 8,
   },
-  readinessIcon: {
+  setupIcon: {
     width: 34,
     height: 34,
     borderRadius: 17,
@@ -566,7 +562,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
-  readinessLabel: {
+  setupLabel: {
     fontSize: 13,
     fontFamily: theme.fontFamilies.body?.semiBold,
     color: "rgba(255,255,255,0.86)",

@@ -24,8 +24,8 @@ import { useRouter } from "expo-router";
 import { RefreshCw, ShieldCheck } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   AccessibilityInfo,
+  ActivityIndicator,
   Alert,
   Platform,
   ScrollView,
@@ -67,7 +67,6 @@ export default function LikesScreen() {
     setLoadError(null);
 
     try {
-      // Get current user
       const {
         data: { user },
         error: userError,
@@ -84,7 +83,6 @@ export default function LikesScreen() {
         return;
       }
 
-      // Fetch matches from database
       const { data: dbMatches, error: matchesError } = await getMatches(
         user.id,
       );
@@ -95,10 +93,8 @@ export default function LikesScreen() {
           "We could not refresh your matches. Check your connection and try again.";
         setLoadError(message);
         AccessibilityInfo.announceForAccessibility(message);
-        // Show empty state - no fallback to mock data
         setMatches([]);
       } else if (dbMatches && dbMatches.length > 0) {
-        // Convert database matches to display format
         const displayMatches: Match[] = dbMatches.map((match) => ({
           id: match.profile.id,
           name: match.profile.first_name,
@@ -115,7 +111,6 @@ export default function LikesScreen() {
         }));
         setMatches(displayMatches);
       } else {
-        // No matches in database
         setMatches([]);
       }
     } catch {
@@ -124,14 +119,12 @@ export default function LikesScreen() {
         "We could not refresh your matches. Check your connection and try again.";
       setLoadError(message);
       AccessibilityInfo.announceForAccessibility(message);
-      // Show empty state - no fallback to mock data
       setMatches([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Fetch user data and matches on mount
   useEffect(() => {
     fetchMatches();
   }, [fetchMatches]);
@@ -143,7 +136,7 @@ export default function LikesScreen() {
     const match = matches.find((item) => item.id === id);
 
     if (!match) {
-      Alert.alert("Conversation unavailable", "This match could not be found.");
+      Alert.alert("Could not open conversation", "This match could not be found.");
       return;
     }
 
@@ -172,7 +165,7 @@ export default function LikesScreen() {
       });
     } catch {
       Alert.alert(
-        "Chat unavailable",
+        "Could not open chat",
         "We could not open this match yet. Check your connection and try again.",
       );
     }
@@ -222,7 +215,6 @@ export default function LikesScreen() {
     });
   };
 
-  // Loading state
   if (loading) {
     return (
       <View
@@ -280,17 +272,23 @@ export default function LikesScreen() {
         accessible
         accessibilityLabel="Matched messaging safety note. Message opens the chat, and your first text starts the conversation after match checks pass. Keep private details private and use report or unmatch controls when needed."
       >
-        <View style={styles.matchSafetyIcon}>
-          <ShieldCheck size={15} color={WHITE} strokeWidth={2.4} />
+        <View style={styles.matchSafetyRule} />
+        <View style={styles.matchSafetyBody}>
+          <View style={styles.matchSafetyHeadingRow}>
+            <View style={styles.matchSafetyIcon}>
+              <ShieldCheck size={15} color={WHITE} strokeWidth={2.4} />
+            </View>
+            <Text style={styles.matchSafetyHeading}>Before you message</Text>
+          </View>
+          <Text style={styles.matchSafetyText}>
+            Tap Message to open the chat. Your first text starts the
+            conversation only after match checks pass. Keep private details
+            private, and report before unmatching if support should review the
+            interaction.
+          </Text>
         </View>
-        <Text style={styles.matchSafetyText}>
-          Tap Message to open the chat. Your first text starts the conversation
-          only after match checks pass. Keep private details private, and report
-          before unmatching if support should review the interaction.
-        </Text>
       </View>
 
-      {/* Matches Grid */}
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={{
@@ -310,7 +308,6 @@ export default function LikesScreen() {
           ))}
         </View>
 
-        {/* Empty State */}
         {filteredMatches.length === 0 && (
           <EmptyMatchesState
             variant={
@@ -330,7 +327,11 @@ export default function LikesScreen() {
             accessibilityLabel="Refresh matches"
             accessibilityHint="Checks for new mutual matches"
           >
-            <RefreshCw size={16} color={WHITE} strokeWidth={2.4} />
+            <RefreshCw
+              size={16}
+              color="rgba(255,255,255,0.72)"
+              strokeWidth={2.4}
+            />
             <Text style={styles.refreshButtonText}>Refresh matches</Text>
           </TouchableOpacity>
         )}
@@ -352,11 +353,7 @@ const styles = StyleSheet.create({
   loadingPanel: {
     width: "100%",
     maxWidth: 318,
-    padding: 22,
-    borderRadius: 24,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.14)",
+    paddingVertical: 12,
     alignItems: "center",
   },
   loadingText: {
@@ -387,14 +384,10 @@ const styles = StyleSheet.create({
   },
   refreshButton: {
     alignSelf: "center",
-    minHeight: 46,
-    marginTop: 10,
+    minHeight: 44,
+    marginTop: 12,
     marginBottom: 12,
-    paddingHorizontal: 18,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: "rgba(239, 62, 120, 0.28)",
-    backgroundColor: "rgba(239, 62, 120, 0.12)",
+    paddingHorizontal: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -403,28 +396,43 @@ const styles = StyleSheet.create({
   refreshButtonText: {
     fontSize: 14,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: "rgba(255,255,255,0.72)",
   },
   matchSafetyNote: {
     marginHorizontal: 20,
     marginBottom: 18,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 18,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.14)",
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
+    alignItems: "stretch",
+    gap: 12,
+  },
+  matchSafetyRule: {
+    width: 2,
+    borderRadius: 1,
+    backgroundColor: "rgba(239, 62, 120, 0.72)",
+  },
+  matchSafetyBody: {
+    flex: 1,
+    paddingVertical: 2,
+  },
+  matchSafetyHeadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 6,
   },
   matchSafetyIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "rgba(239, 62, 120, 0.7)",
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(239, 62, 120, 0.72)",
     alignItems: "center",
     justifyContent: "center",
+  },
+  matchSafetyHeading: {
+    fontSize: 12,
+    fontFamily: "DMSans-Bold",
+    color: WHITE,
+    letterSpacing: 0.2,
   },
   matchSafetyText: {
     flex: 1,

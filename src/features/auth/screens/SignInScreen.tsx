@@ -135,16 +135,16 @@ export default function SignInScreen() {
         />
 
         <View
-          style={styles.trustCard}
+          style={styles.trustStrip}
           accessible
-          accessibilityLabel="Account safety note. PinayMate keeps sign in focused on verified profiles and launch-stage safety checks."
+          accessibilityLabel="Account safety note. PinayMate keeps sign in focused on profile trust, safety review, and account recovery."
         >
           <ShieldCheck
             size={18}
             color={theme.colors.amihan[300]}
             strokeWidth={2.4}
           />
-          <Text style={styles.trustCardText}>
+          <Text style={styles.trustStripText}>
             We keep sign in focused on verified profiles, safety review, and
             clear account recovery before matching access.
           </Text>
@@ -185,18 +185,18 @@ const styles = StyleSheet.create({
   formContainer: {
     paddingHorizontal: theme.spacing.lg,
   },
-  trustCard: {
+  trustStrip: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "rgba(141,105,246,0.24)",
-    backgroundColor: "rgba(141,105,246,0.1)",
-    padding: theme.spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: theme.colors.amihan[300],
+    backgroundColor: "rgba(141,105,246,0.08)",
+    paddingLeft: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
     marginBottom: theme.spacing.md,
   },
-  trustCardText: {
+  trustStripText: {
     flex: 1,
     color: "rgba(255,255,255,0.78)",
     fontSize: moderateScale(13),

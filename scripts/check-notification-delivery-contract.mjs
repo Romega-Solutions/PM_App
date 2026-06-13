@@ -8,16 +8,12 @@ const requiredFiles = [
   {
     path: "app/(main)/profile-settings/notifications.tsx",
     markers: [
-      "Launch-stage controls",
-      "do not prove production push or email delivery",
-      "Production push and email delivery still require",
-      "notification provider",
-      "mailbox routing",
-      "release sign-off",
-      "Preference for mutual-match alerts after delivery is wired",
-      "Preference for matched-message alerts after delivery is wired",
-      "Preference for like alerts after delivery is wired",
-      "Production email delivery requires mailbox and provider sign-off",
+      "Preference saved for your account. Delivery depends on your device and contact settings.",
+      "Push and email delivery depend on your device settings and the contact details on your account.",
+      "These preferences are saved to your PinayMate account. Delivery depends on your device settings and account contact details.",
+      "Save your device-notification preference.",
+      "Get account, safety, and product updates by email.",
+      "Email delivery depends on the email address on your account.",
     ],
   },
   {
@@ -106,5 +102,5 @@ if (failures.length > 0) {
 
 console.log("PASS notification delivery contract");
 console.log(
-  "Checked launch-stage push/email preference wording, native QA coverage, design standard linkage, and forbidden delivery claims.",
+  "Checked user-facing push/email preference wording, native QA coverage, design standard linkage, and forbidden delivery claims.",
 );

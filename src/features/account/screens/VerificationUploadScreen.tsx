@@ -58,7 +58,7 @@ export default function VerificationUploadScreen() {
         Icon: Clock,
         tone: "#F59E0B",
         title: "Review pending",
-        body: "Your selfie and ID were submitted for review. Continue setup now; the verified badge appears only if review approves it.",
+        body: "Your selfie and ID were submitted for review. Continue setup now; the verified badge appears only after approval.",
       };
     }
 
@@ -117,7 +117,7 @@ export default function VerificationUploadScreen() {
   const handleSkip = () => {
     Alert.alert(
       "Skip verification",
-      "You can submit verification later in Settings. Skipping does not block account setup, but verified-badge and review-based trust cues stay unavailable unless a later review is approved.",
+      "You can submit verification later in Settings. Skipping does not block account setup, and the verified badge appears only after an approved review.",
       [
         {
           text: "Skip for now",
@@ -179,8 +179,8 @@ export default function VerificationUploadScreen() {
         <LaunchStateNotice
           testID="verification-upload-launch-state-notice"
           title="Review-based verification"
-          message="Private review, not instant approval. Selfie and ID uploads support a private review path. Approval is not automatic, and your verified badge and any review-based trust cues stay unavailable until approval. Verified status does not guarantee another member is safe."
-          accessibilityLabel="Verification launch note. Review-based verification means selfie and ID uploads support private review, approval is not automatic, verified badge and any review-based trust cues stay unavailable until approval, and verified status does not guarantee member safety."
+          message="Private review, not instant approval. Selfie and ID uploads support a private review path. Approval is not automatic, and your verified badge appears only after approval. Verified status does not guarantee another member is safe."
+          accessibilityLabel="Verification note. Review-based verification means selfie and ID uploads support private review, approval is not automatic, your verified badge appears only after approval, and verified status does not guarantee member safety."
         />
 
         <View style={{ gap: 16 }}>
@@ -269,9 +269,9 @@ export default function VerificationUploadScreen() {
         >
           <Text style={styles.limitsTitle}>Verification limits</Text>
           {[
-            "Review is private and handled through the protected backend path.",
+            "Review is private and handled through the secure review process.",
             "Submitting files does not automatically approve a verified badge.",
-            "Skipping verification does not block setup, but it leaves review-based trust cues unavailable.",
+            "Skipping verification does not block setup; the verified badge appears only after approved review.",
             "Do not upload payment cards, passwords, or unrelated documents.",
             "Support will not ask for passwords or payment in this flow.",
           ].map((item) => (
@@ -301,7 +301,7 @@ export default function VerificationUploadScreen() {
           accessibilityLabel={
             isSubmittedForReview
               ? "Continue setup with verification review pending"
-              : "Continue disabled until your selfie and ID are submitted"
+              : "Submit your selfie and ID before continuing"
           }
           accessibilityHint={
             isSubmittedForReview

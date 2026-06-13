@@ -60,7 +60,27 @@ describe("privacyApi", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Deletion queue unavailable",
+      error: "Your deletion request was not sent. Check your connection and try again.",
     });
+  });
+
+  it("normalizes empty and oversized deletion reasons before the RPC call", async () => {
+    (supabase.rpc as jest.Mock).mockResolvedValue({
+      data: { status: "pending" },
+      error: null,
+    });
+
+    await requestAccountDeletion("    ");
+    await requestAccountDeletion("x".repeat(650));
+
+    expect(supabase.rpc).toHaveBeenNthCalledWith(1, "request_account_deletion", {
+      p_reason: "User requested account deletion from privacy settings",
+      p_source: "privacy_settings",
+    });
+    expect(supabase.rpc).toHaveBeenNthCalledWith(2, "request_account_deletion", {
+      p_reason: "x".repeat(500),
+      p_source: "privacy_settings",
+    });
+    expect(supabase.from).not.toHaveBeenCalled();
   });
 });

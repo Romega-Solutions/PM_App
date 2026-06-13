@@ -3,8 +3,21 @@ import { UserType } from "../../auth/api/authApi";
 
 const PREFERENCES_SIGN_IN_ERROR =
   "Please sign in before saving match preferences.";
+const PREFERENCES_INPUT_ERROR =
+  "Check your match preferences and try again.";
 const PREFERENCES_SAVE_ERROR =
   "Preferences did not save. Check your connection and try again.";
+const MIN_PREFERENCE_AGE = 18;
+const MAX_PREFERENCE_AGE = 100;
+const MIN_DISTANCE_KM = 1;
+const MAX_DISTANCE_KM = 500;
+const RELATIONSHIP_GOALS = new Set([
+  "dating",
+  "long-term",
+  "marriage",
+  "friendship",
+  "serious_relationship",
+]);
 
 function getInterestedInFromUserType(userType: UserType): string {
   return userType === "filipina" ? "Men" : "Women";
@@ -16,6 +29,10 @@ function getLookingForGenderFromUserType(
   return userType === "filipina" ? "male" : "female";
 }
 
+function isSupportedUserType(userType: UserType): boolean {
+  return userType === "filipina" || userType === "foreigner";
+}
+
 export type PreferencesPayload = {
   interestedIn: string;
   ageMin: number;
@@ -25,6 +42,40 @@ export type PreferencesPayload = {
   userType: UserType;
   createdAt?: string;
 };
+
+function normalizePreferencesPayload(
+  payload: Omit<PreferencesPayload, "interestedIn"> & { userType: UserType },
+) {
+  const ageMin = Number.isFinite(payload.ageMin) ? Math.trunc(payload.ageMin) : NaN;
+  const ageMax = Number.isFinite(payload.ageMax) ? Math.trunc(payload.ageMax) : NaN;
+  const maxDistanceKm = Number.isFinite(payload.maxDistanceKm)
+    ? Math.trunc(payload.maxDistanceKm)
+    : NaN;
+  const relationshipGoal = payload.relationshipGoal.trim();
+
+  if (
+    !Number.isInteger(ageMin) ||
+    !Number.isInteger(ageMax) ||
+    ageMin < MIN_PREFERENCE_AGE ||
+    ageMax > MAX_PREFERENCE_AGE ||
+    ageMin > ageMax ||
+    !Number.isInteger(maxDistanceKm) ||
+    maxDistanceKm < MIN_DISTANCE_KM ||
+    maxDistanceKm > MAX_DISTANCE_KM ||
+    !RELATIONSHIP_GOALS.has(relationshipGoal) ||
+    !isSupportedUserType(payload.userType)
+  ) {
+    throw new Error(PREFERENCES_INPUT_ERROR);
+  }
+
+  return {
+    ageMin,
+    ageMax,
+    maxDistanceKm,
+    relationshipGoal,
+    userType: payload.userType,
+  };
+}
 
 export async function savePreferences(
   payload: Omit<PreferencesPayload, "interestedIn"> & { userType: UserType },
@@ -39,21 +90,22 @@ export async function savePreferences(
       throw new Error(PREFERENCES_SIGN_IN_ERROR);
     }
 
-    const interestedIn = getInterestedInFromUserType(payload.userType);
-    const lookingForGender = getLookingForGenderFromUserType(payload.userType);
+    const normalizedPayload = normalizePreferencesPayload(payload);
+    const interestedIn = getInterestedInFromUserType(normalizedPayload.userType);
+    const lookingForGender = getLookingForGenderFromUserType(normalizedPayload.userType);
 
     const { error } = await supabase
       .from("profiles")
       .update({
         interested_in: interestedIn,
-        age_min: payload.ageMin,
-        age_max: payload.ageMax,
-        max_distance_km: payload.maxDistanceKm,
+        age_min: normalizedPayload.ageMin,
+        age_max: normalizedPayload.ageMax,
+        max_distance_km: normalizedPayload.maxDistanceKm,
         looking_for_gender: lookingForGender,
-        age_preference_min: payload.ageMin,
-        age_preference_max: payload.ageMax,
-        distance_preference_km: payload.maxDistanceKm,
-        relationship_goal: payload.relationshipGoal,
+        age_preference_min: normalizedPayload.ageMin,
+        age_preference_max: normalizedPayload.ageMax,
+        distance_preference_km: normalizedPayload.maxDistanceKm,
+        relationship_goal: normalizedPayload.relationshipGoal,
         preferences_completed: true,
       })
       .eq("id", user.id);
@@ -63,21 +115,25 @@ export async function savePreferences(
     }
 
     const record: PreferencesPayload = {
-      ...payload,
+      ...normalizedPayload,
       interestedIn,
       createdAt: new Date().toISOString(),
     };
 
     return { ok: true, data: record };
   } catch (error) {
-    console.error("Error saving preferences.");
     if (
       error instanceof Error &&
       error.message === PREFERENCES_SIGN_IN_ERROR
     ) {
-      throw error;
+      throw new Error(PREFERENCES_SIGN_IN_ERROR);
     }
 
+    if (error instanceof Error && error.message === PREFERENCES_INPUT_ERROR) {
+      throw new Error(PREFERENCES_INPUT_ERROR);
+    }
+
+    console.error("Error saving preferences.");
     throw new Error(PREFERENCES_SAVE_ERROR);
   }
 }

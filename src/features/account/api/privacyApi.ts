@@ -9,6 +9,9 @@ export type AccountDeletionRequestResult = {
 
 const DEFAULT_DELETION_ERROR =
   "Your deletion request was not sent. Check your connection and try again.";
+const DEFAULT_DELETION_REASON =
+  "User requested account deletion from privacy settings";
+const MAX_DELETION_REASON_LENGTH = 500;
 
 function getFriendlyPrivacyError(error?: { message?: string } | Error | null) {
   const message = error?.message?.trim();
@@ -38,12 +41,22 @@ function getFriendlyPrivacyError(error?: { message?: string } | Error | null) {
   return DEFAULT_DELETION_ERROR;
 }
 
+function normalizeDeletionReason(reason: string): string {
+  const trimmedReason = reason.trim();
+
+  if (!trimmedReason) {
+    return DEFAULT_DELETION_REASON;
+  }
+
+  return trimmedReason.slice(0, MAX_DELETION_REASON_LENGTH);
+}
+
 export async function requestAccountDeletion(
-  reason = "User requested account deletion from privacy settings",
+  reason = DEFAULT_DELETION_REASON,
 ): Promise<AccountDeletionRequestResult> {
   try {
     const { data, error } = await supabase.rpc("request_account_deletion", {
-      p_reason: reason.trim(),
+      p_reason: normalizeDeletionReason(reason),
       p_source: "privacy_settings",
     });
 

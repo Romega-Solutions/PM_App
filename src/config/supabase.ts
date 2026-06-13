@@ -6,9 +6,7 @@ import { authStorage } from "./authStorage";
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
 
-const verificationRedirectUrl = Linking.createURL(
-  "/(auth)/verification-success"
-);
+const verificationRedirectUrl = Linking.createURL("/(auth)/verification-success");
 const passwordResetRedirectUrl = Linking.createURL("/(auth)/reset-password");
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

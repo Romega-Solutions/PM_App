@@ -416,13 +416,15 @@ export const DiscoverScreen: React.FC = () => {
           style={StyleSheet.absoluteFill}
         />
         <View style={styles.loadingPanel}>
+          <View style={styles.stageGlow} />
+          <Text style={styles.stageEyebrow}>Discovery is calibrating</Text>
           <ActivityIndicator
             size="large"
             color={ACCENT_PINK}
             accessibilityLabel="Loading discover profiles"
           />
           <Text style={styles.loadingText}>
-            Checking your launch cohort and preferences...
+            Checking your preferences and profile review...
           </Text>
           <Text style={styles.loadingSubtext}>
             Discovery respects profile visibility, privacy settings, and the
@@ -449,6 +451,10 @@ export const DiscoverScreen: React.FC = () => {
           style={StyleSheet.absoluteFill}
         />
         <View style={styles.emptyPanel}>
+          <View style={styles.stageGlow} />
+          <Text style={styles.stageEyebrow}>
+            {loadError ? "Refresh needed" : "Discovery set reviewed"}
+          </Text>
           <View style={styles.emptyIconWrap}>
             {loadError ? (
               <RefreshCw size={34} color={ACCENT_PINK} strokeWidth={2} />
@@ -463,8 +469,7 @@ export const DiscoverScreen: React.FC = () => {
           </Text>
           <Text style={styles.emptySubtext}>
             {loadError ??
-              "You reached the end of this preference set. This can happen while launch cohorts, privacy settings, profile review, or distance filters are still limiting who can appear during launch-stage cohort setup."}
-            {" launch cohorts, privacy settings, or profile review can still limit who appears."}
+              "You reached the end of this preference set. Privacy settings, profile review, distance filters, or who is currently available can limit who appears."}
           </Text>
           <View style={styles.emptyTrustRow}>
             <View style={styles.emptyTrustPill}>
@@ -535,8 +540,8 @@ export const DiscoverScreen: React.FC = () => {
         testID="discover-launch-state-notice"
         style={styles.discoveryNotice}
         title="Preference-based discovery"
-        message="Visibility settings are respected. Discovery depends on privacy settings, review status, and launch availability. Review details before liking. Reports stay available if something feels off, and passing is always okay during launch-stage cohort setup."
-        accessibilityLabel="Discovery safety note. Preference-based discovery means visibility settings are respected, profiles follow privacy settings, review status, and launch availability, reports stay available, and launch-stage cohort setup can limit who appears."
+        message="Visibility settings are respected. Discovery depends on privacy settings, review status, filters, and who is currently available. Review details before liking, report anything that feels off, and pass whenever you are unsure."
+        accessibilityLabel="Discovery safety note. Preference-based discovery respects visibility settings, profile review, filters, and current availability. Reports stay available, and passing is always okay."
       />
 
       {/* Cards Container */}
@@ -730,12 +735,33 @@ const styles = StyleSheet.create({
   loadingPanel: {
     width: "100%",
     maxWidth: 318,
-    padding: 22,
-    borderRadius: 24,
+    paddingHorizontal: 8,
+    paddingVertical: 22,
+    alignItems: "center",
+  },
+  stageGlow: {
+    position: "absolute",
+    top: 4,
+    width: 172,
+    height: 172,
+    borderRadius: 86,
+    backgroundColor: "rgba(239, 62, 120, 0.16)",
+    opacity: 0.72,
+  },
+  stageEyebrow: {
+    marginBottom: 16,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderRadius: 999,
     backgroundColor: "rgba(255, 255, 255, 0.08)",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.14)",
-    alignItems: "center",
+    fontSize: 12,
+    fontFamily: "DMSans-Bold",
+    color: "rgba(255, 255, 255, 0.78)",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    overflow: "hidden",
   },
   loadingText: {
     marginTop: 16,
@@ -756,12 +782,8 @@ const styles = StyleSheet.create({
   emptyPanel: {
     width: "100%",
     maxWidth: 336,
-    paddingHorizontal: 22,
+    paddingHorizontal: 8,
     paddingVertical: 26,
-    borderRadius: 26,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.14)",
     alignItems: "center",
   },
   emptyIconWrap: {

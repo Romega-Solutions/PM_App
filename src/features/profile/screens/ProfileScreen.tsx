@@ -264,14 +264,14 @@ export const ProfileScreen: React.FC = () => {
           style={StyleSheet.absoluteFill}
         />
         <View
-          style={styles.emptyProfileCard}
+          style={styles.emptyProfilePanel}
           accessible
-          accessibilityLabel="Profile unavailable. PinayMate could not load your profile. Sign in again to restore your launch-stage profile and settings."
+          accessibilityLabel="Could not load profile. Sign in again to restore your profile and settings."
         >
           <Text style={styles.emptyTitle}>Profile needs a refresh</Text>
           <Text style={styles.emptyText}>
             We could not load your profile. Sign in again to restore your
-            launch-stage profile, privacy settings, and discovery controls.
+            profile, privacy settings, and discovery controls.
           </Text>
         </View>
         <TouchableOpacity
@@ -341,15 +341,15 @@ export const ProfileScreen: React.FC = () => {
         />
 
         <View
-          style={styles.launchStatusCard}
+          style={styles.profileStatusStrip}
           accessible
-          accessibilityLabel="Launch-stage profile notice. Profile information loads from your account. Public discovery, matching, calling, and paid features depend on privacy settings, review status, and launch readiness."
+          accessibilityLabel="Profile notice. Your profile information loads from your account. Discovery and connection features depend on your privacy settings, review status, and available app access."
         >
-          <Text style={styles.launchStatusTitle}>Launch-stage profile</Text>
-          <Text style={styles.launchStatusText}>
-            Your profile information loads from your account. Public discovery,
-            matching, calling, and paid features still depend on privacy
-            settings, review status, and launch readiness.
+          <Text style={styles.profileStatusTitle}>Profile access</Text>
+          <Text style={styles.profileStatusText}>
+            Your profile information loads from your account. Discovery and
+            connection features depend on privacy settings, review status, and
+            available app access.
           </Text>
         </View>
 
@@ -396,23 +396,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  launchStatusCard: {
+  profileStatusStrip: {
     marginHorizontal: 24,
     marginTop: 16,
     marginBottom: 8,
-    padding: 16,
-    borderRadius: 18,
-    backgroundColor: "rgba(141, 105, 246, 0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(141, 105, 246, 0.28)",
+    paddingLeft: 16,
+    paddingVertical: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: ACCENT_PURPLE,
+    backgroundColor: "rgba(141, 105, 246, 0.08)",
   },
-  launchStatusTitle: {
+  profileStatusTitle: {
     fontSize: 15,
     fontFamily: "DMSans-Bold",
     color: WHITE,
     marginBottom: 6,
   },
-  launchStatusText: {
+  profileStatusText: {
     fontSize: 13,
     fontFamily: "DMSans-Regular",
     color: "rgba(255, 255, 255, 0.72)",
@@ -424,14 +424,14 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.75)",
     marginTop: 16,
   },
-  emptyProfileCard: {
+  emptyProfilePanel: {
     width: "100%",
     maxWidth: 320,
-    padding: 18,
-    borderRadius: 20,
+    paddingLeft: 18,
+    paddingVertical: 14,
     backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(141,105,246,0.28)",
+    borderLeftWidth: 3,
+    borderLeftColor: ACCENT_PURPLE,
     marginBottom: 20,
   },
   emptyTitle: {

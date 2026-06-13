@@ -5,15 +5,14 @@
  * Shows encouraging message to keep swiping.
  */
 
-import { LaunchStateNotice } from "@/src/components/ui/LaunchStateNotice";
 import {
   Heart,
   RefreshCw,
-  ShieldCheck,
   SlidersHorizontal,
 } from "lucide-react-native";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { LaunchStateNotice } from "@/src/components/ui/LaunchStateNotice";
 
 const ACCENT_PURPLE = "#8D69F6";
 const ACCENT_PINK = "#EF3E78";
@@ -33,7 +32,7 @@ const copyByVariant: Record<
 > = {
   empty: {
     title: "Your match list is just getting started",
-    body: "Like profiles that feel aligned. Mutual matches appear here only after both people choose each other and launch-stage chat access allows it.",
+    body: "Like profiles that feel aligned. Mutual matches appear here after both people choose each other.",
   },
   filtered: {
     title: "No mutual matches in this filter",
@@ -41,7 +40,7 @@ const copyByVariant: Record<
   },
   error: {
     title: "Matches did not refresh",
-    body: "Check your connection and try again. We will keep your existing matches safe.",
+    body: "Check your connection and try again. Your match list stays unchanged while you retry.",
     action: "Try again",
   },
 };
@@ -72,20 +71,10 @@ export const EmptyMatchesState: React.FC<EmptyMatchesStateProps> = ({
       <Text style={styles.emptyText}>{message ?? copy.body}</Text>
       <LaunchStateNotice
         testID="empty-matches-launch-state-notice"
-style={styles.launchNotice}
         title="Mutual matches only"
-        message="Matches appear after both people choose each other and launch-stage chat access allows it. You control the pace, keep private details private, and report anything that feels off."
-        accessibilityLabel="Mutual matches launch note. Matches appear after both people choose each other and launch-stage availability allows chat. Keep private details private and report anything that feels off."
+        message="Chats open after both people choose each other. You control the pace, keep private details private, and report anything that feels off."
+        style={styles.launchNotice}
       />
-      <View style={styles.guidanceRow}>
-        <View style={styles.guidancePill}>
-          <ShieldCheck size={13} color={WHITE} strokeWidth={2.2} />
-          <Text style={styles.guidancePillText}>Mutual first</Text>
-        </View>
-        <View style={styles.guidancePillQuiet}>
-          <Text style={styles.guidancePillQuietText}>No pressure to rush</Text>
-        </View>
-      </View>
       {onAction && copy.action ? (
         <TouchableOpacity
           style={styles.actionButton}
@@ -138,46 +127,8 @@ const styles = StyleSheet.create({
     maxWidth: 292,
   },
   launchNotice: {
-    marginTop: 16,
-    marginBottom: 0,
-    maxWidth: 320,
-  },
-  guidanceRow: {
-    marginTop: 16,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 8,
-  },
-  guidancePill: {
-    minHeight: 30,
-    borderRadius: 15,
-    paddingHorizontal: 11,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: "rgba(239, 62, 120, 0.78)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-  },
-  guidancePillQuiet: {
-    minHeight: 30,
-    borderRadius: 15,
-    paddingHorizontal: 11,
-    justifyContent: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.14)",
-  },
-  guidancePillText: {
-    fontSize: 12,
-    fontFamily: "DMSans-Bold",
-    color: WHITE,
-  },
-  guidancePillQuietText: {
-    fontSize: 12,
-    fontFamily: "DMSans-Bold",
-    color: "rgba(255, 255, 255, 0.74)",
+    marginTop: 18,
+    maxWidth: 310,
   },
   actionButton: {
     minHeight: 48,

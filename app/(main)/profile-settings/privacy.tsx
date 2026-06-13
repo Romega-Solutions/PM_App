@@ -36,7 +36,6 @@ const BRAND_BG = "#0F0814";
 const ACCENT_PURPLE = "#8D69F6";
 const ACCENT_PINK = "#EF3E78";
 const WHITE = "#FFFFFF";
-const SURFACE_STRONG = "rgba(255, 255, 255, 0.08)";
 const TILE_BORDER = "rgba(168, 85, 247, 0.13)";
 const PRIVACY_LOAD_ERROR =
   "Privacy settings could not be loaded. Check your connection and try again.";
@@ -113,7 +112,7 @@ export default function PrivacyScreen() {
       } catch {
         if (isMounted) {
           setSettingsLoadError(PRIVACY_LOAD_ERROR);
-          Alert.alert("Privacy settings unavailable", PRIVACY_LOAD_ERROR);
+          Alert.alert("Could not load privacy settings", PRIVACY_LOAD_ERROR);
         }
       } finally {
         if (isMounted) {
@@ -270,21 +269,21 @@ export default function PrivacyScreen() {
 
         <LaunchStateNotice
           testID="privacy-settings-launch-state-notice"
-title="Backend-backed privacy controls"
-          message="These settings save source-backed privacy preferences to your PinayMate account. Profile visibility, read receipts, and account deletion requests still need current backend proof and support sign-off before production claims. They do not override launch readiness, safety review, or legal/account deletion decisions."
+          title="Privacy controls"
+          message="These settings save privacy preferences to your PinayMate account. Profile visibility, read receipts, and account deletion requests follow your current app access, safety review, and support process."
           meta={updatedAtLabel ? `Last saved ${updatedAtLabel}` : null}
-          accessibilityLabel="Privacy launch note. These settings save source-backed privacy preferences to your PinayMate account, but profile visibility, read receipts, and account deletion requests still need current backend proof and support sign-off before production claims. They do not override launch readiness, safety review, or legal account deletion decisions."
+          accessibilityLabel="Privacy note. These settings save privacy preferences to your PinayMate account. Profile visibility, read receipts, and account deletion requests follow your current app access, safety review, and support process."
         />
 
         {isLoadingSettings ? (
-          <View style={styles.loadingCard}>
+          <View style={styles.loadingRow}>
             <ActivityIndicator size="small" color={ACCENT_PINK} />
             <Text style={styles.loadingText}>Loading privacy settings...</Text>
           </View>
         ) : null}
 
         {settingsLoadError ? (
-          <View style={styles.errorCard} accessibilityRole="alert">
+          <View style={styles.errorStrip} accessibilityRole="alert">
             <AlertCircle size={20} color="#FFB4B4" strokeWidth={2.4} />
             <View style={styles.errorCopy}>
               <Text style={styles.errorTitle}>Settings need to reload</Text>
@@ -305,7 +304,7 @@ title="Backend-backed privacy controls"
         ) : null}
 
         {!isLoadingSettings && !settingsLoadError && !settings.profileVisible ? (
-          <View style={styles.hiddenProfileCard}>
+          <View style={styles.hiddenProfileStrip}>
             <EyeOff size={20} color="#FFD6E4" strokeWidth={2.4} />
             <View style={styles.hiddenProfileCopy}>
               <Text style={styles.hiddenProfileTitle}>
@@ -319,89 +318,93 @@ title="Backend-backed privacy controls"
           </View>
         ) : null}
 
-        {privacySettings.map(
-          ({
-            key,
-            title,
-            description,
-            enabledLabel,
-            disabledLabel,
-            icon: Icon,
-          }) => {
-            const isEnabled = settings[key];
-            const isSaving = savingSetting === key;
-            const isDisabled =
-              isLoadingSettings || savingSetting !== null || !!settingsLoadError;
+        <View style={styles.settingsGroup}>
+          {privacySettings.map(
+            ({
+              key,
+              title,
+              description,
+              enabledLabel,
+              disabledLabel,
+              icon: Icon,
+            }) => {
+              const isEnabled = settings[key];
+              const isSaving = savingSetting === key;
+              const isDisabled =
+                isLoadingSettings ||
+                savingSetting !== null ||
+                !!settingsLoadError;
 
-            return (
-              <TouchableOpacity
-                key={title}
-                style={styles.settingItem}
-                onPress={() => saveSetting(key, !isEnabled)}
-                disabled={isDisabled}
-                activeOpacity={0.82}
-                accessibilityRole="switch"
-                accessibilityLabel={`${title}: ${
-                  isEnabled ? enabledLabel : disabledLabel
-                }`}
-                accessibilityHint={description}
-                accessibilityState={{
-                  checked: isEnabled,
-                  disabled: isDisabled,
-                }}
-              >
-                <View style={styles.settingLeft}>
-                  <Icon size={22} color={ACCENT_PURPLE} />
-                  <View style={styles.settingText}>
-                    <Text style={styles.settingTitle}>{title}</Text>
-                    <Text style={styles.settingDesc}>{description}</Text>
+              return (
+                <TouchableOpacity
+                  key={title}
+                  style={styles.settingRow}
+                  onPress={() => saveSetting(key, !isEnabled)}
+                  disabled={isDisabled}
+                  activeOpacity={0.82}
+                  accessibilityRole="switch"
+                  accessibilityLabel={`${title}: ${
+                    isEnabled ? enabledLabel : disabledLabel
+                  }`}
+                  accessibilityHint={description}
+                  accessibilityState={{
+                    checked: isEnabled,
+                    disabled: isDisabled,
+                  }}
+                >
+                  <View style={styles.settingLeft}>
+                    <Icon size={22} color={ACCENT_PURPLE} />
+                    <View style={styles.settingText}>
+                      <Text style={styles.settingTitle}>{title}</Text>
+                      <Text style={styles.settingDesc}>{description}</Text>
+                    </View>
                   </View>
-                </View>
-                <View style={styles.statusPill}>
-                  {isSaving ? (
-                    <ActivityIndicator size="small" color={ACCENT_PINK} />
-                  ) : (
-                    <Text style={styles.statusText}>
-                      {isEnabled ? enabledLabel : disabledLabel}
-                    </Text>
-                  )}
-                </View>
-                <View pointerEvents="none">
-                  <Switch
-                    value={isEnabled}
-                    accessible={false}
-                    importantForAccessibility="no"
-                    trackColor={{
-                      false: "rgba(255,255,255,0.16)",
-                      true: "rgba(141,105,246,0.56)",
-                    }}
-                    thumbColor={
-                      isEnabled ? ACCENT_PINK : "rgba(255,255,255,0.8)"
-                    }
-                    ios_backgroundColor="rgba(255,255,255,0.16)"
-                  />
-                </View>
-              </TouchableOpacity>
-            );
-          },
-        )}
+                  <View style={styles.statusPill}>
+                    {isSaving ? (
+                      <ActivityIndicator size="small" color={ACCENT_PINK} />
+                    ) : (
+                      <Text style={styles.statusText}>
+                        {isEnabled ? enabledLabel : disabledLabel}
+                      </Text>
+                    )}
+                  </View>
+                  <View pointerEvents="none">
+                    <Switch
+                      value={isEnabled}
+                      accessible={false}
+                      importantForAccessibility="no"
+                      trackColor={{
+                        false: "rgba(255,255,255,0.16)",
+                        true: "rgba(141,105,246,0.56)",
+                      }}
+                      thumbColor={
+                        isEnabled ? ACCENT_PINK : "rgba(255,255,255,0.8)"
+                      }
+                      ios_backgroundColor="rgba(255,255,255,0.16)"
+                    />
+                  </View>
+                </TouchableOpacity>
+              );
+            },
+          )}
+        </View>
 
         <Text style={styles.sectionTitle}>Data & Account</Text>
 
-        <View style={styles.deletionInfoCard}>
+        <View style={styles.deletionInfoStrip}>
           <Text style={styles.deletionInfoTitle}>
             Account deletion is reviewed
           </Text>
           <Text style={styles.deletionInfoText}>
-            This sends a backend-backed request to support. It does not bypass
+            This sends a private request to support. It does not bypass
             safety, fraud, legal, or verification review, and it does not
-            instantly delete account records. During launch preparation, support
+            instantly delete account records. Support
             may contact you before closing the request.
           </Text>
         </View>
 
         <View
-          style={styles.deletionChecklistCard}
+          style={styles.deletionChecklistSection}
           accessibilityLabel="Before requesting account deletion, understand that support reviews the request, safety records may be retained when required, and you will receive a status update after review."
         >
           <Text style={styles.deletionChecklistTitle}>
@@ -410,7 +413,7 @@ title="Backend-backed privacy controls"
           {[
             "Support reviews the request before account records change.",
             "Safety, fraud, legal, or verification records may need retention.",
-            "You will see a request status after the backend accepts it.",
+            "You will see a request status after support receives it.",
           ].map((item) => (
             <View key={item} style={styles.deletionChecklistRow}>
               <CheckCircle2 size={16} color="#8CF2C1" strokeWidth={2.4} />
@@ -422,10 +425,10 @@ title="Backend-backed privacy controls"
         {deletionFeedback ? (
           <View
             style={[
-              styles.deletionFeedbackCard,
+              styles.deletionFeedbackStrip,
               deletionFeedback.type === "success"
-                ? styles.deletionSuccessCard
-                : styles.deletionErrorCard,
+                ? styles.deletionSuccessStrip
+                : styles.deletionErrorStrip,
             ]}
             accessibilityRole="alert"
             accessibilityLiveRegion="polite"
@@ -447,7 +450,7 @@ title="Backend-backed privacy controls"
         ) : null}
 
         <TouchableOpacity
-          style={styles.actionItem}
+          style={styles.destructiveActionRow}
           onPress={confirmDeletionRequest}
           disabled={isRequestingDeletion}
           accessibilityRole="button"
@@ -538,12 +541,11 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     marginTop: 10,
   },
-  loadingCard: {
-    backgroundColor: SURFACE_STRONG,
-    borderRadius: 12,
-    borderWidth: 1,
+  loadingRow: {
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
     borderColor: TILE_BORDER,
-    padding: 16,
+    paddingVertical: 16,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -554,12 +556,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "DMSans-Regular",
   },
-  errorCard: {
+  errorStrip: {
     backgroundColor: "rgba(255, 107, 107, 0.12)",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 107, 107, 0.35)",
-    padding: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: "rgba(255, 107, 107, 0.72)",
+    paddingVertical: 16,
+    paddingLeft: 14,
+    paddingRight: 10,
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
@@ -595,12 +598,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "DMSans-Bold",
   },
-  hiddenProfileCard: {
+  hiddenProfileStrip: {
     backgroundColor: "rgba(239, 62, 120, 0.14)",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(239, 62, 120, 0.32)",
-    padding: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: "rgba(239, 62, 120, 0.72)",
+    paddingVertical: 16,
+    paddingLeft: 14,
+    paddingRight: 10,
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
@@ -621,16 +625,18 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-Regular",
     lineHeight: 19,
   },
-  settingItem: {
-    backgroundColor: SURFACE_STRONG,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: TILE_BORDER,
-    padding: 16,
+  settingsGroup: {
+    borderTopWidth: 1,
+    borderTopColor: TILE_BORDER,
+    marginBottom: 12,
+  },
+  settingRow: {
+    paddingVertical: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: TILE_BORDER,
     minHeight: 72,
   },
   settingLeft: {
@@ -670,12 +676,11 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-SemiBold",
     textAlign: "center",
   },
-  deletionChecklistCard: {
-    backgroundColor: "rgba(140, 242, 193, 0.08)",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(140, 242, 193, 0.18)",
-    padding: 16,
+  deletionChecklistSection: {
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "rgba(140, 242, 193, 0.2)",
+    paddingVertical: 16,
     marginBottom: 12,
     gap: 10,
   },
@@ -696,23 +701,25 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-Regular",
     lineHeight: 19,
   },
-  actionItem: {
+  destructiveActionRow: {
     backgroundColor: "rgba(239, 62, 120, 0.12)",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: ACCENT_PINK,
-    padding: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: ACCENT_PINK,
+    paddingVertical: 16,
+    paddingLeft: 14,
+    paddingRight: 10,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     marginBottom: 12,
   },
-  deletionInfoCard: {
+  deletionInfoStrip: {
     backgroundColor: "rgba(255, 255, 255, 0.06)",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.12)",
-    padding: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: "rgba(255, 255, 255, 0.22)",
+    paddingVertical: 16,
+    paddingLeft: 14,
+    paddingRight: 10,
     marginBottom: 12,
   },
   deletionInfoTitle: {
@@ -727,22 +734,23 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-Regular",
     lineHeight: 19,
   },
-  deletionFeedbackCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 14,
+  deletionFeedbackStrip: {
+    borderLeftWidth: 3,
+    paddingVertical: 14,
+    paddingLeft: 14,
+    paddingRight: 10,
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
     marginBottom: 12,
   },
-  deletionSuccessCard: {
+  deletionSuccessStrip: {
     backgroundColor: "rgba(34, 165, 116, 0.12)",
-    borderColor: "rgba(34, 165, 116, 0.35)",
+    borderLeftColor: "rgba(34, 165, 116, 0.72)",
   },
-  deletionErrorCard: {
+  deletionErrorStrip: {
     backgroundColor: "rgba(255, 107, 107, 0.12)",
-    borderColor: "rgba(255, 107, 107, 0.35)",
+    borderLeftColor: "rgba(255, 107, 107, 0.72)",
   },
   deletionFeedbackCopy: {
     flex: 1,

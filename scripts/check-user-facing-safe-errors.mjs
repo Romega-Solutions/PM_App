@@ -118,6 +118,45 @@ const forbiddenPatterns = [
   },
 ];
 
+const forbiddenUserFacingPhrases = [
+  "Notification preferences unavailable",
+  "Privacy settings unavailable",
+  "Block unavailable",
+  "Unmatch unavailable",
+  "Report unavailable",
+  "Photo unavailable",
+  "Chat unavailable",
+  "Conversation unavailable",
+  "Emoji picker unavailable",
+  "Location unavailable",
+  "Profile unavailable",
+  "Voice call unavailable",
+  "Video call unavailable",
+  "Phone verification is not available yet",
+  "Why is SMS not available?",
+  "trust cues stay unavailable",
+  "online signup is unavailable",
+  "being finalized",
+  "off for launch",
+  "launch approval",
+  "provider verification",
+  "keyboard emoji fallback note",
+];
+
+const userFacingCopyFiles = [
+  "app/(auth)/verify-phone.tsx",
+  "app/(main)/profile-settings/help.tsx",
+  "app/(main)/profile-settings/notifications.tsx",
+  "app/(main)/profile-settings/privacy.tsx",
+  "src/features/account/screens/LocationScreen.tsx",
+  "src/features/account/screens/VerificationUploadScreen.tsx",
+  "src/features/matching/screens/LikesScreen.tsx",
+  "src/features/messaging/screens/ChatScreen.tsx",
+  "src/features/messaging/screens/VideoCallScreen.tsx",
+  "src/features/messaging/screens/VoiceCallScreen.tsx",
+  "src/features/profile/screens/ProfileScreen.tsx",
+];
+
 const failures = [];
 
 function readRepoFile(relativePath) {
@@ -147,6 +186,23 @@ for (const contract of contracts) {
   }
 }
 
+for (const relativePath of userFacingCopyFiles) {
+  const content = readRepoFile(relativePath);
+
+  if (content === null) {
+    failures.push(`${relativePath} missing user-facing copy scan target`);
+    continue;
+  }
+
+  for (const phrase of forbiddenUserFacingPhrases) {
+    if (content.includes(phrase)) {
+      failures.push(
+        `${relativePath} contains forbidden user-facing copy: "${phrase}"`,
+      );
+    }
+  }
+}
+
 if (failures.length > 0) {
   console.error("FAIL user-facing safe error contract");
   for (const failure of failures) {
@@ -156,4 +212,9 @@ if (failures.length > 0) {
 }
 
 console.log("PASS user-facing safe error contract");
-console.log(`Checked ${contracts.length} high-risk auth/account/profile/messaging files.`);
+console.log(
+  `Checked ${contracts.length} high-risk auth/account/profile/messaging files.`,
+);
+console.log(
+  `Checked ${userFacingCopyFiles.length} high-risk user-facing recovery-copy files.`,
+);

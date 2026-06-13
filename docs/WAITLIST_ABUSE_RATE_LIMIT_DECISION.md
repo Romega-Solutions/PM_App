@@ -30,6 +30,13 @@ Before setting `VITE_PINAYMATE_WAITLIST_ABUSE_CONTROL_APPROVED=true`, the releas
 - `WAITLIST_ALLOW_NO_ORIGIN` is disabled in production unless explicitly risk-accepted.
 - `WAITLIST_TURNSTILE_SECRET_KEY` and `WAITLIST_REQUIRE_TURNSTILE=true` are present if challenge-provider proof is required for the launch decision.
 - The public path runs through an edge/server route that enforces IP or fingerprint rate limits.
+- The waitlist Edge Function CORS preflight allows only the public `apikey`, `Content-Type`, `x-client-info`, and challenge headers; browser `Authorization` is intentionally not allowed.
+- POST requests must include an approved `x-client-info` marker such as `pm-web-waitlist` or `pm-app-waitlist`.
+- The approved `x-client-info` marker must match the submitted `source` field so web requests stay `pm_web` and app requests stay `pm_app`.
+- The waitlist Edge Function returns `nosniff`, `no-referrer`, and a restrictive permissions policy that disables camera, microphone, geolocation, and payment permissions for this public endpoint.
+- Public operational failures return a generic fallback message so origin, provider, secret, and private RPC failures do not expose implementation details to browser callers.
+- Public waitlist JSON request bodies are capped at 4096 UTF-8 bytes before parsing.
+- Waitlist challenge tokens from the body or Turnstile headers are capped at 2048 UTF-8 bytes before provider verification.
 - Turnstile or reCAPTCHA is enabled, or the release owner records why challenge protection is not required.
 - provider-level WAF/rate-limit rules are reviewed for the public waitlist route.
 - Anonymous and authenticated clients cannot execute `submit_waitlist_signup` directly.
@@ -42,12 +49,14 @@ Before setting `VITE_PINAYMATE_WAITLIST_ABUSE_CONTROL_APPROVED=true`, the releas
 - `waitlist_signups` exists with RLS enabled and forced.
 - `waitlist_edge_attempts` exists with RLS enabled and forced.
 - `anon` and `authenticated` cannot directly select, insert, or update `waitlist_signups`.
-anon and authenticated cannot directly select, insert, or update waitlist_signups.
+- Contract marker: anon and authenticated cannot directly select, insert, or update waitlist_signups.
 - `anon`, `authenticated`, and direct `service_role` grants cannot directly select, insert, or update `waitlist_edge_attempts`.
 - `anon`, `authenticated`, and direct `service_role` grants cannot directly select, insert, update, or delete `waitlist_signups`.
 - `submit_waitlist_signup` is executable only by `service_role`.
 - `claim_waitlist_edge_attempt` is executable only by `service_role`.
 - `waitlist-signup` accepts valid minimal email/platform input from an approved origin.
+- `waitlist-signup` rejects requests without an approved `x-client-info` marker.
+- `waitlist-signup` rejects requests when the approved `x-client-info` marker does not match the submitted `source`.
 - `waitlist-signup` rejects malformed email safely.
 - Duplicate email/platform submissions return the generic accepted shape.
 - Blocked or unsubscribed waitlist rows are not refreshed by public duplicate submissions.

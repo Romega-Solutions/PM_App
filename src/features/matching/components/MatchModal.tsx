@@ -102,8 +102,7 @@ export const MatchModal: React.FC<MatchModalProps> = ({
             <Text style={styles.matchTitle}>It's a Match!</Text>
             <Text style={styles.matchSubtitle}>
               You and {matchedProfile.first_name} liked each other. Open the
-              match when chat access is available, and start respectfully when
-              you are ready.
+              match and start respectfully when you are ready.
             </Text>
 
             <View
@@ -146,7 +145,7 @@ export const MatchModal: React.FC<MatchModalProps> = ({
                 activeOpacity={0.86}
                 accessibilityRole="button"
                 accessibilityLabel={`Open ${matchedProfile.first_name} in matches`}
-                accessibilityHint="Takes you to your matches. Messaging may depend on launch availability and account state."
+                accessibilityHint="Takes you to your matches. Messaging may depend on account state."
               >
                 <MessageCircle size={20} color={WHITE} strokeWidth={2.5} />
                 <Text style={styles.sendMessageBtnText}>Open Match</Text>

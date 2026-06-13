@@ -203,7 +203,11 @@ export async function blockUser(
       return { success: false, error: "Choose a member to block." };
     }
 
-    await getAuthenticatedUserId();
+    const currentUserId = await getAuthenticatedUserId();
+
+    if (currentUserId === normalizedBlockedUserId) {
+      return { success: false, error: "Choose a different member to block." };
+    }
 
     const { error } = await supabase.rpc("block_user", {
       p_blocked_user_id: normalizedBlockedUserId,
@@ -253,7 +257,11 @@ export async function unmatchUser(
       return { success: false, error: "Choose a member to unmatch." };
     }
 
-    await getAuthenticatedUserId();
+    const currentUserId = await getAuthenticatedUserId();
+
+    if (currentUserId === normalizedOtherUserId) {
+      return { success: false, error: "Choose a different member to unmatch." };
+    }
 
     const { error } = await supabase.rpc("unmatch_user", {
       p_other_user_id: normalizedOtherUserId,

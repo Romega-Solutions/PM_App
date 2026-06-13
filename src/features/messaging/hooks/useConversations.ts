@@ -79,7 +79,7 @@ export function useConversations({
         }));
         setActiveConversations(activeConvs);
       }
-    } catch (err) {
+    } catch {
       console.error("Failed to load conversations.");
       setError(new Error(CONVERSATIONS_LOAD_ERROR));
     } finally {

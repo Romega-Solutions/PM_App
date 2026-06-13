@@ -180,7 +180,7 @@ export const useLocationSearch = () => {
       throw new Error(
         permission.canAskAgain
           ? "Location permission is required to use your current location. You can also search for your city manually."
-          : "Location permission is disabled. Enable it in device settings or search for your city manually."
+          : "Location access is off. Turn it on in device settings, or search for your city manually."
       );
     }
 

@@ -75,7 +75,11 @@ describe("legacy messagesApi conversation helpers", () => {
 
       const result = await getConversations("user-123");
 
-      expect(result).toEqual({ data: null, error: rpcError });
+      expect(result.data).toBeNull();
+      expect(result.error).toEqual(expect.any(Error));
+      expect(result.error?.message).toBe(
+        "Conversations could not be loaded. Check your connection and try again.",
+      );
       expect(supabase.from).not.toHaveBeenCalled();
     });
   });

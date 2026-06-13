@@ -177,7 +177,14 @@ export default function ReportUserModal() {
           paddingHorizontal: 24,
         }}
       >
-        <View className="mb-8">
+        <View className="mb-7">
+          <View className="mb-5 h-20 justify-end overflow-hidden rounded-[28px] border border-[#EF3E78]/20 bg-[#EF3E78]/10 px-5 py-4">
+            <View className="absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[#8D69F6]/30" />
+            <View className="absolute -left-8 bottom-[-44px] h-28 w-28 rounded-full bg-[#EF3E78]/25" />
+            <Text className="text-white/70 text-xs font-semibold uppercase tracking-[2px]">
+              Private safety report
+            </Text>
+          </View>
           <Text
             className="text-white text-3xl font-bold"
             accessibilityRole="header"
@@ -190,38 +197,23 @@ export default function ReportUserModal() {
           </Text>
         </View>
 
-        <View className="mb-4 rounded-2xl border border-[#8D69F6]/25 bg-[#8D69F6]/10 px-4 py-3">
+        <View className="mb-6 border-l-2 border-[#EF3E78] pl-4">
           <Text className="text-white text-sm font-semibold">
             What happens next
           </Text>
           <Text className="text-white/70 mt-1 text-sm leading-5">
-            Support reviews the report, conversation context may be checked, and
-            the other member is not told who reported them. This is not an
-            emergency channel and does not promise an instant moderation action.
-            This is not an emergency channel.
+            Support reviews the report, available conversation context may be
+            checked, and the other member is not told who reported them. This is
+            not an emergency channel and does not promise an instant moderation action.
           </Text>
-        </View>
-
-        <View className="mb-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-          <Text className="text-white text-sm font-semibold">
+          <Text className="text-white text-sm font-semibold mt-4">
             What support receives
           </Text>
           <Text className="text-white/70 mt-1 text-sm leading-5">
-            We send your selected reason, optional details, where the report
-            came from, and chat context only when available through
-            submitUserReport. This form does not ask for passwords, payment
-            details, or ID documents.
-            This form does not ask for passwords, payment details, or ID
-            documents.
-            {" This form does not ask for passwords, payment details, or ID documents."}
+            We send your selected reason, optional details, where the report came
+            from, and chat context only when available. This form does not ask for passwords, payment details, or ID documents.
           </Text>
-        </View>
-
-        <View className="mb-4 rounded-2xl border border-[#FFB020]/30 bg-[#FFB020]/10 px-4 py-3">
-          <Text className="text-white text-sm font-semibold">
-            Urgent safety reminder
-          </Text>
-          <Text className="text-white/70 mt-1 text-sm leading-5">
+          <Text className="text-[#FFD58A] mt-4 text-sm leading-5">
             If someone asks for money, codes, passwords, documents, or threatens
             you, stop replying. If you are in immediate danger, contact local
             emergency services.

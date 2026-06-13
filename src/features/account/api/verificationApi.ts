@@ -29,6 +29,21 @@ const VERIFICATION_UPLOAD_ERROR =
 const VERIFICATION_SUBMIT_ERROR =
   "Verification was not submitted. Check your connection and try again.";
 const MAX_VERIFICATION_IMAGE_BYTES = 6 * 1024 * 1024;
+const MAX_EXTRACTED_NAME_LENGTH = 80;
+const MIN_VERIFICATION_AGE = 18;
+const MAX_VERIFICATION_AGE = 100;
+const MAX_MISMATCH_REASONS = 8;
+const MAX_MISMATCH_REASON_LENGTH = 140;
+
+function normalizeVerificationUri(uri: string): string {
+  const normalizedUri = uri.trim();
+
+  if (!normalizedUri) {
+    throw new Error(VERIFICATION_UPLOAD_ERROR);
+  }
+
+  return normalizedUri;
+}
 
 function getImageExtension(uri: string): string {
   const cleanUri = uri.split("?")[0].split("#")[0];
@@ -45,6 +60,57 @@ function getImageExtension(uri: string): string {
   return "jpg";
 }
 
+function normalizeOptionalText(value?: string): string | undefined {
+  const normalizedValue = value?.trim().slice(0, MAX_EXTRACTED_NAME_LENGTH);
+
+  return normalizedValue || undefined;
+}
+
+function normalizeExtractedAge(age?: number): number | undefined {
+  if (typeof age !== "number" || !Number.isFinite(age)) {
+    return undefined;
+  }
+
+  const normalizedAge = Math.trunc(age);
+
+  if (
+    normalizedAge < MIN_VERIFICATION_AGE ||
+    normalizedAge > MAX_VERIFICATION_AGE
+  ) {
+    return undefined;
+  }
+
+  return normalizedAge;
+}
+
+function normalizeMismatchReasons(reasons?: string[]): string[] | undefined {
+  if (!Array.isArray(reasons)) {
+    return undefined;
+  }
+
+  const normalizedReasons = Array.from(
+    new Set(
+      reasons
+        .map((reason) => reason.trim().slice(0, MAX_MISMATCH_REASON_LENGTH))
+        .filter(Boolean),
+    ),
+  ).slice(0, MAX_MISMATCH_REASONS);
+
+  return normalizedReasons.length > 0 ? normalizedReasons : undefined;
+}
+
+function normalizeVerificationPayload(payload: VerificationData) {
+  return {
+    ...payload,
+    selfieUri: normalizeVerificationUri(payload.selfieUri),
+    documentUri: normalizeVerificationUri(payload.documentUri),
+    extractedFirstName: normalizeOptionalText(payload.extractedFirstName),
+    extractedLastName: normalizeOptionalText(payload.extractedLastName),
+    extractedAge: normalizeExtractedAge(payload.extractedAge),
+    mismatchReasons: normalizeMismatchReasons(payload.mismatchReasons),
+  };
+}
+
 function getImageContentType(extension: string): string {
   if (extension === "jpg" || extension === "jpeg") {
     return "image/jpeg";
@@ -58,7 +124,8 @@ async function uploadVerificationImage(
   uri: string,
   kind: "selfie" | "document",
 ): Promise<string> {
-  const fileInfo = await FileSystem.getInfoAsync(uri);
+  const normalizedUri = normalizeVerificationUri(uri);
+  const fileInfo = await FileSystem.getInfoAsync(normalizedUri);
 
   if (
     !fileInfo.exists ||
@@ -68,9 +135,9 @@ async function uploadVerificationImage(
     throw new Error(VERIFICATION_UPLOAD_ERROR);
   }
 
-  const extension = getImageExtension(uri);
+  const extension = getImageExtension(normalizedUri);
   const filePath = `${userId}/${kind}-${Date.now()}.${extension}`;
-  const base64 = await FileSystem.readAsStringAsync(uri, {
+  const base64 = await FileSystem.readAsStringAsync(normalizedUri, {
     encoding: "base64",
   });
 
@@ -138,19 +205,21 @@ export async function saveVerification(
       throw new Error(VERIFICATION_SIGN_IN_ERROR);
     }
 
+    const normalizedPayload = normalizeVerificationPayload(payload);
+
     const selfieStoragePath = await uploadVerificationImage(
       user.id,
-      payload.selfieUri,
+      normalizedPayload.selfieUri,
       "selfie",
     );
     const documentStoragePath = await uploadVerificationImage(
       user.id,
-      payload.documentUri,
+      normalizedPayload.documentUri,
       "document",
     );
 
     const record = {
-      ...payload,
+      ...normalizedPayload,
       selfieUri: selfieStoragePath,
       documentUri: documentStoragePath,
       isVerified: false,
@@ -160,10 +229,10 @@ export async function saveVerification(
     const { error } = await supabase.rpc("submit_verification", {
       p_selfie_uri: record.selfieUri,
       p_document_uri: record.documentUri,
-      p_extracted_first_name: record.extractedFirstName ?? null,
-      p_extracted_last_name: record.extractedLastName ?? null,
-      p_extracted_age: record.extractedAge ?? null,
-      p_mismatch_reasons: record.mismatchReasons ?? null,
+      p_extracted_first_name: normalizedPayload.extractedFirstName ?? null,
+      p_extracted_last_name: normalizedPayload.extractedLastName ?? null,
+      p_extracted_age: normalizedPayload.extractedAge ?? null,
+      p_mismatch_reasons: normalizedPayload.mismatchReasons ?? null,
     });
 
     if (error) {
@@ -172,12 +241,12 @@ export async function saveVerification(
 
     return { ok: true, data: record };
   } catch (error) {
-    if (
-      error instanceof Error &&
-      (error.message === VERIFICATION_SIGN_IN_ERROR ||
-        error.message === VERIFICATION_UPLOAD_ERROR)
-    ) {
-      throw error;
+    if (error instanceof Error && error.message === VERIFICATION_SIGN_IN_ERROR) {
+      throw new Error(VERIFICATION_SIGN_IN_ERROR);
+    }
+
+    if (error instanceof Error && error.message === VERIFICATION_UPLOAD_ERROR) {
+      throw new Error(VERIFICATION_UPLOAD_ERROR);
     }
 
     throw new Error(VERIFICATION_SUBMIT_ERROR);

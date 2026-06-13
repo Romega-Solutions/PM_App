@@ -137,16 +137,15 @@ export default function AccountProfilePhotosScreen() {
         </View>
 
         <View
-          style={styles.privacyCard}
+          style={styles.privacyStrip}
           accessible
-          accessibilityLabel="Profile photo privacy. Profile photos can become visible in discovery or to matches when launch settings allow it. Do not upload ID documents here."
+          accessibilityLabel="Profile photo privacy. Profile photos can become visible in discovery or to matches when privacy settings and review status allow it. Do not upload ID documents here."
         >
           <Text style={styles.privacyTitle}>Profile photo privacy</Text>
           <Text style={styles.privacyText}>
             These photos can become visible in discovery or to matches when
-            privacy settings, review status, and launch availability allow it.
-            Keep ID documents, screenshots, and private records out of this
-            step.
+            privacy settings and review status allow it. Keep ID documents,
+            screenshots, and private records out of this step.
           </Text>
         </View>
 
@@ -265,13 +264,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  privacyCard: {
+  privacyStrip: {
     gap: 6,
-    padding: 14,
-    borderRadius: 16,
+    paddingLeft: 14,
+    paddingVertical: 12,
     backgroundColor: "rgba(141,105,246,0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(141,105,246,0.24)",
+    borderLeftWidth: 3,
+    borderLeftColor: "rgba(141,105,246,0.86)",
     marginBottom: 18,
   },
   privacyTitle: {

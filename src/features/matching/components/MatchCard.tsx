@@ -161,28 +161,24 @@ export const MatchCard: React.FC<MatchCardProps> = ({
           {match.verified ? "Verification reviewed" : "Report concerns anytime"}
         </Text>
         <View style={styles.matchMetaRow}>
-          <View
+          <Heart
+            size={11}
+            color={match.mutual ? ACCENT_PINK : "rgba(255,255,255,0.58)"}
+            fill={match.mutual ? ACCENT_PINK : "transparent"}
+            strokeWidth={2}
+          />
+          <Text
             style={[
-              styles.statusPill,
-              match.mutual ? styles.statusPillMutual : styles.statusPillQuiet,
+              styles.matchStateText,
+              match.mutual && styles.matchStateTextActive,
             ]}
+            numberOfLines={1}
           >
-            <Heart
-              size={11}
-              color={match.mutual ? WHITE : "rgba(255,255,255,0.72)"}
-              fill={match.mutual ? WHITE : "transparent"}
-              strokeWidth={2}
-            />
-            <Text
-              style={[
-                styles.statusPillText,
-                match.mutual && styles.statusPillTextActive,
-              ]}
-              numberOfLines={1}
-            >
-              {match.mutual ? "Mutual" : "Matched"}
+            {match.mutual ? "Mutual" : "Matched"}
+          </Text>
+            <Text style={styles.matchSeparator} accessible={false}>
+              /
             </Text>
-          </View>
           <Text style={styles.matchedAtText} numberOfLines={1}>
             {matchedAtLabel}
           </Text>
@@ -192,11 +188,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
         <View style={styles.cardActions}>
           <View style={styles.secondaryActions}>
             <TouchableOpacity
-              style={[
-                styles.cardActionBtn,
-                styles.secondaryActionBtn,
-                styles.unmatchBtn,
-              ]}
+              style={styles.inlineActionBtn}
               onPress={onUnmatch}
               activeOpacity={0.82}
               hitSlop={ACTION_HIT_SLOP}
@@ -211,11 +203,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.cardActionBtn,
-                styles.secondaryActionBtn,
-                styles.reportBtn,
-              ]}
+              style={styles.inlineActionBtn}
               onPress={onReport}
               activeOpacity={0.82}
               hitSlop={ACTION_HIT_SLOP}
@@ -393,30 +381,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
   },
-  statusPill: {
-    minHeight: 24,
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    borderWidth: 1,
-  },
-  statusPillMutual: {
-    backgroundColor: "rgba(239, 62, 120, 0.82)",
-    borderColor: "rgba(255, 255, 255, 0.22)",
-  },
-  statusPillQuiet: {
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderColor: "rgba(255, 255, 255, 0.14)",
-  },
-  statusPillText: {
+  matchStateText: {
     fontSize: 10,
     fontFamily: "DMSans-Bold",
-    color: "rgba(255, 255, 255, 0.72)",
+    color: "rgba(255, 255, 255, 0.62)",
   },
-  statusPillTextActive: {
-    color: WHITE,
+  matchStateTextActive: {
+    color: ACCENT_PINK,
+  },
+  matchSeparator: {
+    fontSize: 10,
+    fontFamily: "DMSans-Bold",
+    color: "rgba(255, 255, 255, 0.32)",
   },
   matchedAtText: {
     flex: 1,
@@ -431,7 +407,10 @@ const styles = StyleSheet.create({
   },
   secondaryActions: {
     flexDirection: "row",
-    gap: 8,
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255, 255, 255, 0.08)",
+    paddingTop: 8,
   },
   cardActionBtn: {
     minHeight: 48,
@@ -440,8 +419,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 3,
   },
-  secondaryActionBtn: {
-    flex: 1,
+  inlineActionBtn: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
   },
   actionLabel: {
     fontSize: 10,
@@ -456,16 +438,6 @@ const styles = StyleSheet.create({
   },
   messageActionLabel: {
     color: WHITE,
-  },
-  unmatchBtn: {
-    backgroundColor: "rgba(239, 62, 120, 0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(239, 62, 120, 0.3)",
-  },
-  reportBtn: {
-    backgroundColor: "rgba(255, 180, 180, 0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 180, 180, 0.28)",
   },
   messageBtn: {
     width: "100%",

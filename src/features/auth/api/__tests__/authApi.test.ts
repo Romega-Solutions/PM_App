@@ -21,6 +21,104 @@ jest.mock("@/src/config/supabase", () => ({
   },
 }));
 
+describe("authApi signup and signin", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("normalizes signup email and metadata before Supabase auth", async () => {
+    (supabase.auth.signUp as jest.Mock).mockResolvedValue({
+      data: {
+        user: { email: "user@example.com" },
+        session: null,
+      },
+      error: null,
+    });
+
+    await expect(
+      authApi.signUp(" USER@Example.COM ", "Password1!", {
+        firstName: " Maria ",
+        userType: "filipina",
+      }),
+    ).resolves.toEqual({
+      user: {
+        email: "user@example.com",
+        metadata: {
+          firstName: "Maria",
+          userType: "filipina",
+        },
+      },
+      needsVerification: true,
+      message: "Verification email sent. Please check your inbox.",
+    });
+
+    expect(supabase.auth.signUp).toHaveBeenCalledWith({
+      email: "user@example.com",
+      password: "Password1!",
+      options: {
+        data: {
+          first_name: "Maria",
+          user_type: "filipina",
+        },
+        emailRedirectTo: "pinaymate://verification-success",
+      },
+    });
+  });
+
+  it("rejects invalid signup input before Supabase auth", async () => {
+    await expect(
+      authApi.signUp("not-an-email", "Password1!", {
+        firstName: "Maria",
+        userType: "filipina",
+      }),
+    ).rejects.toThrow("Enter a valid email address.");
+
+    await expect(
+      authApi.signUp("user@example.com", "weak", {
+        firstName: "Maria",
+        userType: "filipina",
+      }),
+    ).rejects.toThrow("Password must be at least 8 characters");
+
+    await expect(
+      authApi.signUp("user@example.com", "Password1!", {
+        firstName: "   ",
+        userType: "filipina",
+      }),
+    ).rejects.toThrow("First name is required");
+
+    expect(supabase.auth.signUp).not.toHaveBeenCalled();
+  });
+
+  it("normalizes signin email before Supabase auth", async () => {
+    (supabase.auth.signInWithPassword as jest.Mock).mockResolvedValue({
+      data: {
+        user: {
+          email: "user@example.com",
+          user_metadata: { user_type: "foreigner" },
+        },
+        session: { access_token: "token" },
+      },
+      error: null,
+    });
+
+    await expect(
+      authApi.signIn(" USER@Example.COM ", "Password1!"),
+    ).resolves.toEqual({
+      user: {
+        email: "user@example.com",
+        userType: "foreigner",
+      },
+      session: { access_token: "token" },
+    });
+
+    expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
+      email: "user@example.com",
+      password: "Password1!",
+    });
+  });
+});
+
 describe("authApi password recovery", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -50,7 +148,7 @@ describe("authApi password recovery", () => {
     });
 
     await expect(authApi.requestPasswordReset("user@example.com")).rejects.toThrow(
-      "Email provider unavailable"
+      "Password reset email could not be sent. Check your email and try again."
     );
   });
 
@@ -110,6 +208,6 @@ describe("authApi email verification", () => {
 
     await expect(
       authApi.resendVerificationEmail("user@example.com")
-    ).rejects.toThrow("Email provider unavailable");
+    ).rejects.toThrow("Verification email could not be resent. Check your email and try again.");
   });
 });

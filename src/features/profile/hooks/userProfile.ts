@@ -21,7 +21,7 @@ export function useProfile(autoLoad = true) {
       } else {
         setError(new Error(PROFILE_LOAD_ERROR));
       }
-    } catch (err) {
+    } catch {
       console.error("Error loading profile.");
       setError(new Error(PROFILE_LOAD_ERROR));
     } finally {

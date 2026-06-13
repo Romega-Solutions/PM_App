@@ -21,17 +21,35 @@ const NOTIFICATION_SETTINGS_ERROR =
   "Notification preferences were not saved. Check your connection and try again.";
 
 function mapNotificationRecord(record: any): NotificationPreferences {
+  const pushEnabled =
+    record?.push_enabled ?? DEFAULT_NOTIFICATION_PREFERENCES.pushEnabled;
+
   return {
-    pushEnabled:
-      record?.push_enabled ?? DEFAULT_NOTIFICATION_PREFERENCES.pushEnabled,
-    newMatches:
-      record?.new_matches ?? DEFAULT_NOTIFICATION_PREFERENCES.newMatches,
-    newMessages:
-      record?.new_messages ?? DEFAULT_NOTIFICATION_PREFERENCES.newMessages,
-    newLikes: record?.new_likes ?? DEFAULT_NOTIFICATION_PREFERENCES.newLikes,
+    pushEnabled,
+    newMatches: pushEnabled
+      ? record?.new_matches ?? DEFAULT_NOTIFICATION_PREFERENCES.newMatches
+      : false,
+    newMessages: pushEnabled
+      ? record?.new_messages ?? DEFAULT_NOTIFICATION_PREFERENCES.newMessages
+      : false,
+    newLikes: pushEnabled
+      ? record?.new_likes ?? DEFAULT_NOTIFICATION_PREFERENCES.newLikes
+      : false,
     emailUpdates:
       record?.email_updates ?? DEFAULT_NOTIFICATION_PREFERENCES.emailUpdates,
     updatedAt: record?.updated_at,
+  };
+}
+
+function normalizeNotificationPreferences(
+  preferences: NotificationPreferences,
+): NotificationPreferences {
+  return {
+    pushEnabled: Boolean(preferences.pushEnabled),
+    newMatches: Boolean(preferences.pushEnabled && preferences.newMatches),
+    newMessages: Boolean(preferences.pushEnabled && preferences.newMessages),
+    newLikes: Boolean(preferences.pushEnabled && preferences.newLikes),
+    emailUpdates: Boolean(preferences.emailUpdates),
   };
 }
 
@@ -79,12 +97,14 @@ export async function getNotificationPreferences(): Promise<NotificationPreferen
 export async function saveNotificationPreferences(
   preferences: NotificationPreferences,
 ): Promise<NotificationPreferences> {
+  const normalizedPreferences = normalizeNotificationPreferences(preferences);
+
   const { data, error } = await supabase.rpc("save_notification_preferences", {
-    p_push_enabled: preferences.pushEnabled,
-    p_new_matches: preferences.newMatches,
-    p_new_messages: preferences.newMessages,
-    p_new_likes: preferences.newLikes,
-    p_email_updates: preferences.emailUpdates,
+    p_push_enabled: normalizedPreferences.pushEnabled,
+    p_new_matches: normalizedPreferences.newMatches,
+    p_new_messages: normalizedPreferences.newMessages,
+    p_new_likes: normalizedPreferences.newLikes,
+    p_email_updates: normalizedPreferences.emailUpdates,
   });
 
   if (error) {

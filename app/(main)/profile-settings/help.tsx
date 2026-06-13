@@ -26,8 +26,6 @@ const BRAND_BG = "#0F0814";
 const ACCENT_PURPLE = "#8D69F6";
 const ACCENT_PINK = "#EF3E78";
 const WHITE = "#FFFFFF";
-const SURFACE_STRONG = "rgba(255, 255, 255, 0.08)";
-const TILE_BORDER = "rgba(168, 85, 247, 0.13)";
 const SUPPORT_EMAIL = "support@pinaymate.com";
 
 export default function HelpScreen() {
@@ -59,16 +57,16 @@ export default function HelpScreen() {
 
   const helpOptions = [
     {
-      title: "FAQ and launch status",
+      title: "FAQ and app guide",
       description:
-        "Read what is live, what is planned, and what is still gated.",
+        "Read common questions about accounts, matching, privacy, and support.",
       icon: <HelpCircle size={22} color={ACCENT_PURPLE} />,
-      action: () => openUrl("https://pinaymate.com/#faq", "FAQ unavailable"),
+      action: () => openUrl("https://pinaymate.com/#faq", "Could not open FAQ"),
       accessibilityHint: "Opens the PinayMate website FAQ in your browser",
     },
     {
       title: "Terms of Service",
-      description: "Review the launch-stage terms and account expectations.",
+      description: "Review the rules and expectations for using PinayMate.",
       icon: <FileText size={22} color={ACCENT_PURPLE} />,
       action: () => router.push("/(auth)/terms" as any),
       accessibilityHint: "Opens the in-app Terms of Service screen",
@@ -96,7 +94,7 @@ export default function HelpScreen() {
     {
       title: "Safety Concern",
       description:
-        "Use email for launch-stage safety help. Live chat is not active yet.",
+        "Email support about a safety concern. If anyone is in danger, contact local emergency services first.",
       icon: <MessageCircle size={22} color={ACCENT_PURPLE} />,
       action: () =>
         openSupportEmail(
@@ -104,7 +102,7 @@ export default function HelpScreen() {
           "Hi PinayMate team,\n\nI need help with a safety concern.\n\nMy account email:\nOther member name or public profile details:\nWhat happened:\n\nDo not send passwords, payment details, ID documents, or private message screenshots by email. If this is an emergency, I understand I should contact local emergency services first.\n",
         ),
       accessibilityHint:
-        "Opens an email for safety support. Live chat is not active in this launch build.",
+        "Opens an email for safety support. If anyone is in danger, contact local emergency services first.",
     },
   ];
 
@@ -146,13 +144,13 @@ export default function HelpScreen() {
       >
         <Text style={styles.sectionTitle}>How can we help you?</Text>
         <Text style={styles.sectionSubtitle}>
-          PinayMate support is email-first during launch. We do not show live
-          chat unless staffing and escalation coverage are ready.
+          PinayMate support is email-first so your request includes the details
+          needed to help with account, verification, privacy, or safety concerns.
         </Text>
 
-        <View style={styles.launchSupportCard}>
-          <Text style={styles.launchSupportTitle}>Launch support boundary</Text>
-          <Text style={styles.launchSupportText}>
+        <View style={styles.supportStrip}>
+          <Text style={styles.supportStripTitle}>Support by email</Text>
+          <Text style={styles.supportStripText}>
             Support can help with account access, waitlist questions,
             verification review, deletion requests, and safety concerns. Email
             support is not emergency service, live chat, or instant moderation.
@@ -182,14 +180,12 @@ export default function HelpScreen() {
           </TouchableOpacity>
         ))}
 
-        <View style={styles.contactCard}>
+        <View style={styles.contactStrip}>
           <Text style={styles.contactTitle}>Still need help?</Text>
           <Text style={styles.contactDesc}>
-            Email support with questions or safety concerns. Response coverage
-            depends on the launch support schedule. Do not send passwords,
-            payment details, ID documents, or private message screenshots by
-            email. Do not send passwords, payment details, ID documents, or
-            private message screenshots by email.
+            Email support with questions or safety concerns. Do not send
+            passwords, payment details, ID documents, or private message
+            screenshots by email.
           </Text>
           <TouchableOpacity
             style={styles.contactBtn}
@@ -260,14 +256,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   listItem: {
-    backgroundColor: SURFACE_STRONG,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: TILE_BORDER,
-    padding: 18,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.1)",
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
     minHeight: 78,
   },
   listItemCopy: {
@@ -285,29 +278,29 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-Regular",
     lineHeight: 18,
   },
-  contactCard: {
-    backgroundColor: "rgba(141, 105, 246, 0.1)",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: ACCENT_PURPLE,
-    padding: 20,
+  contactStrip: {
+    borderLeftWidth: 3,
+    borderLeftColor: ACCENT_PURPLE,
+    backgroundColor: "rgba(141, 105, 246, 0.08)",
+    paddingLeft: 16,
+    paddingVertical: 16,
     marginTop: 24,
   },
-  launchSupportCard: {
+  supportStrip: {
     backgroundColor: "rgba(239, 62, 120, 0.1)",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(239, 62, 120, 0.28)",
-    padding: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: ACCENT_PINK,
+    paddingLeft: 16,
+    paddingVertical: 14,
     marginBottom: 16,
   },
-  launchSupportTitle: {
+  supportStripTitle: {
     color: WHITE,
     fontSize: 15,
     fontFamily: "DMSans-Bold",
     marginBottom: 6,
   },
-  launchSupportText: {
+  supportStripText: {
     color: "rgba(255,255,255,0.72)",
     fontSize: 13,
     fontFamily: "DMSans-Regular",

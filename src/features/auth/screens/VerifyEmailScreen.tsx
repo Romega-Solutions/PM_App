@@ -308,7 +308,7 @@ export default function VerifyEmailScreen() {
                 marginTop: 14,
               }}
             >
-              Email verification confirms sign-in for launch preparation. It
+              Email verification confirms sign-in and keeps your account protected. It
               does not publish your profile, enable matching, approve identity
               verification, or open paid features.
             </Text>

@@ -102,8 +102,8 @@ export default function PreferencesScreen() {
           <AccountProgress steps={5} activeIndex={3} />
           <Text style={styles.title}>Your preferences</Text>
           <Text style={styles.subtitle}>
-            Set comfortable discovery boundaries for launch-stage suggestions.
-            You can adjust them later.
+            Set comfortable discovery boundaries for the profiles you want to
+            see. You can adjust them later.
           </Text>
         </View>
 
@@ -111,8 +111,8 @@ export default function PreferencesScreen() {
           <LaunchStateNotice
             testID="account-preferences-launch-state-notice"
             title="Preference-based discovery"
-            message="Preferences guide discovery when available. These choices help shape who you may see, but they do not guarantee visibility, chat, or a match and they do not override privacy settings, profile review, safety controls, chat eligibility, or launch cohort availability."
-            accessibilityLabel="Preference guidance. Preference-based discovery guides who you may see when available but preferences do not guarantee a match or override privacy settings, profile review, safety controls, chat eligibility, or launch cohort availability."
+            message="Preferences guide discovery when available. These choices help shape who you may see, but they do not guarantee visibility, chat, or a match and they do not override privacy settings, profile review, safety controls, or account availability."
+            accessibilityLabel="Preference guidance. Preference-based discovery guides who you may see when available but preferences do not guarantee a match or override privacy settings, profile review, safety controls, or account availability."
           />
 
           {/* Auto-assigned: No need for selection */}

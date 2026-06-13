@@ -215,9 +215,10 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
             {/* Interests Section */}
             <View style={styles.modalSection}>
               <Text style={styles.modalSectionTitle}>Interests</Text>
-              <View style={styles.modalInterestsContainer}>
+              <View style={styles.modalInterestsList}>
                 {profile.interests.map((interest, idx) => (
-                  <View key={idx} style={styles.modalInterestTag}>
+                  <View key={`${interest}-${idx}`} style={styles.modalInterestItem}>
+                    <View style={styles.modalInterestDot} />
                     <Text style={styles.modalInterestText}>{interest}</Text>
                   </View>
                 ))}
@@ -313,15 +314,15 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
 
               {expandedSections.moreAbout && (
                 detailPills.length > 0 ? (
-                  <View style={styles.modalPillsContainer}>
+                  <View style={styles.modalDetailsList}>
                     {detailPills.map(({ icon: Icon, label }) => (
-                      <View key={label} style={styles.modalPill}>
+                      <View key={label} style={styles.modalDetailRow}>
                         <Icon
                           size={14}
                           color={ACCENT_PURPLE}
                           strokeWidth={2}
                         />
-                        <Text style={styles.modalPillText}>{label}</Text>
+                        <Text style={styles.modalDetailText}>{label}</Text>
                       </View>
                     ))}
                   </View>
@@ -335,27 +336,30 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
 
             {onReport ? (
               <View style={styles.safetyPanel}>
-                <View style={styles.safetyCopy}>
-                  <Text style={styles.safetyTitle}>
-                    Something feels off?
-                  </Text>
-                  <Text style={styles.safetyText}>
-                    Report or block this profile privately before continuing.
-                    Support reviews safety concerns without telling the member
-                    who reported them.
-                  </Text>
+                <View style={styles.safetyRule} />
+                <View style={styles.safetyContent}>
+                  <View style={styles.safetyCopy}>
+                    <Text style={styles.safetyTitle}>
+                      Something feels off?
+                    </Text>
+                    <Text style={styles.safetyText}>
+                      Report or block this profile privately before continuing.
+                      Support reviews safety concerns without telling the member
+                      who reported them.
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.reportButton}
+                    onPress={onReport}
+                    activeOpacity={0.84}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Report or block ${profile.name}`}
+                    accessibilityHint="Opens the private report form for this profile"
+                  >
+                    <Flag size={18} color={ACCENT_PINK} strokeWidth={2.4} />
+                    <Text style={styles.reportButtonText}>Report or block</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  style={styles.reportButton}
-                  onPress={onReport}
-                  activeOpacity={0.84}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Report or block ${profile.name}`}
-                  accessibilityHint="Opens the private report form for this profile"
-                >
-                  <Flag size={18} color={WHITE} strokeWidth={2.4} />
-                  <Text style={styles.reportButtonText}>Report or block</Text>
-                </TouchableOpacity>
               </View>
             ) : null}
           </View>
@@ -509,55 +513,57 @@ const styles = StyleSheet.create({
   },
 
   // Interests
-  modalInterestsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  modalInterestsList: {
     gap: 10,
   },
-  modalInterestTag: {
-    backgroundColor: "rgba(141, 105, 246, 0.15)",
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: "rgba(141, 105, 246, 0.3)",
+  modalInterestItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  modalInterestDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: ACCENT_PURPLE,
   },
   modalInterestText: {
     fontSize: 14,
     fontFamily: "DMSans-Medium",
-    color: ACCENT_PURPLE,
+    color: "rgba(255, 255, 255, 0.84)",
+    lineHeight: 20,
   },
 
-  // Pills
-  modalPillsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
+  // Details
+  modalDetailsList: {
+    gap: 11,
     marginTop: 12,
   },
-  modalPill: {
+  modalDetailRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(141, 105, 246, 0.12)",
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: "rgba(141, 105, 246, 0.25)",
+    gap: 10,
   },
-  modalPillText: {
+  modalDetailText: {
+    flex: 1,
     fontSize: 13,
     fontFamily: "DMSans-Medium",
     color: "rgba(255, 255, 255, 0.85)",
+    lineHeight: 19,
   },
   safetyPanel: {
+    flexDirection: "row",
+    alignItems: "stretch",
     gap: 14,
-    padding: 16,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: "rgba(239, 62, 120, 0.28)",
-    backgroundColor: "rgba(239, 62, 120, 0.12)",
+  },
+  safetyRule: {
+    width: 2,
+    borderRadius: 1,
+    backgroundColor: "rgba(239, 62, 120, 0.72)",
+  },
+  safetyContent: {
+    flex: 1,
+    gap: 14,
   },
   safetyCopy: {
     gap: 6,
@@ -574,9 +580,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   reportButton: {
-    minHeight: 50,
-    borderRadius: 16,
-    backgroundColor: ACCENT_PINK,
+    minHeight: 44,
+    alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -585,6 +590,6 @@ const styles = StyleSheet.create({
   reportButtonText: {
     fontSize: 15,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: ACCENT_PINK,
   },
 });

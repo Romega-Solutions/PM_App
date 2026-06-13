@@ -36,11 +36,11 @@ export function LaunchStateNotice({
       accessibilityRole="text"
       accessibilityLabel={
         accessibilityLabel ??
-        `${title}. ${message} This is launch-stage information and does not prove production readiness.`
+        `${title}. ${message} This note explains what is available now and what may come later.`
       }
       accessibilityHint={
         accessibilityHint ??
-        "Use this note to understand which PinayMate features are available now and which still need launch proof."
+        "Use this note to understand which PinayMate features are available now and which may open later."
       }
     >
       <View

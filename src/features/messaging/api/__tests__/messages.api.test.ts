@@ -1,5 +1,6 @@
 import { supabase } from "@/src/config/supabase";
 import {
+  deleteChatImage,
   deleteMessage,
   hydrateMessageMedia,
   markConversationAsRead,
@@ -242,7 +243,7 @@ describe("messages.api media handling", () => {
   });
 
   describe("sendTextMessage", () => {
-    it("routes text sends through the send_message RPC", async () => {
+    it("routes trimmed text sends through the send_message RPC", async () => {
       (supabase.rpc as jest.Mock).mockResolvedValue({
         data: baseMessage({
           text: "Hello",
@@ -253,7 +254,7 @@ describe("messages.api media handling", () => {
       const result = await sendTextMessage(
         CURRENT_USER_ID,
         RECIPIENT_ID,
-        "Hello",
+        "  Hello  ",
       );
 
       expect(supabase.rpc).toHaveBeenCalledWith("send_message", {
@@ -265,6 +266,59 @@ describe("messages.api media handling", () => {
       });
       expect(supabase.from).not.toHaveBeenCalled();
       expect(result.error).toBeNull();
+    });
+
+    it("rejects self messaging before the send_message RPC", async () => {
+      const textResult = await sendTextMessage(
+        CURRENT_USER_ID,
+        CURRENT_USER_ID,
+        "Hello",
+      );
+      const imageResult = await sendImageMessage(
+        CURRENT_USER_ID,
+        CURRENT_USER_ID,
+        IMAGE_PATH,
+        CONVERSATION_ID,
+      );
+
+      expect(textResult.data).toBeNull();
+      expect(textResult.error?.message).toBe(
+        "Choose a different member to message.",
+      );
+      expect(imageResult.data).toBeNull();
+      expect(imageResult.error?.message).toBe(
+        "Choose a different member to message.",
+      );
+      expect(supabase.rpc).not.toHaveBeenCalled();
+      expect(supabase.storage.from).not.toHaveBeenCalled();
+    });
+
+    it("rejects blank and oversized text before the send_message RPC", async () => {
+      const errorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
+
+      const blankResult = await sendTextMessage(
+        CURRENT_USER_ID,
+        RECIPIENT_ID,
+        "    ",
+      );
+      const oversizedResult = await sendTextMessage(
+        CURRENT_USER_ID,
+        RECIPIENT_ID,
+        "x".repeat(1001),
+      );
+
+      expect(blankResult.data).toBeNull();
+      expect(blankResult.error?.message).toBe(
+        "Message did not send. Check your connection and try again.",
+      );
+      expect(oversizedResult.data).toBeNull();
+      expect(oversizedResult.error?.message).toBe(
+        "Message did not send. Check your connection and try again.",
+      );
+      expect(supabase.rpc).not.toHaveBeenCalled();
+      errorSpy.mockRestore();
     });
   });
 
@@ -334,6 +388,38 @@ describe("messages.api media handling", () => {
         p_message_id: MESSAGE_ID,
       });
       expect(supabase.from).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("deleteChatImage", () => {
+    it("removes chat image storage paths only after authenticating the user", async () => {
+      const remove = jest.fn().mockResolvedValue({ error: null });
+      (supabase.storage.from as jest.Mock).mockReturnValue({ remove });
+
+      const result = await deleteChatImage(IMAGE_PATH);
+
+      expect(result).toEqual({ success: true, error: null });
+      expect(supabase.auth.getUser).toHaveBeenCalled();
+      expect(supabase.storage.from).toHaveBeenCalledWith("chat-images");
+      expect(remove).toHaveBeenCalledWith([IMAGE_PATH]);
+    });
+
+    it("rejects unsafe chat image delete paths before storage removal", async () => {
+      const errorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
+      const remove = jest.fn();
+      (supabase.storage.from as jest.Mock).mockReturnValue({ remove });
+
+      const result = await deleteChatImage("../private.jpg");
+
+      expect(result.success).toBe(false);
+      expect(result.error?.message).toBe(
+        "Photo message could not be removed. Check your connection and try again.",
+      );
+      expect(supabase.storage.from).not.toHaveBeenCalled();
+      expect(remove).not.toHaveBeenCalled();
+      errorSpy.mockRestore();
     });
   });
 });

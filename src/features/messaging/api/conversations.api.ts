@@ -78,7 +78,7 @@ export async function getConversationsForUser(
     });
 
     return { data: conversationsWithUsers, error: null };
-  } catch (error) {
+  } catch {
     console.error("Failed to fetch conversations.");
     return {
       data: null,

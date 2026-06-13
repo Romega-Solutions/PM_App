@@ -112,14 +112,12 @@ export default function VoiceCallScreen() {
         <View style={styles.statusCard}>
           <View style={styles.statusPill}>
             <ShieldCheck size={16} color={WHITE} />
-            <Text style={styles.statusPillText}>Launch safeguard</Text>
+            <Text style={styles.statusPillText}>Safety first</Text>
           </View>
 
-          <Text style={styles.title}>Voice calls are off for launch</Text>
+          <Text style={styles.title}>Keep this chat in messages</Text>
           <Text style={styles.description}>
-            This build keeps voice calls disabled until the calling provider,
-            consent flow, abuse controls, and support process are verified. No
-            call was started and no microphone permission was requested.
+            This screen does not start voice calls. No call was started and no microphone permission was requested.
           </Text>
 
           <View style={styles.divider} />
@@ -129,7 +127,7 @@ export default function VoiceCallScreen() {
             <Text style={styles.noteText}>
               You are still in chat with {displayName}. Keep the conversation in
               messages, and use report, block, or unmatch if anything feels
-              unsafe. Calling will appear only after launch approval.
+              unsafe.
             </Text>
           </View>
         </View>
@@ -146,7 +144,7 @@ export default function VoiceCallScreen() {
           accessibilityLabel={
             canOpenSafetyReport
               ? `Report or block ${displayName}`
-              : "Report and block unavailable"
+              : "Report and block needs a member profile"
           }
           accessibilityHint={
             canOpenSafetyReport
@@ -159,7 +157,7 @@ export default function VoiceCallScreen() {
           <Text style={styles.safetyButtonText}>
             {canOpenSafetyReport
               ? "Report or block"
-              : "Safety options unavailable"}
+              : "Return to chat for safety options"}
           </Text>
         </Pressable>
 
@@ -171,7 +169,7 @@ export default function VoiceCallScreen() {
           ]}
           accessibilityRole="button"
           accessibilityLabel="Back to chat"
-          accessibilityHint="Closes this unavailable voice call screen"
+          accessibilityHint="Closes this voice call screen"
         >
           <LinearGradient
             colors={[ACCENT_PINK, ACCENT_PURPLE]}

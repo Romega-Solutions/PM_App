@@ -566,6 +566,7 @@ BEGIN
     OR has_table_privilege('authenticated', 'public.conversations', 'INSERT')
     OR has_table_privilege('authenticated', 'public.conversations', 'UPDATE')
     OR has_table_privilege('authenticated', 'public.conversations', 'DELETE')
+    OR has_table_privilege('authenticated', 'public.passes', 'INSERT')
     OR has_table_privilege('authenticated', 'public.ocr_usage_events', 'SELECT')
     OR has_table_privilege('authenticated', 'public.ocr_usage_events', 'INSERT')
     OR has_table_privilege('authenticated', 'public.ocr_usage_events', 'UPDATE')
@@ -576,6 +577,22 @@ BEGIN
 
   IF has_table_privilege('authenticated', 'public.likes', 'UPDATE') THEN
     RAISE EXCEPTION 'authenticated must not have direct UPDATE on public.likes';
+  END IF;
+
+  IF to_regprocedure('public.pass_profile(uuid)') IS NULL THEN
+    RAISE EXCEPTION 'public.pass_profile(uuid) is missing';
+  END IF;
+
+  IF NOT has_function_privilege('authenticated', 'public.pass_profile(uuid)', 'EXECUTE')
+    OR has_function_privilege('anon', 'public.pass_profile(uuid)', 'EXECUTE')
+  THEN
+    RAISE EXCEPTION 'public.pass_profile(uuid) must be authenticated-only';
+  END IF;
+
+  IF to_regclass('public.passes') IS NOT NULL
+    AND has_table_privilege('authenticated', 'public.passes', 'INSERT')
+  THEN
+    RAISE EXCEPTION 'public.passes direct insert unexpectedly exposed';
   END IF;
 
   IF EXISTS (
@@ -2014,6 +2031,33 @@ BEGIN
     OR v_function_definition NOT LIKE '%verification_document%'
   THEN
     RAISE EXCEPTION 'can_delete_verification_document must protect pending verification evidence paths';
+  END IF;
+END;
+$$;
+
+-- Public SECURITY DEFINER functions must not inherit anonymous/public execute
+-- privileges. Explicit app RPC grants should go only to authenticated users;
+-- privileged operational helpers should stay service-role-only.
+DO $$
+DECLARE
+  exposed_functions TEXT[];
+BEGIN
+  SELECT ARRAY_AGG(
+    FORMAT('%I.%I(%s)', n.nspname, p.proname, pg_get_function_identity_arguments(p.oid))
+    ORDER BY n.nspname, p.proname, pg_get_function_identity_arguments(p.oid)
+  )
+  INTO exposed_functions
+  FROM pg_proc p
+  JOIN pg_namespace n
+    ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND p.prosecdef
+    AND has_function_privilege('anon', p.oid, 'EXECUTE');
+
+  IF array_length(exposed_functions, 1) IS NOT NULL THEN
+    RAISE EXCEPTION
+      'public SECURITY DEFINER functions unexpectedly executable by anon or PUBLIC defaults: %',
+      array_to_string(exposed_functions, ', ');
   END IF;
 END;
 $$;

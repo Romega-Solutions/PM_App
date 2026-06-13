@@ -210,7 +210,7 @@ describe("ocrService", () => {
     });
 
     await expect(extractTextFromImage("file:///ids/passport.jpg")).rejects.toThrow(
-      "Sign in before verifying IDs.",
+      "Sign in again before verifying IDs.",
     );
     expect(fetchMock).toHaveBeenCalledWith(
       "https://abc123.functions.supabase.co/ocr",
@@ -258,7 +258,7 @@ describe("ocrService", () => {
     });
 
     await expect(extractTextFromImage("file:///ids/bad.jpg")).rejects.toThrow(
-      "OCR temporarily unavailable. Please try again.",
+      "Document scan did not complete. Please try again.",
     );
   });
 

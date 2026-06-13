@@ -25,7 +25,7 @@ const privacyHighlights = [
     Icon: EyeOff,
   },
   {
-    title: "Verification evidence",
+    title: "Verification details",
     body: "Identity and verification uploads are treated as private review material, not public profile content.",
     Icon: LockKeyhole,
   },
@@ -67,7 +67,7 @@ export default function PrivacyScreen() {
           </Text>
         </View>
 
-        <View style={styles.alertCard}>
+        <View style={styles.alertStrip}>
           <AlertTriangle
             size={22}
             color={theme.colors.warning[600]}
@@ -87,23 +87,23 @@ export default function PrivacyScreen() {
 
         <View style={styles.section}>
           {privacyHighlights.map(({ title, body, Icon }) => (
-            <View key={title} style={styles.card}>
-              <View style={styles.cardIcon} accessible={false}>
+            <View key={title} style={styles.privacyRow}>
+              <View style={styles.rowIcon} accessible={false}>
                 <Icon
                   size={22}
                   color={theme.colors.amihan[500]}
                   strokeWidth={2.3}
                 />
               </View>
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>{title}</Text>
-                <Text style={styles.cardBody}>{body}</Text>
+              <View style={styles.rowContent}>
+                <Text style={styles.rowTitle}>{title}</Text>
+                <Text style={styles.rowBody}>{body}</Text>
               </View>
             </View>
           ))}
         </View>
 
-        <View style={styles.detailsCard}>
+        <View style={styles.detailsStrip}>
           <Text style={styles.detailsTitle}>What you can control</Text>
           <Text style={styles.detailsText}>
             After creating an account, you can update profile details, manage
@@ -194,14 +194,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
     maxWidth: 460,
   },
-  alertCard: {
+  alertStrip: {
     flexDirection: "row",
     gap: theme.spacing.md,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.xl,
+    paddingVertical: theme.spacing.md,
+    paddingLeft: theme.spacing.md,
+    paddingRight: theme.spacing.sm,
     backgroundColor: "rgba(245, 158, 11, 0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(245, 158, 11, 0.3)",
+    borderLeftWidth: 3,
+    borderLeftColor: "rgba(245, 158, 11, 0.72)",
     marginBottom: theme.spacing.lg,
   },
   alertContent: {
@@ -221,19 +222,18 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   section: {
-    gap: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.12)",
     marginBottom: theme.spacing.lg,
   },
-  card: {
+  privacyRow: {
     flexDirection: "row",
     gap: theme.spacing.md,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.xl,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
+    paddingVertical: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.12)",
   },
-  cardIcon: {
+  rowIcon: {
     alignItems: "center",
     justifyContent: "center",
     width: 44,
@@ -241,28 +241,29 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: "rgba(239, 62, 120, 0.16)",
   },
-  cardContent: {
+  rowContent: {
     flex: 1,
   },
-  cardTitle: {
+  rowTitle: {
     color: theme.colors.neutral.white,
     fontFamily: theme.fontFamilies.body.bold,
     fontSize: 16,
     lineHeight: 23,
     marginBottom: theme.spacing.xs,
   },
-  cardBody: {
+  rowBody: {
     color: "rgba(255,255,255,0.72)",
     fontFamily: theme.fontFamilies.body.regular,
     fontSize: 14,
     lineHeight: 21,
   },
-  detailsCard: {
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.xl,
+  detailsStrip: {
+    paddingVertical: theme.spacing.md,
+    paddingLeft: theme.spacing.md,
+    paddingRight: theme.spacing.sm,
     backgroundColor: "rgba(141, 105, 246, 0.14)",
-    borderWidth: 1,
-    borderColor: "rgba(141, 105, 246, 0.28)",
+    borderLeftWidth: 3,
+    borderLeftColor: "rgba(141, 105, 246, 0.7)",
     marginBottom: theme.spacing.lg,
   },
   detailsTitle: {

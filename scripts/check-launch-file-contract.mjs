@@ -39,7 +39,7 @@ const requiredFiles = [
       "account-preferences-launch-state-notice",
       "Preference-based discovery",
       "do not guarantee a match",
-      "launch cohort availability",
+      "account availability",
     ],
   },
   {
@@ -49,52 +49,55 @@ const requiredFiles = [
       "verification-upload-launch-state-notice",
       "Review-based verification",
       "Skipping does not block account setup",
-      "verified badge and any review-based trust cues stay unavailable until approval",
+      "verified badge appears only after approval",
       "Submitting files does not automatically approve a verified badge",
     ],
   },
   {
     path: "src/features/account/screens/WelcomeCompleteScreen.tsx",
     markers: [
-      "does not guarantee profile visibility",
-      "verified badge, or paid feature access",
-      "Enter launch-stage app",
+      "Profile setup complete",
+      "Matching can still vary",
+      "Enter PinayMate",
       "Review settings first",
     ],
   },
   {
     path: "src/features/auth/screens/SignUpScreen.tsx",
     markers: [
-      "Public matching, phone verification, social login, calls, and checkout remain launch-gated",
+      "Start with email signup",
       "Email signup is the active path",
     ],
   },
   {
     path: "src/features/auth/screens/VerifyEmailScreen.tsx",
     markers: [
-      "Email verification confirms sign-in for launch preparation",
+      "Email verification confirms sign-in and keeps your account protected",
       "does not publish your profile",
     ],
   },
   {
     path: "app/(auth)/verify-phone.tsx",
     markers: [
-      "Phone verification is off for launch",
-      "No SMS is sent and no phone badge is created",
+      "Continue with email verification",
+      "No SMS code is needed for this step",
+      "protected account flow",
     ],
   },
   {
     path: "src/features/messaging/screens/VoiceCallScreen.tsx",
     markers: [
-      "Voice calls are off for launch",
-      "Calling will appear only after launch approval",
+      "Keep this chat in messages",
+      "No call was started and no microphone permission was requested",
+      "Safety first",
     ],
   },
   {
     path: "src/features/messaging/screens/VideoCallScreen.tsx",
     markers: [
-      "Video calls are off for launch",
-      "Calling will appear only after launch approval",
+      "Keep this chat in messages",
+      "No call was started and no camera or microphone permission was requested",
+      "Safety first",
     ],
   },
   {
@@ -125,7 +128,7 @@ const requiredFiles = [
     markers: [
       "SubmitUserReportInput",
       "source",
-      "submitUserReport",
+      "reportSafetyConcern",
       "not an emergency channel",
       "does not promise an instant moderation action",
     ],
@@ -199,8 +202,8 @@ const requiredFiles = [
     path: "scripts/check-notification-delivery-contract.mjs",
     markers: [
       "notification delivery contract",
-      "Launch-stage controls",
-      "do not prove production push or email delivery",
+      "Preference saved for your account. Delivery depends on your device and contact settings.",
+      "Push and email delivery depend on your device settings",
       "forbidden notification claim",
     ],
   },
@@ -209,17 +212,16 @@ const requiredFiles = [
     markers: [
       "LaunchStateNotice",
       "notification-settings-launch-state-notice",
-      "Launch-stage controls",
-      "Production push and email delivery still require",
-      "notification provider",
-      "mailbox routing",
+      "Notification controls",
+      "Push and email delivery depend on your device settings",
+      "Delivery depends on your device and contact settings",
     ],
   },
   {
     path: "src/components/ui/LaunchStateNotice.tsx",
     markers: [
       "LaunchStateNotice",
-      "does not prove production readiness",
+      "what may come later",
       "accessibilityLabel",
       "accessibilityHint",
       "accessibilityRole",
@@ -738,9 +740,9 @@ const requiredFiles = [
       "LaunchStateNotice",
       "privacy-settings-launch-state-notice",
       "settingsLoadError",
-      "source-backed privacy preferences",
-      "current backend proof and support sign-off",
-      "They do not override launch readiness",
+      "privacy preferences",
+      "current app access, safety review, and support process",
+      "Profile visibility, read receipts, and account deletion requests follow",
       "Toggles are locked until PinayMate loads your saved privacy",
       "savingSetting !== null",
       "Your profile is hidden",
@@ -750,8 +752,8 @@ const requiredFiles = [
   {
     path: "app/(main)/profile-settings/help.tsx",
     markers: [
-      "Launch support boundary",
-      "email-first during launch",
+      "Support by email",
+      "PinayMate support is email-first",
       "not emergency service, live chat, or instant moderation",
       "Do not send passwords, payment details, ID documents, or private message screenshots by email",
     ],
@@ -759,17 +761,17 @@ const requiredFiles = [
   {
     path: "app/(main)/profile-settings/about.tsx",
     markers: [
-      "Launch-stage app",
-      "public matching, calls, paid plans, store availability",
-      "Verification Review",
+      "Dating with more context",
+      "relationship intent, profile clarity",
+      "Verification review",
     ],
   },
   {
     path: "src/features/profile/screens/ProfileScreen.tsx",
     markers: [
-      "Launch-stage profile",
-      "Public discovery, matching, calling, and paid features",
-      "review status, and launch readiness",
+      "Profile access",
+      "Discovery and connection features",
+      "review status, and available app access",
     ],
   },
   {
@@ -779,9 +781,9 @@ const requiredFiles = [
       "discover-launch-state-notice",
       "Preference-based discovery",
       "Visibility settings are respected",
-      "reports stay available",
-      "launch-stage cohort setup",
-      "launch cohorts, privacy settings, or profile review",
+      "report anything that feels off",
+      "who is currently available",
+      "Privacy settings, profile review, distance filters",
     ],
   },
   {
@@ -797,7 +799,7 @@ const requiredFiles = [
       "You control the pace",
       "report anything",
       "after both people choose each other",
-      "launch-stage availability allows chat",
+      "Chats open after both people choose each other.",
     ],
   },
 ];

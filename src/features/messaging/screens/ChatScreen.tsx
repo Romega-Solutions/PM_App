@@ -255,7 +255,7 @@ export default function ChatScreen() {
           "Photo sharing unlocks after your first text starts this matched conversation. Send a short message first, then attach a photo.";
         setMediaError(message);
         AccessibilityInfo.announceForAccessibility(message);
-        Alert.alert("Photo unavailable", message);
+        Alert.alert("Could not send photo", message);
         return;
       }
 
@@ -327,7 +327,7 @@ export default function ChatScreen() {
   const handleBlockUser = useCallback(() => {
     if (!recipientId) {
       Alert.alert(
-        "Block unavailable",
+        "Could not block member",
         "This member could not be identified. Go back and try again.",
       );
       return;
@@ -383,7 +383,7 @@ export default function ChatScreen() {
   const handleUnmatchUser = useCallback(() => {
     if (!recipientId) {
       Alert.alert(
-        "Unmatch unavailable",
+        "Could not unmatch",
         "This member could not be identified. Go back and try again.",
       );
       return;
@@ -439,7 +439,7 @@ export default function ChatScreen() {
   const handleReportUser = useCallback(() => {
     if (!recipientId) {
       Alert.alert(
-        "Report unavailable",
+        "Could not open report form",
         "This member could not be identified. Go back and try again.",
       );
       return;
@@ -556,8 +556,8 @@ export default function ChatScreen() {
   // Emoji picker handler
   const handleEmojiPick = useCallback(() => {
     Alert.alert(
-      "Emoji picker unavailable",
-      "Emoji picking is not available in this build. You can still type an emoji with your keyboard.",
+      "Use your keyboard for emoji",
+      "The emoji picker did not open. You can still type an emoji with your keyboard.",
     );
   }, []);
 
@@ -804,7 +804,7 @@ export default function ChatScreen() {
               onPress={handlePhoneCall}
               activeOpacity={0.84}
               accessibilityRole="button"
-              accessibilityLabel={`Voice call unavailable for ${userName}`}
+              accessibilityLabel={`Keep voice with ${userName} in messages`}
               accessibilityHint="Opens a safe explanation. No microphone permission will be requested."
             >
               <Phone size={20} color={ACCENT_PURPLE} strokeWidth={2.5} />
@@ -814,7 +814,7 @@ export default function ChatScreen() {
               onPress={handleVideoCall}
               activeOpacity={0.84}
               accessibilityRole="button"
-              accessibilityLabel={`Video call unavailable for ${userName}`}
+              accessibilityLabel={`Keep video with ${userName} in messages`}
               accessibilityHint="Opens a safe explanation. No camera or microphone permission will be requested."
             >
               <Video size={20} color={ACCENT_PURPLE} strokeWidth={2.5} />
@@ -1155,7 +1155,7 @@ export default function ChatScreen() {
                 ]}
                 accessibilityLabel="Add emoji"
                 accessibilityRole="button"
-                accessibilityHint="Opens the keyboard emoji fallback note"
+                accessibilityHint="Opens a note about using your keyboard for emoji"
                 accessibilityState={{ disabled: isSafetyActionPending }}
                 disabled={isSafetyActionPending}
                 onPress={handleEmojiPick}

@@ -325,7 +325,8 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: error.message }, error.status);
     }
 
-    console.error("Unexpected OCR request failure.", error);
+    const errorName = error instanceof Error ? error.name : "UnknownError";
+    console.error(`Unexpected OCR request failure: ${errorName}`);
     return jsonResponse({ error: "OCR request failed. Please try again." }, 502);
   }
 });

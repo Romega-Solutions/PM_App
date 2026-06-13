@@ -32,12 +32,14 @@ Apply these migrations in filename-runner order for the launch security, privacy
 25. `20260611140000_add_waitlist_edge_abuse_control.sql`
 26. `20260611141000_restrict_conversation_creation_rpc.sql`
 27. `20260611142000_hide_empty_conversations_from_inbox.sql`
-28. `999_restore_profile_visibility_filter.sql`
-29. `99_final_release_security_hardening.sql`
+28. `20260611143000_restrict_public_function_execute_defaults.sql`
+29. `999_restore_profile_visibility_filter.sql`
+30. `99_final_release_security_hardening.sql`
 
 ## Migration purposes
 
 - `20260611040010_pass_profile_rpc.sql` adds the `pass_profile` RPC so pass actions can be validated against the discovery read model before writing to `passes`, and it includes `REVOKE INSERT ON public.passes FROM authenticated` so direct app-client pass writes stay denied.
+- `20260611143000_restrict_public_function_execute_defaults.sql` removes inherited `PUBLIC` and `anon` function execution from the public schema and changes future public function defaults so launch RPC access stays explicit through authenticated or service-role grants.
 - `20260611123000_add_notification_preferences.sql` creates the RPC-backed `user_notification_preferences` table contract for saved notification intent while keeping direct client writes denied. It also repairs partially existing tables with idempotent column/default/not-null hardening and enforces `user_notification_preferences_push_children_check` so push-dependent child flags cannot remain enabled when `push_enabled` is false.
 - `20260611124000_repair_profile_creation_trigger.sql` re-tracks the auth user to profile lifecycle as an idempotent migration. It recreates `public.handle_new_user()` with `SECURITY DEFINER SET search_path = ''`, revokes direct client execute grants, creates both confirmed-at-insert and email-verified update triggers, and preserves completed onboarding values if a client fallback profile already exists.
 - `20260611125000_add_waitlist_interest_capture.sql` creates the minimal `waitlist_signups` table and `submit_waitlist_signup` RPC so PM_Web/PM_App launch interest can become backend-backed without granting direct table writes.
@@ -62,6 +64,8 @@ Apply these migrations in filename-runner order for the launch security, privacy
 - Confirm preflight covers `review_user_report` and proves app clients cannot execute it.
 - Confirm preflight covers `review_profile_verification`, reviewer metadata columns, pending evidence requirements, and proves app clients cannot execute it.
 - Confirm preflight covers report abuse controls and forbids sensitive columns in `discoverable_profiles`.
+- Confirm preflight covers inherited `PUBLIC`/`anon` execute denial for public-schema `SECURITY DEFINER` functions.
+- If an environment already applied the earlier timestamped launch migrations before `20260611143000_restrict_public_function_execute_defaults.sql` existed, apply this migration before enabling backend capture flags and record the migration history/list output that proves the hardening migration is present.
 - Confirm preflight covers required report reviewer identity, active reviewer authorization, reviewer management RPCs, reviewer audit logging, denial of direct audit-log writes, finalized report decision protection, waitlist burst controls, matching advisory bucket locking, public source restriction, and generic waitlist responses.
 - Confirm preflight covers `waitlist_edge_attempts`, `claim_waitlist_edge_attempt`, direct table-grant denial for `waitlist_signups`, service-role-only `submit_waitlist_signup`, and `waitlist-signup` Edge Function deploy/secrets proof before PM_Web backend capture flags are enabled.
 - Confirm preflight covers direct execution denial for `get_or_create_conversation` while `send_message` remains the only authenticated message/conversation creation path.
@@ -82,3 +86,4 @@ This file is not deployment proof. It is the source-of-truth order that staging 
 - `99_final_release_security_hardening.sql` must keep `public.get_user_conversations` filtered to rows with `last_message_id IS NOT NULL`.
 - `99_final_release_security_hardening.sql`, `999_restore_profile_visibility_filter.sql`, and `20260611122000_fix_discovery_privacy_read_model.sql` must keep `public.discoverable_profiles` as `security_invoker = false` and enforce `user_privacy_settings.profile_visible`.
 - Staging and production evidence must record the actual migration history/list output before claiming the backend privacy contract is live.
+- Environments that already applied earlier `20260611...` launch migrations must still include `20260611143000_restrict_public_function_execute_defaults.sql` in migration history before backend waitlist capture is considered safe to enable.

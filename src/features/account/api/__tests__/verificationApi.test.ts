@@ -107,13 +107,17 @@ describe("saveVerification", () => {
     (decode as jest.Mock).mockReturnValue("decoded-image");
 
     const result = await saveVerification({
-      selfieUri: "file:///selfie.jpg",
-      documentUri: "file:///passport.png",
-      extractedFirstName: "Maria",
-      extractedLastName: "Santos",
-      extractedAge: 28,
+      selfieUri: " file:///selfie.jpg ",
+      documentUri: " file:///passport.png ",
+      extractedFirstName: " Maria ",
+      extractedLastName: " Santos ",
+      extractedAge: 28.9,
       isVerified: false,
-      mismatchReasons: [],
+      mismatchReasons: [
+        " Age needs manual review ",
+        "Age needs manual review",
+        "",
+      ],
     });
 
     expect(result.ok).toBe(true);
@@ -143,10 +147,68 @@ describe("saveVerification", () => {
       p_extracted_first_name: "Maria",
       p_extracted_last_name: "Santos",
       p_extracted_age: 28,
-      p_mismatch_reasons: [],
+      p_mismatch_reasons: ["Age needs manual review"],
     });
     expect(result.data.selfieUri).toBe("user-123/selfie-1717977600000.jpg");
     expect(result.data.documentUri).toBe("user-123/document-1717977600000.png");
+    expect(result.data.mismatchReasons).toEqual(["Age needs manual review"]);
+  });
+
+  it("rejects blank verification image URIs before file reads or uploads", async () => {
+    (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "user-123" } },
+      error: null,
+    });
+
+    await expect(
+      saveVerification({
+        selfieUri: "   ",
+        documentUri: "file:///passport.png",
+        isVerified: false,
+      }),
+    ).rejects.toThrow(
+      "Verification upload failed. Check your files and connection, then try again.",
+    );
+
+    expect(FileSystem.getInfoAsync).not.toHaveBeenCalled();
+    expect(supabase.storage.from).not.toHaveBeenCalled();
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it("drops invalid OCR age and empty mismatch reasons before submit", async () => {
+    const upload = jest.fn().mockResolvedValue({ error: null });
+
+    (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "user-123" } },
+      error: null,
+    });
+    (supabase.storage.from as jest.Mock).mockReturnValue({ upload });
+    (supabase.rpc as jest.Mock).mockResolvedValue({ error: null });
+    (FileSystem.getInfoAsync as jest.Mock).mockResolvedValue({
+      exists: true,
+      size: 1024,
+    });
+    (FileSystem.readAsStringAsync as jest.Mock).mockResolvedValue("base64-image");
+    (decode as jest.Mock).mockReturnValue("decoded-image");
+
+    await saveVerification({
+      selfieUri: "file:///selfie.jpg",
+      documentUri: "file:///passport.png",
+      extractedFirstName: " ".repeat(4),
+      extractedLastName: "Santos",
+      extractedAge: 120,
+      isVerified: false,
+      mismatchReasons: ["   "],
+    });
+
+    expect(supabase.rpc).toHaveBeenCalledWith("submit_verification", {
+      p_selfie_uri: "user-123/selfie-1717977600000.jpg",
+      p_document_uri: "user-123/document-1717977600000.png",
+      p_extracted_first_name: null,
+      p_extracted_last_name: "Santos",
+      p_extracted_age: null,
+      p_mismatch_reasons: null,
+    });
   });
 
   it("does not save verification when private storage upload fails", async () => {

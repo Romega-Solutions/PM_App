@@ -30,7 +30,7 @@ cp .env.example .env
 
 Fill in the real Supabase values locally. `EXPO_PUBLIC_OCR_ENDPOINT` is optional when using the bundled Supabase OCR Edge Function because the app derives `https://<project-ref>.functions.supabase.co/ocr` from `EXPO_PUBLIC_SUPABASE_URL`. Leave it blank unless a custom OCR backend is intentionally used. If a custom OCR endpoint is configured, it must validate the `Authorization: Bearer <Supabase access token>` header before processing ID images.
 
-`.env` is ignored for new local files, but the current release blocker remains: if `.env` is already tracked in git, it must be removed from the index after explicit approval and any previously tracked values must be reviewed for rotation.
+`.env` is ignored for new local files. The local secret-hygiene gate passed on 2026-06-11, but any previously tracked values still need a rotation/recovery decision before production launch.
 
 ### Native Permissions
 
@@ -45,6 +45,7 @@ Fill in the real Supabase values locally. `EXPO_PUBLIC_OCR_ENDPOINT` is optional
   - `npm run check:release-local` first checks secret hygiene, verifies launch-critical files are present and tracked, checks dependency advisories, then runs local quality checks.
   - The launch-file contract is intentionally strict so a partial merge cannot ship code that references an untracked report modal, security guard, OCR function, or final discovery-privacy migration.
   - Dependency audit failures should be fixed in a dedicated dependency branch. Do not run `npm audit fix --force` on the release branch if it downgrades or changes Expo runtime dependencies.
+  - Current local blocker: `check:release-local` fails at the production ownership contract until the Expo/EAS owner is proven Romega-controlled or transferred.
 - Apply the full ordered launch migration set before staging or production signoff. Use `supabase/LAUNCH_MIGRATION_MANIFEST.md` as the source of truth, including the base setup, chat schema, production hardening, storage buckets, OCR rate limit, basic-info RPC, account deletion requests, privacy settings, read-receipt privacy, online-status privacy, legacy tail hardening, secure send-message RPC, report payload hardening, discovery privacy repair, and notification preferences migration.
 - `99_final_release_security_hardening.sql` locks down policy grants, safety functions, match-gated conversation access, RPC-owned message/report mutations, and constrained client-write surface to ship-safe defaults.
 - Legacy `99_` and `999_` tail migrations must remain safe even if a filename-ordered runner applies them after timestamped launch migrations; the manifest defines the intended release order.
@@ -171,7 +172,7 @@ messages          # Chat messages
 ### 📦 Release Ownership Status
 
 - **Owner:** PM_App release docs thread (`README`, `docs/RELEASE_READINESS.md`)
-- **Last reviewed:** 2026-06-10
+- **Last reviewed:** 2026-06-11
 - **Decision rule:** Do not mark launch-ready until all blockers in `docs/RELEASE_READINESS.md` are cleared with evidence.
 
 ### 🚫 Blocked
@@ -181,7 +182,8 @@ messages          # Chat messages
 - Full ordered launch migrations through `20260611123000_add_notification_preferences.sql` have not yet been run and validated on the target Supabase environment.
 - Backend-backed safety tables/RPCs are not yet applied or validated on the target Supabase environment.
 - OCR runtime is blocked from launch-clearance until the deployed function endpoint and `OCR_SPACE_API_KEY` secret are both verified.
-- Dependency audit is blocked until the Expo-chain moderate advisories are resolved without breaking the Expo SDK 54 runtime.
+- Expo/EAS production ownership is blocked until `expo.owner` is proven Romega-controlled or transferred to a Romega-owned account/team.
+- Safety/support/legal/release owner assignment and final launch evidence are still blocked.
 
 ### 🔜 Next
 
@@ -216,7 +218,7 @@ supabase db push
 - Migration proof: `04_production_security_hardening.sql`, `99_final_release_security_hardening.sql`, `20260610094806_add_pinaymate_storage_buckets.sql`, `20260610100323_add_ocr_rate_limit.sql`, and `20260610100523_add_basic_info_rpc.sql`, then `supabase/tests/04_safety_smoke_test.sql` logs in staging and production.
 - OCR proof: `npx supabase functions deploy ocr`, secret-check evidence for `OCR_SPACE_API_KEY`, and valid/invalid document extraction assertions.
 - Local quality proof: `npm run check:local-quality` from `PM_App` after any auth, profile, location, matching, messaging, verification, or UI change.
-- Local release guard proof: `npm run check:release-local` from `PM_App` after secret-hygiene cleanup approval. This runs secret hygiene first, then `npm run check:local-quality`.
+- Local release guard proof: `npm run check:release-local` from `PM_App` after ownership, safety, and launch-evidence blockers are resolved. This runs secret hygiene, dependency audit, ownership, safety, launch evidence, and local quality gates.
 - Static Supabase evidence proof: `npm run check:supabase-static-contract:report` only when intentionally refreshing the static evidence file. The normal `npm run check:supabase-static-contract` command is read-only.
 - Runtime proof: full native QA for permissions, location denial, auth expiry, and sign-up→onboarding→matching→chat flow.
 

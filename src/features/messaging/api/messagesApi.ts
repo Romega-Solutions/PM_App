@@ -75,7 +75,7 @@ export const getConversations = async (
     );
 
     return { data: conversationsList, error: null };
-  } catch (error) {
+  } catch {
     console.error("Error fetching conversations.");
     return { data: null, error: new Error(LEGACY_CONVERSATIONS_ERROR) };
   }
@@ -100,7 +100,7 @@ export const markConversationAsRead = async (
     }
 
     return { success: true };
-  } catch (error) {
+  } catch {
     console.error("Error marking conversation as read.");
     return { success: false, error: new Error(LEGACY_READ_STATUS_ERROR) };
   }

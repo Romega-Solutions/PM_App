@@ -9,6 +9,7 @@ type WaitlistRequestBody = {
   nickname?: unknown;
   turnstileToken?: unknown;
   token?: unknown;
+  backendContract?: unknown;
 };
 
 type EdgeQuotaResult = {
@@ -23,6 +24,8 @@ type WaitlistRpcRow = {
   status?: string;
 };
 
+type WaitlistRpcStatus = "accepted";
+
 declare const Deno: {
   env: {
     get(name: string): string | undefined;
@@ -34,6 +37,19 @@ const DEFAULT_MAX_ATTEMPTS_PER_HOUR = 6;
 const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 const WAITLIST_RPC_PATH = "/rest/v1/rpc/submit_waitlist_signup";
 const EDGE_ATTEMPT_RPC_PATH = "/rest/v1/rpc/claim_waitlist_edge_attempt";
+const WAITLIST_BACKEND_CONTRACT = "submit_waitlist_signup";
+const MAX_WAITLIST_REQUEST_BYTES = 4096;
+const MAX_WAITLIST_CHALLENGE_TOKEN_BYTES = 2048;
+const WAITLIST_CLIENT_SOURCE_BY_INFO: Record<string, "pm_web" | "pm_app"> = {
+  "pm-web-waitlist": "pm_web",
+  "pm-app-waitlist": "pm_app",
+};
+const WAITLIST_ALLOWED_CLIENT_INFO = new Set([
+  "pm-web-waitlist",
+  "pm-app-waitlist",
+]);
+const PUBLIC_WAITLIST_FALLBACK_MESSAGE =
+  "Waitlist request could not be completed. Please use the email path.";
 
 class HttpError extends Error {
   status: number;
@@ -67,12 +83,46 @@ function normalizePlatform(value: unknown): WaitlistPlatform {
   return "unknown";
 }
 
+function isAcceptedWaitlistRpcRow(
+  value: unknown,
+  email: string,
+  platform: WaitlistPlatform,
+): value is Required<WaitlistRpcRow> & { status: WaitlistRpcStatus } {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const row = value as WaitlistRpcRow;
+
+  return (
+    row.email_normalized === email &&
+    row.platform === platform &&
+    row.status === "accepted"
+  );
+}
+
 function normalizeSource(value: unknown): "pm_web" | "pm_app" {
   return value === "pm_app" ? "pm_app" : "pm_web";
 }
 
 function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254;
+}
+
+function getDeclaredContentLength(req: Request): number | null {
+  const header = req.headers.get("content-length");
+
+  if (!header) {
+    return null;
+  }
+
+  const parsed = Number.parseInt(header, 10);
+
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function getUtf8ByteLength(value: string): number {
+  return new TextEncoder().encode(value).length;
 }
 
 function parsePositiveInt(value: string | undefined, fallback: number): number {
@@ -104,6 +154,18 @@ function isOriginAllowed(req: Request): boolean {
   return allowedOrigins.includes(origin);
 }
 
+function hasExpectedClientInfo(req: Request): boolean {
+  const clientInfo = req.headers.get("x-client-info")?.trim() ?? "";
+
+  return WAITLIST_ALLOWED_CLIENT_INFO.has(clientInfo);
+}
+
+function getExpectedSourceForClientInfo(req: Request): "pm_web" | "pm_app" | null {
+  const clientInfo = req.headers.get("x-client-info")?.trim() ?? "";
+
+  return WAITLIST_CLIENT_SOURCE_BY_INFO[clientInfo] ?? null;
+}
+
 function corsHeaders(req: Request): Record<string, string> {
   const origin = getOrigin(req);
   const allowedOrigin = isOriginAllowed(req) && origin ? origin : "null";
@@ -111,16 +173,25 @@ function corsHeaders(req: Request): Record<string, string> {
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Headers":
-      "authorization, x-client-info, apikey, content-type, cf-turnstile-response, x-turnstile-token",
+      "x-client-info, apikey, content-type, cf-turnstile-response, x-turnstile-token",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };
 }
 
+function securityHeaders(): Record<string, string> {
+  return {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+  };
+}
+
 function jsonResponse(req: Request, body: unknown, status = 200, retryAfterSeconds?: number): Response {
   const headers: Record<string, string> = {
     ...corsHeaders(req),
+    ...securityHeaders(),
     "Content-Type": "application/json",
     "Cache-Control": "no-store",
   };
@@ -180,14 +251,51 @@ function hasHoneypotValue(body: WaitlistRequestBody): boolean {
   );
 }
 
+function hasExpectedBackendContract(body: WaitlistRequestBody): boolean {
+  return typeof body.backendContract === "string"
+    && body.backendContract.trim() === WAITLIST_BACKEND_CONTRACT;
+}
+
+function normalizeChallengeToken(value: unknown): string {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  const token = value.trim();
+
+  if (getUtf8ByteLength(token) > MAX_WAITLIST_CHALLENGE_TOKEN_BYTES) {
+    throw new HttpError(PUBLIC_WAITLIST_FALLBACK_MESSAGE, 413);
+  }
+
+  return token;
+}
+
 async function parseRequestBody(req: Request): Promise<WaitlistRequestBody> {
   const contentType = req.headers.get("content-type") ?? "";
 
   if (!contentType.toLowerCase().includes("application/json")) {
-    throw new HttpError("Expected a JSON waitlist request.", 415);
+    throw new HttpError(PUBLIC_WAITLIST_FALLBACK_MESSAGE, 415);
   }
 
-  const payload = await req.json().catch(() => null);
+  const declaredContentLength = getDeclaredContentLength(req);
+
+  if (declaredContentLength !== null && declaredContentLength > MAX_WAITLIST_REQUEST_BYTES) {
+    throw new HttpError(PUBLIC_WAITLIST_FALLBACK_MESSAGE, 413);
+  }
+
+  const rawBody = await req.text().catch(() => "");
+
+  if (getUtf8ByteLength(rawBody) > MAX_WAITLIST_REQUEST_BYTES) {
+    throw new HttpError(PUBLIC_WAITLIST_FALLBACK_MESSAGE, 413);
+  }
+
+  let payload: unknown = null;
+
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    payload = null;
+  }
 
   if (!payload || typeof payload !== "object") {
     throw new HttpError("Invalid waitlist request.", 400);
@@ -206,15 +314,14 @@ async function verifyTurnstile(req: Request, body: WaitlistRequestBody, clientIp
 
   if (!secret) {
     console.error("Waitlist Turnstile is required but WAITLIST_TURNSTILE_SECRET_KEY is missing.");
-    throw new HttpError("Waitlist temporarily unavailable. Please use the email path.", 503);
+    throw new HttpError(PUBLIC_WAITLIST_FALLBACK_MESSAGE, 503);
   }
 
   const token =
-    (typeof body.turnstileToken === "string" && body.turnstileToken.trim()) ||
-    (typeof body.token === "string" && body.token.trim()) ||
-    req.headers.get("cf-turnstile-response")?.trim() ||
-    req.headers.get("x-turnstile-token")?.trim() ||
-    "";
+    normalizeChallengeToken(body.turnstileToken) ||
+    normalizeChallengeToken(body.token) ||
+    normalizeChallengeToken(req.headers.get("cf-turnstile-response")) ||
+    normalizeChallengeToken(req.headers.get("x-turnstile-token"));
 
   if (!token) {
     throw new HttpError("Complete the waitlist challenge before submitting.", 403);
@@ -234,7 +341,7 @@ async function verifyTurnstile(req: Request, body: WaitlistRequestBody, clientIp
 
   if (!response.ok) {
     console.error(`Waitlist Turnstile verification failed with status ${response.status}.`);
-    throw new HttpError("Waitlist challenge could not be verified. Please try again.", 503);
+    throw new HttpError(PUBLIC_WAITLIST_FALLBACK_MESSAGE, 503);
   }
 
   const result = await response.json().catch(() => null) as { success?: boolean } | null;
@@ -250,7 +357,7 @@ async function callSupabaseRpc(path: string, body: Record<string, unknown>): Pro
 
   if (!supabaseUrl || !serviceRoleKey) {
     console.error("Waitlist edge function missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.");
-    throw new HttpError("Waitlist temporarily unavailable. Please use the email path.", 503);
+    throw new HttpError(PUBLIC_WAITLIST_FALLBACK_MESSAGE, 503);
   }
 
   const response = await fetch(`${supabaseUrl}${path}`, {
@@ -265,7 +372,7 @@ async function callSupabaseRpc(path: string, body: Record<string, unknown>): Pro
 
   if (!response.ok) {
     console.error(`Waitlist RPC ${path} failed with status ${response.status}.`);
-    throw new HttpError("Waitlist temporarily unavailable. Please use the email path.", 503);
+    throw new HttpError(PUBLIC_WAITLIST_FALLBACK_MESSAGE, 503);
   }
 
   return await response.json();
@@ -313,16 +420,28 @@ function acceptedRows(email: string, platform: WaitlistPlatform): WaitlistRpcRow
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders(req) });
+    return new Response("ok", {
+      headers: {
+        ...corsHeaders(req),
+        ...securityHeaders(),
+        "Cache-Control": "no-store",
+      },
+    });
   }
 
   if (!isOriginAllowed(req)) {
-    return jsonResponse(req, { error: "Waitlist origin is not allowed." }, 403);
+    return jsonResponse(req, { error: PUBLIC_WAITLIST_FALLBACK_MESSAGE }, 403);
   }
 
   if (req.method !== "POST") {
     return jsonResponse(req, { error: "Method not allowed." }, 405);
   }
+
+  if (!hasExpectedClientInfo(req)) {
+    return jsonResponse(req, { error: PUBLIC_WAITLIST_FALLBACK_MESSAGE }, 400);
+  }
+
+  const expectedSource = getExpectedSourceForClientInfo(req);
 
   try {
     const body = await parseRequestBody(req);
@@ -330,8 +449,16 @@ Deno.serve(async (req: Request) => {
     const platform = normalizePlatform(body.platform);
     const source = normalizeSource(body.source);
 
+    if (source !== expectedSource) {
+      return jsonResponse(req, { error: PUBLIC_WAITLIST_FALLBACK_MESSAGE }, 400);
+    }
+
     if (!isValidEmail(email)) {
       return jsonResponse(req, { error: "A valid email address is required." }, 400);
+    }
+
+    if (!hasExpectedBackendContract(body)) {
+      return jsonResponse(req, { error: "Waitlist request is not supported." }, 400);
     }
 
     if (hasHoneypotValue(body)) {
@@ -363,14 +490,14 @@ Deno.serve(async (req: Request) => {
       p_source: source,
     });
 
-    const rows = Array.isArray(payload) ? (payload as WaitlistRpcRow[]) : [];
-    const firstRow = rows[0];
+    const rows = Array.isArray(payload) ? payload : [];
+    const firstRow = rows.length === 1 ? rows[0] : null;
 
-    if (!firstRow?.email_normalized || !firstRow.platform || !firstRow.status) {
-      throw new HttpError("Waitlist response was incomplete. Please use the email path.", 503);
+    if (!isAcceptedWaitlistRpcRow(firstRow, email, platform)) {
+      throw new HttpError(PUBLIC_WAITLIST_FALLBACK_MESSAGE, 503);
     }
 
-    return jsonResponse(req, rows);
+    return jsonResponse(req, [firstRow]);
   } catch (error) {
     if (error instanceof HttpError) {
       return jsonResponse(
@@ -381,7 +508,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.error("Unexpected waitlist edge failure.", error);
-    return jsonResponse(req, { error: "Waitlist request failed. Please use the email path." }, 502);
+    const errorName = error instanceof Error ? error.name : "UnknownError";
+    console.error(`Unexpected waitlist edge failure: ${errorName}`);
+    return jsonResponse(req, { error: PUBLIC_WAITLIST_FALLBACK_MESSAGE }, 502);
   }
 });

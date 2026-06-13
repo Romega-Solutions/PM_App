@@ -57,7 +57,7 @@ export const EditProfileHeader: React.FC<EditProfileHeaderProps> = ({
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={isSaving ? "Saving profile" : "Save profile"}
-          accessibilityHint="Saves profile fields for launch-stage discovery when account visibility allows it"
+          accessibilityHint="Saves profile fields for discovery when account visibility allows it"
           accessibilityState={{ disabled: isSaving, busy: isSaving }}
         >
           {isSaving ? (

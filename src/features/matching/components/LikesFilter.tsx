@@ -8,7 +8,6 @@
 import { Heart } from "lucide-react-native";
 import React from "react";
 import {
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -17,8 +16,6 @@ import {
 
 const ACCENT_PINK = "#EF3E78";
 const WHITE = "#FFFFFF";
-const SURFACE = "rgba(255,255,255,0.06)";
-const SURFACE_BORDER = "rgba(141,105,246,0.18)";
 const FILTER_HIT_SLOP = { top: 8, right: 8, bottom: 8, left: 8 };
 
 interface LikesFilterProps {
@@ -58,11 +55,7 @@ export const LikesFilter: React.FC<LikesFilterProps> = ({
         >
           All Matches
         </Text>
-        <Text
-          style={[styles.countText, filter === "all" && styles.countTextActive]}
-        >
-          {allCount}
-        </Text>
+        <Text style={styles.countText}>{allCount}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -92,14 +85,7 @@ export const LikesFilter: React.FC<LikesFilterProps> = ({
         >
           Mutual
         </Text>
-        <Text
-          style={[
-            styles.countText,
-            filter === "mutual" && styles.countTextActive,
-          ]}
-        >
-          {mutualCount}
-        </Text>
+        <Text style={styles.countText}>{mutualCount}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -109,59 +95,36 @@ const styles = StyleSheet.create({
   filterContainer: {
     flexDirection: "row",
     paddingHorizontal: 24,
-    marginBottom: 20,
-    gap: 12,
+    marginBottom: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
   },
   filterTab: {
-    minHeight: 46,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    backgroundColor: SURFACE,
-    borderWidth: 1,
-    borderColor: SURFACE_BORDER,
+    minHeight: 48,
+    marginRight: 24,
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
   filterTabActive: {
-    backgroundColor: ACCENT_PINK,
-    borderColor: ACCENT_PINK,
-    ...Platform.select({
-      ios: {
-        shadowColor: ACCENT_PINK,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    borderBottomColor: ACCENT_PINK,
   },
   filterText: {
     fontSize: 14,
     fontFamily: "DMSans-SemiBold",
-    color: ACCENT_PINK,
+    color: "rgba(255,255,255,0.68)",
     letterSpacing: 0.3,
   },
   filterTextActive: {
     color: WHITE,
   },
   countText: {
-    minWidth: 22,
-    overflow: "hidden",
-    borderRadius: 11,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    color: "rgba(255,255,255,0.78)",
+    color: "rgba(255,255,255,0.48)",
     fontSize: 12,
     fontFamily: "DMSans-Bold",
     textAlign: "center",
-  },
-  countTextActive: {
-    backgroundColor: "rgba(255,255,255,0.2)",
-    color: WHITE,
   },
 });

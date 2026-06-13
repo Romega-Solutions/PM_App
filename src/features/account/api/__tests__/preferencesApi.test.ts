@@ -57,6 +57,94 @@ describe("preferencesApi", () => {
     expect(query.eq).toHaveBeenCalledWith("id", "user-123");
   });
 
+  it("normalizes numeric preferences and relationship goal before saving", async () => {
+    (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "user-123" } },
+      error: null,
+    });
+    const query = createQueryMock({ data: null, error: null });
+    query.eq.mockResolvedValue({ error: null });
+    (supabase.from as jest.Mock).mockReturnValue(query);
+
+    await savePreferences({
+      ageMin: 24.8,
+      ageMax: 36.2,
+      maxDistanceKm: 80.9,
+      relationshipGoal: " marriage ",
+      userType: "filipina",
+    });
+
+    expect(query.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        interested_in: "Men",
+        looking_for_gender: "male",
+        age_preference_min: 24,
+        age_preference_max: 36,
+        distance_preference_km: 80,
+        relationship_goal: "marriage",
+      }),
+    );
+  });
+
+  it("rejects invalid preference payloads before profile update", async () => {
+    (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "user-123" } },
+      error: null,
+    });
+
+    await expect(
+      savePreferences({
+        ageMin: 17,
+        ageMax: 36,
+        maxDistanceKm: 80,
+        relationshipGoal: "marriage",
+        userType: "filipina",
+      }),
+    ).rejects.toThrow("Check your match preferences and try again.");
+
+    await expect(
+      savePreferences({
+        ageMin: 40,
+        ageMax: 36,
+        maxDistanceKm: 80,
+        relationshipGoal: "marriage",
+        userType: "filipina",
+      }),
+    ).rejects.toThrow("Check your match preferences and try again.");
+
+    await expect(
+      savePreferences({
+        ageMin: 24,
+        ageMax: 36,
+        maxDistanceKm: 1000,
+        relationshipGoal: "marriage",
+        userType: "filipina",
+      }),
+    ).rejects.toThrow("Check your match preferences and try again.");
+
+    await expect(
+      savePreferences({
+        ageMin: 24,
+        ageMax: 36,
+        maxDistanceKm: 80,
+        relationshipGoal: "unsupported",
+        userType: "filipina",
+      }),
+    ).rejects.toThrow("Check your match preferences and try again.");
+
+    await expect(
+      savePreferences({
+        ageMin: 24,
+        ageMax: 36,
+        maxDistanceKm: 80,
+        relationshipGoal: "marriage",
+        userType: "admin" as never,
+      }),
+    ).rejects.toThrow("Check your match preferences and try again.");
+
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
   it("loads canonical discovery preference values before legacy fallback values", async () => {
     (supabase.auth.getUser as jest.Mock).mockResolvedValue({
       data: { user: { id: "user-123" } },

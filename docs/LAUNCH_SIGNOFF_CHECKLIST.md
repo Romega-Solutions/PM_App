@@ -8,7 +8,7 @@ Purpose: define the evidence required before PinayMate can be called production-
 
 Status: not launch-ready until the blocked evidence below is captured.
 
-PM_App and PM_Web local release posture needs a fresh rerun after the latest release-gate changes. PM_App release-local remains blocked by tracked `.env` until git-index cleanup and secret rotation review are approved, and by the production ownership contract until the current Expo owner is proven Romega-controlled or transferred. PM_App dependency audit also needs remediation or accepted-risk signoff. Production readiness still requires live Supabase migration proof, deployed OCR proof, native device QA, and final launch-link validation.
+PM_App and PM_Web local quality checks passed on the current worktree on 2026-06-11. PM_App release-local still fails because the production ownership contract rejects the current Expo owner until it is proven Romega-controlled or transferred. Production readiness still requires live Supabase migration proof, deployed OCR proof, native device QA, safety/support/legal/release owner assignment, production PM_Web and mailbox proof, and final launch-link validation.
 
 Use `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md` as the shared claim contract, `docs/PRODUCTION_OWNERSHIP_CHECKLIST.md` for account ownership signoff, `docs/SUPABASE_RELEASE_OPERATOR_CHECKLIST.md` for backend release execution, and `docs/LAUNCH_EVIDENCE_PACKET.md` for the final proof pack.
 
@@ -20,8 +20,8 @@ Customer-facing copy, release notes, support responses, safety language, and man
 
 | Launch-control lane | Go condition | Stop condition |
 | ------------------- | ------------ | -------------- |
-| Secret hygiene | `.env` cleanup and rotation decision are approved, then secret-hygiene passes | tracked `.env`, unreviewed exposure risk, pasted secret values, or failed guard |
-| Local release gates | current-head PM_App and PM_Web gates pass after latest source/script changes | old pass output, needs-rerun status, dependency audit blocker, or unchecked guard change |
+| Secret hygiene | secret-hygiene passes and any previously tracked values have a rotation/recovery decision | unreviewed exposure risk, pasted secret values, or failed guard |
+| Local release gates | current-head PM_App and PM_Web local gates pass after latest source/script changes | old pass output, needs-rerun status, or unchecked guard change |
 | Launch-state claims | PM_App, PM_Web, support, safety, legal, and manager-facing copy match `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md` | copy implies live matching, payments, app-store availability, automatic verification, instant moderation, SMS/calls, provider delivery, or production backend proof before evidence |
 | Supabase backend | staging then production migrations and safety smoke pass | local/static-only proof, failed migration, skipped smoke SQL, or missing target project proof |
 | Waitlist Edge Function | `waitlist-signup` deploy, approved origins, server-only service-role key, rate-limit salt, direct RPC denial, honeypot behavior, and repeated-request throttle are proven | direct browser RPC path, missing origin allowlist, missing rate-limit salt, service-role key exposed to clients, or no live function proof |
@@ -61,9 +61,9 @@ The following source-complete controls are in place and still require environmen
 | OCR Edge Function             | Backend owner             | `docs/SUPABASE_RELEASE_OPERATOR_CHECKLIST.md` completed with secret list evidence, deploy output, 401 unauthenticated check, valid/invalid document checks         | Blocked by Supabase project + provider secret |
 | PM_App native QA              | Product/design owner      | `docs/NATIVE_QA_SCRIPT.md` completed with device/emulator proof for auth, onboarding, location, verification, discovery, matching, messaging, report/block/unmatch | Blocked by device/emulator QA                 |
 | Product design QA             | Product/design owner      | `docs/PRODUCT_DESIGN_QA_STANDARD.md` completed with PM_App native screenshots and PM_Web desktop/mobile screenshots                                      | Blocked by screenshot/design review evidence  |
-| Launch-state claim alignment  | Product owner             | PM_App, PM_Web, support, safety, legal, and manager-facing copy reviewed against `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md`                                 | Needs current-head review                      |
-| PM_Web launch page            | Product/design owner      | `npm run check:local-quality`, browser desktop/mobile smoke, final support mailbox/domain confirmation                                                             | Needs rerun after release-gate changes        |
-| Secret hygiene                | Engineering owner         | `npm run check:secret-hygiene` pass output, `.env` removed from git index/history plan, rotation decision recorded                                                 | Blocked by tracked `.env`                     |
+| Launch-state claim alignment  | Product owner             | PM_App, PM_Web, support, safety, legal, and manager-facing copy reviewed against `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md`                                 | Source checks pass locally; final owner review still required |
+| PM_Web launch page            | Product/design owner      | `npm run check:local-quality`, browser desktop/mobile smoke, final support mailbox/domain confirmation                                                             | Local quality passed; production URL/mailbox proof still required |
+| Secret hygiene                | Engineering owner         | `npm run check:secret-hygiene` pass output plus rotation/recovery decision for any previously tracked values                                                       | Local guard passed; rotation/recovery review still required |
 | Support operations            | Product owner             | support inbox owner, response SLA, escalation path for reports/verification                                                                                        | Needs owner sign-off                          |
 | Safety moderation             | Safety/support owner      | `docs/SAFETY_MODERATION_RUNBOOK.md` reviewed with report, verification, and escalation owners assigned                                                             | Needs owner sign-off                          |
 | Production ownership          | Product/engineering owner | `docs/PRODUCTION_OWNERSHIP_CHECKLIST.md` completed                                                                                                                 | Needs owner sign-off                          |
@@ -97,8 +97,8 @@ Use this table to make the launch decision without reading implementation detail
 
 | Decision area             | Proof source                             | Green means                                                                        | Current state              |
 | ------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------- |
-| Conversion and web trust  | PM_Web gate + evidence packet            | final site loads, CTAs are honest, support/legal paths work                        | partially local            |
-| Launch-state claim control | launch-state matrix + evidence packet    | app, web, support, safety, legal, and manager copy do not overclaim live capabilities | source matrix added, needs rerun |
+| Conversion and web trust  | PM_Web gate + evidence packet            | final site loads, CTAs are honest, support/legal paths work                        | local source pass; production proof blocked |
+| Launch-state claim control | launch-state matrix + evidence packet    | app, web, support, safety, legal, and manager copy do not overclaim live capabilities | source checks pass locally; final owner review required |
 | Mobile onboarding quality | native QA script + evidence packet       | user can sign up, verify, onboard, recover, and continue without dead ends         | blocked by native QA       |
 | Product design QA         | product design QA standard + screenshots | PM_App and PM_Web are usable, coherent, accessible, honest, and visually launch-ready | blocked by design QA evidence |
 | Backend safety            | Supabase migration/smoke/advisor outputs | users cannot forge matches, bypass RLS, read private evidence, or chat wrong users | blocked by target DB proof |
@@ -114,7 +114,7 @@ Run this before staging or production signoff work:
 ```powershell
 cd PM_App
 
-# While tracked .env cleanup is still blocked, this keeps local app posture current.
+# Keeps local app posture current while external ownership and live-service evidence are still blocked.
 npm run check:local-quality
 
 # Source contracts grouped by package script. Does not include approval-bound ownership proof.
@@ -132,26 +132,23 @@ node scripts/check-env-template-contract.mjs
 # Dependency audit is now part of release-local, but can be run separately while investigating advisories.
 npm run check:dependency-audit
 
-# After secret-hygiene cleanup approval, this is the required PM_App release gate.
+# Required PM_App release gate. It currently fails until ownership, safety, and launch evidence are complete.
 npm run check:release-local
 
 cd ..\PM_Web
 npm run check:local-quality
 ```
 
-Current known blocker:
+Current known blockers:
 
-- `PM_App/.env` is tracked, so `npm run check:release-local` must fail at secret hygiene until release/security approves git-index cleanup.
-- Secret cleanup must follow `docs/SECRET_HYGIENE_REMEDIATION.md`, including rotation and history-cleanup decisions.
-- PM_App dependency audit has known Expo-chain moderate advisories and needs a dedicated remediation branch or accepted-risk signoff.
-- `npm run check:local-quality` can still be used before cleanup because it does not inspect tracked env files or require live services.
-- `npm run check:source-contracts` can be run before cleanup to check static source contracts without reading `.env` or requiring live services.
-- `node scripts/check-production-ownership-contract.mjs` can be run before cleanup to expose app identifier and Expo/EAS ownership blockers.
-- `node scripts/check-auth-redirect-contract.mjs` can be run before cleanup to check auth redirect helper and deep-link source alignment.
-- `node scripts/check-env-template-contract.mjs` can be run before cleanup to verify the safe public env template without reading `.env`.
-- Dependency risk must follow `docs/DEPENDENCY_AUDIT_REMEDIATION.md`: remediated, deferred with accepted risk, or hold release.
+- `npm run check:local-quality`, `npm run check:source-contracts`, `npm run check:secret-hygiene`, and dependency audit passed locally on 2026-06-11.
+- `npm run check:release-local` still fails at `check:production-ownership-contract` because `app.json` declares `expo.owner: canthought`.
+- `npx eas-cli whoami` returns `Not logged in`, so EAS ownership cannot be verified from this session.
+- `npx supabase migration list --linked` returns `Cannot find project ref`, so live migration state cannot be verified from this checkout yet.
+- `npm run check:safety-operations-contract` fails until real safety, support, legal, and release owners are assigned.
+- `npm run check:launch-evidence-contract` fails until Supabase, OCR, native QA, PM_Web production, safety/moderation, and final signoff evidence rows are filled.
 - Do not paste env values into evidence.
-- After cleanup, record whether the Supabase anon/publishable key needs rotation based on where the repository has been shared.
+- Record whether any previously tracked Supabase anon/publishable key needs rotation based on where the repository has been shared.
 
 ## 1. Staging Supabase migration run
 

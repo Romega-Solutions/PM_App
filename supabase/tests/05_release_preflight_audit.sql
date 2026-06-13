@@ -491,6 +491,38 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'pass_profile'
+  ) THEN
+    missing_items := array_append(missing_items, 'RPC: pass_profile');
+  ELSIF NOT has_function_privilege(
+      'authenticated',
+      'public.pass_profile(uuid)',
+      'EXECUTE'
+    )
+    OR has_function_privilege(
+      'anon',
+      'public.pass_profile(uuid)',
+      'EXECUTE'
+    )
+  THEN
+    missing_items := array_append(
+      missing_items,
+      'pass_profile must be authenticated-only'
+    );
+  END IF;
+
+  IF to_regclass('public.passes') IS NOT NULL
+    AND has_table_privilege('authenticated', 'public.passes', 'INSERT')
+  THEN
+    missing_items := array_append(
+      missing_items,
+      'public.passes direct insert must stay denied'
+    );
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public' AND p.proname = 'submit_waitlist_signup'
   ) THEN
     missing_items := array_append(missing_items, 'RPC: submit_waitlist_signup');
@@ -891,6 +923,32 @@ BEGIN
     OR has_function_privilege('authenticated', 'public.submit_waitlist_signup(text, text, text)', 'EXECUTE')
   THEN
     RAISE EXCEPTION 'submit_waitlist_signup must be service-role-only behind the waitlist Edge Function';
+  END IF;
+END;
+$$;
+
+-- Public SECURITY DEFINER functions must not be executable through anon or
+-- inherited PUBLIC grants. App-facing RPCs should be explicit authenticated
+-- grants; privileged operational RPCs should be service-role-only.
+DO $$
+DECLARE
+  exposed_functions TEXT[];
+BEGIN
+  SELECT ARRAY_AGG(
+    FORMAT('%I.%I(%s)', n.nspname, p.proname, pg_get_function_identity_arguments(p.oid))
+    ORDER BY n.nspname, p.proname, pg_get_function_identity_arguments(p.oid)
+  )
+  INTO exposed_functions
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND p.prosecdef
+    AND has_function_privilege('anon', p.oid, 'EXECUTE');
+
+  IF array_length(exposed_functions, 1) IS NOT NULL THEN
+    RAISE EXCEPTION
+      'public SECURITY DEFINER functions must not be executable by anon or PUBLIC defaults: %',
+      array_to_string(exposed_functions, ', ');
   END IF;
 END;
 $$;

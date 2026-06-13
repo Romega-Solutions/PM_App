@@ -33,7 +33,7 @@ export type SignInResult = {
 const AUTH_SIGNUP_ERROR =
   "We could not create your account. Check your connection and try again.";
 const AUTH_SIGNIN_ERROR =
-  "Email or password is incorrect, or sign in is temporarily unavailable.";
+  "Email or password is incorrect, or sign in did not complete. Try again.";
 const AUTH_SIGNOUT_ERROR =
   "Sign out did not complete. Check your connection and try again.";
 const AUTH_RESEND_ERROR =
@@ -42,6 +42,29 @@ const AUTH_PASSWORD_RESET_ERROR =
   "Password reset email could not be sent. Check your email and try again.";
 const AUTH_PASSWORD_UPDATE_ERROR =
   "Password could not be updated. Check your connection and try again.";
+const AUTH_EMAIL_INPUT_ERROR = "Enter a valid email address.";
+const AUTH_FIRST_NAME_INPUT_ERROR = "First name is required";
+const MAX_FIRST_NAME_LENGTH = 80;
+
+function normalizeEmail(email: string): string {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (!authValidation.isValidEmail(normalizedEmail)) {
+    throw new Error(AUTH_EMAIL_INPUT_ERROR);
+  }
+
+  return normalizedEmail;
+}
+
+function normalizeFirstName(firstName: string): string {
+  const normalizedFirstName = firstName.trim().slice(0, MAX_FIRST_NAME_LENGTH);
+
+  if (!normalizedFirstName) {
+    throw new Error(AUTH_FIRST_NAME_INPUT_ERROR);
+  }
+
+  return normalizedFirstName;
+}
 
 export const authApi = {
   signUp: async (
@@ -49,11 +72,15 @@ export const authApi = {
     password: string,
     metadata: SignUpMetadata,
   ): Promise<SignUpResult> => {
-    if (!metadata.firstName || !metadata.firstName.trim()) {
-      throw new Error("First name is required");
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedFirstName = normalizeFirstName(metadata.firstName);
+    const passwordValidation = authValidation.isValidPassword(password);
+
+    if (!passwordValidation.valid) {
+      throw new Error(passwordValidation.error ?? AUTH_SIGNUP_ERROR);
     }
 
-    if (!["filipina", "foreigner"].includes(metadata.userType)) {
+    if (!authValidation.isValidUserType(metadata.userType)) {
       throw new Error("Please select a valid account type");
     }
 
@@ -61,11 +88,11 @@ export const authApi = {
       const redirectUrl = getRedirectUrl();
 
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: normalizedEmail,
         password,
         options: {
           data: {
-            first_name: metadata.firstName.trim(),
+            first_name: normalizedFirstName,
             user_type: metadata.userType,
           },
           emailRedirectTo: redirectUrl,
@@ -83,8 +110,11 @@ export const authApi = {
 
       return {
         user: {
-          email: data.user.email!,
-          metadata,
+          email: data.user.email || normalizedEmail,
+          metadata: {
+            firstName: normalizedFirstName,
+            userType: metadata.userType,
+          },
         },
         needsVerification: !data.session,
         message: data.session
@@ -95,10 +125,20 @@ export const authApi = {
       console.error("Signup failed.");
       if (
         error instanceof Error &&
-        (error.message === "First name is required" ||
-          error.message === "Please select a valid account type")
+        error.message === AUTH_FIRST_NAME_INPUT_ERROR
       ) {
-        throw error;
+        throw new Error(AUTH_FIRST_NAME_INPUT_ERROR);
+      }
+
+      if (error instanceof Error && error.message === AUTH_EMAIL_INPUT_ERROR) {
+        throw new Error(AUTH_EMAIL_INPUT_ERROR);
+      }
+
+      if (
+        error instanceof Error &&
+        error.message === "Please select a valid account type"
+      ) {
+        throw new Error("Please select a valid account type");
       }
 
       throw new Error(AUTH_SIGNUP_ERROR);
@@ -110,8 +150,10 @@ export const authApi = {
    */
   signIn: async (email: string, password: string): Promise<SignInResult> => {
     try {
+      const normalizedEmail = normalizeEmail(email);
+
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: normalizedEmail,
         password,
       });
 
@@ -126,14 +168,14 @@ export const authApi = {
 
       return {
         user: {
-          email: data.user.email!,
+          email: data.user.email || normalizedEmail,
           userType: data.user.user_metadata?.user_type as UserType,
         },
         session: {
           access_token: data.session.access_token,
         },
       };
-    } catch (error) {
+    } catch {
       console.error("Signin failed.");
       throw new Error(AUTH_SIGNIN_ERROR);
     }
@@ -172,7 +214,7 @@ export const authApi = {
   resendVerificationEmail: async (
     email: string,
   ): Promise<{ success: boolean }> => {
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = normalizeEmail(email);
     const redirectUrl = getRedirectUrl();
 
     const { error } = await supabase.auth.resend({
@@ -191,9 +233,10 @@ export const authApi = {
     email: string,
   ): Promise<{ success: boolean }> => {
     const redirectUrl = getPasswordResetRedirectUrl();
+    const normalizedEmail = normalizeEmail(email);
 
     const { error } = await supabase.auth.resetPasswordForEmail(
-      email.trim().toLowerCase(),
+      normalizedEmail,
       {
         redirectTo: redirectUrl,
       },

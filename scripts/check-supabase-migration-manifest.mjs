@@ -34,6 +34,7 @@ const expectedOrder = [
   "20260611140000_add_waitlist_edge_abuse_control.sql",
   "20260611141000_restrict_conversation_creation_rpc.sql",
   "20260611142000_hide_empty_conversations_from_inbox.sql",
+  "20260611143000_restrict_public_function_execute_defaults.sql",
   "999_restore_profile_visibility_filter.sql",
   "99_final_release_security_hardening.sql",
 ];

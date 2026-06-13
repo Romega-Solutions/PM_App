@@ -6,10 +6,39 @@ const rootDir = dirname(dirname(fileURLToPath(import.meta.url)));
 
 const requiredFiles = [
   {
+    path: "app/_layout.tsx",
+    markers: [
+      "setupDeepLinking",
+      "useAuthPersistence",
+      "semanticColors.background",
+      "Restoring session...",
+      "Loading...",
+      "StatusBar",
+      "animation: \"slide_from_right\"",
+      "Stack.Screen name=\"(auth)\"",
+      "Stack.Screen name=\"(main)\"",
+      "Stack.Screen name=\"(modals)\"",
+    ],
+  },
+  {
+    path: "app/index.tsx",
+    markers: [
+      "PinayMate logo",
+      "PinayMate",
+      "Profile-first Filipino dating",
+      "Preparing PinayMate",
+      "maxFontSizeMultiplier",
+      "semanticColors.primary",
+      "colors.dalisay[950]",
+      "Redirect",
+      "\"/(auth)/welcome\"",
+    ],
+  },
+  {
     path: "src/components/ui/LaunchStateNotice.tsx",
     markers: [
       "LaunchStateNotice",
-      "does not prove production readiness",
+      "what may come later",
       "accessibilityLabel",
       "accessibilityHint",
       "accessibilityRole",
@@ -31,7 +60,7 @@ const requiredFiles = [
       "Preferences guide discovery",
       "do not guarantee visibility, chat, or a match",
       "do not override privacy settings, profile review",
-      "launch cohort availability",
+      "account availability",
     ],
   },
   {
@@ -43,7 +72,7 @@ const requiredFiles = [
       "approval is not automatic",
       "does not guarantee another member is safe",
       "Skipping does not block account setup",
-      "verified-badge and review-based trust cues stay unavailable",
+      "verified badge appears only after approval",
       "Submitting files does not automatically approve a verified badge",
       "Skipping verification does not block setup",
     ],
@@ -51,26 +80,26 @@ const requiredFiles = [
   {
     path: "src/features/account/screens/WelcomeCompleteScreen.tsx",
     markers: [
-      "Launch-stage profile ready",
-      "guarantee profile",
-      "feature access",
-      "Enter the launch-stage app",
+      "Profile setup complete",
+      "clearer discovery",
+      "Matching can still vary",
+      "Enter PinayMate",
       "Review safety and settings",
     ],
   },
   {
     path: "src/features/auth/screens/SignUpScreen.tsx",
     markers: [
-      "Create your early-access",
-      "Public matching, phone verification, social login, calls, and checkout remain launch-gated",
-      "does not publish your profile, enable live matching, start calls, or open payment",
+      "Create your",
+      "Start with email signup",
+      "adjust privacy, verification, and discovery settings",
       "Email signup is the active path",
     ],
   },
   {
     path: "src/features/auth/screens/VerifyEmailScreen.tsx",
     markers: [
-      "Email verification confirms sign-in for launch preparation",
+      "Email verification confirms sign-in and keeps your account protected",
       "does not publish your profile",
       "enable matching",
       "open paid features",
@@ -79,10 +108,10 @@ const requiredFiles = [
   {
     path: "app/(auth)/verify-phone.tsx",
     markers: [
-      "Phone verification is off for launch",
-      "No SMS is sent and no phone badge is created",
+      "Continue with email verification",
+      "No SMS code is needed for this step",
       "does not send an SMS code",
-      "change launch access",
+      "protected account flow",
     ],
   },
   {
@@ -114,19 +143,49 @@ const requiredFiles = [
       "Retry this card",
       "Adjust filters",
       "profiles currently available for this launch stage",
-      "launch cohorts, privacy settings, profile review",
+      "Privacy settings, profile review, distance filters",
     ],
   },
   {
     path: "src/features/matching/components/EmptyMatchesState.tsx",
     markers: [
+      "Mutual matches only",
+      "You control the pace",
+      "Chats open after both people choose each other",
+      "report anything that feels off",
       "LaunchStateNotice",
       "empty-matches-launch-state-notice",
-      "Mutual matches only",
-      "after both people choose each other",
-      "launch-stage availability allows chat",
-      "Keep private details private",
-      "report anything that feels off",
+    ],
+    forbiddenMarkers: ["guidancePill", "guidancePillQuiet"],
+  },
+  {
+    path: "src/features/matching/screens/LikesScreen.tsx",
+    markers: [
+      "Before you message",
+      "matchSafetyRule",
+      "matchSafetyHeading",
+      "Refresh matches",
+      "rgba(255,255,255,0.72)",
+    ],
+    forbiddenMarkers: [
+      "padding: 22",
+      "borderColor: \"rgba(239, 62, 120, 0.28)\"",
+      "backgroundColor: \"rgba(239, 62, 120, 0.12)\"",
+    ],
+  },
+  {
+    path: "src/features/matching/components/LikesFilter.tsx",
+    markers: [
+      "accessibilityRole=\"tablist\"",
+      "borderBottomColor: ACCENT_PINK",
+      "color: \"rgba(255,255,255,0.68)\"",
+      "Show mutual matches only",
+    ],
+    forbiddenMarkers: [
+      "SURFACE_BORDER",
+      "countTextActive",
+      "shadowColor: ACCENT_PINK",
+      "backgroundColor: SURFACE",
     ],
   },
   {
@@ -143,10 +202,37 @@ const requiredFiles = [
     markers: [
       "Verification reviewed",
       "Report concerns anytime",
+      "matchStateText",
+      "inlineActionBtn",
+      "matchSeparator",
       "Unmatch",
       "Report",
       "Message",
       "minHeight: 48",
+    ],
+    forbiddenMarkers: [
+      "statusPill",
+      "statusPillMutual",
+      "secondaryActionBtn",
+      "unmatchBtn",
+      "reportBtn",
+      "aria-hidden",
+    ],
+  },
+  {
+    path: "src/features/matching/components/ProfileDetailsModal.tsx",
+    markers: [
+      "modalInterestDot",
+      "modalDetailsList",
+      "modalDetailRow",
+      "safetyRule",
+      "Report or block",
+    ],
+    forbiddenMarkers: [
+      "modalInterestTag",
+      "modalPill",
+      "modalPillsContainer",
+      "backgroundColor: \"rgba(239, 62, 120, 0.12)\"",
     ],
   },
   {
@@ -182,18 +268,18 @@ const requiredFiles = [
   {
     path: "src/features/messaging/screens/VoiceCallScreen.tsx",
     markers: [
-      "Voice calls are off for launch",
+      "Keep this chat in messages",
       "no microphone permission was requested",
-      "Calling will appear only after launch approval",
+      "Safety first",
       "Report or block",
     ],
   },
   {
     path: "src/features/messaging/screens/VideoCallScreen.tsx",
     markers: [
-      "Video calls are off for launch",
+      "Keep this chat in messages",
       "no camera or microphone permission was",
-      "Calling will appear only after launch approval",
+      "Safety first",
       "Report or block",
     ],
   },
@@ -202,10 +288,10 @@ const requiredFiles = [
     markers: [
       "LaunchStateNotice",
       "privacy-settings-launch-state-notice",
-      "Backend-backed privacy controls",
-      "source-backed privacy preferences",
-      "current backend proof and support sign-off",
-      "They do not override launch readiness",
+      "Privacy controls",
+      "privacy preferences",
+      "current app access, safety review, and support process",
+      "Profile visibility, read receipts, and account deletion requests follow",
       "Toggles are locked until PinayMate loads your saved privacy",
       "Your profile is hidden",
       "Account deletion is reviewed",
@@ -219,16 +305,16 @@ const requiredFiles = [
     markers: [
       "LaunchStateNotice",
       "notification-settings-launch-state-notice",
-      "Launch-stage controls",
-      "Production push and email delivery still require provider setup",
-      "do not prove production push or email delivery",
+      "Notification controls",
+      "Push and email delivery depend on your device settings",
+      "Delivery depends on your device and contact settings",
     ],
   },
   {
     path: "app/(main)/profile-settings/help.tsx",
     markers: [
-      "Launch support boundary",
-      "email-first during launch",
+      "Support by email",
+      "PinayMate support is email-first",
       "not emergency service, live chat, or instant moderation",
       "Do not send passwords",
       "payment details, ID documents, or private message screenshots by",
@@ -237,21 +323,22 @@ const requiredFiles = [
   {
     path: "app/(main)/profile-settings/about.tsx",
     markers: [
-      "is being built as a dating platform",
-      "Launch-stage app",
-      "public matching, calls, paid plans, store availability",
-      "Verification Review",
-      "not a safety guarantee",
+      "helps Filipina women and foreign men build intentional",
+      "Dating with more context",
+      "relationship intent, profile clarity",
+      "Privacy and safety controls",
+      "Verification review",
+      "Meaningful connections",
     ],
   },
   {
     path: "src/features/profile/screens/ProfileScreen.tsx",
     markers: [
-      "Launch-stage profile",
+      "Profile access",
       "loads from your account",
-      "Public discovery",
-      "matching, calling, and paid features",
-      "review status, and launch readiness",
+      "Discovery and connection features",
+      "privacy settings, review status",
+      "review status, and available app access",
     ],
   },
   {
@@ -262,6 +349,14 @@ const requiredFiles = [
       "PM_App design gates",
       "PM_Web design gates",
       "Launch-state accuracy",
+      "Surface and card discipline",
+      "Cards are allowed only when they group one clear topic or one clear object",
+      "Do not use nested cards as the default way to create hierarchy",
+      "PM_Web should feel more editorial and conversion-led",
+      "PM_App should feel native and flow-led",
+      "card spam",
+      "nested-card hierarchy",
+      "surface discipline is reviewed",
       "Each design QA pass must include a launch-state note",
       "the UI must not make that feature look live",
       "Launch decision rule",
@@ -342,6 +437,14 @@ for (const requiredFile of requiredFiles) {
     }
   }
 
+  for (const forbiddenMarker of requiredFile.forbiddenMarkers ?? []) {
+    if (content.includes(forbiddenMarker)) {
+      failures.push(
+        `${requiredFile.path} contains forbidden design marker: ${forbiddenMarker}`,
+      );
+    }
+  }
+
   for (const forbiddenPattern of forbiddenPatterns) {
     if (
       forbiddenPattern.pattern.test(content) &&
@@ -364,5 +467,5 @@ if (failures.length > 0) {
 
 console.log("PASS PM_App product design contract");
 console.log(
-  "Checked auth, verification, discovery, match cards, messaging, report, privacy, and design QA standard markers.",
+  "Checked auth, verification, discovery, match cards, messaging, report, privacy, launch-state accuracy, and anti-card-spam design standard markers.",
 );

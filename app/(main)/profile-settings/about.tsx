@@ -18,8 +18,6 @@ const BRAND_BG = "#0F0814";
 const ACCENT_PURPLE = "#8D69F6";
 const ACCENT_PINK = "#EF3E78";
 const WHITE = "#FFFFFF";
-const SURFACE_STRONG = "rgba(255, 255, 255, 0.08)";
-const TILE_BORDER = "rgba(168, 85, 247, 0.13)";
 
 export default function AboutScreen() {
   const router = useRouter();
@@ -70,47 +68,60 @@ export default function AboutScreen() {
         </View>
 
         <Text style={styles.description}>
-          PinayMate is being built as a dating platform for Filipina women and
-          foreign men seeking meaningful relationships. The current app should
-          be treated as launch-stage: account, privacy, verification, matching,
-          messaging, and support behavior must follow the readiness evidence
-          shown in-app and on the launch website.
+          PinayMate helps Filipina women and foreign men build intentional
+          relationships with clearer profiles, trust checks, privacy controls,
+          and respectful conversations.
         </Text>
 
-        <View style={styles.launchCard}>
-          <Text style={styles.launchCardTitle}>Launch-stage app</Text>
-          <Text style={styles.launchCardText}>
-            Your account can use the features available in this build, but
-            public matching, calls, paid plans, store availability, and final
-            safety operations depend on release sign-off.
+        <View style={styles.missionStrip}>
+          <Text style={styles.missionStripTitle}>Dating with more context</Text>
+          <Text style={styles.missionStripText}>
+            We keep the focus on relationship intent, profile clarity, and safer
+            ways to decide who feels worth meeting.
           </Text>
         </View>
 
-        <View style={styles.featureCard}>
-          <Shield size={32} color={ACCENT_PURPLE} />
-          <Text style={styles.featureTitle}>Privacy and safety controls</Text>
-          <Text style={styles.featureDesc}>
-            Privacy and safety controls help protect your account, reports, and
-            messages while launch checks continue.
-          </Text>
-        </View>
+        <View style={styles.valuesGroup}>
+          <View style={styles.valueRow}>
+            <View style={styles.valueIcon}>
+              <Shield size={24} color={ACCENT_PURPLE} />
+            </View>
+            <View style={styles.valueCopy}>
+              <Text style={styles.featureTitle}>
+                Privacy and safety controls
+              </Text>
+              <Text style={styles.featureDesc}>
+                Choose what others can see, report concerns, and keep your
+                account protected.
+              </Text>
+            </View>
+          </View>
 
-        <View style={styles.featureCard}>
-          <Sparkles size={32} color={ACCENT_PURPLE} />
-          <Text style={styles.featureTitle}>Verification Review</Text>
-          <Text style={styles.featureDesc}>
-            Verification submissions are reviewed before a verified badge is
-            shown. A badge is a trust signal, not a safety guarantee.
-          </Text>
-        </View>
+          <View style={styles.valueRow}>
+            <View style={styles.valueIcon}>
+              <Sparkles size={24} color={ACCENT_PURPLE} />
+            </View>
+            <View style={styles.valueCopy}>
+              <Text style={styles.featureTitle}>Verification review</Text>
+              <Text style={styles.featureDesc}>
+                Verified badges add useful context while still encouraging
+                thoughtful, careful conversations.
+              </Text>
+            </View>
+          </View>
 
-        <View style={styles.featureCard}>
-          <Heart size={32} color={ACCENT_PURPLE} />
-          <Text style={styles.featureTitle}>Meaningful Connections</Text>
-          <Text style={styles.featureDesc}>
-            We focus on helping people understand relationship intent, shared
-            interests, and values before they choose to connect.
-          </Text>
+          <View style={[styles.valueRow, styles.valueRowLast]}>
+            <View style={styles.valueIcon}>
+              <Heart size={24} color={ACCENT_PURPLE} />
+            </View>
+            <View style={styles.valueCopy}>
+              <Text style={styles.featureTitle}>Meaningful connections</Text>
+              <Text style={styles.featureDesc}>
+                Profiles highlight intent, interests, and values before either
+                person chooses to connect.
+              </Text>
+            </View>
+          </View>
         </View>
 
         <TouchableOpacity
@@ -208,49 +219,63 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 32,
   },
-  featureCard: {
-    backgroundColor: SURFACE_STRONG,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: TILE_BORDER,
-    padding: 20,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  launchCard: {
-    backgroundColor: "rgba(239, 62, 120, 0.1)",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(239, 62, 120, 0.28)",
-    padding: 18,
+  missionStrip: {
+    borderLeftWidth: 3,
+    borderLeftColor: ACCENT_PINK,
+    paddingLeft: 16,
+    paddingVertical: 6,
     marginBottom: 18,
   },
-  launchCardTitle: {
+  missionStripTitle: {
     color: WHITE,
     fontSize: 16,
     fontFamily: "DMSans-Bold",
-    marginBottom: 8,
-    textAlign: "center",
+    marginBottom: 6,
   },
-  launchCardText: {
+  missionStripText: {
     color: "rgba(255,255,255,0.72)",
     fontSize: 14,
     fontFamily: "DMSans-Regular",
     lineHeight: 21,
-    textAlign: "center",
+  },
+  valuesGroup: {
+    marginTop: 4,
+    marginBottom: 16,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  valueRow: {
+    flexDirection: "row",
+    gap: 14,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.1)",
+  },
+  valueRowLast: {
+    borderBottomWidth: 0,
+  },
+  valueIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(141, 105, 246, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  valueCopy: {
+    flex: 1,
   },
   featureTitle: {
     color: WHITE,
     fontSize: 18,
     fontFamily: "DMSans-Bold",
-    marginTop: 12,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   featureDesc: {
     color: "rgba(255,255,255,0.7)",
     fontSize: 14,
     fontFamily: "DMSans-Regular",
-    textAlign: "center",
     lineHeight: 20,
   },
   websiteBtn: {

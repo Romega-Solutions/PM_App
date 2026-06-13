@@ -84,7 +84,7 @@ export default function LocationScreen() {
           : "We could not get your current location. Type your city manually to continue.",
       );
       Alert.alert(
-        "Location unavailable",
+        "Could not get location",
         err instanceof Error
           ? err.message
           : "We could not get your current location. Type your city manually to continue.",

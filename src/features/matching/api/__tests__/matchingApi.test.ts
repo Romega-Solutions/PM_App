@@ -188,7 +188,9 @@ describe("fetchDiscoverProfiles", () => {
     const result = await fetchDiscoverProfiles(mockUserId);
 
     expect(result.data).toBeNull();
-    expect(result.error).toEqual({ message: "Profile not found" });
+    expect(result.error).toBe(
+      "Discovery could not load. Check your connection and try again.",
+    );
     expect(supabase.from).not.toHaveBeenCalledWith("discoverable_profiles");
   });
 
@@ -217,8 +219,8 @@ describe("fetchDiscoverProfiles", () => {
 });
 
 describe("likeProfile", () => {
-  const mockFromUserId = "user-123";
-  const mockToUserId = "user-456";
+  const mockFromUserId = "11111111-1111-4111-8111-111111111111";
+  const mockToUserId = "22222222-2222-4222-8222-222222222222";
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -295,7 +297,7 @@ describe("likeProfile", () => {
         success: false,
         is_match: false,
         matched_profile: null,
-        error: "This member is unavailable because of a safety setting",
+        error: "This member is hidden by a safety setting",
       },
       error: null,
     });
@@ -340,10 +342,20 @@ describe("likeProfile", () => {
     expect(result.error).toBe("You cannot like yourself.");
     expect(supabase.rpc).not.toHaveBeenCalled();
   });
+
+  it("rejects invalid member IDs before calling the like RPC", async () => {
+    const result = await likeProfile(mockFromUserId, "not-a-member-id");
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe(
+      "This member could not be identified. Go back and try again.",
+    );
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
 });
 describe("passProfile", () => {
-  const mockFromUserId = "user-123";
-  const mockToUserId = "user-456";
+  const mockFromUserId = "11111111-1111-4111-8111-111111111111";
+  const mockToUserId = "22222222-2222-4222-8222-222222222222";
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -393,6 +405,17 @@ describe("passProfile", () => {
     expect(result.success).toBe(false);
     expect(result.error).toBe("Choose a member to pass.");
     expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("trims member IDs before calling the pass RPC", async () => {
+    (supabase.rpc as jest.Mock).mockResolvedValue({ data: true, error: null });
+
+    const result = await passProfile(mockFromUserId, ` ${mockToUserId} `);
+
+    expect(result).toEqual({ success: true });
+    expect(supabase.rpc).toHaveBeenCalledWith("pass_profile", {
+      p_to_user_id: mockToUserId,
+    });
   });
 });
 
@@ -462,8 +485,8 @@ describe("getMatches", () => {
 });
 
 describe("superLikeProfile", () => {
-  const mockFromUserId = "user-123";
-  const mockToUserId = "user-456";
+  const mockFromUserId = "11111111-1111-4111-8111-111111111111";
+  const mockToUserId = "22222222-2222-4222-8222-222222222222";
 
   beforeEach(() => {
     jest.resetAllMocks();

@@ -2,7 +2,7 @@
 
 Date: 2026-06-11
 Owner: Codex
-Result: Source patch only - not run
+Result: Fail - ownership proof blocked
 
 ## What changed
 
@@ -22,7 +22,12 @@ A production-ready app cannot depend on one personal developer account for Expo/
 
 ## Verification status
 
-Not run by instruction in this session. Required follow-up:
+Current verification on 2026-06-11:
+
+- `npm run check:release-local`: Fail at `check:production-ownership-contract`.
+- `npx eas-cli whoami`: Fail, not logged in.
+
+Required follow-up:
 
 - Run `npm run check:release-local`.
 - Provide Romega-controlled EAS owner proof or transfer the Expo project to a Romega-owned account/team.

@@ -8,8 +8,10 @@
 import { supabase } from "@/src/config/supabase";
 
 const LOCATION_SIGN_IN_ERROR = "Please sign in before saving your location.";
+const LOCATION_INPUT_ERROR = "Check your location and try again.";
 const LOCATION_SAVE_ERROR =
   "Location did not save. Check your connection and try again.";
+const MAX_LOCATION_NAME_LENGTH = 120;
 
 export type SavedLocation = {
   locationType: "current" | "manual";
@@ -17,6 +19,50 @@ export type SavedLocation = {
   coordinates?: { lat: number; lng: number } | null;
   timestamp: string;
 };
+
+function isSupportedLocationType(
+  locationType: SavedLocation["locationType"],
+): boolean {
+  return locationType === "current" || locationType === "manual";
+}
+
+function normalizeCoordinates(
+  coordinates?: SavedLocation["coordinates"],
+): SavedLocation["coordinates"] {
+  if (!coordinates) {
+    return null;
+  }
+
+  const { lat, lng } = coordinates;
+
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng) ||
+    lat < -90 ||
+    lat > 90 ||
+    lng < -180 ||
+    lng > 180
+  ) {
+    throw new Error(LOCATION_INPUT_ERROR);
+  }
+
+  return { lat, lng };
+}
+
+function normalizeLocationPayload(payload: SavedLocation): SavedLocation {
+  const locationName = payload.locationName.trim().slice(0, MAX_LOCATION_NAME_LENGTH);
+
+  if (!isSupportedLocationType(payload.locationType) || !locationName) {
+    throw new Error(LOCATION_INPUT_ERROR);
+  }
+
+  return {
+    locationType: payload.locationType,
+    locationName,
+    coordinates: normalizeCoordinates(payload.coordinates),
+    timestamp: new Date().toISOString(),
+  };
+}
 
 export async function saveLocation(payload: SavedLocation): Promise<{ ok: true; data: SavedLocation }> {
   try {
@@ -26,7 +72,7 @@ export async function saveLocation(payload: SavedLocation): Promise<{ ok: true; 
       throw new Error(LOCATION_SIGN_IN_ERROR);
     }
 
-    const record = { ...payload, timestamp: new Date().toISOString() };
+    const record = normalizeLocationPayload(payload);
 
     const { error } = await supabase
       .from('profiles')
@@ -45,11 +91,15 @@ export async function saveLocation(payload: SavedLocation): Promise<{ ok: true; 
 
     return { ok: true, data: record };
   } catch (error) {
-    console.error("Error saving location.");
     if (error instanceof Error && error.message === LOCATION_SIGN_IN_ERROR) {
-      throw error;
+      throw new Error(LOCATION_SIGN_IN_ERROR);
     }
 
+    if (error instanceof Error && error.message === LOCATION_INPUT_ERROR) {
+      throw new Error(LOCATION_INPUT_ERROR);
+    }
+
+    console.error("Error saving location.");
     throw new Error(LOCATION_SAVE_ERROR);
   }
 }

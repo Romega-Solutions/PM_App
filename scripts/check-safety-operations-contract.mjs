@@ -9,9 +9,11 @@ const safetyEvidencePath =
   "docs/evidence/2026-06-11-safety-operations-release-gate.md";
 const launchEvidencePath = "docs/LAUNCH_EVIDENCE_PACKET.md";
 const packageJsonPath = "package.json";
+const releaseAggregatorPath = "scripts/check-release-local.mjs";
 const requiredGate = "check:safety-operations-contract";
 const requiredGateCommand = "node scripts/check-safety-operations-contract.mjs";
 const requiredReleaseCommand = `npm run ${requiredGate}`;
+const requiredReleaseAggregatorCommand = "node scripts/check-release-local.mjs";
 
 const requiredOwners = ["Safety owner", "Support owner", "Legal owner", "Release owner"];
 
@@ -141,6 +143,8 @@ if (!packageJson) {
   failures.push(`Missing required file: ${packageJsonPath}`);
 }
 
+const releaseAggregator = readText(releaseAggregatorPath);
+
 if (launchEvidence && !launchEvidence.includes("2026-06-11-safety-operations-release-gate.md")) {
   failures.push(
     "LAUNCH_EVIDENCE_PACKET.md must reference 2026-06-11-safety-operations-release-gate.md",
@@ -182,12 +186,17 @@ if (packageJson) {
       );
     }
 
-    if (
-      typeof scripts["check:release-local"] !== "string" ||
-      !scripts["check:release-local"].includes(requiredReleaseCommand)
-    ) {
+    const releaseLocalCommand = scripts["check:release-local"];
+    const releaseLocalUsesInlineSafetyGate =
+      typeof releaseLocalCommand === "string" &&
+      releaseLocalCommand.includes(requiredReleaseCommand);
+    const releaseLocalUsesAggregatorSafetyGate =
+      releaseLocalCommand === requiredReleaseAggregatorCommand &&
+      releaseAggregator?.includes(`"run", "${requiredGate}"`);
+
+    if (!releaseLocalUsesInlineSafetyGate && !releaseLocalUsesAggregatorSafetyGate) {
       failures.push(
-        `package.json scripts.check:release-local must include "${requiredReleaseCommand}"`,
+        `package.json scripts.check:release-local must include "${requiredReleaseCommand}" or use ${requiredReleaseAggregatorCommand} with ${requiredGate}`,
       );
     }
   } catch {

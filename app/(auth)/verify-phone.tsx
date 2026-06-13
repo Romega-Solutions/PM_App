@@ -27,11 +27,11 @@ const WHITE = "#FFFFFF";
 const TEXT_SECONDARY = "rgba(255, 255, 255, 0.74)";
 const TEXT_MUTED = "rgba(255, 255, 255, 0.56)";
 
-const launchChecks = [
-  "Email verification is the active account check for this launch build.",
+const accountChecks = [
+  "Use the email link to finish sign in and account access.",
   "Profile review and safety reporting stay available after signup.",
-  "No SMS is sent and no phone badge is created from this screen.",
-  "SMS OTP will only appear after the backend and support process are ready.",
+  "No SMS code is needed for this step.",
+  "When a phone check is needed, PinayMate will ask inside a protected account flow.",
 ];
 
 export default function VerifyPhone() {
@@ -40,8 +40,8 @@ export default function VerifyPhone() {
 
   const explainPhoneStatus = () => {
     Alert.alert(
-      "SMS is not part of this build",
-      "PinayMate is using email verification and profile review for launch. Phone OTP will be added only after the SMS backend, abuse controls, and support process are verified.",
+      "Use email for this step",
+      "You do not need an SMS code to continue. Finish through the email link, and PinayMate will ask for phone details only inside a protected account flow if needed.",
     );
   };
 
@@ -76,29 +76,31 @@ export default function VerifyPhone() {
           <Smartphone size={34} color={PINK} strokeWidth={2.3} />
         </View>
 
-        <Text style={styles.eyebrow}>Launch verification path</Text>
-        <Text style={styles.title}>Phone verification is off for launch</Text>
+        <Text style={styles.eyebrow}>Account verification</Text>
+        <Text style={styles.title}>Continue with email verification</Text>
         <Text style={styles.subtitle}>
-          Phone OTP is intentionally disabled in this build. That is safer than
-          showing an SMS flow before the backend, support handling, and abuse
-          controls are ready.
+          Continue with the email link from signup. This screen explains that
+          an SMS code is not needed for this step, so there is no extra phone
+          task to complete.
         </Text>
 
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
+        <View style={styles.accountPanel}>
+          <View style={styles.accountPanelHeader}>
             <View style={styles.smallIconWrap}>
               <MailCheck size={20} color={PINK} strokeWidth={2.4} />
             </View>
-            <View style={styles.cardHeaderCopy}>
-              <Text style={styles.cardTitle}>Current account check</Text>
-              <Text style={styles.cardSubtitle}>
+            <View style={styles.accountPanelCopy}>
+              <Text style={styles.accountPanelTitle}>
+                Current account check
+              </Text>
+              <Text style={styles.accountPanelSubtitle}>
                 Continue with the email link sent during signup.
               </Text>
             </View>
           </View>
 
           <View style={styles.checkList}>
-            {launchChecks.map((check) => (
+            {accountChecks.map((check) => (
               <View key={check} style={styles.checkItem}>
                 <CheckCircle2 size={18} color={PINK} strokeWidth={2.5} />
                 <Text style={styles.checkText}>{check}</Text>
@@ -111,7 +113,7 @@ export default function VerifyPhone() {
           <ShieldCheck size={19} color={PINK} strokeWidth={2.4} />
           <Text style={styles.safetyText}>
             This screen does not send an SMS code, create a phone-verification
-            badge, mark a profile as verified, or change launch access.
+            badge, or mark a profile as verified.
           </Text>
         </View>
 
@@ -130,12 +132,12 @@ export default function VerifyPhone() {
           onPress={explainPhoneStatus}
           style={styles.secondaryButton}
           accessibilityRole="button"
-          accessibilityLabel="Learn why phone verification is unavailable"
-          accessibilityHint="Explains why SMS phone verification is not active in this launch build"
+          accessibilityLabel="Learn how phone checks work"
+          accessibilityHint="Explains that email is enough for this step and phone details are requested only inside a protected account flow if needed"
           activeOpacity={0.82}
         >
           <Text style={styles.secondaryButtonText}>
-            Why is SMS not available?
+            How phone checks work
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -204,16 +206,16 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 26,
   },
-  card: {
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: BORDER,
+  accountPanel: {
+    borderLeftWidth: 3,
+    borderLeftColor: PINK,
     backgroundColor: CARD,
-    padding: 18,
+    paddingLeft: 16,
+    paddingVertical: 16,
     gap: 18,
     marginBottom: 16,
   },
-  cardHeader: {
+  accountPanelHeader: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
@@ -226,16 +228,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  cardHeaderCopy: {
+  accountPanelCopy: {
     flex: 1,
   },
-  cardTitle: {
+  accountPanelTitle: {
     color: WHITE,
     fontFamily: "DMSans-Bold",
     fontSize: 17,
     marginBottom: 4,
   },
-  cardSubtitle: {
+  accountPanelSubtitle: {
     color: TEXT_SECONDARY,
     fontFamily: "DMSans-Regular",
     fontSize: 14,

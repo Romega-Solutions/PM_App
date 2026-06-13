@@ -11,9 +11,9 @@
     "build:web": "expo export -p web && node scripts/patch-web-export.js",
     "check:local-quality": "npm run check:source-contracts && npm run lint && npx tsc --noEmit --pretty false && npm test -- --runInBand --no-cache && npm run build:web",
     "check:safety-operations-contract": "node scripts/check-safety-operations-contract.mjs",
-    "check:source-contracts": "npm run check:privacy-logs && npm run check:supabase-static-contract && npm run check:migration-manifest && npm run check:user-facing-safe-errors && npm run check:auth-redirect-contract && npm run check:env-template-contract && npm run check:product-design-contract && npm run check:notification-delivery-contract && npm run check:launch-file-contract",
+    "check:source-contracts": "npm run check:privacy-logs && npm run check:supabase-static-contract && npm run check:migration-manifest && npm run check:user-facing-safe-errors && npm run check:auth-redirect-contract && npm run check:env-template-contract && npm run check:product-design-contract && npm run check:client-copy && npm run check:notification-delivery-contract && npm run check:launch-file-contract",
     "check:privacy-logs": "node scripts/check-privacy-logs.mjs",
-    "check:release-local": "npm run check:secret-hygiene && npm run check:dependency-audit && npm run check:production-ownership-contract && npm run check:safety-operations-contract && npm run check:launch-evidence-contract && npm run check:local-quality",
+    "check:release-local": "node scripts/check-release-local.mjs",
     "check:dependency-audit": "npm audit --audit-level=moderate",
     "check:user-facing-safe-errors": "node scripts/check-user-facing-safe-errors.mjs",
     "check:auth-redirect-contract": "node scripts/check-auth-redirect-contract.mjs",
@@ -30,7 +30,8 @@
     "lint": "expo lint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "check:client-copy": "node scripts/check-client-facing-copy.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -94,6 +95,7 @@
   "private": true,
   "overrides": {
     "brace-expansion": "1.1.13",
-    "postcss": "8.5.10"
+    "postcss": "8.5.10",
+    "uuid": "11.1.1"
   }
 }

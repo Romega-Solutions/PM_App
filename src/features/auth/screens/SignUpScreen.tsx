@@ -140,7 +140,7 @@ function SignUpScreen() {
         },
       });
     } catch (err) {
-      console.error("Signup failed during early-access account creation.");
+      console.error("Signup failed during account creation.");
       Alert.alert(
         "Sign Up Failed",
         err instanceof Error
@@ -167,8 +167,8 @@ function SignUpScreen() {
       </View>
 
       <AuthHeader
-        title={`Create your early-access ${userTypeLabel} profile`}
-        subtitle="Email signup is active. Public matching, phone verification, social login, calls, and checkout remain launch-gated."
+        title={`Create your ${userTypeLabel} profile`}
+        subtitle="Start with email signup, then add the details that help PinayMate understand your profile, intent, and safety preferences."
         showLogo={false}
       />
 
@@ -182,13 +182,13 @@ function SignUpScreen() {
         <View
           style={styles.expectationCard}
           accessible
-          accessibilityLabel="Early access note. This creates an account for launch preparation. It does not publish your profile, enable live matching, start calls, or open payment."
+          accessibilityLabel="Account setup note. This creates your account and starts profile setup."
         >
           <Text style={styles.expectationTitle}>What this unlocks now</Text>
           <Text style={styles.expectationText}>
-            Create your account and verify your email for launch preparation.
-            Public profile visibility, matching, calls, and payment only open
-            after the required readiness checks pass.
+            Create your account, verify your email, and continue into profile
+            setup. You can adjust privacy, verification, and discovery settings
+            before deciding how to connect.
           </Text>
         </View>
 
@@ -261,8 +261,7 @@ function SignUpScreen() {
 
         <View style={styles.legalConsent}>
           <Text style={styles.legalConsentText}>
-            By creating an early-access profile, you agree to PinayMate's
-            launch-stage
+            By creating a profile, you agree to PinayMate's
           </Text>
           <View style={styles.legalConsentLinks}>
             <Pressable
@@ -288,7 +287,7 @@ function SignUpScreen() {
         </View>
 
         <PrimaryButton
-          title="Create early-access profile"
+          title="Create profile"
           onPress={handleSignUp}
           loading={loading}
           showChevron
@@ -299,8 +298,8 @@ function SignUpScreen() {
             Email signup is the active path
           </Text>
           <Text style={styles.emailOnlyText}>
-            Social login and phone OTP stay off until provider setup, abuse
-            controls, support handling, and release QA are verified.
+            Social login and phone OTP will appear only when those sign-in
+            options are ready for members.
           </Text>
         </View>
 
@@ -349,11 +348,11 @@ const styles = StyleSheet.create({
     paddingBottom: moderateScale(12),
   },
   expectationCard: {
-    borderRadius: theme.borderRadius.lg,
-    borderWidth: 1,
-    borderColor: "rgba(141,105,246,0.28)",
-    backgroundColor: "rgba(141,105,246,0.12)",
-    padding: theme.spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: theme.colors.dalisay[400],
+    backgroundColor: "rgba(141,105,246,0.08)",
+    paddingLeft: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
     marginBottom: theme.spacing.md,
   },
   expectationTitle: {
@@ -399,11 +398,10 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
   },
   emailOnlyNotice: {
-    borderRadius: theme.borderRadius.lg,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-    backgroundColor: "rgba(255,255,255,0.07)",
-    padding: theme.spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: "rgba(255,255,255,0.34)",
+    paddingLeft: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
     marginTop: theme.spacing.md,
     marginBottom: theme.spacing.md,
   },

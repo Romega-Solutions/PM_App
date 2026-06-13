@@ -19,6 +19,27 @@ PinayMate should feel like a serious, warm, Filipino-first dating product, not a
 - what action to take next
 - how to recover from errors without panic
 
+## Surface and card discipline
+
+PinayMate should not look like a dashboard made from stacked cards. Cards are allowed only when they group one clear topic or one clear object, such as a profile preview, membership option, trust proof item, or focused action summary.
+
+Do not use nested cards as the default way to create hierarchy. If a section already has a visible surface, the content inside should usually use typography, spacing, rows, dividers, icons, inline proof strips, segmented lists, or a bottom sheet/modal instead of another boxed panel.
+
+Required design direction:
+
+- PM_Web should feel more editorial and conversion-led: section bands, split layouts, visual rhythm, trust strips, phone/app compositions, and clear CTA blocks before card grids.
+- PM_App should feel native and flow-led: grouped rows, simple lists, focused sheets, clear primary actions, and profile/match cards only where they help decision-making.
+- Card density must stay intentional. A screen or section should not use cards for every paragraph, setting row, statistic, legal note, and CTA.
+- Elevation must be consistent. Do not mix random borders, shadows, glass panels, gradients, and nested rounded containers just to make content feel designed.
+
+Fail-stop card examples:
+
+- card inside card inside card without a strong interaction reason
+- every setting row wrapped in an individual card
+- every marketing claim shown as a separate boxed tile when a list, strip, or editorial block would scan better
+- nested glass/blur panels that blur hierarchy or reduce contrast
+- multiple equal-weight cards competing with the single primary action
+
 ## Required evidence package
 
 Each design QA pass must include:
@@ -50,6 +71,7 @@ Each design QA pass must include a launch-state note confirming that PM_App and 
 | Launch-state accuracy | unavailable or gated features clearly say what is off for launch, what is review-based, and what still needs operational proof | screenshots/notes |
 | Accessibility | primary touch targets are at least 44px/44pt, icon-only controls have labels, error states are near the problem, and focus/reading order is logical | reviewer notes |
 | Resilience | slow network, failed save, failed upload, expired session, and unavailable feature states explain what to do next | screenshots/notes |
+| Surface discipline | screens avoid card spam and nested-card hierarchy; rows, dividers, sheets, whitespace, and typography carry secondary structure | screenshots/notes |
 
 Fail-stop examples:
 
@@ -59,6 +81,7 @@ Fail-stop examples:
 - verification or safety language guarantees member safety
 - a launch-stage screen asks for payment, ID, location, or private profile data in the wrong place
 - mobile text is clipped, controls overlap the safe area, or touch targets are too small
+- the UI uses nested cards or repeated equal-weight panels where simpler native rows, spacing, or a single surface would be clearer
 
 ## PM_Web design gates
 
@@ -72,6 +95,7 @@ Fail-stop examples:
 | Mobile layout | no horizontal overflow, clipped cards, unreachable CTA, or modal trap on common mobile widths | screenshots |
 | Accessibility | keyboard focus is visible, CTAs have descriptive labels, headings are ordered, and contrast is readable | reviewer notes |
 | Visual polish | spacing, typography, cards, backgrounds, and section transitions feel cohesive instead of patched together | screenshots/notes |
+| Surface discipline | page sections avoid card spam; editorial layout, whitespace, trust strips, lists, and CTA blocks are preferred over nested panels | screenshots/notes |
 | Launch-state accuracy | waitlist, membership, store-link, legal, support, and safety copy match `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md` | screenshots/notes |
 
 Fail-stop examples:
@@ -81,6 +105,8 @@ Fail-stop examples:
 - website guarantees verified users, safe matches, or background checks
 - mobile page has horizontal overflow or unusable CTAs
 - legal/support paths are unclear or route to unowned destinations
+- landing sections become a wall of similar cards instead of a clear conversion story
+- nested cards reduce readability, contrast, or mobile scanning
 
 ## Review method
 
@@ -102,3 +128,4 @@ PinayMate cannot be called UI/UX launch-ready until:
 - PM_Web desktop/mobile design QA passes or has explicit risk acceptance
 - no fail-stop design issue remains open
 - final launch evidence records owner, date, result, and proof path
+- surface discipline is reviewed so PM_Web and PM_App do not regress into card spam or nested-card-heavy layouts

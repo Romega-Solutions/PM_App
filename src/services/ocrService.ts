@@ -120,7 +120,7 @@ function getFriendlyOcrError(status: number): string {
   }
 
   if (status >= 500) {
-    return "Document OCR is temporarily unavailable. Please try again.";
+    return "Document scan did not complete. Please try again.";
   }
 
   return "Document OCR failed. Try again with a clearer photo.";

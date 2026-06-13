@@ -15,7 +15,7 @@ import {
 const termsSections = [
   {
     title: "Early-access product",
-    body: "PinayMate is preparing launch-stage matching. Creating a profile does not guarantee live matches, account approval, or uninterrupted availability.",
+    body: "PinayMate is built for intentional matching. Creating a profile does not guarantee live matches, account approval, or uninterrupted availability.",
   },
   {
     title: "Respectful behavior",
@@ -56,13 +56,13 @@ export default function TermsScreen() {
             Use PinayMate with clear intent and respect
           </Text>
           <Text style={styles.subtitle}>
-            This launch-stage overview explains expected product behavior and
+            This overview explains expected product behavior and
             member conduct. It is written plainly so people know what they are
             agreeing to before creating a profile.
           </Text>
         </View>
 
-        <View style={styles.noticeCard}>
+        <View style={styles.noticeStrip}>
           <AlertTriangle
             size={22}
             color={theme.colors.warning[600]}
@@ -80,13 +80,13 @@ export default function TermsScreen() {
 
         <View style={styles.section}>
           {termsSections.map((section) => (
-            <View key={section.title} style={styles.card}>
-              <View style={styles.bullet} accessible={false}>
+            <View key={section.title} style={styles.termRow}>
+              <View style={styles.rowBullet} accessible={false}>
                 <Text style={styles.bulletText}>•</Text>
               </View>
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>{section.title}</Text>
-                <Text style={styles.cardBody}>{section.body}</Text>
+              <View style={styles.rowContent}>
+                <Text style={styles.rowTitle}>{section.title}</Text>
+                <Text style={styles.rowBody}>{section.body}</Text>
               </View>
             </View>
           ))}
@@ -174,14 +174,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
     maxWidth: 460,
   },
-  noticeCard: {
+  noticeStrip: {
     flexDirection: "row",
     gap: theme.spacing.md,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.xl,
+    paddingVertical: theme.spacing.md,
+    paddingLeft: theme.spacing.md,
+    paddingRight: theme.spacing.sm,
     backgroundColor: "rgba(245, 158, 11, 0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(245, 158, 11, 0.3)",
+    borderLeftWidth: 3,
+    borderLeftColor: "rgba(245, 158, 11, 0.72)",
     marginBottom: theme.spacing.lg,
   },
   noticeContent: {
@@ -201,19 +202,18 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   section: {
-    gap: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.12)",
     marginBottom: theme.spacing.lg,
   },
-  card: {
+  termRow: {
     flexDirection: "row",
     gap: theme.spacing.md,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.xl,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
+    paddingVertical: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.12)",
   },
-  bullet: {
+  rowBullet: {
     alignItems: "center",
     justifyContent: "center",
     width: 44,
@@ -227,17 +227,17 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 24,
   },
-  cardContent: {
+  rowContent: {
     flex: 1,
   },
-  cardTitle: {
+  rowTitle: {
     color: theme.colors.neutral.white,
     fontFamily: theme.fontFamilies.body.bold,
     fontSize: 16,
     lineHeight: 23,
     marginBottom: theme.spacing.xs,
   },
-  cardBody: {
+  rowBody: {
     color: "rgba(255,255,255,0.72)",
     fontFamily: theme.fontFamilies.body.regular,
     fontSize: 14,

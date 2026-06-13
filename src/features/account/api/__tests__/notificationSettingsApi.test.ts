@@ -84,11 +84,33 @@ describe("notificationSettingsApi", () => {
     });
     expect(supabase.rpc).toHaveBeenCalledWith("save_notification_preferences", {
       p_push_enabled: false,
-      p_new_matches: true,
-      p_new_messages: true,
-      p_new_likes: true,
+      p_new_matches: false,
+      p_new_messages: false,
+      p_new_likes: false,
       p_email_updates: true,
     });
     expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("normalizes loaded child push preferences off when push is disabled", async () => {
+    (supabase.rpc as jest.Mock).mockResolvedValue({
+      data: {
+        push_enabled: false,
+        new_matches: true,
+        new_messages: true,
+        new_likes: true,
+        email_updates: true,
+      },
+      error: null,
+    });
+
+    await expect(getNotificationPreferences()).resolves.toEqual({
+      pushEnabled: false,
+      newMatches: false,
+      newMessages: false,
+      newLikes: false,
+      emailUpdates: true,
+      updatedAt: undefined,
+    });
   });
 });
