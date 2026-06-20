@@ -9,7 +9,7 @@ Source contract update completed. Checks were not run in this turn.
 
 ## Changed
 
-- Added `docs/NATIVE_QA_SCRIPT.md` to the PM_App launch-file contract.
+- Added `docs\testing\NATIVE_QA_SCRIPT.md` to the PM_App launch-file contract.
 - Required the native QA script to keep the launch-state notice accessibility QA section.
 - Required the native QA script to keep the default `launch-state-notice` selector.
 - Required the native QA script to keep the screen-specific launch-state selectors:

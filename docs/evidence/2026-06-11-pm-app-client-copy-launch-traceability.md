@@ -15,7 +15,7 @@ Launch evidence traceability update for the PM_App client-facing copy guard hard
 ## Files touched
 
 - `scripts/check-launch-evidence-contract.mjs`
-- `docs/LAUNCH_EVIDENCE_PACKET.md`
+- `docs\release\LAUNCH_EVIDENCE_PACKET.md`
 
 ## Verification status
 

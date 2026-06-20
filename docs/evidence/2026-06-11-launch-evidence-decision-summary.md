@@ -1,7 +1,7 @@
 # PinayMate Launch Evidence Decision Summary
 
 Date: 2026-06-11
-Scope: `docs/LAUNCH_EVIDENCE_PACKET.md`.
+Scope: `docs\release\LAUNCH_EVIDENCE_PACKET.md`.
 
 ## What changed
 

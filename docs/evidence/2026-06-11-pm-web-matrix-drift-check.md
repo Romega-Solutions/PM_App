@@ -9,8 +9,8 @@ Source guard update completed. Checks were not run in this turn.
 
 ## Changed
 
-- Updated `PM_Web/scripts/check-launch-claims.mjs` so PM_Web still uses `PM_Web/docs/PINAYMATE_LAUNCH_STATE_MATRIX.md` by default.
-- Added an optional central-matrix drift check when `../PM_App/docs/PINAYMATE_LAUNCH_STATE_MATRIX.md` exists.
+- Updated `PM_Web/scripts/check-launch-claims.mjs` so PM_Web still uses `PM_Web/docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md` by default.
+- Added an optional central-matrix drift check when `../PM_App/docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md` exists.
 - Kept standalone behavior: PM_Web does not require PM_App when the sibling repo is absent.
 - Kept explicit override behavior: `PINAYMATE_LAUNCH_MATRIX_PATH` can force a specific matrix path for release review.
 - Updated `PM_Web/scripts/check-product-design-contract.mjs` so the optional central-matrix drift behavior is protected by source markers.

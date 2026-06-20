@@ -12,7 +12,7 @@ This source-only update adds a disabled-by-default PM_Web helper and visible wai
 - Added `PM_Web/src/lib/waitlistBackendHandoff.ts`.
 - Added `PM_Web/src/components/waitlist/WaitlistCaptureForm.tsx`.
 - Wired the form into the PM_Web waitlist section with email fallback.
-- Added `PM_Web/docs/WAITLIST_BACKEND_HANDOFF.md`.
+- Added `PM_Web/docs/evidence/2026-06-11-pm-web-waitlist-backend-handoff.md`.
 - Updated PM_Web README and release checklist.
 - Updated PM_Web product-design and launch-claims source guards.
 

@@ -6,7 +6,7 @@ Status: Source/design standard updated
 
 ## What changed
 
-- Added card and surface discipline to `docs/PRODUCT_DESIGN_QA_STANDARD.md`.
+- Added card and surface discipline to `docs\testing\PRODUCT_DESIGN_QA_STANDARD.md`.
 - Added PM_App product-design contract markers for the anti-card-spam rule.
 - Added PM_Web release checklist guidance so the landing page uses editorial sections, trust strips, rows, whitespace, and focused CTA blocks before repeated card grids.
 - Added PM_Web product-design contract markers for the same rule.

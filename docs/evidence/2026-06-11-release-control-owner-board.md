@@ -6,8 +6,8 @@ Source/documentation update completed. No tests, builds, live checks, git comman
 
 ## Changed
 
-- Added a release-control board to `docs/PINAYMATE_RELEASE_RISK_REGISTER.md`.
-- Added a go/no-go rule to `docs/LAUNCH_SIGNOFF_CHECKLIST.md`.
+- Added a release-control board to `docs\release\PINAYMATE_RELEASE_RISK_REGISTER.md`.
+- Added a go/no-go rule to `docs\release\LAUNCH_SIGNOFF_CHECKLIST.md`.
 - Added owner decision rows for launch, secret hygiene, local gates, dependency risk, Supabase, OCR, native QA, PM_Web production, safety operations, and production account ownership.
 
 ## Why it matters

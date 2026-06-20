@@ -6,7 +6,7 @@ Purpose: give the backend/release owner a single, executable checklist for stagi
 
 Status: required before backend launch signoff. This checklist does not apply migrations by itself and does not prove live state until the commands are run against the target project.
 
-Launch-state source: use `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md` before backend signoff. The matrix maps each user-facing capability to its source/backend artifact and required proof before launch-ready claims are allowed.
+Launch-state source: use `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md` before backend signoff. The matrix maps each user-facing capability to its source/backend artifact and required proof before launch-ready claims are allowed.
 
 ## Rules before running anything
 
@@ -248,11 +248,11 @@ Fail-stop:
 
 ## 5a. Backend feature proof map
 
-After preflight and smoke tests, compare the Supabase rows in `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md` against captured evidence.
+After preflight and smoke tests, compare the Supabase rows in `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md` against captured evidence.
 
 Use `docs/evidence/TEMPLATE-supabase-live-proof.md` as the capture format for staging and production proof. Save a dated copy with redacted command output, SQL smoke results, OCR function proof, and notification delivery boundary notes before changing any Supabase launch row from blocked/source-only to pass.
 
-Use `docs/SUPABASE_LIVE_PROOF_COMMANDS.md` for the exact operator command sequence and capture checklist.
+Use `docs\operations\SUPABASE_LIVE_PROOF_COMMANDS.md` for the exact operator command sequence and capture checklist.
 
 Required backend proof coverage:
 
@@ -392,7 +392,7 @@ Fail-stop:
 
 ## 8. Evidence packet update
 
-After each stage, update `docs/LAUNCH_EVIDENCE_PACKET.md`:
+After each stage, update `docs\release\LAUNCH_EVIDENCE_PACKET.md`:
 
 - `## 2. Supabase staging evidence`
 - `## 3. OCR live evidence`

@@ -1,6 +1,6 @@
 # PinayMate Supabase Setup Checklist
 
-Status: launch-stage. This checklist is for environment setup only. Use `docs/RELEASE_READINESS.md` and `docs/LAUNCH_SIGNOFF_CHECKLIST.md` for release approval.
+Status: launch-stage. This checklist is for environment setup only. Use `docs\release\RELEASE_READINESS.md` and `docs\release\LAUNCH_SIGNOFF_CHECKLIST.md` for release approval.
 
 ## 1. Enable email auth
 

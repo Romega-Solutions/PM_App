@@ -7,7 +7,7 @@ Scope: PM_Web local source copy under `src/`.
 
 - Added `scripts/check-launch-claims.mjs` in `PM_Web`.
 - Added `npm run check:launch-claims`.
-- Updated `PM_Web/README.md`, `PM_App/docs/RELEASE_READINESS.md`, and `PM_App/docs/LAUNCH_EVIDENCE_PACKET.md` so the audit is part of the launch evidence path.
+- Updated `PM_Web/README.md`, `PM_App/docs\release\RELEASE_READINESS.md`, and `PM_App/docs\release\LAUNCH_EVIDENCE_PACKET.md` so the audit is part of the launch evidence path.
 
 ## What the guard checks
 

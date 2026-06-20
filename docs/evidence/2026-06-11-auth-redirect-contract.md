@@ -29,4 +29,4 @@ Signup verification and password recovery are launch-critical conversion and ret
 - Confirm Supabase Site URL and redirect URLs in staging and production.
 - Native-test verification and password recovery links.
 
-`docs/NATIVE_QA_SCRIPT.md` now includes explicit email verification link routing coverage.
+`docs\testing\NATIVE_QA_SCRIPT.md` now includes explicit email verification link routing coverage.

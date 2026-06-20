@@ -6,8 +6,8 @@ Status: Central evidence packet updated, checks not rerun in this note.
 
 ## What changed
 
-- Added latest PM_App source and guard notes to `docs/LAUNCH_EVIDENCE_PACKET.md`.
-- Added latest PM_Web source and guard notes to `docs/LAUNCH_EVIDENCE_PACKET.md`.
+- Added latest PM_App source and guard notes to `docs\release\LAUNCH_EVIDENCE_PACKET.md`.
+- Added latest PM_Web source and guard notes to `docs\release\LAUNCH_EVIDENCE_PACKET.md`.
 - Kept new rows marked as not rerun where no fresh command or browser proof exists.
 
 ## Covered updates

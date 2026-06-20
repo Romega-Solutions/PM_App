@@ -21,4 +21,4 @@ Gate contract used by `check:safety-operations-contract` and launch ownership ev
 
 ## Current verification
 
-`npm run check:safety-operations-contract` was run on 2026-06-11 and failed because the Safety owner, Support owner, Legal owner, and Release owner rows still use placeholders in this file and `docs/SAFETY_MODERATION_RUNBOOK.md`.
+`npm run check:safety-operations-contract` was run on 2026-06-11 and failed because the Safety owner, Support owner, Legal owner, and Release owner rows still use placeholders in this file and `docs\operations\SAFETY_MODERATION_RUNBOOK.md`.

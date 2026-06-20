@@ -25,4 +25,4 @@ Account setup is a conversion-critical path and includes sensitive identity/phot
 - Native-test basic info, photo save/remove, location save, and verification upload/submit failure cases.
 - Run Supabase storage/RPC staging checks before launch.
 
-`docs/NATIVE_QA_SCRIPT.md` now includes explicit account setup failure-state checks for these safe-error paths.
+`docs\testing\NATIVE_QA_SCRIPT.md` now includes explicit account setup failure-state checks for these safe-error paths.

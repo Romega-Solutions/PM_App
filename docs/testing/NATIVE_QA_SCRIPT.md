@@ -6,7 +6,7 @@ Purpose: execute the minimum native-device or emulator QA required before PinayM
 
 Status: required before launch sign-off. Local web export and TypeScript checks do not replace this script.
 
-Product design acceptance criteria live in `docs/PRODUCT_DESIGN_QA_STANDARD.md`. Use that standard while taking screenshots for this native QA script.
+Product design acceptance criteria live in `docs\testing\PRODUCT_DESIGN_QA_STANDARD.md`. Use that standard while taking screenshots for this native QA script.
 
 ## Test setup
 
@@ -42,7 +42,7 @@ If using Expo Go, record that limitation because native permission and build beh
 ## Evidence rules
 
 - Capture screenshots or short clips for each critical pass/fail.
-- Capture design evidence against `docs/PRODUCT_DESIGN_QA_STANDARD.md` for first impression, onboarding, discovery, matching, messaging, settings, accessibility, and resilience.
+- Capture design evidence against `docs\testing\PRODUCT_DESIGN_QA_STANDARD.md` for first impression, onboarding, discovery, matching, messaging, settings, accessibility, and resilience.
 - Redact real names, documents, locations, message text, emails, and tokens.
 - Do not paste private document images into chat or public issue trackers.
 - Record exact error messages when a step fails.

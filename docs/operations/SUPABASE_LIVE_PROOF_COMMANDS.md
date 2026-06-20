@@ -179,8 +179,8 @@ docs/evidence/TEMPLATE-supabase-live-proof.md
 
 Then update:
 
-- `docs/LAUNCH_EVIDENCE_PACKET.md`
-- `docs/LAUNCH_SIGNOFF_CHECKLIST.md`
-- `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md`
+- `docs\release\LAUNCH_EVIDENCE_PACKET.md`
+- `docs\release\LAUNCH_SIGNOFF_CHECKLIST.md`
+- `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md`
 
 Only move Supabase rows from blocked/source-only to pass after the dated evidence file contains reviewed results.

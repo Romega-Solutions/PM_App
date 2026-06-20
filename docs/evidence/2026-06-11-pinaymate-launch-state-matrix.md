@@ -6,11 +6,11 @@ Result: Source matrix added, contracts not rerun
 
 ## What changed
 
-- Added `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md` as the shared launch-state source of truth for PM_Web, PM_App, Supabase, OCR, notification, support, legal, and safety claims.
+- Added `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md` as the shared launch-state source of truth for PM_Web, PM_App, Supabase, OCR, notification, support, legal, and safety claims.
 - Added a feature availability and proof map that links user-facing feature state to source/backend artifacts and required launch proof.
 - Wired the PM_App launch-file contract to require the matrix and its key launch-state markers.
 - Wired the PM_Web product-design contract to require the same matrix from the PM_Web repo context.
-- Updated `docs/LAUNCH_EVIDENCE_PACKET.md` and `docs/RELEASE_READINESS.md` so manager-facing release evidence points to the matrix before claiming launch readiness.
+- Updated `docs\release\LAUNCH_EVIDENCE_PACKET.md` and `docs\release\RELEASE_READINESS.md` so manager-facing release evidence points to the matrix before claiming launch readiness.
 
 ## What the matrix prevents
 

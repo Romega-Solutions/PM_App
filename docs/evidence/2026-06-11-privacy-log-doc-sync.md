@@ -6,8 +6,8 @@ Scope: PM_App launch/readiness documentation.
 ## What changed
 
 - Added `npm run check:privacy-logs` to the README final verification expectations.
-- Added `npm run check:privacy-logs` to `docs/RELEASE_READINESS.md` under offline-safe repository evidence checks.
-- Added a `PM_App privacy logs` row to `docs/LAUNCH_EVIDENCE_PACKET.md`.
+- Added `npm run check:privacy-logs` to `docs\release\RELEASE_READINESS.md` under offline-safe repository evidence checks.
+- Added a `PM_App privacy logs` row to `docs\release\LAUNCH_EVIDENCE_PACKET.md`.
 
 ## Status
 

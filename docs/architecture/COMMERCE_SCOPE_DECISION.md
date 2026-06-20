@@ -41,7 +41,7 @@ PM_Web may show planned membership direction and collect plan-interest email onl
 - Webhook signature verification proof.
 - Failed, canceled, refunded, expired, and renewed subscription behavior proof.
 - Receipt and support mailbox delivery proof.
-- Evidence recorded in `docs/LAUNCH_EVIDENCE_PACKET.md`.
+- Evidence recorded in `docs\release\LAUNCH_EVIDENCE_PACKET.md`.
 
 ## Product rationale
 
@@ -51,8 +51,8 @@ Plan-interest capture is useful for conversion learning, but collecting payment 
 
 If this decision changes, update all of these before publishing stronger claims:
 
-- `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md`
-- `PM_Web/docs/PINAYMATE_LAUNCH_STATE_MATRIX.md`
+- `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md`
+- `PM_Web/docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md`
 - `PM_Web/src/lib/launchEmailLinks.ts`
 - PM_Web membership and CTA copy
 - PM_App paid-feature or unavailable-feature copy

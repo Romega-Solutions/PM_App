@@ -1,7 +1,7 @@
 # PinayMate Smart Matching Claims Correction
 
 Date: 2026-06-11
-Scope: `docs/SMART_MATCHING_ALGORITHM.md`.
+Scope: `docs\architecture\SMART_MATCHING_ALGORITHM.md`.
 
 ## What changed
 

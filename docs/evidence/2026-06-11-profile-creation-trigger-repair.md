@@ -11,7 +11,7 @@ This source-only update closes the backend profile lifecycle gap found during th
 
 - Filled `supabase/functions/create-profile-on-signup.sql` with an idempotent profile creation trigger script.
 - Added `supabase/migrations/20260611124000_repair_profile_creation_trigger.sql` to make the repair part of the launch migration order.
-- Updated `supabase/LAUNCH_MIGRATION_MANIFEST.md` and `docs/SUPABASE_RELEASE_OPERATOR_CHECKLIST.md` so staging and production operators must account for the repair.
+- Updated `supabase/LAUNCH_MIGRATION_MANIFEST.md` and `docs\operations\SUPABASE_RELEASE_OPERATOR_CHECKLIST.md` so staging and production operators must account for the repair.
 - Expanded `supabase/tests/05_release_preflight_audit.sql` to require `public.handle_new_user()`, `on_auth_user_created`, and `on_auth_user_verified`.
 - Expanded preflight to fail if `anon` or `authenticated` can directly execute `public.handle_new_user()`.
 - Expanded `scripts/check-supabase-static-contract.mjs` with source markers for the profile lifecycle repair.

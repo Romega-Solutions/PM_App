@@ -17,8 +17,8 @@ Owner: release documentation consolidation (docs-only review)
   - local preview/browser smoke at `http://127.0.0.1:4173` passed with desktop/mobile screenshots.
   - evidence is in `docs/evidence/2026-06-10-pm-web-local-browser-smoke.md` and `docs/evidence/2026-06-10-pm-web-local-cta-audit.txt`.
 - Security and policy work is documented with explicit launch gates:
-  - `docs/RELEASE_READINESS.md` and `docs/LAUNCH_SIGNOFF_CHECKLIST.md` list the full migration, OCR, native QA, and operations gates.
-  - `docs/LAUNCH_EVIDENCE_PACKET.md` and `docs/PRODUCTION_OWNERSHIP_CHECKLIST.md` are established as final proof trackers.
+  - `docs\release\RELEASE_READINESS.md` and `docs\release\LAUNCH_SIGNOFF_CHECKLIST.md` list the full migration, OCR, native QA, and operations gates.
+  - `docs\release\LAUNCH_EVIDENCE_PACKET.md` and `docs\release\PRODUCTION_OWNERSHIP_CHECKLIST.md` are established as final proof trackers.
 - PM_Web and PM_App now share aligned launch messaging for early-access posture in `PM_Web/README.md` and PM_App launch docs.
 
 ## What is verified vs not verified
@@ -42,15 +42,15 @@ Owner: release documentation consolidation (docs-only review)
 2. **OCR**
    - Deploy `supabase/functions/ocr`, set `OCR_SPACE_API_KEY`, and prove 401/valid/invalid/rate-limit behavior.
 3. **Native launch readiness**
-   - Complete `docs/NATIVE_QA_SCRIPT.md` on device/emulator with screenshot/evidence log.
+   - Complete `docs\testing\NATIVE_QA_SCRIPT.md` on device/emulator with screenshot/evidence log.
 4. **Web/domain launch**
    - Validate final production URL and all desktop/mobile CTA routing in live environment.
 5. **Safety operations**
-  - Fill in and sign off `docs/SAFETY_MODERATION_RUNBOOK.md` ownership/SLA/escalation rows.
+  - Fill in and sign off `docs\operations\SAFETY_MODERATION_RUNBOOK.md` ownership/SLA/escalation rows.
 6. **Production ownership**
-   - Complete `docs/PRODUCTION_OWNERSHIP_CHECKLIST.md` for EAS, stores, Supabase, DNS, OCR provider, and support mailboxes.
+   - Complete `docs\release\PRODUCTION_OWNERSHIP_CHECKLIST.md` for EAS, stores, Supabase, DNS, OCR provider, and support mailboxes.
 7. **Final proof packet**
-   - Populate `docs/LAUNCH_EVIDENCE_PACKET.md` with owner/date/evidence paths for each gate.
+   - Populate `docs\release\LAUNCH_EVIDENCE_PACKET.md` with owner/date/evidence paths for each gate.
 
 ## PM_Web README mismatch check
 

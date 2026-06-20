@@ -32,4 +32,4 @@ Required proof before public backend waitlist capture:
 - Run release preflight and static Supabase checks.
 - Prove `anon` and `authenticated` cannot read or write `waitlist_signups` directly.
 - Prove `submit_waitlist_signup` accepts valid minimal email/platform input and rejects malformed email.
-- Decide and document abuse protection, rate limiting, or CAPTCHA posture before routing public PM_Web traffic to the RPC. See `docs/WAITLIST_ABUSE_RATE_LIMIT_DECISION.md`.
+- Decide and document abuse protection, rate limiting, or CAPTCHA posture before routing public PM_Web traffic to the RPC. See `docs\architecture\WAITLIST_ABUSE_RATE_LIMIT_DECISION.md`.

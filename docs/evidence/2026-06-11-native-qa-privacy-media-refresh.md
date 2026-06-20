@@ -22,5 +22,5 @@ Recent source hardening changed privacy settings behavior and chat image message
 
 Not run by instruction in this session. Required follow-up:
 
-- Execute `docs/NATIVE_QA_SCRIPT.md` on a native device or emulator.
-- Attach redacted screenshots or signed QA notes in `docs/LAUNCH_EVIDENCE_PACKET.md`.
+- Execute `docs\testing\NATIVE_QA_SCRIPT.md` on a native device or emulator.
+- Attach redacted screenshots or signed QA notes in `docs\release\LAUNCH_EVIDENCE_PACKET.md`.

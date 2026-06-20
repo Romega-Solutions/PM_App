@@ -32,8 +32,8 @@ The inbox read model also supports the rule: even if an older environment or rep
 - `scripts/check-supabase-static-contract.mjs` also fails if `LikesScreen` reintroduces a direct `get_or_create_conversation` client call.
 - `scripts/check-launch-file-contract.mjs` now requires the private-helper migration, smoke/preflight denial markers, and the Likes-to-chat source guard.
 - `scripts/check-supabase-migration-manifest.mjs` checks that the launch manifest includes the new migration and that the legacy `99_` migration remains safe.
-- `docs/CHAT_TESTING_GUIDE.md` and `docs/SUPABASE_CHAT_INTEGRATION.md` now describe `get_or_create_conversation` as a private helper instead of a client call.
-- `docs/NATIVE_QA_SCRIPT.md`, `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md`, and `docs/PRODUCTION_OWNERSHIP_CHECKLIST.md` now include first-message conversation creation proof and the new migration boundary.
+- `docs\testing\CHAT_TESTING_GUIDE.md` and `docs\operations\SUPABASE_CHAT_INTEGRATION.md` now describe `get_or_create_conversation` as a private helper instead of a client call.
+- `docs\testing\NATIVE_QA_SCRIPT.md`, `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md`, and `docs\release\PRODUCTION_OWNERSHIP_CHECKLIST.md` now include first-message conversation creation proof and the new migration boundary.
 
 ## What still must be proven
 

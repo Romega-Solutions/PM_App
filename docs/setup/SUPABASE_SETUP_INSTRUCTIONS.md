@@ -115,7 +115,7 @@ npm run build:web
 
 ## 7. Run native QA
 
-Use `docs/NATIVE_QA_SCRIPT.md`.
+Use `docs\testing\NATIVE_QA_SCRIPT.md`.
 
 Minimum auth proof:
 

@@ -77,7 +77,7 @@ Messaging launch proof must show:
 
 ## Native QA requirements
 
-Use `docs/NATIVE_QA_SCRIPT.md` to verify:
+Use `docs\testing\NATIVE_QA_SCRIPT.md` to verify:
 
 - conversation list loading state
 - empty and error states

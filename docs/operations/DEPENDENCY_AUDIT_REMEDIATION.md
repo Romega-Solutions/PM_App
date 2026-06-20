@@ -59,7 +59,7 @@ npm run build:web
 
 ## Evidence that clears this blocker
 
-Attach one of these outcomes to `docs/LAUNCH_EVIDENCE_PACKET.md`.
+Attach one of these outcomes to `docs\release\LAUNCH_EVIDENCE_PACKET.md`.
 
 ### Option A: Remediated
 

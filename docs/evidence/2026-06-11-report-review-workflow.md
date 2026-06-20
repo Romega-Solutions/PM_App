@@ -31,4 +31,4 @@ Required proof before launch:
 - Run preflight and smoke SQL.
 - Prove `anon` and `authenticated` cannot execute `review_user_report`.
 - Prove service-role review can move a report to `reviewing`, `resolved`, or `dismissed` with severity/action metadata.
-- Record named safety/support owner and backup in `docs/SAFETY_MODERATION_RUNBOOK.md`.
+- Record named safety/support owner and backup in `docs\operations\SAFETY_MODERATION_RUNBOOK.md`.

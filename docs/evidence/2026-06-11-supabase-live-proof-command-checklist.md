@@ -9,9 +9,9 @@ Operator checklist added. Commands were not run in this turn.
 
 ## Changed
 
-- Added `docs/SUPABASE_LIVE_PROOF_COMMANDS.md`.
-- Linked it from `docs/SUPABASE_RELEASE_OPERATOR_CHECKLIST.md`.
-- Registered it in `docs/LAUNCH_EVIDENCE_PACKET.md`.
+- Added `docs\operations\SUPABASE_LIVE_PROOF_COMMANDS.md`.
+- Linked it from `docs\operations\SUPABASE_RELEASE_OPERATOR_CHECKLIST.md`.
+- Registered it in `docs\release\LAUNCH_EVIDENCE_PACKET.md`.
 - Added it to the PM_App launch-file contract.
 
 ## What it covers

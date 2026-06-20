@@ -9,7 +9,7 @@ This source-only update adds proof requirements before the backend waitlist RPC 
 
 ## What changed
 
-- Added `docs/WAITLIST_ABUSE_RATE_LIMIT_DECISION.md`.
+- Added `docs\architecture\WAITLIST_ABUSE_RATE_LIMIT_DECISION.md`.
 - Added rollback-only waitlist smoke coverage to `supabase/tests/04_safety_smoke_test.sql`.
 - Expanded `scripts/check-supabase-static-contract.mjs` to require waitlist smoke markers.
 - Added the waitlist abuse/rate-limit decision to `scripts/check-launch-file-contract.mjs`.

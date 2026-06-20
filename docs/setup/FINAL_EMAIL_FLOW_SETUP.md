@@ -148,4 +148,4 @@ Enable Email provider and Confirm email in Supabase Auth settings.
 - [ ] Ordered migrations applied in production.
 - [ ] `04_safety_smoke_test.sql` passes in production.
 - [ ] Production build redirect test completed.
-- [ ] Evidence copied into `docs/LAUNCH_SIGNOFF_CHECKLIST.md`.
+- [ ] Evidence copied into `docs\release\LAUNCH_SIGNOFF_CHECKLIST.md`.

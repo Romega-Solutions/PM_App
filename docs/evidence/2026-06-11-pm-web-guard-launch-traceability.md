@@ -16,7 +16,7 @@ Launch evidence traceability update for recent PM_Web editorial layout and clien
 ## Files touched
 
 - `scripts/check-launch-evidence-contract.mjs`
-- `docs/LAUNCH_EVIDENCE_PACKET.md`
+- `docs\release\LAUNCH_EVIDENCE_PACKET.md`
 
 ## Verification status
 

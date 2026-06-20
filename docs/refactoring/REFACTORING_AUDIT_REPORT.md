@@ -373,10 +373,10 @@ grep -r "async function\|const.*=.*=>.*{" app/ --include="*.tsx" | grep -v "expo
 
 ### Already Completed:
 
-- ✅ [ZUSTAND_IMPLEMENTATION.md](./ZUSTAND_IMPLEMENTATION.md) - Store architecture
+- ✅ [ZUSTAND_IMPLEMENTATION.md](./..\architecture\ZUSTAND_IMPLEMENTATION.md) - Store architecture
 - ✅ [MESSAGES_REFACTORING.md](./MESSAGES_REFACTORING.md) - Messages screen refactoring
 - ✅ [PROFILE_REFACTORING.md](./PROFILE_REFACTORING.md) - Profile screen refactoring
-- ✅ [APP_VS_SRC_ARCHITECTURE.md](./APP_VS_SRC_ARCHITECTURE.md) - Architecture overview
+- ✅ [APP_VS_SRC_ARCHITECTURE.md](./..\architecture\APP_VS_SRC_ARCHITECTURE.md) - Architecture overview
 
 ### To Be Created:
 

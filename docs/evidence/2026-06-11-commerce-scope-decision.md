@@ -9,7 +9,7 @@ This source-only update makes commerce/payment de-scope explicit for launch.
 
 ## What changed
 
-- Added `docs/COMMERCE_SCOPE_DECISION.md` as the commerce source decision.
+- Added `docs\architecture\COMMERCE_SCOPE_DECISION.md` as the commerce source decision.
 - Updated the PM_Web launch-state snapshot so paid ranking, paid verification, paid boost, subscriptions, card collection, checkout, and paid feature access remain blocked.
 - Updated PM_Web release checklist with a commerce de-scope audit row.
 - Expanded PM_Web source guards to fail on paid ranking, paid badge, paid verification, and paid-feature-access claims.

@@ -6,7 +6,7 @@ Purpose: define the product-design evidence required before PinayMate can be cal
 
 Status: required for launch review. This standard does not replace native QA, browser QA, accessibility checks, or live backend proof.
 
-Claim source of truth: all design review decisions must use `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md`. If the matrix says a feature is waitlist-only, gated, source-only, or blocked pending proof, the UI must not make that feature look live.
+Claim source of truth: all design review decisions must use `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md`. If the matrix says a feature is waitlist-only, gated, source-only, or blocked pending proof, the UI must not make that feature look live.
 
 ## Design intent
 
@@ -55,7 +55,7 @@ Each design QA pass must include:
 
 Do not store real user photos, ID documents, private messages, raw location, email addresses, access tokens, or database IDs in design evidence.
 
-Each design QA pass must include a launch-state note confirming that PM_App and PM_Web screens match `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md`.
+Each design QA pass must include a launch-state note confirming that PM_App and PM_Web screens match `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md`.
 
 ## PM_App design gates
 
@@ -96,7 +96,7 @@ Fail-stop examples:
 | Accessibility | keyboard focus is visible, CTAs have descriptive labels, headings are ordered, and contrast is readable | reviewer notes |
 | Visual polish | spacing, typography, cards, backgrounds, and section transitions feel cohesive instead of patched together | screenshots/notes |
 | Surface discipline | page sections avoid card spam; editorial layout, whitespace, trust strips, lists, and CTA blocks are preferred over nested panels | screenshots/notes |
-| Launch-state accuracy | waitlist, membership, store-link, legal, support, and safety copy match `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md` | screenshots/notes |
+| Launch-state accuracy | waitlist, membership, store-link, legal, support, and safety copy match `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md` | screenshots/notes |
 
 Fail-stop examples:
 
@@ -117,13 +117,13 @@ Use this order:
 3. Review PM_App signed-out, onboarding, discovery, messaging, report/block/unmatch, and settings flows on a real device or emulator.
 4. Capture screenshots only after private data is redacted.
 5. Mark each gate Pass, Fail, or Deferred with risk acceptance.
-6. Record evidence in `docs/LAUNCH_EVIDENCE_PACKET.md`.
+6. Record evidence in `docs\release\LAUNCH_EVIDENCE_PACKET.md`.
 
 ## Launch decision rule
 
 PinayMate cannot be called UI/UX launch-ready until:
 
-- PM_App and PM_Web screens match `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md`
+- PM_App and PM_Web screens match `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md`
 - PM_App native design QA passes or has explicit risk acceptance
 - PM_Web desktop/mobile design QA passes or has explicit risk acceptance
 - no fail-stop design issue remains open

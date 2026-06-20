@@ -1,7 +1,7 @@
 # PinayMate Zustand Security Doc Correction
 
 Date: 2026-06-11
-Scope: `docs/ZUSTAND_IMPLEMENTATION.md`.
+Scope: `docs\architecture\ZUSTAND_IMPLEMENTATION.md`.
 
 ## What changed
 

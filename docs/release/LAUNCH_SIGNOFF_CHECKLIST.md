@@ -10,19 +10,19 @@ Status: not launch-ready until the blocked evidence below is captured.
 
 PM_App and PM_Web local quality checks passed on the current worktree on 2026-06-11. PM_App release-local still fails because the production ownership contract rejects the current Expo owner until it is proven Romega-controlled or transferred. Production readiness still requires live Supabase migration proof, deployed OCR proof, native device QA, safety/support/legal/release owner assignment, production PM_Web and mailbox proof, and final launch-link validation.
 
-Use `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md` as the shared claim contract, `docs/PRODUCTION_OWNERSHIP_CHECKLIST.md` for account ownership signoff, `docs/SUPABASE_RELEASE_OPERATOR_CHECKLIST.md` for backend release execution, and `docs/LAUNCH_EVIDENCE_PACKET.md` for the final proof pack.
+Use `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md` as the shared claim contract, `docs\release\PRODUCTION_OWNERSHIP_CHECKLIST.md` for account ownership signoff, `docs\operations\SUPABASE_RELEASE_OPERATOR_CHECKLIST.md` for backend release execution, and `docs\release\LAUNCH_EVIDENCE_PACKET.md` for the final proof pack.
 
 ## Go/no-go rule
 
-PinayMate cannot be called production-ready while any launch-control lane below is still blocked, unowned, stale, or source-only. The release owner may only mark a lane ready when its owner, date, environment, command/source, and redacted evidence are recorded in `docs/LAUNCH_EVIDENCE_PACKET.md`.
+PinayMate cannot be called production-ready while any launch-control lane below is still blocked, unowned, stale, or source-only. The release owner may only mark a lane ready when its owner, date, environment, command/source, and redacted evidence are recorded in `docs\release\LAUNCH_EVIDENCE_PACKET.md`.
 
-Customer-facing copy, release notes, support responses, safety language, and manager summaries must match `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md`. If the matrix marks a capability as waitlist-only, gated, source-only, or blocked pending proof, no PM_App or PM_Web surface may imply that the capability is live.
+Customer-facing copy, release notes, support responses, safety language, and manager summaries must match `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md`. If the matrix marks a capability as waitlist-only, gated, source-only, or blocked pending proof, no PM_App or PM_Web surface may imply that the capability is live.
 
 | Launch-control lane | Go condition | Stop condition |
 | ------------------- | ------------ | -------------- |
 | Secret hygiene | secret-hygiene passes and any previously tracked values have a rotation/recovery decision | unreviewed exposure risk, pasted secret values, or failed guard |
 | Local release gates | current-head PM_App and PM_Web local gates pass after latest source/script changes | old pass output, needs-rerun status, or unchecked guard change |
-| Launch-state claims | PM_App, PM_Web, support, safety, legal, and manager-facing copy match `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md` | copy implies live matching, payments, app-store availability, automatic verification, instant moderation, SMS/calls, provider delivery, or production backend proof before evidence |
+| Launch-state claims | PM_App, PM_Web, support, safety, legal, and manager-facing copy match `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md` | copy implies live matching, payments, app-store availability, automatic verification, instant moderation, SMS/calls, provider delivery, or production backend proof before evidence |
 | Supabase backend | staging then production migrations and safety smoke pass | local/static-only proof, failed migration, skipped smoke SQL, or missing target project proof |
 | Waitlist Edge Function | `waitlist-signup` deploy, approved origins, server-only service-role key, rate-limit salt, direct RPC denial, honeypot behavior, and repeated-request throttle are proven | direct browser RPC path, missing origin allowlist, missing rate-limit salt, service-role key exposed to clients, or no live function proof |
 | OCR verification | deployed function proves JWT auth, quota, valid/invalid document behavior, and safe errors | missing secret, unauthenticated OCR success, provider-detail leak, or no live deploy proof |
@@ -55,20 +55,20 @@ The following source-complete controls are in place and still require environmen
 
 | Area                          | Owner                     | Required evidence                                                                                                                                                  | Status                                        |
 | ----------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
-| Supabase migrations           | Backend owner             | `docs/SUPABASE_RELEASE_OPERATOR_CHECKLIST.md` completed with `db push --dry-run`, `db push`, migration list/history, smoke-test output                             | Blocked by target project access              |
-| Supabase RLS/storage/security | Backend owner             | `docs/SUPABASE_RELEASE_OPERATOR_CHECKLIST.md` completed with `05_release_preflight_audit.sql` and `04_safety_smoke_test.sql` pass output on staging and production | Blocked by target database access             |
-| Waitlist Edge Function       | Backend/product owner     | `docs/SUPABASE_RELEASE_OPERATOR_CHECKLIST.md` completed with deploy, secret-presence, approved-origin, direct-RPC-denial, honeypot, and repeated-request throttle proof | Blocked by Supabase project access            |
-| OCR Edge Function             | Backend owner             | `docs/SUPABASE_RELEASE_OPERATOR_CHECKLIST.md` completed with secret list evidence, deploy output, 401 unauthenticated check, valid/invalid document checks         | Blocked by Supabase project + provider secret |
-| PM_App native QA              | Product/design owner      | `docs/NATIVE_QA_SCRIPT.md` completed with device/emulator proof for auth, onboarding, location, verification, discovery, matching, messaging, report/block/unmatch | Blocked by device/emulator QA                 |
-| Product design QA             | Product/design owner      | `docs/PRODUCT_DESIGN_QA_STANDARD.md` completed with PM_App native screenshots and PM_Web desktop/mobile screenshots                                      | Blocked by screenshot/design review evidence  |
-| Launch-state claim alignment  | Product owner             | PM_App, PM_Web, support, safety, legal, and manager-facing copy reviewed against `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md`                                 | Source checks pass locally; final owner review still required |
+| Supabase migrations           | Backend owner             | `docs\operations\SUPABASE_RELEASE_OPERATOR_CHECKLIST.md` completed with `db push --dry-run`, `db push`, migration list/history, smoke-test output                             | Blocked by target project access              |
+| Supabase RLS/storage/security | Backend owner             | `docs\operations\SUPABASE_RELEASE_OPERATOR_CHECKLIST.md` completed with `05_release_preflight_audit.sql` and `04_safety_smoke_test.sql` pass output on staging and production | Blocked by target database access             |
+| Waitlist Edge Function       | Backend/product owner     | `docs\operations\SUPABASE_RELEASE_OPERATOR_CHECKLIST.md` completed with deploy, secret-presence, approved-origin, direct-RPC-denial, honeypot, and repeated-request throttle proof | Blocked by Supabase project access            |
+| OCR Edge Function             | Backend owner             | `docs\operations\SUPABASE_RELEASE_OPERATOR_CHECKLIST.md` completed with secret list evidence, deploy output, 401 unauthenticated check, valid/invalid document checks         | Blocked by Supabase project + provider secret |
+| PM_App native QA              | Product/design owner      | `docs\testing\NATIVE_QA_SCRIPT.md` completed with device/emulator proof for auth, onboarding, location, verification, discovery, matching, messaging, report/block/unmatch | Blocked by device/emulator QA                 |
+| Product design QA             | Product/design owner      | `docs\testing\PRODUCT_DESIGN_QA_STANDARD.md` completed with PM_App native screenshots and PM_Web desktop/mobile screenshots                                      | Blocked by screenshot/design review evidence  |
+| Launch-state claim alignment  | Product owner             | PM_App, PM_Web, support, safety, legal, and manager-facing copy reviewed against `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md`                                 | Source checks pass locally; final owner review still required |
 | PM_Web launch page            | Product/design owner      | `npm run check:local-quality`, browser desktop/mobile smoke, final support mailbox/domain confirmation                                                             | Local quality passed; production URL/mailbox proof still required |
 | Secret hygiene                | Engineering owner         | `npm run check:secret-hygiene` pass output plus rotation/recovery decision for any previously tracked values                                                       | Local guard passed; rotation/recovery review still required |
 | Support operations            | Product owner             | support inbox owner, response SLA, escalation path for reports/verification                                                                                        | Needs owner sign-off                          |
-| Safety moderation             | Safety/support owner      | `docs/SAFETY_MODERATION_RUNBOOK.md` reviewed with report, verification, and escalation owners assigned                                                             | Needs owner sign-off                          |
-| Production ownership          | Product/engineering owner | `docs/PRODUCTION_OWNERSHIP_CHECKLIST.md` completed                                                                                                                 | Needs owner sign-off                          |
+| Safety moderation             | Safety/support owner      | `docs\operations\SAFETY_MODERATION_RUNBOOK.md` reviewed with report, verification, and escalation owners assigned                                                             | Needs owner sign-off                          |
+| Production ownership          | Product/engineering owner | `docs\release\PRODUCTION_OWNERSHIP_CHECKLIST.md` completed                                                                                                                 | Needs owner sign-off                          |
 | Production ownership static contract | Product/engineering owner | `node scripts/check-production-ownership-contract.mjs` output plus EAS owner/team proof                                                                             | Blocked by current owner proof/transfer       |
-| Launch evidence packet        | Release owner             | `docs/LAUNCH_EVIDENCE_PACKET.md` completed with owner/date/evidence                                                                                                | Needs owner sign-off                          |
+| Launch evidence packet        | Release owner             | `docs\release\LAUNCH_EVIDENCE_PACKET.md` completed with owner/date/evidence                                                                                                | Needs owner sign-off                          |
 
 ## Owner decision checklist
 
@@ -76,20 +76,20 @@ Fill this before final launch review. Blank rows are blockers.
 
 | Decision | Named owner | Backup owner | Evidence location | Decision |
 | -------- | ----------- | ------------ | ----------------- | -------- |
-| Launch, staging-only, or hold decision | | | `docs/LAUNCH_EVIDENCE_PACKET.md` | |
+| Launch, staging-only, or hold decision | | | `docs\release\LAUNCH_EVIDENCE_PACKET.md` | |
 | `.env` cleanup and rotation decision | | | `docs/evidence/` | |
 | PM_App release-local evidence approval | | | `docs/evidence/` | |
-| PM_App dependency risk approval | | | `docs/DEPENDENCY_AUDIT_REMEDIATION.md` | |
+| PM_App dependency risk approval | | | `docs\operations\DEPENDENCY_AUDIT_REMEDIATION.md` | |
 | Supabase staging migration approval | | | `docs/evidence/` | |
 | Waitlist Edge Function approval | | | `docs/evidence/` | |
 | Supabase production migration approval | | | `docs/evidence/` | |
 | OCR provider and verification-review approval | | | `docs/evidence/` | |
-| Native QA approval | | | `docs/NATIVE_QA_SCRIPT.md` | |
-| Product design QA approval | | | `docs/PRODUCT_DESIGN_QA_STANDARD.md` | |
-| Launch-state claim approval | | | `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md` | |
+| Native QA approval | | | `docs\testing\NATIVE_QA_SCRIPT.md` | |
+| Product design QA approval | | | `docs\testing\PRODUCT_DESIGN_QA_STANDARD.md` | |
+| Launch-state claim approval | | | `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md` | |
 | PM_Web production approval | | | `PM_Web/RELEASE_CHECKLIST.md` | |
-| Safety/support operations approval | | | `docs/SAFETY_MODERATION_RUNBOOK.md` | |
-| Production account ownership approval | | | `docs/PRODUCTION_OWNERSHIP_CHECKLIST.md` | |
+| Safety/support operations approval | | | `docs\operations\SAFETY_MODERATION_RUNBOOK.md` | |
+| Production account ownership approval | | | `docs\release\PRODUCTION_OWNERSHIP_CHECKLIST.md` | |
 
 ## Manager gate map
 
@@ -325,7 +325,7 @@ Expected:
 
 Run on at least one iOS or Android emulator/device before launch.
 
-Use `docs/NATIVE_QA_SCRIPT.md` as the execution script and evidence template.
+Use `docs\testing\NATIVE_QA_SCRIPT.md` as the execution script and evidence template.
 
 Required flows:
 
@@ -435,7 +435,7 @@ Then rerun:
 | Production OCR deploy/checks       |       |      |                                     |          |
 | Production launch URL QA           |       |      |                                     |          |
 | Support inbox and escalation       |       |      |                                     |          |
-| Safety moderation runbook reviewed |       |      | `docs/SAFETY_MODERATION_RUNBOOK.md` |          |
+| Safety moderation runbook reviewed |       |      | `docs\operations\SAFETY_MODERATION_RUNBOOK.md` |          |
 
 ## References
 

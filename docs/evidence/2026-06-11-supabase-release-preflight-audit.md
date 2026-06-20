@@ -42,4 +42,4 @@ The existing safety smoke test verifies behavior. This audit verifies that the e
 
 - Run the audit in staging after migrations.
 - Run the audit in production after migration promotion.
-- Attach redacted SQL output to `docs/LAUNCH_EVIDENCE_PACKET.md`.
+- Attach redacted SQL output to `docs\release\LAUNCH_EVIDENCE_PACKET.md`.

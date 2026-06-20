@@ -8,12 +8,12 @@ This register is source-based only. No validation commands, tests, builds, lint,
 
 ## Source Basis
 
-- `PM_App/docs/LAUNCH_SIGNOFF_CHECKLIST.md`
-- `PM_App/docs/LAUNCH_EVIDENCE_PACKET.md`
-- `PM_App/docs/RELEASE_READINESS.md`
-- `PM_App/docs/NATIVE_QA_SCRIPT.md`
-- `PM_App/docs/PRODUCTION_OWNERSHIP_CHECKLIST.md`
-- `PM_App/docs/SAFETY_MODERATION_RUNBOOK.md`
+- `PM_App/docs\release\LAUNCH_SIGNOFF_CHECKLIST.md`
+- `PM_App/docs\release\LAUNCH_EVIDENCE_PACKET.md`
+- `PM_App/docs\release\RELEASE_READINESS.md`
+- `PM_App/docs\testing\NATIVE_QA_SCRIPT.md`
+- `PM_App/docs\release\PRODUCTION_OWNERSHIP_CHECKLIST.md`
+- `PM_App/docs\operations\SAFETY_MODERATION_RUNBOOK.md`
 - `PM_Web/RELEASE_CHECKLIST.md`
 - Recent evidence notes under `PM_App/docs/evidence/`, especially the manager readiness, release-gate, Supabase, dependency-audit, safety-surface, and PM_Web notes dated 2026-06-11.
 - `PM_App/package.json` and `PM_Web/package.json` scripts only for declared release gates.

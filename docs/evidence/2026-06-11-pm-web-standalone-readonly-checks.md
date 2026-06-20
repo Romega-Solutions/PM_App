@@ -14,11 +14,11 @@ Source update completed. Checks were not run in this turn.
   - `npm run check:launch-claims:report`
   - `npm run check:release-local:report`
 - Kept normal PM_Web check scripts read-only by default.
-- Updated `PM_Web/scripts/check-launch-claims.mjs` to use `PM_Web/docs/PINAYMATE_LAUNCH_STATE_MATRIX.md` by default.
+- Updated `PM_Web/scripts/check-launch-claims.mjs` to use `PM_Web/docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md` by default.
 - Kept central matrix comparison available with `PINAYMATE_LAUNCH_MATRIX_PATH`.
 - Updated `PM_Web/scripts/check-local-cta-links.mjs` so evidence files are written only when `--write-report` or `PINAYMATE_WRITE_REPORT=1` is used.
 - Updated `PM_Web/scripts/check-product-design-contract.mjs` to use the PM_Web-local launch-state matrix snapshot.
-- Added `PM_Web/docs/PINAYMATE_LAUNCH_STATE_MATRIX.md` as the standalone PM_Web copy/claim contract.
+- Added `PM_Web/docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md` as the standalone PM_Web copy/claim contract.
 - Updated `PM_App/scripts/check-supabase-static-contract.mjs` to keep normal static checks read-only and require `--write-report` or `PINAYMATE_WRITE_REPORT=1` for static evidence output.
 
 ## Why it matters

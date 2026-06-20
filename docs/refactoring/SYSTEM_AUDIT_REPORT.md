@@ -12,7 +12,7 @@
 This is a historical technical audit and baseline review. It is **not** a live launch-completion certificate.
 Use this report for architectural context and migration backlog, then align launch decisions with:
 
-- `PM_App/docs/RELEASE_READINESS.md`
+- `PM_App/docs\release\RELEASE_READINESS.md`
 - `PM_App/README.md`
 - `PM_App/SETUP_CHECKLIST.md` (environment bootstrap)
 

@@ -124,7 +124,7 @@ psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f .\supabase\tests\04_safety_smoke_te
 
 The smoke/preflight proof must show that authenticated clients cannot execute `get_or_create_conversation` directly while `send_message` still creates conversations for valid matched text sends.
 
-Native QA checks are in `docs/NATIVE_QA_SCRIPT.md`.
+Native QA checks are in `docs\testing\NATIVE_QA_SCRIPT.md`.
 
 ## Production blockers
 

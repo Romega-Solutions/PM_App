@@ -2144,8 +2144,8 @@ Before marking any feature as complete, verify ALL of the following:
 
 - [INDEX_REFACTORING_SUMMARY.md](./INDEX_REFACTORING_SUMMARY.md) - Detailed discover screen refactoring
 - [INDEX_REFACTORING_VISUAL.md](./INDEX_REFACTORING_VISUAL.md) - Visual architecture diagrams
-- [TESTING_GUIDE.md](./TESTING_GUIDE.md) - Testing strategies and examples
-- [SMART_MATCHING_ALGORITHM.md](./SMART_MATCHING_ALGORITHM.md) - Matching algorithm documentation
+- [TESTING_GUIDE.md](./..\testing\TESTING_GUIDE.md) - Testing strategies and examples
+- [SMART_MATCHING_ALGORITHM.md](./..\architecture\SMART_MATCHING_ALGORITHM.md) - Matching algorithm documentation
 
 ---
 

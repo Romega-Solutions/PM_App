@@ -7,7 +7,7 @@ Result: Source guard added, checks not rerun
 ## What changed
 
 - Updated `scripts/check-launch-evidence-contract.mjs` so the launch evidence packet must retain source-proof markers for:
-  - `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md`
+  - `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md`
   - `docs/evidence/2026-06-11-pinaymate-launch-state-matrix.md`
   - `docs/evidence/2026-06-11-pm-app-launch-state-signoff-alignment.md`
   - `docs/evidence/2026-06-11-pm-web-launch-state-matrix-alignment.md`

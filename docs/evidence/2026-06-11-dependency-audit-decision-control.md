@@ -6,7 +6,7 @@ Source/documentation update completed. No dependency audit, install, package upd
 
 ## Changed
 
-`docs/DEPENDENCY_AUDIT_REMEDIATION.md`
+`docs\operations\DEPENDENCY_AUDIT_REMEDIATION.md`
 
 - Added actions not allowed on the release branch.
 - Added evidence requirements for three decision paths:

@@ -23,7 +23,7 @@ The previous command used a shell `&&` chain. That hid later blockers whenever a
 
 ## Release interpretation
 
-This improves blocker visibility only. Blocked rows in `docs/LAUNCH_EVIDENCE_PACKET.md` still require real proof or owner-approved risk acceptance.
+This improves blocker visibility only. Blocked rows in `docs\release\LAUNCH_EVIDENCE_PACKET.md` still require real proof or owner-approved risk acceptance.
 
 ## Verification
 

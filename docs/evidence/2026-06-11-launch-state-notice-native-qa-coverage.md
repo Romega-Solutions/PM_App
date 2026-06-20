@@ -9,7 +9,7 @@ Native QA script update completed. Native QA was not run in this turn.
 
 ## Changed
 
-- Updated `docs/NATIVE_QA_SCRIPT.md` with a launch-state notice accessibility QA section.
+- Updated `docs\testing\NATIVE_QA_SCRIPT.md` with a launch-state notice accessibility QA section.
 - Added screen-specific launch-state notice test IDs for native QA targeting.
 - Added required checks for:
   - visible launch-stage copy accuracy

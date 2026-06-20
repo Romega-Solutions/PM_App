@@ -6,7 +6,7 @@ Purpose: define how PinayMate handles user reports, verification review, block/u
 
 Status: required for launch operations. This runbook must be reviewed by the product owner and support owner before production launch.
 
-Launch-state boundary: safety, support, legal, verification, notification, and moderation responses must match `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md`. Before operational proof exists, do not imply instant moderation, guaranteed safety, automatic verification approval, live provider notification delivery, or monitored mailbox readiness.
+Launch-state boundary: safety, support, legal, verification, notification, and moderation responses must match `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md`. Before operational proof exists, do not imply instant moderation, guaranteed safety, automatic verification approval, live provider notification delivery, or monitored mailbox readiness.
 
 ## Required operating roster
 

@@ -6,7 +6,7 @@ Source/documentation update completed. No `.env` cleanup, git tracking change, s
 
 ## Added
 
-`docs/SECRET_HYGIENE_REMEDIATION.md`
+`docs\operations\SECRET_HYGIENE_REMEDIATION.md`
 
 ## What it defines
 

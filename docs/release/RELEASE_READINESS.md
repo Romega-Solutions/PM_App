@@ -2,12 +2,12 @@
 
 **Document scope:** mobile launch + website messaging readiness, Supabase readiness, OCR, and release-blocker tracking.
 **Status governance:** This is a release-control document; do not claim launch-ready in external comms until all `Blocked` items are cleared and owner/date sign-off is recorded below.
-**Execution checklist:** use `docs/LAUNCH_SIGNOFF_CHECKLIST.md` for the exact staging, production, OCR, native QA, and PM_Web evidence gates.
-**Safety operations:** use `docs/SAFETY_MODERATION_RUNBOOK.md` for report triage, verification review, block/unmatch escalation, and support response rules.
-**Native QA script:** use `docs/NATIVE_QA_SCRIPT.md` for device/emulator execution and pass/fail evidence capture.
-**Ownership gate:** use `docs/PRODUCTION_OWNERSHIP_CHECKLIST.md` to confirm Romega-owned production accounts and owner backups.
-**Evidence packet:** use `docs/LAUNCH_EVIDENCE_PACKET.md` as the final launch proof pack.
-**Launch-state source of truth:** use `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md` to keep PM_Web, PM_App, Supabase, OCR, notification, support, legal, and safety claims aligned.
+**Execution checklist:** use `docs\release\LAUNCH_SIGNOFF_CHECKLIST.md` for the exact staging, production, OCR, native QA, and PM_Web evidence gates.
+**Safety operations:** use `docs\operations\SAFETY_MODERATION_RUNBOOK.md` for report triage, verification review, block/unmatch escalation, and support response rules.
+**Native QA script:** use `docs\testing\NATIVE_QA_SCRIPT.md` for device/emulator execution and pass/fail evidence capture.
+**Ownership gate:** use `docs\release\PRODUCTION_OWNERSHIP_CHECKLIST.md` to confirm Romega-owned production accounts and owner backups.
+**Evidence packet:** use `docs\release\LAUNCH_EVIDENCE_PACKET.md` as the final launch proof pack.
+**Launch-state source of truth:** use `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md` to keep PM_Web, PM_App, Supabase, OCR, notification, support, legal, and safety claims aligned.
 
 **Last reviewed:** 2026-06-11
 **Reviewer note:** This file was refreshed to reflect current implemented-vs-verified status after recent product/security updates. Live environment checks still remain to be completed.
@@ -27,9 +27,9 @@
 
 ## Release Proof Rule
 
-Every launch-ready claim must have owner, date, environment, command/source, and evidence path recorded in `docs/LAUNCH_EVIDENCE_PACKET.md`. A blank evidence field means the gate is still blocked, even if the implementation exists in code.
+Every launch-ready claim must have owner, date, environment, command/source, and evidence path recorded in `docs\release\LAUNCH_EVIDENCE_PACKET.md`. A blank evidence field means the gate is still blocked, even if the implementation exists in code.
 
-Every customer-facing claim must also match `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md`. If the matrix says a feature is waitlist-only, gated, source-only, or blocked pending proof, PM_Web and PM_App copy must not imply that the feature is live.
+Every customer-facing claim must also match `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md`. If the matrix says a feature is waitlist-only, gated, source-only, or blocked pending proof, PM_Web and PM_App copy must not imply that the feature is live.
 
 ### Source-complete lanes introduced by June 2026 hardening
 
@@ -51,7 +51,7 @@ Minimum unblock commands:
 - `npx supabase secrets list` + `supabase functions deploy waitlist-signup` + repeated `/functions/v1/waitlist-signup` probes (origin, duplicate, blocked, malformed).
 - `npx supabase functions deploy ocr` + unauthenticated and authenticated `/functions/v1/ocr` probes (valid/invalid/rate-limit).
 - `supabase/tests/04_safety_smoke_test.sql` proof for direct `get_or_create_conversation` denial + empty-conversation filtering + blocked/unmatched-chat behavior.
-- `docs/NATIVE_QA_SCRIPT.md` evidence for first-send conversation creation and image-upload gating.
+- `docs\testing\NATIVE_QA_SCRIPT.md` evidence for first-send conversation creation and image-upload gating.
 
 | Gate                         | Required proof before green                                                                  | Current decision                 |
 | ---------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------- |
@@ -162,8 +162,8 @@ Minimum unblock commands:
 ### Next
 
 - **Mobile App**
-  - Complete the owner/date evidence fields in `docs/LAUNCH_SIGNOFF_CHECKLIST.md`.
-  - Build on device/emulator and complete `docs/NATIVE_QA_SCRIPT.md`.
+  - Complete the owner/date evidence fields in `docs\release\LAUNCH_SIGNOFF_CHECKLIST.md`.
+  - Build on device/emulator and complete `docs\testing\NATIVE_QA_SCRIPT.md`.
   - Confirm auth gate behavior after cold-start and session expiry.
   - Confirm native auth session persistence survives app restart and clears on sign-out.
 - **Web**
@@ -180,9 +180,9 @@ Minimum unblock commands:
   - Run valid/invalid image checks and document error-handling behavior.
 - **QA**
   - Complete release sign-off checklist owner/date fields for each blocker.
-  - Fill `docs/LAUNCH_EVIDENCE_PACKET.md` with staging, production, OCR, native, and PM_Web proof.
-  - Complete `docs/PRODUCTION_OWNERSHIP_CHECKLIST.md` before any public launch claim.
-  - Assign report, verification, support inbox, and critical escalation owners in `docs/SAFETY_MODERATION_RUNBOOK.md`.
+  - Fill `docs\release\LAUNCH_EVIDENCE_PACKET.md` with staging, production, OCR, native, and PM_Web proof.
+  - Complete `docs\release\PRODUCTION_OWNERSHIP_CHECKLIST.md` before any public launch claim.
+  - Assign report, verification, support inbox, and critical escalation owners in `docs\operations\SAFETY_MODERATION_RUNBOOK.md`.
 - **Dependencies**
   - Confirm app env vars: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` (and optionally `EXPO_PUBLIC_OCR_ENDPOINT`, otherwise derivation from `EXPO_PUBLIC_SUPABASE_URL` is used).
   - Confirm native/runtime deps and `app.json` permission copy for location, camera, and photo-library access are present in release builds.

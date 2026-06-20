@@ -75,7 +75,7 @@ Do not rewrite git history unless the release/security owner explicitly approves
 
 ## Evidence that clears the blocker
 
-Attach all required evidence to `docs/LAUNCH_EVIDENCE_PACKET.md`:
+Attach all required evidence to `docs\release\LAUNCH_EVIDENCE_PACKET.md`:
 
 - approval note for `.env` index cleanup
 - `npm run check:secret-hygiene` pass output after cleanup

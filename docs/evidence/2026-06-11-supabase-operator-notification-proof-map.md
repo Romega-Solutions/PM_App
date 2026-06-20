@@ -6,7 +6,7 @@ Result: Source docs updated, checks not rerun
 
 ## What changed
 
-- Updated `docs/SUPABASE_RELEASE_OPERATOR_CHECKLIST.md` so backend signoff must use `docs/PINAYMATE_LAUNCH_STATE_MATRIX.md`.
+- Updated `docs\operations\SUPABASE_RELEASE_OPERATOR_CHECKLIST.md` so backend signoff must use `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md`.
 - Added explicit operator proof expectations for `20260611123000_add_notification_preferences.sql`.
 - Added backend feature proof-map review after preflight and smoke tests.
 - Updated `supabase/LAUNCH_MIGRATION_MANIFEST.md` so the notification migration purpose includes idempotent repair, default/not-null hardening, `user_notification_preferences_push_children_check`, and smoke/preflight proof expectations.

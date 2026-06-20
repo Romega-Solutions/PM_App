@@ -41,7 +41,7 @@ Recommended operator commands for this release packet:
 - `supabase db push --dry-run --linked` → `supabase db push --linked` (staging then production)
 - `supabase tests` using `supabase/tests/04_safety_smoke_test.sql` and `supabase/tests/05_release_preflight_audit.sql`
 - `supabase functions deploy waitlist-signup` and `supabase functions deploy ocr`
-- `docs/NATIVE_QA_SCRIPT.md` pass/fail evidence capture
+- `docs\testing\NATIVE_QA_SCRIPT.md` pass/fail evidence capture
 
 ## What remains (must be proven for launch)
 
