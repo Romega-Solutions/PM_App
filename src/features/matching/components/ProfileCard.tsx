@@ -29,6 +29,10 @@ import {
   Text,
   useWindowDimensions,
   View,
+  ImageSourcePropType,
+  StyleProp,
+  ViewStyle,
+  GestureResponderHandlers,
 } from "react-native";
 
 // Brand Colors
@@ -55,7 +59,7 @@ export interface ProfileCardData {
   age: number;
   location: string;
   distance: string;
-  image: any | null;
+  image: ImageSourcePropType | null;
   verified: boolean;
   interests: string[];
   bio: string;
@@ -72,12 +76,12 @@ export interface ProfileCardProps {
   profile: ProfileCardData;
   pan: Animated.ValueXY;
   rotate: Animated.AnimatedInterpolation<number>;
-  panHandlers: any;
-  style?: any;
+  panHandlers: GestureResponderHandlers;
+  style?: StyleProp<ViewStyle>;
   isPreview?: boolean;
 }
 
-export const ProfileCard: React.FC<ProfileCardProps> = ({
+export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({
   profile,
   pan,
   rotate,
@@ -331,7 +335,9 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
       </View>
     </Animated.View>
   );
-};
+});
+
+ProfileCard.displayName = "ProfileCard";
 
 const styles = StyleSheet.create({
   card: {

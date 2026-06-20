@@ -7,6 +7,7 @@ import {
   passProfile,
   superLikeProfile,
   undoLastSwipe,
+  calculateMatchScore,
 } from "../matchingApi";
 
 // Mock Supabase client
@@ -17,21 +18,128 @@ jest.mock("@/src/config/supabase", () => ({
   },
 }));
 
+type MockQuery = {
+  select: jest.Mock;
+  eq: jest.Mock;
+  not: jest.Mock;
+  gte: jest.Mock;
+  lte: jest.Mock;
+  limit: jest.Mock;
+  single: jest.Mock;
+  or: jest.Mock;
+  order: jest.Mock;
+  in: jest.Mock;
+  then: (onFulfilled: Function, onRejected: Function) => Promise<any>;
+};
+
 function createQueryMock<T>(response: T) {
-  const query: any = {
+  const query: MockQuery = {
     select: jest.fn(() => query),
     eq: jest.fn(() => query),
     not: jest.fn(() => query),
     gte: jest.fn(() => query),
     lte: jest.fn(() => query),
     limit: jest.fn(() => query),
+    or: jest.fn(() => query),
+    order: jest.fn(() => Promise.resolve(response)),
+    in: jest.fn(() => Promise.resolve(response)),
     single: jest.fn(() => Promise.resolve(response)),
-    then: (onFulfilled: any, onRejected: any) =>
-      Promise.resolve(response).then(onFulfilled, onRejected),
+    then: (onFulfilled: Function, onRejected: Function) =>
+      Promise.resolve(response).then(onFulfilled as any, onRejected as any),
   };
 
   return query;
 }
+
+describe("calculateMatchScore", () => {
+  it("awards points for identical relationship goals", () => {
+    const score = calculateMatchScore(
+      { relationship_goal: "marriage" },
+      { relationship_goal: "marriage" }
+    );
+    expect(score).toBe(25);
+  });
+
+  it("awards partial points for compatible serious intentions", () => {
+    const score = calculateMatchScore(
+      { relationship_goal: "long-term" },
+      { relationship_goal: "marriage" }
+    );
+    expect(score).toBe(20);
+  });
+
+  it("awards points for shared interests", () => {
+    const score = calculateMatchScore(
+      { interests: ["Travel", "Food", "Music"] },
+      { interests: ["Travel", "Food"] }
+    );
+    // 2 out of 3 shared = 66% of 20 = 13.33 -> rounded to 13
+    expect(score).toBe(13);
+  });
+
+  it("awards points for shared languages", () => {
+    const score = calculateMatchScore(
+      { languages: ["English", "Tagalog"] },
+      { languages: ["English"] }
+    );
+    // 1 shared, max length is 2. 50% of 15 = 7.5 -> rounded to 8
+    expect(score).toBe(8);
+  });
+
+  it("awards points for location matches", () => {
+    expect(
+      calculateMatchScore({ city: "Manila" }, { city: "Manila" })
+    ).toBe(15);
+    
+    expect(
+      calculateMatchScore(
+        { city: "Manila", country: "Philippines" },
+        { city: "Cebu", country: "Philippines" }
+      )
+    ).toBe(8);
+  });
+
+  it("awards points for age compatibility", () => {
+    expect(calculateMatchScore({ age: 25 }, { age: 26 })).toBe(10);
+    expect(calculateMatchScore({ age: 25 }, { age: 29 })).toBe(8);
+    expect(calculateMatchScore({ age: 25 }, { age: 34 })).toBe(5);
+    expect(calculateMatchScore({ age: 25 }, { age: 40 })).toBe(2);
+    expect(calculateMatchScore({ age: 25 }, { age: 50 })).toBe(0);
+  });
+
+  it("awards points for education level compatibility", () => {
+    expect(
+      calculateMatchScore({ education: "Bachelors" }, { education: "Bachelors" })
+    ).toBe(10);
+    expect(
+      calculateMatchScore({ education: "Bachelors" }, { education: "Masters" })
+    ).toBe(7);
+  });
+
+  it("calculates a high combined score for a great match", () => {
+    const user = {
+      relationship_goal: "marriage",
+      interests: ["Travel", "Music"],
+      languages: ["English"],
+      city: "Manila",
+      age: 28,
+      education: "Bachelors",
+    };
+    const candidate = {
+      relationship_goal: "marriage",
+      interests: ["Travel", "Music"],
+      languages: ["English", "Tagalog"],
+      city: "Manila",
+      age: 30,
+      education: "Bachelors",
+      last_active_at: new Date().toISOString(),
+    };
+    
+    const score = calculateMatchScore(user, candidate);
+    // Marriage (25) + Interests 2/2 (20) + Lang 1/2 (7.5->8) + City (15) + Age diff 2 (10) + Education (10) + Active (2) = 89.5 -> 90
+    expect(score).toBeGreaterThanOrEqual(89);
+  });
+});
 
 describe("fetchDiscoverProfiles", () => {
   const mockUserId = "user-123";
@@ -449,15 +557,33 @@ describe("getMatches", () => {
       user_type: "filipina",
       photos: [],
     };
-    const likesQuery: any = {
+    const likesQuery: MockQuery = {
       select: jest.fn(() => likesQuery),
       eq: jest.fn(() => likesQuery),
+      not: jest.fn(() => likesQuery),
+      gte: jest.fn(() => likesQuery),
+      lte: jest.fn(() => likesQuery),
+      limit: jest.fn(() => likesQuery),
+      single: jest.fn(() => Promise.resolve({ data: likes, error: null })),
+      in: jest.fn(() => Promise.resolve({ data: likes, error: null })),
       or: jest.fn(() => likesQuery),
       order: jest.fn().mockResolvedValue({ data: likes, error: null }),
+      then: (onFulfilled: Function, onRejected: Function) =>
+        Promise.resolve({ data: likes, error: null }).then(onFulfilled as any, onRejected as any),
     };
-    const profilesQuery: any = {
+    const profilesQuery: MockQuery = {
       select: jest.fn(() => profilesQuery),
+      eq: jest.fn(() => profilesQuery),
+      not: jest.fn(() => profilesQuery),
+      gte: jest.fn(() => profilesQuery),
+      lte: jest.fn(() => profilesQuery),
+      limit: jest.fn(() => profilesQuery),
+      single: jest.fn(() => Promise.resolve({ data: [visibleProfile], error: null })),
+      or: jest.fn(() => profilesQuery),
+      order: jest.fn().mockResolvedValue({ data: [visibleProfile], error: null }),
       in: jest.fn().mockResolvedValue({ data: [visibleProfile], error: null }),
+      then: (onFulfilled: Function, onRejected: Function) =>
+        Promise.resolve({ data: [visibleProfile], error: null }).then(onFulfilled as any, onRejected as any),
     };
 
     (supabase.from as jest.Mock).mockImplementation((table: string) => {

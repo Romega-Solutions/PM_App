@@ -15,7 +15,15 @@ export const DEFAULT_PRIVACY_SETTINGS: PrivacySettings = {
   profileVisible: true,
 };
 
-function mapPrivacyRecord(record: any): PrivacySettings {
+type DbPrivacyRecord = {
+  show_online_status?: boolean;
+  show_distance?: boolean;
+  read_receipts?: boolean;
+  profile_visible?: boolean;
+  updated_at?: string;
+};
+
+function mapPrivacyRecord(record: DbPrivacyRecord | null): PrivacySettings {
   return {
     showOnlineStatus:
       record?.show_online_status ?? DEFAULT_PRIVACY_SETTINGS.showOnlineStatus,

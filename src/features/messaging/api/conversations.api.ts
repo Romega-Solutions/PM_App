@@ -92,7 +92,7 @@ export async function getConversationsForUser(
  */
 export async function getConversationById(
   conversationId: string,
-): Promise<{ data: any | null; error: Error | null }> {
+): Promise<{ data: ConversationWithUser | null; error: Error | null }> {
   try {
     const {
       data: { user },

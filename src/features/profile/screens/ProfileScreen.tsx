@@ -21,7 +21,7 @@
  */
 
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useRouter, Href } from "expo-router";
 import { Settings } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
@@ -194,7 +194,7 @@ export const ProfileScreen: React.FC = () => {
 
   // Handle menu item press
   const handleMenuItemPress = (route: string) => {
-    router.push(route as any);
+    router.push(route as Href<string>);
   };
 
   // Handle logout

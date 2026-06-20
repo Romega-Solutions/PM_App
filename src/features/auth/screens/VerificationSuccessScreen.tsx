@@ -1,7 +1,7 @@
 import VerificationSuccessActions from "@/src/components/auth/VerificationSuccessActions";
 import VerificationSuccessHeader from "@/src/components/auth/VerificationSuccessHeader";
 import { supabase } from "@/src/config/supabase";
-import { ensureUserProfile } from "@/src/features/profile/api/ensureUserProfile";
+import { ensureUserProfile, EnsuredProfile } from "@/src/features/profile/api/ensureUserProfile";
 import { useSignupStore } from "@/src/stores/signupStore";
 import { useFonts } from "expo-font";
 import { LinearGradient } from "expo-linear-gradient";
@@ -100,7 +100,7 @@ export default function VerificationSuccessScreen() {
     };
 
     const redirectToIncompleteStep = (
-      profile: any,
+      profile: EnsuredProfile,
       userType?: string,
       firstName?: string,
     ) => {

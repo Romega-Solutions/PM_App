@@ -1,6 +1,7 @@
 import VerifyEmailActions from "@/src/components/auth/VerifyEmailActions";
 import VerifyEmailHeader from "@/src/components/auth/VerifyEmailHeader";
 import { supabase } from "@/src/config/supabase";
+import { UserMetadata } from "@supabase/supabase-js";
 import { authApi } from "@/src/features/auth/api/authApi";
 import { useSignupStore } from "@/src/stores/signupStore";
 import { useFonts } from "expo-font";
@@ -63,7 +64,7 @@ export default function VerifyEmailScreen() {
   }, [email, firstName, getSignupData, router, userType]);
 
   const goNext = useCallback(
-    (metadata?: any) => {
+    (metadata?: UserMetadata) => {
       if (didNavigate.current) return;
       didNavigate.current = true;
 

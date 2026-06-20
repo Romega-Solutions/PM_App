@@ -25,6 +25,7 @@ import {
 import React from "react";
 import {
   Image,
+  ImageSourcePropType,
   Platform,
   StyleSheet,
   Text,
@@ -59,7 +60,7 @@ export type Match = {
   id: string | number;
   name: string;
   age: number;
-  image?: any;
+  image?: ImageSourcePropType;
   location: string;
   verified: boolean;
   mutual: boolean;
@@ -74,7 +75,7 @@ interface MatchCardProps {
   onReport: () => void;
 }
 
-export const MatchCard: React.FC<MatchCardProps> = ({
+export const MatchCard: React.FC<MatchCardProps> = React.memo(({
   match,
   onMessage,
   onUnmatch,
@@ -236,7 +237,9 @@ export const MatchCard: React.FC<MatchCardProps> = ({
       </View>
     </View>
   );
-};
+});
+
+MatchCard.displayName = "MatchCard";
 
 const styles = StyleSheet.create({
   // Card

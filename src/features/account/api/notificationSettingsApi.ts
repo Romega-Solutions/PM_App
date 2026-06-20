@@ -20,7 +20,16 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
 const NOTIFICATION_SETTINGS_ERROR =
   "Notification preferences were not saved. Check your connection and try again.";
 
-function mapNotificationRecord(record: any): NotificationPreferences {
+type DbNotificationRecord = {
+  push_enabled?: boolean;
+  new_matches?: boolean;
+  new_messages?: boolean;
+  new_likes?: boolean;
+  email_updates?: boolean;
+  updated_at?: string;
+};
+
+function mapNotificationRecord(record: DbNotificationRecord | null): NotificationPreferences {
   const pushEnabled =
     record?.push_enabled ?? DEFAULT_NOTIFICATION_PREFERENCES.pushEnabled;
 

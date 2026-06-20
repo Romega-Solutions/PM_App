@@ -113,16 +113,7 @@ export default function CustomTextInput({
   const hasValue = !!value?.length;
   const inputAccessibilityLabel = label ?? placeholder ?? "Text input";
 
-  // Fixed: Remove type annotations to let TypeScript infer
-  const handleFocus = (e: any) => {
-    setFocused(true);
-    onFocus?.(e);
-  };
 
-  const handleBlur = (e: any) => {
-    setFocused(false);
-    onBlur?.(e);
-  };
 
   // Dynamic border color using theme
   const borderColor = error
@@ -158,8 +149,14 @@ export default function CustomTextInput({
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           autoComplete={autoComplete}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
+          onFocus={(e) => {
+            setFocused(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            onBlur?.(e);
+          }}
           selectionColor={`${semanticColors.secondary}E6`} // 90% opacity
           accessibilityLabel={inputAccessibilityLabel}
           accessibilityHint={error ? `Error: ${error}` : undefined}

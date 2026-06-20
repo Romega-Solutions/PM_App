@@ -281,7 +281,7 @@ export const authValidation = {
     return { valid: true };
   },
 
-  isValidUserType: (userType: any): userType is UserType => {
+  isValidUserType: (userType: unknown): userType is UserType => {
     return userType === "filipina" || userType === "foreigner";
   },
 };

@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { Animated, Dimensions, PanResponder } from "react-native";
+import { Animated, Dimensions, PanResponder, PanResponderInstance } from "react-native";
 
 const { width, height } = Dimensions.get("window");
 
@@ -25,7 +25,7 @@ export interface SwipeGestureReturn {
   pan: Animated.ValueXY;
   swipeUpValue: Animated.Value;
   rotate: Animated.AnimatedInterpolation<number>;
-  panResponder: any;
+  panResponder: PanResponderInstance;
   resetPosition: () => void;
   animateSwipe: (direction: "left" | "right" | "up") => void;
 }

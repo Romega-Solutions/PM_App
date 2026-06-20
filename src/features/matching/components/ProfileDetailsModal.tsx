@@ -38,6 +38,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  GestureResponderHandlers,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { ProfileCardData } from "./ProfileCard";
@@ -55,7 +56,7 @@ export interface ProfileDetailsModalProps {
   profile: ProfileCardData | null;
   onClose: () => void;
   onReport?: () => void;
-  panHandlers?: any;
+  panHandlers?: GestureResponderHandlers;
 }
 
 export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
