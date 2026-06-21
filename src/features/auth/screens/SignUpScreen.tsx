@@ -1,9 +1,8 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Eye, EyeOff, Lock, Mail, User } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Alert,
-  Dimensions,
   Image,
   Pressable,
   StyleSheet,
@@ -19,13 +18,9 @@ import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import { supabase } from "@/src/config/supabase";
 import { useSignupStore } from "@/src/stores/signupStore";
 import { theme } from "@/src/theme";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { authValidation } from "../api/authApi";
 import { useSignUp } from "../hooks/useSignUp";
-
-const { width } = Dimensions.get("window");
-const scale = (size: number) => (width / 375) * size;
-const moderateScale = (size: number, factor = 0.5) =>
-  size + (scale(size) - size) * factor;
 
 type UserType = "filipina" | "foreigner";
 
@@ -41,6 +36,112 @@ function SignUpScreen() {
   const params = useLocalSearchParams<{ userType?: string }>();
   const { signUp, loading } = useSignUp();
   const saveSignupData = useSignupStore((state) => state.saveSignupData);
+  const { moderateScale, screenWidth: width } = useResponsive();
+
+  const styles = useMemo(() => StyleSheet.create({
+    logoWrap: {
+      alignItems: "center",
+      marginTop: moderateScale(8),
+      marginBottom: theme.spacing.sm,
+    },
+    logo: {
+      width: Math.min(140, width * 0.4),
+      height: undefined,
+      aspectRatio: 1.8,
+    },
+    userTypeBadge: {
+      backgroundColor: "rgba(141,105,246,0.15)",
+      borderRadius: 12,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      marginHorizontal: theme.spacing.lg,
+      marginBottom: theme.spacing.md,
+      alignSelf: "center",
+      borderWidth: 1,
+      borderColor: "rgba(141,105,246,0.3)",
+    },
+    userTypeBadgeText: {
+      fontSize: 13,
+      fontFamily: theme.fontFamilies.body.semiBold,
+      color: theme.colors.dalisay[400],
+      textAlign: "center",
+    },
+    formContainer: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingBottom: moderateScale(12),
+    },
+    expectationCard: {
+      borderLeftWidth: 3,
+      borderLeftColor: theme.colors.dalisay[400],
+      backgroundColor: "rgba(141,105,246,0.08)",
+      paddingLeft: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
+    },
+    expectationTitle: {
+      color: theme.colors.neutral.white,
+      fontFamily: theme.fontFamilies.body.semiBold,
+      fontSize: 14,
+      lineHeight: 20,
+      marginBottom: theme.spacing.xs,
+    },
+    expectationText: {
+      color: "rgba(255,255,255,0.72)",
+      fontFamily: theme.fontFamilies.body.regular,
+      fontSize: 13,
+      lineHeight: 20,
+    },
+    legalConsent: {
+      alignItems: "center",
+      marginTop: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
+      paddingHorizontal: theme.spacing.sm,
+    },
+    legalConsentText: {
+      color: "rgba(255,255,255,0.68)",
+      fontFamily: theme.fontFamilies.body.regular,
+      fontSize: 12,
+      lineHeight: 18,
+      textAlign: "center",
+    },
+    legalConsentLinks: {
+      alignItems: "center",
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 6,
+      justifyContent: "center",
+    },
+    legalConsentLink: {
+      color: theme.colors.neutral.white,
+      fontFamily: theme.fontFamilies.body.semiBold,
+      fontSize: 12,
+      lineHeight: 44,
+      minHeight: 44,
+      textAlign: "center",
+      textDecorationLine: "underline",
+    },
+    emailOnlyNotice: {
+      borderLeftWidth: 3,
+      borderLeftColor: "rgba(255,255,255,0.34)",
+      paddingLeft: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      marginTop: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+    },
+    emailOnlyTitle: {
+      color: theme.colors.neutral.white,
+      fontFamily: theme.fontFamilies.body.semiBold,
+      fontSize: 14,
+      lineHeight: 20,
+      marginBottom: theme.spacing.xs,
+    },
+    emailOnlyText: {
+      color: "rgba(255,255,255,0.68)",
+      fontFamily: theme.fontFamilies.body.regular,
+      fontSize: 13,
+      lineHeight: 19,
+    },
+  }), [moderateScale, width]);
 
   const [form, setForm] = useState<FormState>({
     firstName: "",
@@ -158,7 +259,7 @@ function SignUpScreen() {
     <AuthLayout showBackButton>
       <View style={styles.logoWrap}>
         <Image
-          source={require("@/assets/logo-no-bg.png")}
+          source={require("@/assets/images/brand/logo-no-bg.png")}
           style={styles.logo}
           resizeMode="contain"
           accessible
@@ -315,107 +416,3 @@ function SignUpScreen() {
 
 export default SignUpScreen;
 
-const styles = StyleSheet.create({
-  logoWrap: {
-    alignItems: "center",
-    marginTop: moderateScale(8),
-    marginBottom: theme.spacing.sm,
-  },
-  logo: {
-    width: Math.min(140, width * 0.4),
-    height: undefined,
-    aspectRatio: 1.8,
-  },
-  userTypeBadge: {
-    backgroundColor: "rgba(141,105,246,0.15)",
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
-    alignSelf: "center",
-    borderWidth: 1,
-    borderColor: "rgba(141,105,246,0.3)",
-  },
-  userTypeBadgeText: {
-    fontSize: 13,
-    fontFamily: theme.fontFamilies.body.semiBold,
-    color: theme.colors.dalisay[400],
-    textAlign: "center",
-  },
-  formContainer: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: moderateScale(12),
-  },
-  expectationCard: {
-    borderLeftWidth: 3,
-    borderLeftColor: theme.colors.dalisay[400],
-    backgroundColor: "rgba(141,105,246,0.08)",
-    paddingLeft: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    marginBottom: theme.spacing.md,
-  },
-  expectationTitle: {
-    color: theme.colors.neutral.white,
-    fontFamily: theme.fontFamilies.body.semiBold,
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: theme.spacing.xs,
-  },
-  expectationText: {
-    color: "rgba(255,255,255,0.72)",
-    fontFamily: theme.fontFamilies.body.regular,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  legalConsent: {
-    alignItems: "center",
-    marginTop: theme.spacing.sm,
-    marginBottom: theme.spacing.md,
-    paddingHorizontal: theme.spacing.sm,
-  },
-  legalConsentText: {
-    color: "rgba(255,255,255,0.68)",
-    fontFamily: theme.fontFamilies.body.regular,
-    fontSize: 12,
-    lineHeight: 18,
-    textAlign: "center",
-  },
-  legalConsentLinks: {
-    alignItems: "center",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    justifyContent: "center",
-  },
-  legalConsentLink: {
-    color: theme.colors.neutral.white,
-    fontFamily: theme.fontFamilies.body.semiBold,
-    fontSize: 12,
-    lineHeight: 44,
-    minHeight: 44,
-    textAlign: "center",
-    textDecorationLine: "underline",
-  },
-  emailOnlyNotice: {
-    borderLeftWidth: 3,
-    borderLeftColor: "rgba(255,255,255,0.34)",
-    paddingLeft: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    marginTop: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-  },
-  emailOnlyTitle: {
-    color: theme.colors.neutral.white,
-    fontFamily: theme.fontFamilies.body.semiBold,
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: theme.spacing.xs,
-  },
-  emailOnlyText: {
-    color: "rgba(255,255,255,0.68)",
-    fontFamily: theme.fontFamilies.body.regular,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-});

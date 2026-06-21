@@ -1,8 +1,8 @@
 import { colors, theme } from "@/src/theme";
-import React from "react";
+import { useResponsive } from "@/src/hooks/useResponsive";
+import React, { useMemo } from "react";
 import {
   ActivityIndicator,
-  Dimensions,
   DimensionValue,
   Platform,
   StyleSheet,
@@ -11,12 +11,7 @@ import {
   View,
 } from "react-native";
 
-const { width } = Dimensions.get("window");
 
-// Responsive scaling
-const scale = (size: number) => (width / 375) * size;
-const moderateScale = (size: number, factor = 0.5) =>
-  size + (scale(size) - size) * factor;
 
 interface SecondaryButtonProps {
   title: string;
@@ -48,6 +43,43 @@ export default function SecondaryButton({
     : accessibilityLabel || title;
 
   const variantStyles = getVariantStyles(variant);
+  const { moderateScale } = useResponsive();
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      borderRadius: moderateScale(28),
+      height: moderateScale(56),
+      minHeight: 52,
+      borderWidth: Platform.select({ ios: 1.5, android: 2, web: 1.5 }),
+      justifyContent: "center",
+      alignItems: "center",
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: Platform.select({ ios: 0.25, android: 0.2, web: 0.2 }),
+      shadowRadius: 12,
+      elevation: 6,
+    },
+
+    content: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: moderateScale(8),
+      paddingHorizontal: theme.spacing.md,
+      minHeight: 52,
+      width: "100%",
+    },
+
+    text: {
+      color: colors.neutral.white,
+      fontSize: 17,
+      fontFamily: theme.fontFamilies.body.semiBold,
+      letterSpacing: 0,
+      textShadowOffset: { width: 0, height: 2 },
+      textShadowRadius: 4,
+      flexShrink: 1,
+      textAlign: "center",
+    },
+  }), [moderateScale]);
 
   return (
     <TouchableOpacity
@@ -125,38 +157,3 @@ function getVariantStyles(variant: "purple" | "pink" | "white") {
   return variants[variant];
 }
 
-const styles = StyleSheet.create({
-  container: {
-    borderRadius: moderateScale(28),
-    height: moderateScale(56),
-    minHeight: 52,
-    borderWidth: Platform.select({ ios: 1.5, android: 2, web: 1.5 }),
-    justifyContent: "center",
-    alignItems: "center",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: Platform.select({ ios: 0.25, android: 0.2, web: 0.2 }),
-    shadowRadius: 12,
-    elevation: 6,
-  },
-
-  content: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: moderateScale(8),
-    paddingHorizontal: theme.spacing.md,
-    minHeight: 52,
-    width: "100%",
-  },
-
-  text: {
-    color: colors.neutral.white,
-    fontSize: 17,
-    fontFamily: theme.fontFamilies.body.semiBold,
-    letterSpacing: 0,
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-    flexShrink: 1,
-    textAlign: "center",
-  },
-});

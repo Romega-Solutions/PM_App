@@ -121,26 +121,13 @@ export const authApi = {
           ? "Account created successfully"
           : "Verification email sent. Please check your inbox.",
       };
-    } catch (error) {
+    } catch (e) {
       console.error("Signup failed.");
-      if (
-        error instanceof Error &&
-        error.message === AUTH_FIRST_NAME_INPUT_ERROR
-      ) {
-        throw new Error(AUTH_FIRST_NAME_INPUT_ERROR);
+      if (e instanceof Error) {
+        if (e.message === AUTH_FIRST_NAME_INPUT_ERROR) throw new Error(AUTH_FIRST_NAME_INPUT_ERROR);
+        if (e.message === AUTH_EMAIL_INPUT_ERROR) throw new Error(AUTH_EMAIL_INPUT_ERROR);
+        if (e.message === "Please select a valid account type") throw new Error("Please select a valid account type");
       }
-
-      if (error instanceof Error && error.message === AUTH_EMAIL_INPUT_ERROR) {
-        throw new Error(AUTH_EMAIL_INPUT_ERROR);
-      }
-
-      if (
-        error instanceof Error &&
-        error.message === "Please select a valid account type"
-      ) {
-        throw new Error("Please select a valid account type");
-      }
-
       throw new Error(AUTH_SIGNUP_ERROR);
     }
   },

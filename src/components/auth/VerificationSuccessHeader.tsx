@@ -18,7 +18,7 @@ export default function VerificationSuccessHeader({
     <View style={styles.container}>
       <View style={styles.logoWrap}>
         <Image
-          source={require("@/assets/logo-no-bg.png")}
+          source={require("@/assets/images/brand/logo-no-bg.png")}
           style={styles.logo}
           resizeMode="contain"
         />

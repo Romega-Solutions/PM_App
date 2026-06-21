@@ -8,6 +8,7 @@
 import { supabase } from "@/src/config/supabase";
 import { decode } from "base64-arraybuffer";
 import * as FileSystem from "expo-file-system/legacy";
+import { Platform } from "react-native";
 import { BasicInfoPayload } from "./basicInfoApi";
 
 export type VerificationData = {
@@ -125,25 +126,41 @@ async function uploadVerificationImage(
   kind: "selfie" | "document",
 ): Promise<string> {
   const normalizedUri = normalizeVerificationUri(uri);
-  const fileInfo = await FileSystem.getInfoAsync(normalizedUri);
-
-  if (
-    !fileInfo.exists ||
-    (typeof fileInfo.size === "number" &&
-      fileInfo.size > MAX_VERIFICATION_IMAGE_BYTES)
-  ) {
-    throw new Error(VERIFICATION_UPLOAD_ERROR);
-  }
-
   const extension = getImageExtension(normalizedUri);
   const filePath = `${userId}/${kind}-${Date.now()}.${extension}`;
-  const base64 = await FileSystem.readAsStringAsync(normalizedUri, {
-    encoding: "base64",
-  });
+
+  let fileBody: ArrayBuffer;
+
+  if (Platform.OS === "web") {
+    try {
+      const response = await fetch(normalizedUri);
+      fileBody = await response.arrayBuffer();
+      if (fileBody.byteLength > MAX_VERIFICATION_IMAGE_BYTES) {
+        throw new Error(VERIFICATION_UPLOAD_ERROR);
+      }
+    } catch {
+      throw new Error(VERIFICATION_UPLOAD_ERROR);
+    }
+  } else {
+    const fileInfo = await FileSystem.getInfoAsync(normalizedUri);
+
+    if (
+      !fileInfo.exists ||
+      (typeof fileInfo.size === "number" &&
+        fileInfo.size > MAX_VERIFICATION_IMAGE_BYTES)
+    ) {
+      throw new Error(VERIFICATION_UPLOAD_ERROR);
+    }
+
+    const base64 = await FileSystem.readAsStringAsync(normalizedUri, {
+      encoding: "base64",
+    });
+    fileBody = decode(base64);
+  }
 
   const { error } = await supabase.storage
     .from(VERIFICATION_BUCKET)
-    .upload(filePath, decode(base64), {
+    .upload(filePath, fileBody, {
       contentType: getImageContentType(extension),
       upsert: false,
     });

@@ -6,10 +6,9 @@ import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import { semanticColors, theme } from "@/src/theme";
 import { useRouter } from "expo-router";
 import { Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Alert,
-  Dimensions,
   Platform,
   StyleSheet,
   Text,
@@ -18,14 +17,48 @@ import {
 } from "react-native";
 import { useSignIn } from "../hooks/useSignIn";
 
-const { width } = Dimensions.get("window");
-const scale = (size: number) => (width / 375) * size;
-const moderateScale = (size: number, factor = 0.5) =>
-  size + (scale(size) - size) * factor;
-
+import { useResponsive } from "@/src/hooks/useResponsive";
 export default function SignInScreen() {
   const router = useRouter();
   const { signIn, loading } = useSignIn();
+  const { moderateScale } = useResponsive();
+
+  const styles = useMemo(() => StyleSheet.create({
+    formContainer: {
+      paddingHorizontal: theme.spacing.lg,
+    },
+    trustStrip: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 10,
+      borderLeftWidth: 3,
+      borderLeftColor: theme.colors.amihan[300],
+      backgroundColor: "rgba(141,105,246,0.08)",
+      paddingLeft: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
+    },
+    trustStripText: {
+      flex: 1,
+      color: "rgba(255,255,255,0.78)",
+      fontSize: moderateScale(13),
+      lineHeight: moderateScale(19),
+      fontFamily: theme.fontFamilies.body.regular,
+    },
+    forgotPasswordContainer: {
+      alignSelf: "flex-end",
+      marginBottom: theme.spacing.xl,
+      minHeight: 44,
+      justifyContent: "center",
+      paddingHorizontal: moderateScale(4),
+    },
+    forgotPasswordText: {
+      color: semanticColors.primary,
+      fontSize: moderateScale(14),
+      fontFamily: theme.fontFamilies.body.semiBold,
+      letterSpacing: Platform.select({ ios: 0.2, android: 0.15, web: 0.2 }),
+    },
+  }), [moderateScale]);
 
   // Form state
   const [email, setEmail] = useState("");
@@ -181,39 +214,3 @@ export default function SignInScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  formContainer: {
-    paddingHorizontal: theme.spacing.lg,
-  },
-  trustStrip: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: theme.colors.amihan[300],
-    backgroundColor: "rgba(141,105,246,0.08)",
-    paddingLeft: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    marginBottom: theme.spacing.md,
-  },
-  trustStripText: {
-    flex: 1,
-    color: "rgba(255,255,255,0.78)",
-    fontSize: moderateScale(13),
-    lineHeight: moderateScale(19),
-    fontFamily: theme.fontFamilies.body.regular,
-  },
-  forgotPasswordContainer: {
-    alignSelf: "flex-end",
-    marginBottom: theme.spacing.xl,
-    minHeight: 44,
-    justifyContent: "center",
-    paddingHorizontal: moderateScale(4),
-  },
-  forgotPasswordText: {
-    color: semanticColors.primary,
-    fontSize: moderateScale(14),
-    fontFamily: theme.fontFamilies.body.semiBold,
-    letterSpacing: Platform.select({ ios: 0.2, android: 0.15, web: 0.2 }),
-  },
-});

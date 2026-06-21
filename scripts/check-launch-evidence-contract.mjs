@@ -3,13 +3,13 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const rootDir = dirname(dirname(fileURLToPath(import.meta.url)));
-const launchEvidencePath = "docs/LAUNCH_EVIDENCE_PACKET.md";
+const launchEvidencePath = "docs/release/LAUNCH_EVIDENCE_PACKET.md";
 const launchEvidence = readFile(launchEvidencePath);
 
 const requiredLaunchEvidenceMarkers = [
   {
     label: "launch-state matrix source of truth",
-    marker: "docs/PINAYMATE_LAUNCH_STATE_MATRIX.md",
+    marker: "docs/release/PINAYMATE_LAUNCH_STATE_MATRIX.md",
   },
   {
     label: "launch-state matrix evidence note",

@@ -1,5 +1,6 @@
 import { supabase } from "@/src/config/supabase";
 import * as FileSystem from "expo-file-system/legacy";
+import { Platform } from "react-native";
 
 export type OCRResult = {
   firstName?: string;
@@ -36,6 +37,19 @@ function getImageContentType(extension: string): string {
 }
 
 async function assertReadableOcrDocument(uri: string): Promise<void> {
+  if (Platform.OS === "web") {
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      if (blob.size > MAX_OCR_DOCUMENT_BYTES) {
+        throw new Error("OCR could not read this document. Try a clearer photo.");
+      }
+    } catch {
+      throw new Error("OCR could not read this document. Try a clearer photo.");
+    }
+    return;
+  }
+
   const fileInfo = await FileSystem.getInfoAsync(uri);
 
   if (

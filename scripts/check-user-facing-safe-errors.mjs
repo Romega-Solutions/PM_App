@@ -83,10 +83,7 @@ const contracts = [
       "CHAT_IMAGE_DELETE_ERROR",
     ],
   },
-  {
-    path: "src/features/messaging/api/messagesApi.ts",
-    markers: ["LEGACY_CONVERSATIONS_ERROR", "LEGACY_READ_STATUS_ERROR"],
-  },
+
   {
     path: "src/features/messaging/hooks/useConversations.ts",
     markers: ["CONVERSATIONS_LOAD_ERROR"],

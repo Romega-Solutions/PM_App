@@ -45,7 +45,7 @@ export default function Welcome() {
       {/* Background */}
       <View style={StyleSheet.absoluteFill}>
         <Image
-          source={require("../../assets/welcome.jpg")}
+          source={require("../../assets/images/onboarding/welcome.jpg")}
           style={styles.bgImage}
           resizeMode="cover"
           accessible
@@ -80,7 +80,7 @@ export default function Welcome() {
             accessibilityLabel="PinayMate logo"
           >
             <Image
-              source={require("../../assets/logo-no-bg.png")}
+              source={require("../../assets/images/brand/logo-no-bg.png")}
               style={styles.logoImage}
               resizeMode="contain"
             />

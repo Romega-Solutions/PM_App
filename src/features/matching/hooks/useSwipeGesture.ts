@@ -9,7 +9,7 @@
  * KISS: Simple API - just provide callbacks
  */
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { Animated, Dimensions, PanResponder, PanResponderInstance } from "react-native";
 
 const { width, height } = Dimensions.get("window");
@@ -59,7 +59,7 @@ export function useSwipeGesture(
   /**
    * Reset card to center position
    */
-  const resetPosition = () => {
+  const resetPosition = useCallback(() => {
     Animated.spring(pan, {
       toValue: { x: 0, y: 0 },
       useNativeDriver: false,
@@ -69,34 +69,37 @@ export function useSwipeGesture(
       toValue: 0,
       useNativeDriver: false,
     }).start();
-  };
+  }, [pan, swipeUpValue]);
 
   /**
    * Animate card swipe in specific direction
    */
-  const animateSwipe = (direction: "left" | "right" | "up") => {
-    let toValue: { x: number; y: number };
+  const animateSwipe = useCallback(
+    (direction: "left" | "right" | "up") => {
+      let toValue: { x: number; y: number };
 
-    switch (direction) {
-      case "left":
-        toValue = { x: -width * 1.5, y: 0 };
-        break;
-      case "right":
-        toValue = { x: width * 1.5, y: 0 };
-        break;
-      case "up":
-        toValue = { x: 0, y: -height };
-        break;
-    }
+      switch (direction) {
+        case "left":
+          toValue = { x: -width * 1.5, y: 0 };
+          break;
+        case "right":
+          toValue = { x: width * 1.5, y: 0 };
+          break;
+        case "up":
+          toValue = { x: 0, y: -height };
+          break;
+      }
 
-    Animated.spring(pan, {
-      toValue,
-      useNativeDriver: false,
-    }).start(() => {
-      // Reset position after animation
-      pan.setValue({ x: 0, y: 0 });
-    });
-  };
+      Animated.spring(pan, {
+        toValue,
+        useNativeDriver: false,
+      }).start(() => {
+        // Reset position after animation
+        pan.setValue({ x: 0, y: 0 });
+      });
+    },
+    [pan]
+  );
 
   // Gesture handler
   const panResponder = useRef(

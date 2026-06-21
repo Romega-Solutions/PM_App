@@ -51,8 +51,8 @@ Plan-interest capture is useful for conversion learning, but collecting payment 
 
 If this decision changes, update all of these before publishing stronger claims:
 
-- `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md`
-- `PM_Web/docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md`
+- `docs/release/PINAYMATE_LAUNCH_STATE_MATRIX.md`
+- `PM_Web/docs/release/PINAYMATE_LAUNCH_STATE_MATRIX.md`
 - `PM_Web/src/lib/launchEmailLinks.ts`
 - PM_Web membership and CTA copy
 - PM_App paid-feature or unavailable-feature copy

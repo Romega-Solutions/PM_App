@@ -6,7 +6,7 @@ Purpose: define the product-design evidence required before PinayMate can be cal
 
 Status: required for launch review. This standard does not replace native QA, browser QA, accessibility checks, or live backend proof.
 
-Claim source of truth: all design review decisions must use `docs\release\PINAYMATE_LAUNCH_STATE_MATRIX.md`. If the matrix says a feature is waitlist-only, gated, source-only, or blocked pending proof, the UI must not make that feature look live.
+Claim source of truth: The baseline expected state is defined in `docs/release/PINAYMATE_LAUNCH_STATE_MATRIX.md`. If the matrix says a feature is waitlist-only, gated, source-only, or blocked pending proof, the UI must not make that feature look live.
 
 ## Design intent
 

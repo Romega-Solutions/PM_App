@@ -217,16 +217,23 @@ type LikeProfileRpcResult = {
 
 type MatchingAction = "like" | "pass" | "undo";
 
+export const MATCHING_ERRORS = {
+  LIKE: "Like did not send. Check your connection and try again.",
+  PASS: "Pass did not save. Check your connection and try again.",
+  UNDO: "Undo did not complete. Check your connection and try again.",
+  SUPERLIKE: "Super like did not send. Check your connection and try again.",
+} as const;
+
 const getSafeMatchingActionError = (action: MatchingAction): string => {
   if (action === "pass") {
-    return "Pass did not save. Check your connection and try again.";
+    return MATCHING_ERRORS.PASS;
   }
 
   if (action === "undo") {
-    return "Undo did not complete. Check your connection and try again.";
+    return MATCHING_ERRORS.UNDO;
   }
 
-  return "Like did not send. Check your connection and try again.";
+  return MATCHING_ERRORS.LIKE;
 };
 
 const isReviewedLaunchDiscoveryProfile = (profile: {

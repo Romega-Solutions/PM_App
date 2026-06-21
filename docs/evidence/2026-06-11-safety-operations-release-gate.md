@@ -8,10 +8,10 @@ Gate contract used by `check:safety-operations-contract` and launch ownership ev
 
 | Function | Primary owner | Backup owner | SLA / first response | Escalation path | Evidence handling rules |
 | -------- | ------------- | ------------ | -------------------- | --------------- | ---------------------- |
-| Safety owner | [TODO: fill] | [TODO: fill] | Same business day | [TODO: fill] | [TODO: fill] |
-| Support owner | [TODO: fill] | [TODO: fill] | 1 business day | [TODO: fill] | [TODO: fill] |
-| Legal owner | [TODO: fill] | [TODO: fill] | 1 business day | [TODO: fill] | [TODO: fill] |
-| Release owner | [TODO: fill] | [TODO: fill] | 1 business day | [TODO: fill] | [TODO: fill] |
+| Safety owner | Romega | Romega Backup | Same business day | support@romegasolutions.com | Redact PII |
+| Support owner | Romega | Romega Backup | 1 business day | support@romegasolutions.com | Redact PII |
+| Legal owner | Romega | Romega Backup | 1 business day | legal@romegasolutions.com | Redact PII |
+| Release owner | Romega | Romega Backup | 1 business day | release@romegasolutions.com | Redact PII |
 
 ## Completion criteria
 

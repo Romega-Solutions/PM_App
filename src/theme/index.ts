@@ -6,6 +6,7 @@ import { fontFamilies, fontSizes, textStyles } from "./typography";
 export { colors, semanticColors } from "./colors";
 export { borderRadius, spacing } from "../shared/utils/spacing";
 export { fontFamilies, fontSizes, lineHeights, textStyles } from "./typography";
+export { scale, moderateScale } from "./responsive";
 
 // Export a complete theme object
 export const theme = {

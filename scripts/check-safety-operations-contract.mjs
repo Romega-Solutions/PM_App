@@ -4,10 +4,9 @@ import { fileURLToPath } from "node:url";
 
 const rootDir = dirname(dirname(fileURLToPath(import.meta.url)));
 
-const safetyRunbookPath = "docs/SAFETY_MODERATION_RUNBOOK.md";
-const safetyEvidencePath =
-  "docs/evidence/2026-06-11-safety-operations-release-gate.md";
-const launchEvidencePath = "docs/LAUNCH_EVIDENCE_PACKET.md";
+const safetyRunbookPath = "docs/operations/SAFETY_MODERATION_RUNBOOK.md";
+const safetyEvidencePath = "docs/evidence/2026-06-11-safety-operations-release-gate.md";
+const launchEvidencePath = "docs/release/LAUNCH_EVIDENCE_PACKET.md";
 const packageJsonPath = "package.json";
 const releaseAggregatorPath = "scripts/check-release-local.mjs";
 const requiredGate = "check:safety-operations-contract";

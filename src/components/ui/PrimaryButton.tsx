@@ -1,10 +1,9 @@
 import { colors, semanticColors, theme } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronRight } from "lucide-react-native";
-import React from "react";
+import React, { useMemo } from "react";
 import {
   ActivityIndicator,
-  Dimensions,
   DimensionValue,
   Platform,
   StyleSheet,
@@ -13,12 +12,7 @@ import {
   View,
 } from "react-native";
 
-const { width } = Dimensions.get("window");
-
-// Responsive scaling
-const scale = (size: number) => (width / 375) * size;
-const moderateScale = (size: number, factor = 0.5) =>
-  size + (scale(size) - size) * factor;
+import { useResponsive } from "@/src/hooks/useResponsive";
 
 interface PrimaryButtonProps {
   title: string;
@@ -48,6 +42,51 @@ export default function PrimaryButton({
   const screenReaderLabel = loading
     ? `${accessibilityLabel || title}. ${loadingLabel ?? "In progress."}`
     : accessibilityLabel || title;
+
+  const { moderateScale } = useResponsive();
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      borderRadius: moderateScale(28),
+      height: moderateScale(56),
+      minHeight: 52,
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: semanticColors.primary,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: Platform.select({ ios: 0.5, android: 0.4, web: 0.3 }),
+      shadowRadius: 20,
+      elevation: 12,
+      overflow: "hidden",
+    },
+
+    content: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: moderateScale(8),
+      paddingHorizontal: theme.spacing.md,
+      width: "100%",
+      minHeight: 52,
+    },
+
+    text: {
+      color: colors.neutral.white,
+      fontSize: 17,
+      fontFamily: theme.fontFamilies.body.semiBold,
+      letterSpacing: 0,
+      textShadowColor: "rgba(0, 0, 0, 0.3)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 3,
+      flexShrink: 1,
+      textAlign: "center",
+    },
+
+    textWithChevron: {
+      marginRight: moderateScale(4),
+    },
+  }), [moderateScale]);
 
   return (
     <TouchableOpacity
@@ -105,45 +144,3 @@ export default function PrimaryButton({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    borderRadius: moderateScale(28),
-    height: moderateScale(56),
-    minHeight: 52,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: semanticColors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: Platform.select({ ios: 0.5, android: 0.4, web: 0.3 }),
-    shadowRadius: 20,
-    elevation: 12,
-    overflow: "hidden",
-  },
-
-  content: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: moderateScale(8),
-    paddingHorizontal: theme.spacing.md,
-    width: "100%",
-    minHeight: 52,
-  },
-
-  text: {
-    color: colors.neutral.white,
-    fontSize: 17,
-    fontFamily: theme.fontFamilies.body.semiBold,
-    letterSpacing: 0,
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-    flexShrink: 1,
-    textAlign: "center",
-  },
-
-  textWithChevron: {
-    marginRight: moderateScale(4),
-  },
-});

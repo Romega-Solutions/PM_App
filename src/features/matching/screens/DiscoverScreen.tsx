@@ -19,6 +19,7 @@ import { LaunchStateNotice } from "@/src/components/ui/LaunchStateNotice";
 import {
   fetchDiscoverProfiles,
   likeProfile,
+  MATCHING_ERRORS,
   passProfile,
   superLikeProfile,
 } from "@/src/features/matching/api/matchingApi";
@@ -57,7 +58,6 @@ const WHITE = "#FFFFFF";
 const TEXT_SECONDARY = "rgba(255, 255, 255, 0.74)";
 const TEXT_MUTED = "rgba(255, 255, 255, 0.56)";
 const SURFACE_BORDER = "rgba(239, 62, 120, 0.24)";
-
 function isMissingAuthSession(error: unknown) {
   return (
     typeof error === "object" &&
@@ -239,8 +239,7 @@ export const DiscoverScreen: React.FC = () => {
 
       if (!result.success) {
         setActionError(
-          result.error ||
-            "Like did not send. Check your connection and try again.",
+          result.error || MATCHING_ERRORS.LIKE,
         );
         setLastFailedAction("like");
         resetPosition();
@@ -257,7 +256,7 @@ export const DiscoverScreen: React.FC = () => {
       moveToNextProfile();
     } catch {
       console.error("Failed to like profile.");
-      setActionError("Like did not send. Check your connection and try again.");
+      setActionError(MATCHING_ERRORS.LIKE);
       setLastFailedAction("like");
       resetPosition();
     } finally {
@@ -281,8 +280,7 @@ export const DiscoverScreen: React.FC = () => {
 
       if (!result.success) {
         setActionError(
-          result.error ||
-            "Pass did not save. Check your connection and try again.",
+          result.error || MATCHING_ERRORS.PASS,
         );
         setLastFailedAction("pass");
         resetPosition();
@@ -293,7 +291,7 @@ export const DiscoverScreen: React.FC = () => {
       moveToNextProfile();
     } catch {
       console.error("Failed to pass profile.");
-      setActionError("Pass did not save. Check your connection and try again.");
+      setActionError(MATCHING_ERRORS.PASS);
       setLastFailedAction("pass");
       resetPosition();
     } finally {
@@ -317,8 +315,7 @@ export const DiscoverScreen: React.FC = () => {
 
       if (!result.success) {
         setActionError(
-          result.error ||
-            "Super like did not send. Check your connection and try again.",
+          result.error || MATCHING_ERRORS.SUPERLIKE,
         );
         setLastFailedAction("superLike");
         resetPosition();
@@ -335,9 +332,7 @@ export const DiscoverScreen: React.FC = () => {
       moveToNextProfile();
     } catch {
       console.error("Failed to super like profile.");
-      setActionError(
-        "Super like did not send. Check your connection and try again.",
-      );
+      setActionError(MATCHING_ERRORS.SUPERLIKE);
       setLastFailedAction("superLike");
       resetPosition();
     } finally {
