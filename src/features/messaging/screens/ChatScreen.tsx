@@ -1,6 +1,5 @@
 import * as ImagePicker from "expo-image-picker";
-import {
-  Reply, LinearGradient } from "expo-linear-gradient";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   AlertCircle,
