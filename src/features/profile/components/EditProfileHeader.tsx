@@ -33,7 +33,7 @@ export const EditProfileHeader: React.FC<EditProfileHeaderProps> = ({
 }) => {
   return (
     <>
-      {Platform.OS === "ios" && (
+      {Platform.OS !== "web" && (
         <View style={{ height: 44, backgroundColor: BRAND_BG }} />
       )}
       <View style={styles.header}>

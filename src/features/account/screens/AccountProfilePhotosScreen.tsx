@@ -92,7 +92,7 @@ export default function AccountProfilePhotosScreen() {
         barStyle="light-content"
         backgroundColor={theme.colors.dalisay[950] ?? "#0F0814"}
       />
-      {Platform.OS === "ios" && (
+      {Platform.OS !== "web" && (
         <View
           style={{
             height: insets.top,

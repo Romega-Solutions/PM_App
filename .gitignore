@@ -46,3 +46,8 @@ app-example
 
 supabase/.temp/
 
+# Agent Workspaces
+.agents/
+agents/
+ORIGINAL_REQUEST.md
+fix-evidence.mjs

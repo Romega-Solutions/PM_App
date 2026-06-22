@@ -128,7 +128,7 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
       onRequestClose={onClose}
       accessibilityViewIsModal
     >
-      <View style={styles.modalContainer} {...panHandlers}>
+      <View style={[styles.modalContainer, { touchAction: "none" } as any]} {...panHandlers}>
         <LinearGradient
           colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
           locations={[0, 0.3, 0.7, 1]}

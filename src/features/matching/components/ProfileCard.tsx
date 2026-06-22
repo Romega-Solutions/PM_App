@@ -70,6 +70,8 @@ export interface ProfileCardData {
   relationshipGoal?: string;
   languages?: string[];
   bodyType?: string;
+  /** True when this is a demo/seed profile, not a real user */
+  isSeedProfile?: boolean;
 }
 
 export interface ProfileCardProps {
@@ -129,7 +131,8 @@ export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({
           width: cardWidth,
           height: cardHeight,
           transform: [{ translateX: pan.x }, { translateY: pan.y }, { rotate }],
-        },
+          touchAction: "none",
+        } as any,
         style,
       ]}
       {...panHandlers}
@@ -230,6 +233,17 @@ export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({
           accessibilityLabel="Verified profile"
         >
           <ShieldCheck size={14} color={WHITE} strokeWidth={2.5} />
+        </View>
+      )}
+
+      {/* Demo Badge for seed profiles */}
+      {profile.isSeedProfile && (
+        <View
+          style={styles.demoBadge}
+          accessible
+          accessibilityLabel="Demo profile — not a real member"
+        >
+          <Text style={styles.demoBadgeText}>Demo</Text>
         </View>
       )}
 

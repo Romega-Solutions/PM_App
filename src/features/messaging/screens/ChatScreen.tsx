@@ -735,7 +735,7 @@ export default function ChatScreen() {
       />
 
       {/* iOS Safe Area Top */}
-      {Platform.OS === "ios" && (
+      {Platform.OS !== "web" && (
         <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
       )}
 

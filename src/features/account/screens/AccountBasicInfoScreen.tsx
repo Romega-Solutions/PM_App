@@ -207,7 +207,7 @@ export default function AccountBasicInfoScreen() {
         translucent={false}
         backgroundColor={theme.colors.dalisay[950]}
       />
-      {Platform.OS === "ios" && (
+      {Platform.OS !== "web" && (
         <View
           style={{
             height: insets.top,

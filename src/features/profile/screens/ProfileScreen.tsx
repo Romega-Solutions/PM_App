@@ -228,7 +228,7 @@ export const ProfileScreen: React.FC = () => {
           backgroundColor={BRAND_BG}
           translucent={false}
         />
-        {Platform.OS === "ios" && (
+        {Platform.OS !== "web" && (
           <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
         )}
         <LinearGradient
@@ -255,7 +255,7 @@ export const ProfileScreen: React.FC = () => {
           backgroundColor={BRAND_BG}
           translucent={false}
         />
-        {Platform.OS === "ios" && (
+        {Platform.OS !== "web" && (
           <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
         )}
         <LinearGradient
@@ -298,7 +298,7 @@ export const ProfileScreen: React.FC = () => {
         backgroundColor={BRAND_BG}
         translucent={false}
       />
-      {Platform.OS === "ios" && (
+      {Platform.OS !== "web" && (
         <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
       )}
 

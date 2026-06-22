@@ -229,7 +229,7 @@ export default function LikesScreen() {
           backgroundColor={BRAND_BG}
           translucent={false}
         />
-        {Platform.OS === "ios" && (
+        {Platform.OS !== "web" && (
           <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
         )}
         <View style={styles.loadingPanel}>
@@ -255,7 +255,7 @@ export default function LikesScreen() {
         backgroundColor={BRAND_BG}
         translucent={false}
       />
-      {Platform.OS === "ios" && (
+      {Platform.OS !== "web" && (
         <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
       )}
 
