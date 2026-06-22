@@ -120,7 +120,7 @@ export const DiscoverScreen: React.FC = () => {
 
   const currentProfile = profiles[currentIndex] || null;
 
-  const resetPositionRef = useRef<(() => void) | null>(null);
+  const resetPositionRef = React.useRef<(() => void) | null>(null);
 
   const previewPan = React.useRef(new Animated.ValueXY()).current;
   const previewRotate = previewPan.x.interpolate({
@@ -260,7 +260,7 @@ export const DiscoverScreen: React.FC = () => {
           result.error || MATCHING_ERRORS.LIKE,
         );
         setLastFailedAction("like");
-        resetPosition();
+        resetPositionRef.current?.();
         return;
       }
 
@@ -352,7 +352,7 @@ export const DiscoverScreen: React.FC = () => {
           result.error || MATCHING_ERRORS.SUPERLIKE,
         );
         setLastFailedAction("superLike");
-        resetPosition();
+        resetPositionRef.current?.();
         return;
       }
 
@@ -403,12 +403,6 @@ export const DiscoverScreen: React.FC = () => {
     resetPositionRef.current = resetPosition;
   }, [resetPosition]);
 
-  const previewPan = React.useRef(new Animated.ValueXY()).current;
-  const previewRotate = previewPan.x.interpolate({
-    inputRange: [-1, 0, 1],
-    outputRange: ["0deg", "0deg", "0deg"],
-    extrapolate: "clamp",
-  });
 
   const handleKeepSwiping = useCallback(() => {
     setShowMatchModal(false);
