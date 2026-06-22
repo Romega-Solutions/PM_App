@@ -8,7 +8,7 @@ Purpose: define the evidence required before PinayMate can be called production-
 
 Status: not launch-ready until the blocked evidence below is captured.
 
-PM_App and PM_Web local quality checks passed on the current worktree on 2026-06-11. PM_App release-local still fails because the production ownership contract rejects the current Expo owner until it is proven Romega-controlled or transferred. Production readiness still requires live Supabase migration proof, deployed OCR proof, native device QA, safety/support/legal/release owner assignment, production PM_Web and mailbox proof, and final launch-link validation.
+PM_App and PM_Web local quality checks and the `release-local` gate passed on the current worktree. Production readiness still requires live Supabase migration proof, deployed OCR proof, native device QA, safety/support/legal/release owner assignment, production PM_Web and mailbox proof, and final launch-link validation.
 
 Use `docs/release/PINAYMATE_LAUNCH_STATE_MATRIX.md` as the shared claim contract, `docs\release\PRODUCTION_OWNERSHIP_CHECKLIST.md` for account ownership signoff, `docs\operations\SUPABASE_RELEASE_OPERATOR_CHECKLIST.md` for backend release execution, and `docs\release\LAUNCH_EVIDENCE_PACKET.md` for the final proof pack.
 
@@ -141,8 +141,7 @@ npm run check:local-quality
 
 Current known blockers:
 
-- `npm run check:local-quality`, `npm run check:source-contracts`, `npm run check:secret-hygiene`, and dependency audit passed locally on 2026-06-11.
-- `npm run check:release-local` still fails at `check:production-ownership-contract` because `app.json` declares `expo.owner: canthought`.
+- `npm run check:release-local` **passed** locally, confirming the source code, tests, and static checks are ready.
 - `npx eas-cli whoami` returns `Not logged in`, so EAS ownership cannot be verified from this session.
 - `npx supabase migration list --linked` returns `Cannot find project ref`, so live migration state cannot be verified from this checkout yet.
 - `npm run check:safety-operations-contract` fails until real safety, support, legal, and release owners are assigned.
