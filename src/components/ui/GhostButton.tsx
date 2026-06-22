@@ -1,4 +1,4 @@
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 import React from "react";
 import {
   ActivityIndicator,
@@ -30,6 +30,9 @@ export default function GhostButton({
   accessibilityLabel,
   accessibilityHint,
 }: GhostButtonProps) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   const isDisabled = disabled || loading;
   const visibleTitle = loading ? (loadingLabel ?? "Working...") : title;
   const screenReaderLabel = loading
@@ -69,7 +72,7 @@ export default function GhostButton({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   button: {
     flexDirection: "row",
     alignItems: "center",
@@ -105,4 +108,4 @@ const styles = StyleSheet.create({
   icon: {
     marginRight: 4,
   },
-});
+}));

@@ -1,4 +1,4 @@
-import { colors, semanticColors, theme } from "@/src/theme";
+import { useAppTheme } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronRight } from "lucide-react-native";
 import React, { useMemo } from "react";
@@ -37,6 +37,8 @@ export default function PrimaryButton({
   accessibilityLabel,
   accessibilityHint,
 }: PrimaryButtonProps) {
+  const theme = useAppTheme();
+
   const isDisabled = disabled || loading;
   const visibleTitle = loading ? (loadingLabel ?? "Working...") : title;
   const screenReaderLabel = loading
@@ -53,7 +55,7 @@ export default function PrimaryButton({
       flexDirection: "row",
       justifyContent: "center",
       alignItems: "center",
-      shadowColor: semanticColors.primary,
+      shadowColor: theme.semanticColors.primary,
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: Platform.select({ ios: 0.5, android: 0.4, web: 0.3 }),
       shadowRadius: 20,
@@ -72,7 +74,7 @@ export default function PrimaryButton({
     },
 
     text: {
-      color: colors.neutral.white,
+      color: theme.colors.neutral.white,
       fontSize: 17,
       fontFamily: theme.fontFamilies.body.semiBold,
       letterSpacing: 0,
@@ -86,7 +88,7 @@ export default function PrimaryButton({
     textWithChevron: {
       marginRight: moderateScale(4),
     },
-  }), [moderateScale]);
+  }), [moderateScale, theme]);
 
   return (
     <TouchableOpacity
@@ -108,7 +110,7 @@ export default function PrimaryButton({
       accessibilityLiveRegion={loading ? "polite" : "none"}
     >
       <LinearGradient
-        colors={[semanticColors.primary, semanticColors.secondary]}
+        colors={[theme.semanticColors.primary, theme.semanticColors.secondary]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={StyleSheet.absoluteFill}
@@ -116,7 +118,7 @@ export default function PrimaryButton({
 
       <View style={styles.content}>
         {loading ? (
-          <ActivityIndicator size="small" color={colors.neutral.white} />
+          <ActivityIndicator size="small" color={theme.colors.neutral.white} />
         ) : null}
 
         <Text
@@ -135,7 +137,7 @@ export default function PrimaryButton({
         {showChevron && !loading ? (
           <ChevronRight
             size={moderateScale(24)}
-            color={colors.neutral.white}
+            color={theme.colors.neutral.white}
             strokeWidth={2.5}
           />
         ) : null}

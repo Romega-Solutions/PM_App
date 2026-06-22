@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
 import { CheckCircle } from "lucide-react-native";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 
 const { width } = Dimensions.get("window");
 
@@ -14,6 +14,9 @@ export default function VerificationSuccessHeader({
   title = "Verified Successfully!",
   subtitle = "Great! Your email is verified. Let's set up your profile now.",
 }: Props) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   return (
     <View style={styles.container}>
       <View style={styles.logoWrap}>
@@ -34,7 +37,7 @@ export default function VerificationSuccessHeader({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   container: { alignItems: "center", marginBottom: 36, paddingHorizontal: 20 },
   logoWrap: { width: 150, height: 150, justifyContent: "center", alignItems: "center", marginBottom: 16 },
   logo: { width: 140, height: 140 },
@@ -65,4 +68,4 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     fontFamily: theme.fontFamilies.body.regular,
   },
-});
+}));

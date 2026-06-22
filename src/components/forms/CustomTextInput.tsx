@@ -14,7 +14,7 @@ import {
 } from "react-native";
 
 import { useResponsive } from "@/src/hooks/useResponsive";
-import { colors, semanticColors, theme } from "@/src/theme";
+import { useAppTheme } from "@/src/theme";
 
 interface CustomTextInputProps
   extends Omit<
@@ -103,6 +103,8 @@ export default function CustomTextInput({
   onBlur,
   ...props
 }: CustomTextInputProps) {
+  const theme = useAppTheme();
+
   const [focused, setFocused] = useState(false);
   const hasValue = !!value?.length;
   const inputAccessibilityLabel = label ?? placeholder ?? "Text input";
@@ -114,13 +116,13 @@ export default function CustomTextInput({
     },
     label: {
       fontSize: moderateScale(15),
-      color: colors.neutral.white,
+      color: theme.colors.neutral.white,
       marginBottom: theme.spacing.sm,
       letterSpacing: 0,
       fontFamily: theme.fontFamilies.body.semiBold,
     },
     input: {
-      backgroundColor: `${colors.neutral.white}14`, // 8% opacity
+      backgroundColor: `${theme.colors.neutral.white}14`, // 8% opacity
       borderRadius: moderateScale(16),
       paddingVertical: Platform.select({
         ios: moderateScale(18),
@@ -128,7 +130,7 @@ export default function CustomTextInput({
         web: moderateScale(16),
       }),
       fontSize: moderateScale(16),
-      color: colors.neutral.white,
+      color: theme.colors.neutral.white,
       borderWidth: Platform.select({ ios: 2, android: 2, web: 1.5 }),
       minHeight: Platform.select({
         ios: moderateScale(56),
@@ -159,20 +161,20 @@ export default function CustomTextInput({
     },
     error: {
       fontSize: moderateScale(13),
-      color: semanticColors.error,
+      color: theme.semanticColors.error,
       marginTop: theme.spacing.xs,
       marginLeft: moderateScale(4),
       fontFamily: theme.fontFamilies.body.regular,
       letterSpacing: 0,
     },
-  }), [moderateScale]);
+  }), [moderateScale, theme]);
   const borderColor = error
-    ? semanticColors.error
+    ? theme.semanticColors.error
     : focused
-      ? semanticColors.primary
+      ? theme.semanticColors.primary
       : hasValue
-        ? `${semanticColors.primary}80` // 50% opacity
-        : `${semanticColors.secondary}40`; // 25% opacity
+        ? `${theme.semanticColors.primary}80` // 50% opacity
+        : `${theme.semanticColors.secondary}40`; // 25% opacity
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -194,7 +196,7 @@ export default function CustomTextInput({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={`${colors.neutral.white}66`} // 40% opacity
+          placeholderTextColor={`${theme.colors.neutral.white}66`} // 40% opacity
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
@@ -207,7 +209,7 @@ export default function CustomTextInput({
             setFocused(false);
             onBlur?.(e);
           }}
-          selectionColor={`${semanticColors.secondary}E6`} // 90% opacity
+          selectionColor={`${theme.semanticColors.secondary}E6`} // 90% opacity
           accessibilityLabel={inputAccessibilityLabel}
           accessibilityHint={error ? `Error: ${error}` : undefined}
           accessibilityState={{ disabled: props.editable === false }}
@@ -224,7 +226,7 @@ export default function CustomTextInput({
           >
             <LeftIcon
               size={moderateScale(20)}
-              color={`${semanticColors.primary}B3`} // 70% opacity
+              color={`${theme.semanticColors.primary}B3`} // 70% opacity
               strokeWidth={2}
             />
           </View>
@@ -248,7 +250,7 @@ export default function CustomTextInput({
           >
             <RightIcon
               size={moderateScale(20)}
-              color={`${colors.neutral.white}B3`} // 70% opacity
+              color={`${theme.colors.neutral.white}B3`} // 70% opacity
               strokeWidth={2}
             />
           </TouchableOpacity>

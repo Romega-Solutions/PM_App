@@ -42,7 +42,7 @@ export default function SecondaryButton({
     ? `${accessibilityLabel || title}. ${loadingLabel ?? "In progress."}`
     : accessibilityLabel || title;
 
-  const variantStyles = getVariantStyles(variant);
+  const variantStyles = getVariantStyles(variant, theme);
   const { moderateScale } = useResponsive();
 
   const styles = useMemo(() => StyleSheet.create({
@@ -120,7 +120,7 @@ export default function SecondaryButton({
   );
 }
 
-function getVariantStyles(variant: "purple" | "pink" | "white") {
+function getVariantStyles(variant: "purple" | "pink" | "white", theme: any) {
   const variants = {
     purple: {
       container: {

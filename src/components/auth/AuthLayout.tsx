@@ -1,4 +1,4 @@
-import { colors } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { ReactNode } from "react";
 import {
@@ -26,6 +26,9 @@ export default function AuthLayout({
   showBackButton = false,
   onBackPress,
 }: AuthLayoutProps) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   const insets = useSafeAreaInsets();
 
   return (
@@ -39,9 +42,9 @@ export default function AuthLayout({
       {/* Gradient Background */}
       <LinearGradient
         colors={[
-          colors.dalisay[950],
-          `${colors.dalisay[500]}26`, // 15% opacity
-          colors.dalisay[950],
+          theme.colors.dalisay[950],
+          `${theme.colors.dalisay[500]}26`, // 15% opacity
+          theme.colors.dalisay[950],
         ]}
         locations={[0, 0.5, 1]}
         start={{ x: 0, y: 0 }}
@@ -74,10 +77,10 @@ export default function AuthLayout({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   container: {
     flex: 1,
-    backgroundColor: colors.dalisay[950],
+    backgroundColor: theme.colors.dalisay[950],
   },
   keyboardView: {
     flex: 1,
@@ -85,4 +88,4 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-});
+}));

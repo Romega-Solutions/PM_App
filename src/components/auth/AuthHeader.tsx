@@ -1,4 +1,4 @@
-import { theme, colors, semanticColors } from "@/src/theme";
+import { useAppTheme } from "@/src/theme";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import React, { useMemo } from "react";
 import { Image, Platform, StyleSheet, Text, View } from "react-native";
@@ -14,6 +14,8 @@ export default function AuthHeader({
   subtitle,
   showLogo = true,
 }: AuthHeaderProps) {
+  const theme = useAppTheme();
+
   const { moderateScale } = useResponsive();
 
   const styles = useMemo(() => StyleSheet.create({
@@ -28,7 +30,7 @@ export default function AuthHeader({
       justifyContent: "center",
       alignItems: "center",
       marginBottom: theme.spacing.lg,
-      shadowColor: semanticColors.primary,
+      shadowColor: theme.semanticColors.primary,
       shadowOffset: { width: 0, height: 0 },
       shadowOpacity: 0.5,
       shadowRadius: 25,
@@ -40,24 +42,24 @@ export default function AuthHeader({
     },
     title: {
       fontSize: moderateScale(36),
-      color: colors.neutral.white,
+      color: theme.colors.neutral.white,
       textAlign: "center",
       marginBottom: moderateScale(12),
       fontFamily: theme.fontFamilies.header.semiBold,
-      textShadowColor: `${semanticColors.primary}99`, // 60% opacity
+      textShadowColor: `${theme.semanticColors.primary}99`, // 60% opacity
       textShadowOffset: { width: 0, height: 2 },
       textShadowRadius: 8,
       letterSpacing: Platform.select({ ios: -0.5, android: -0.3, web: -0.4 }),
     },
     subtitle: {
       fontSize: moderateScale(16),
-      color: `${colors.neutral.white}E6`, // 90% opacity
+      color: `${theme.colors.neutral.white}E6`, // 90% opacity
       textAlign: "center",
       lineHeight: moderateScale(24),
       fontFamily: theme.fontFamilies.header.medium,
       letterSpacing: Platform.select({ ios: 0.2, android: 0.15, web: 0.2 }),
     },
-  }), [moderateScale]);
+  }), [moderateScale, theme]);
 
   return (
     <View style={styles.container}>

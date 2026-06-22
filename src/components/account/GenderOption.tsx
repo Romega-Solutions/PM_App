@@ -1,4 +1,4 @@
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 import { Users } from "lucide-react-native";
 import React from "react";
 import {
@@ -16,6 +16,9 @@ interface Props {
 }
 
 export default function GenderOption({ option, selected, onSelect }: Props) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   const selectedColor = theme.colors.amihan?.[500] ?? "#EF3E78";
   const defaultColor = theme.colors.dalisay?.[500] ?? "#8D69F6";
 
@@ -48,7 +51,7 @@ export default function GenderOption({ option, selected, onSelect }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   container: {
     width: "100%", // full width vertical layout
     backgroundColor: "rgba(255,255,255,0.06)",
@@ -103,4 +106,4 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
   },
-});
+}));

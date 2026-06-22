@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 
 interface Props {
   minAge: number;
@@ -11,6 +11,9 @@ interface Props {
 }
 
 export default function AgeRangeSlider({ minAge, maxAge, onChange, min = 18, max = 70 }: Props) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
 
   // For web, a simple native multi-thumb slider is complex without heavy libraries.
@@ -79,7 +82,7 @@ export default function AgeRangeSlider({ minAge, maxAge, onChange, min = 18, max
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   container: {
     backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 16,
@@ -98,4 +101,4 @@ const styles = StyleSheet.create({
   sliderLabel: { color: "rgba(255,255,255,0.8)", width: 60, fontSize: 14, fontFamily: theme.fontFamilies.body.medium },
   labels: { flexDirection: "row", justifyContent: "space-between", marginTop: 10 },
   labelText: { fontSize: 13, color: "rgba(255,255,255,0.6)" },
-});
+}));

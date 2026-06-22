@@ -3,7 +3,7 @@ import AuthLayout from "@/src/components/auth/AuthLayout";
 import SignUpPrompt from "@/src/components/auth/SignUpPrompt";
 import CustomTextInput from "@/src/components/forms/CustomTextInput";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
-import { semanticColors, theme } from "@/src/theme";
+import { useAppTheme } from "@/src/theme";
 import { useRouter } from "expo-router";
 import { Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react-native";
 import React, { useState, useMemo } from "react";
@@ -19,6 +19,8 @@ import { useSignIn } from "../hooks/useSignIn";
 
 import { useResponsive } from "@/src/hooks/useResponsive";
 export default function SignInScreen() {
+  const theme = useAppTheme();
+
   const router = useRouter();
   const { signIn, loading } = useSignIn();
   const { moderateScale } = useResponsive();
@@ -53,12 +55,12 @@ export default function SignInScreen() {
       paddingHorizontal: moderateScale(4),
     },
     forgotPasswordText: {
-      color: semanticColors.primary,
+      color: theme.semanticColors.primary,
       fontSize: moderateScale(14),
       fontFamily: theme.fontFamilies.body.semiBold,
       letterSpacing: Platform.select({ ios: 0.2, android: 0.15, web: 0.2 }),
     },
-  }), [moderateScale]);
+  }), [moderateScale, theme]);
 
   // Form state
   const [email, setEmail] = useState("");

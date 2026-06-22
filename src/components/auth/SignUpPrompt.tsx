@@ -1,4 +1,4 @@
-import { colors, semanticColors, theme } from "@/src/theme";
+import { useAppTheme } from "@/src/theme";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useRouter } from "expo-router";
 import React, { useMemo } from "react";
@@ -21,6 +21,8 @@ export default function SignUpPrompt({
   actionText = "Create Account",
   onPress,
 }: SignUpPromptProps) {
+  const theme = useAppTheme();
+
   const router = useRouter();
 
   const handlePress = () => {
@@ -39,14 +41,14 @@ export default function SignUpPrompt({
       paddingVertical: moderateScale(32),
     },
     question: {
-      color: `${colors.neutral.white}B3`, // 70% opacity
+      color: `${theme.colors.neutral.white}B3`, // 70% opacity
       fontSize: moderateScale(14),
       marginBottom: moderateScale(10),
       fontFamily: theme.fontFamilies.body.regular,
       letterSpacing: Platform.select({ ios: 0.2, android: 0.15, web: 0.2 }),
     },
     action: {
-      color: semanticColors.primary,
+      color: theme.semanticColors.primary,
       fontSize: moderateScale(16),
       lineHeight: moderateScale(22),
       letterSpacing: Platform.select({ ios: 0.3, android: 0.2, web: 0.3 }),
@@ -57,7 +59,7 @@ export default function SignUpPrompt({
       justifyContent: "center",
       paddingHorizontal: moderateScale(8),
     },
-  }), [moderateScale]);
+  }), [moderateScale, theme]);
 
   return (
     <View style={styles.container}>

@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, Platform } from "react-native";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import SecondaryButton from "@/src/components/ui/SecondaryButton";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 
 interface Props {
   countdown: number;
@@ -11,6 +11,9 @@ interface Props {
 }
 
 export default function VerificationSuccessActions({ countdown, onContinue, onCancel }: Props) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   return (
     <View style={styles.container}>
       <PrimaryButton title="Continue Setup" onPress={onContinue} />
@@ -22,7 +25,7 @@ export default function VerificationSuccessActions({ countdown, onContinue, onCa
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   container: { width: "100%", gap: 12, paddingHorizontal: theme.spacing.lg },
   note: {
     color: "rgba(255,255,255,0.75)",
@@ -31,4 +34,4 @@ const styles = StyleSheet.create({
     fontFamily: theme.fontFamilies.body.regular,
     fontSize: Platform.select({ ios: 14, android: 14, web: 14 }),
   },
-});
+}));

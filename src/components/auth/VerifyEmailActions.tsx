@@ -1,5 +1,5 @@
 import SecondaryButton from "@/src/components/ui/SecondaryButton";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { Mail } from "lucide-react-native";
 import React from "react";
@@ -24,6 +24,9 @@ export default function VerifyEmailActions({
   onResend,
   onBackToSignIn,
 }: Props) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -69,7 +72,7 @@ export default function VerifyEmailActions({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   container: {
     width: "100%",
     gap: 14,
@@ -105,4 +108,4 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontFamily: theme.fontFamilies.body.regular,
   },
-});
+}));

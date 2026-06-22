@@ -5,7 +5,7 @@ import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import { accountApi } from "@/src/features/account/api/accountApi";
 import type { UserType } from "@/src/features/auth/api/authApi";
 import { useSignupStore } from "@/src/stores/signupStore";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Calendar, Heart, User } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
@@ -36,6 +36,9 @@ type FormState = {
 type FormErrors = Partial<Record<keyof FormState, string>>;
 
 export default function AccountBasicInfoScreen() {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
@@ -328,7 +331,7 @@ export default function AccountBasicInfoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   root: { flex: 1, backgroundColor: theme.colors.dalisay[950] },
   keyboardView: { flex: 1 },
   scrollContent: {
@@ -411,4 +414,4 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "rgba(141, 105, 246, 0.06)",
   },
-});
+}));

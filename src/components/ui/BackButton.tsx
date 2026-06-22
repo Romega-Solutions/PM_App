@@ -1,4 +1,4 @@
-import { colors } from "@/src/theme";
+import { useAppTheme } from "@/src/theme";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
@@ -17,6 +17,8 @@ interface BackButtonProps {
 }
 
 export default function BackButton({ onPress }: BackButtonProps) {
+  const theme = useAppTheme();
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { moderateScale } = useResponsive();
@@ -28,12 +30,12 @@ export default function BackButton({ onPress }: BackButtonProps) {
       width: Math.max(MIN_TOUCH_TARGET, moderateScale(44)),
       height: Math.max(MIN_TOUCH_TARGET, moderateScale(44)),
       borderRadius: Math.max(MIN_TOUCH_TARGET, moderateScale(44)) / 2,
-      backgroundColor: `${colors.neutral.white}1F`, // 12% opacity
+      backgroundColor: `${theme.colors.neutral.white}1F`, // 12% opacity
       justifyContent: "center",
       alignItems: "center",
       ...Platform.select({
         ios: {
-          shadowColor: colors.neutral.black,
+          shadowColor: theme.colors.neutral.black,
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.1,
           shadowRadius: 8,
@@ -43,7 +45,7 @@ export default function BackButton({ onPress }: BackButtonProps) {
         },
       }),
     },
-  }), [moderateScale]);
+  }), [moderateScale, theme]);
 
   const handlePress = () => {
     if (onPress) {
@@ -72,7 +74,7 @@ export default function BackButton({ onPress }: BackButtonProps) {
     >
       <ArrowLeft 
         size={moderateScale(24)} 
-        color={colors.neutral.white} 
+        color={theme.colors.neutral.white} 
         strokeWidth={2.5} 
       />
     </TouchableOpacity>

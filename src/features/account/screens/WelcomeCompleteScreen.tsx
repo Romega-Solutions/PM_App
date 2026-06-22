@@ -1,7 +1,7 @@
 import UserPreferences from "@/src/components/account/UserPreferences";
 import GhostButton from "@/src/components/ui/GhostButton";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
@@ -29,8 +29,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useWelcomeData } from "../hooks/useWelcomeData";
 
-const ACCENT_PURPLE = theme.colors.dalisay?.[500] ?? "#8D69F6";
-const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
 const SUCCESS_GREEN = "#10B981";
 const GOLD = "#F59E0B";
 const WARNING_YELLOW = "#F59E0B";
@@ -38,6 +36,10 @@ const WHITE = "#FFFFFF";
 const SURFACE = "rgba(255,255,255,0.12)";
 
 export default function WelcomeCompleteScreen() {
+  const theme = useAppTheme();
+  const styles = useStyles();
+  const ACCENT_PURPLE = theme.colors.dalisay?.[500] ?? "#8D69F6";
+  const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { data, loading } = useWelcomeData();
@@ -365,7 +367,10 @@ export default function WelcomeCompleteScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => {
+  const ACCENT_PURPLE = theme.colors.dalisay?.[500] ?? "#8D69F6";
+  const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
+  return {
   root: { flex: 1, backgroundColor: theme.colors.dalisay[950] ?? "#0F0814" },
   content: {
     paddingHorizontal: 24,
@@ -602,4 +607,5 @@ const styles = StyleSheet.create({
     borderTopColor: "rgba(141,105,246,0.15)",
   },
   loadingText: { marginTop: 16, fontSize: 16, color: "rgba(255,255,255,0.85)" },
+  };
 });

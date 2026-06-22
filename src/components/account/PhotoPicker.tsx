@@ -1,10 +1,9 @@
 import React from "react";
 import { View, Image, Text, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
 import { X, Camera } from "lucide-react-native";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 
 const { width } = Dimensions.get("window");
-const ITEM_SIZE = Math.min(120, Math.floor((width - theme.spacing.lg * 2 - 12) / 3));
 
 interface Props {
   photos: string[];
@@ -14,6 +13,9 @@ interface Props {
 }
 
 export default function PhotoPicker({ photos, onAdd, onRemove, canAdd = true }: Props) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   return (
     <View style={styles.container}>
       <View style={styles.grid}>
@@ -39,42 +41,46 @@ export default function PhotoPicker({ photos, onAdd, onRemove, canAdd = true }: 
   );
 }
 
-const styles = StyleSheet.create({
-  container: { width: "100%", gap: 12 },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  tile: {
-    width: ITEM_SIZE,
-    height: ITEM_SIZE,
-    borderRadius: 12,
-    overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.04)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  addTile: {
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.06)",
-  },
-  addText: {
-    marginTop: 8,
-    color: "rgba(255,255,255,0.9)",
-    fontSize: 12,
-  },
-  image: { width: "100%", height: "100%" },
-  removeBtn: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  hint: {
-    color: "rgba(255,255,255,0.65)",
-    fontSize: 13,
-    marginTop: 6,
-  },
+const useStyles = makeStyles((theme) => {
+  const ITEM_SIZE = Math.min(120, Math.floor((width - theme.spacing.lg * 2 - 12) / 3));
+
+  return {
+    container: { width: "100%", gap: 12 },
+    grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+    tile: {
+      width: ITEM_SIZE,
+      height: ITEM_SIZE,
+      borderRadius: 12,
+      overflow: "hidden",
+      backgroundColor: "rgba(255,255,255,0.04)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    addTile: {
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.06)",
+    },
+    addText: {
+      marginTop: 8,
+      color: "rgba(255,255,255,0.9)",
+      fontSize: 12,
+    },
+    image: { width: "100%", height: "100%" },
+    removeBtn: {
+      position: "absolute",
+      top: 8,
+      right: 8,
+      backgroundColor: "rgba(0,0,0,0.45)",
+      width: 28,
+      height: 28,
+      borderRadius: 8,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    hint: {
+      color: "rgba(255,255,255,0.65)",
+      fontSize: 13,
+      marginTop: 6,
+    },
+  };
 });

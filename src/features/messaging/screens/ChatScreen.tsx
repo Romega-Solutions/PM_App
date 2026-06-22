@@ -1,5 +1,6 @@
 import * as ImagePicker from "expo-image-picker";
-import { LinearGradient } from "expo-linear-gradient";
+import {
+  Reply, LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   AlertCircle,
@@ -42,18 +43,9 @@ import { useMessageUpload } from "@/src/features/messaging/hooks/useMessageUploa
 import type { Message as MessageType } from "@/src/features/messaging/types/messaging.types";
 import { blockUser, unmatchUser } from "@/src/features/safety/api/safetyApi";
 import { MessageBubble } from "../components/MessageBubble";
+import { useAppTheme, makeStyles } from "@/src/theme";
 
 // Brand Colors
-const BRAND_BG = "#0F0814";
-const ACCENT_PURPLE = "#8D69F6";
-const DANGER_RED = "#FF6B6B";
-const ONLINE_GREEN = "#10B981";
-const WHITE = "#FFFFFF";
-const SURFACE = "rgba(255,255,255,0.06)";
-const MY_MESSAGE_BG = "rgba(141, 105, 246, 0.25)";
-const THEIR_MESSAGE_BG = "rgba(255, 255, 255, 0.08)";
-const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
-const TEXT_MUTED = "rgba(255,255,255,0.5)";
 
 type ChatScreenParams = {
   userId: string;
@@ -64,10 +56,26 @@ type ChatScreenParams = {
 };
 
 export default function ChatScreen() {
+  const theme = useAppTheme();
+  const styles = useStyles();
+  const BRAND_BG = theme.colors.dalisay[950];
+  const ACCENT_PURPLE = theme.colors.dalisay[500];
+  const DANGER_RED = theme.colors.amihan[500];
+  const ONLINE_GREEN = "#10B981";
+  const WHITE = "#FFFFFF";
+  const SURFACE = "rgba(255,255,255,0.06)";
+  const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
+  const TEXT_MUTED = "rgba(255,255,255,0.5)";
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<ChatScreenParams>();
   const inputRef = useRef<TextInput>(null);
+  const [replyingTo, setReplyingTo] = useState<MessageType | null>(null);
+
+  const handleSwipeToReply = useCallback((message: MessageType) => {
+    setReplyingTo(message);
+    inputRef.current?.focus();
+  }, []);
 
   const [inputText, setInputText] = useState("");
   const flatListRef = useRef<FlatList>(null);
@@ -569,6 +577,7 @@ export default function ChatScreen() {
         message={item}
         currentUserId={currentUserId}
         userName={userName}
+          onSwipeToReply={handleSwipeToReply}
         userImage={params.userImage}
       />
     );
@@ -1113,7 +1122,16 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => {
+  const BRAND_BG = theme.colors.dalisay[950];
+  const ACCENT_PURPLE = theme.colors.dalisay[500];
+  const DANGER_RED = theme.colors.amihan[500];
+  const ONLINE_GREEN = "#10B981";
+  const WHITE = "#FFFFFF";
+  const SURFACE = "rgba(255,255,255,0.06)";
+  const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
+  const TEXT_MUTED = "rgba(255,255,255,0.5)";
+  return {
   root: {
     flex: 1,
     backgroundColor: BRAND_BG,
@@ -1537,13 +1555,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   myMessageBubble: {
-    backgroundColor: MY_MESSAGE_BG,
+    backgroundColor: "rgba(141, 105, 246, 0.25)",
     borderBottomRightRadius: 4,
     borderWidth: 1,
     borderColor: "rgba(141, 105, 246, 0.3)",
   },
   theirMessageBubble: {
-    backgroundColor: THEIR_MESSAGE_BG,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
     borderBottomLeftRadius: 4,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.1)",
@@ -1809,4 +1827,5 @@ const styles = StyleSheet.create({
   mediaButtonDisabled: {
     opacity: 0.5,
   },
+  };
 });

@@ -1,7 +1,7 @@
 import React from "react";
 import { TouchableOpacity, View, Text, StyleSheet, Platform } from "react-native";
 import { Users } from "lucide-react-native";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 
 interface Props {
   option: string;
@@ -14,6 +14,9 @@ export default function GenderPreferenceOption({
   selected,
   onSelect,
 }: Props) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
   const ACCENT_PURPLE = theme.colors.dalisay?.[500] ?? "#8D69F6";
   const ICON_BG = "rgba(141,105,246,0.12)";
@@ -56,7 +59,7 @@ export default function GenderPreferenceOption({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   row: {
     backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: 16,
@@ -97,4 +100,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   radioDot: { width: 10, height: 10, borderRadius: 5 },
-});
+}));

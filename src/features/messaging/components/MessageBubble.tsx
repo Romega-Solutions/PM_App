@@ -14,6 +14,7 @@ export interface MessageBubbleProps {
   currentUserId: string;
   userName: string;
   userImage?: string | null;
+  onSwipeToReply?: (message: any) => void;
 }
 
 const formatTime = (dateString: string) => {

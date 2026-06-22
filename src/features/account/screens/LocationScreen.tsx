@@ -4,7 +4,7 @@ import LocationItem from "@/src/components/location/LocationItem";
 import LocationsList from "@/src/components/location/LocationsList";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import type { UserType } from "@/src/features/auth/api/authApi";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { AlertCircle, MapPin, Search } from "lucide-react-native";
@@ -30,6 +30,9 @@ const formatLocationLabel = (location: { city: string; country?: string }) =>
   location.country ? `${location.city}, ${location.country}` : location.city;
 
 export default function LocationScreen() {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ userType?: string }>();
@@ -332,7 +335,7 @@ export default function LocationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   root: { flex: 1, backgroundColor: theme.colors.dalisay[950] ?? "#0F0814" },
   keyboardView: { flex: 1 },
   content: {
@@ -457,4 +460,4 @@ const styles = StyleSheet.create({
     paddingTop: theme.spacing.md ?? 16,
     backgroundColor: "rgba(15,8,20,0.95)",
   },
-});
+}));

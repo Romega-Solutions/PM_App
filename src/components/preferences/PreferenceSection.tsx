@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { LucideIcon } from "lucide-react-native";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 
 interface Props {
   Icon: LucideIcon;
@@ -10,6 +10,9 @@ interface Props {
 }
 
 export default function PreferenceSection({ Icon, title, children }: Props) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
 
   return (
@@ -23,7 +26,7 @@ export default function PreferenceSection({ Icon, title, children }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   container: { gap: 12 },
   header: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
   title: {
@@ -32,4 +35,4 @@ const styles = StyleSheet.create({
     color: theme.colors.neutral.white,
     letterSpacing: 0.3,
   },
-});
+}));

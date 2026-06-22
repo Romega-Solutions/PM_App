@@ -5,7 +5,7 @@ import GhostButton from "@/src/components/ui/GhostButton";
 import { LaunchStateNotice } from "@/src/components/ui/LaunchStateNotice";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import type { UserType } from "@/src/features/auth/api/authApi";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -29,6 +29,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useVerificationUpload } from "../hooks/useVerificationUpload";
 
 export default function VerificationUploadScreen() {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ userType?: string }>();
@@ -321,7 +324,7 @@ export default function VerificationUploadScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   root: { flex: 1, backgroundColor: theme.colors.dalisay[950] ?? "#0F0814" },
   content: {
     paddingHorizontal: 24,
@@ -438,4 +441,4 @@ const styles = StyleSheet.create({
     paddingTop: theme.spacing.md ?? 16,
     backgroundColor: "rgba(15,8,20,0.95)",
   },
-});
+}));
