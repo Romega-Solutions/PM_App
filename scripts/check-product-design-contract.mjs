@@ -243,13 +243,18 @@ const requiredFiles = [
       "Messaging paused while this finishes...",
       "Message was not sent. Check your connection, review the text, and try again.",
       "Photo sharing unlocks after your first text starts this matched conversation",
-      "Private chat photo",
       "Photo sharing available after first message",
       "Only send photos you are comfortable sharing in this chat",
       "Never",
       "Report safety concern",
       "Block member",
       "Unmatch only",
+    ],
+  },
+  {
+    path: "src/features/messaging/components/MessageBubble.tsx",
+    markers: [
+      "Private chat photo",
     ],
   },
   {

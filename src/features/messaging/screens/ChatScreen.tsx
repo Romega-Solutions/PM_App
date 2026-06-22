@@ -4,8 +4,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   AlertCircle,
   ArrowLeft,
-  Check,
-  CheckCheck,
   Image as ImageIcon,
   MessageCircle,
   Phone,
@@ -26,7 +24,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
+  FlatList,
   StatusBar,
   StyleSheet,
   Text,
@@ -43,6 +41,7 @@ import { useMessages } from "@/src/features/messaging/hooks/useMessages";
 import { useMessageUpload } from "@/src/features/messaging/hooks/useMessageUpload";
 import type { Message as MessageType } from "@/src/features/messaging/types/messaging.types";
 import { blockUser, unmatchUser } from "@/src/features/safety/api/safetyApi";
+import { MessageBubble } from "../components/MessageBubble";
 
 // Brand Colors
 const BRAND_BG = "#0F0814";
@@ -68,10 +67,11 @@ export default function ChatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<ChatScreenParams>();
-  const scrollViewRef = useRef<ScrollView>(null);
   const inputRef = useRef<TextInput>(null);
 
   const [inputText, setInputText] = useState("");
+  const flatListRef = useRef<FlatList>(null);
+
   const [isTyping, setIsTyping] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [createdConversationId, setCreatedConversationId] = useState<
@@ -169,7 +169,7 @@ export default function ChatScreen() {
     recipientId: recipientId || "",
     onNewMessage: (message) => {
       addMessage(message);
-      scrollViewRef.current?.scrollToEnd({ animated: true });
+      flatListRef.current?.scrollToEnd({ animated: true });
     },
     onTyping: (typing) => {
       setIsTyping(typing);
@@ -185,7 +185,7 @@ export default function ChatScreen() {
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
+      flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
   }, [dbMessages]);
 
@@ -217,7 +217,7 @@ export default function ChatScreen() {
         setCreatedConversationId(sentMessage.conversation_id);
       }
 
-      scrollViewRef.current?.scrollToEnd({ animated: true });
+      flatListRef.current?.scrollToEnd({ animated: true });
     } catch {
       console.error("Error sending message.");
       const recoveryMessage =
@@ -296,7 +296,7 @@ export default function ChatScreen() {
           // Send image message to database
           await sendImageToDb(imageUrl);
           AccessibilityInfo.announceForAccessibility("Photo sent.");
-          scrollViewRef.current?.scrollToEnd({ animated: true });
+          flatListRef.current?.scrollToEnd({ animated: true });
         } catch (uploadError) {
           console.error("Error uploading image.");
           setMediaError(
@@ -563,121 +563,16 @@ export default function ChatScreen() {
 
   // ==================== END HANDLER FUNCTIONS ====================
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? "PM" : "AM";
-    const formattedHours = hours % 12 || 12;
-    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
-    return `${formattedHours}:${formattedMinutes} ${ampm}`;
-  };
-
-  const renderMessageStatus = (status: MessageType["status"]) => {
-    switch (status) {
-      case "sending":
-        return <Check size={14} color={TEXT_MUTED} strokeWidth={2.5} />;
-      case "sent":
-        return <CheckCheck size={14} color={TEXT_MUTED} strokeWidth={2.5} />;
-      case "delivered":
-        return <CheckCheck size={14} color={TEXT_MUTED} strokeWidth={2.5} />;
-      case "read":
-        return <CheckCheck size={14} color={ACCENT_PURPLE} strokeWidth={2.5} />;
-      case "failed":
-        return <AlertCircle size={14} color={DANGER_RED} strokeWidth={2.5} />;
-      default:
-        return null;
-    }
-  };
-
-  const renderMessage = (message: MessageType, index: number) => {
-    const isMyMessage = message.sender_id === currentUserId;
-    const showAvatar = !isMyMessage;
-    const messageAuthor = isMyMessage ? "You" : userName;
-    const messageContent =
-      message.type === "image" ? "Photo message" : message.text;
-    const messageStatus =
-      isMyMessage && message.status ? `, ${message.status}` : "";
-
+  const renderItem = useCallback(({ item }: { item: MessageType }) => {
     return (
-      <View
-        key={message.id}
-        accessible
-        accessibilityLabel={`${messageAuthor}: ${messageContent}, ${formatTime(
-          message.created_at,
-        )}${messageStatus}`}
-        style={[
-          styles.messageRow,
-          isMyMessage ? styles.myMessageRow : styles.theirMessageRow,
-        ]}
-      >
-        {showAvatar &&
-          (params.userImage && params.userImage.startsWith("http") ? (
-            <Image
-              source={{ uri: params.userImage }}
-              style={styles.messageAvatar}
-              accessibilityLabel={`${userName} profile photo`}
-            />
-          ) : (
-            <View style={styles.messageAvatarPlaceholder}>
-              <Text style={styles.messageAvatarPlaceholderText}>
-                {userName.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-          ))}
-
-        <View
-          style={[
-            styles.messageBubble,
-            isMyMessage ? styles.myMessageBubble : styles.theirMessageBubble,
-            message.type === "image" && styles.imageBubble,
-          ]}
-        >
-          {message.type === "image" && message.image_url ? (
-            <View style={styles.imageMessageContainer}>
-              <Image
-                source={{ uri: message.image_url }}
-                style={styles.messageImage}
-                resizeMode="cover"
-                accessibilityLabel={`${messageAuthor} sent a photo`}
-              />
-              <View
-                style={styles.imageSafetyStrip}
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-              >
-                <ShieldAlert size={13} color={WHITE} strokeWidth={2.2} />
-                <Text style={styles.imageSafetyText}>Private chat photo</Text>
-              </View>
-            </View>
-          ) : (
-            <Text
-              style={[
-                styles.messageText,
-                isMyMessage ? styles.myMessageText : styles.theirMessageText,
-              ]}
-            >
-              {message.text}
-            </Text>
-          )}
-
-          <View style={styles.messageFooter}>
-            <Text style={styles.messageTime}>
-              {formatTime(message.created_at)}
-            </Text>
-            {isMyMessage && (
-              <View style={styles.messageStatusContainer}>
-                {renderMessageStatus(message.status)}
-              </View>
-            )}
-          </View>
-          {message.status === "failed" && (
-            <Text style={styles.messageFailedText}>Not sent</Text>
-          )}
-        </View>
-      </View>
+      <MessageBubble
+        message={item}
+        currentUserId={currentUserId}
+        userName={userName}
+        userImage={params.userImage}
+      />
     );
-  };
+  }, [currentUserId, userName, params.userImage]);
 
   // Show loading state
   if (loading && dbMessages.length === 0) {
@@ -883,16 +778,18 @@ export default function ChatScreen() {
       </View>
 
       {/* Messages */}
-      <ScrollView
-        ref={scrollViewRef}
+      <FlatList
+        ref={flatListRef}
+        data={dbMessages}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
         style={styles.messagesContainer}
         contentContainerStyle={[
           styles.messagesContent,
           { paddingBottom: Math.max(insets.bottom + 80, 100) },
         ]}
         showsVerticalScrollIndicator={false}
-      >
-        {dbMessages.length === 0 ? (
+        ListEmptyComponent={
           <View style={styles.emptyChatState}>
             <View style={styles.emptyChatIconWrap}>
               <MessageCircle
@@ -932,35 +829,33 @@ export default function ChatScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-        ) : (
-          dbMessages.map((message, index) => renderMessage(message, index))
-        )}
-
-        {/* Typing Indicator */}
-        {isTyping && (
-          <View style={[styles.messageRow, styles.theirMessageRow]}>
-            {params.userImage && params.userImage.startsWith("http") ? (
-              <Image
-                source={{ uri: params.userImage }}
-                style={styles.messageAvatar}
-              />
-            ) : (
-              <View style={styles.messageAvatarPlaceholder}>
-                <Text style={styles.messageAvatarPlaceholderText}>
-                  {userName.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
-            <View style={[styles.messageBubble, styles.theirMessageBubble]}>
-              <View style={styles.typingIndicator}>
-                <View style={styles.typingDot} />
-                <View style={styles.typingDot} />
-                <View style={styles.typingDot} />
+        }
+        ListFooterComponent={
+          isTyping ? (
+            <View style={[styles.messageRow, styles.theirMessageRow]}>
+              {params.userImage && params.userImage.startsWith("http") ? (
+                <Image
+                  source={{ uri: params.userImage }}
+                  style={styles.messageAvatar}
+                />
+              ) : (
+                <View style={styles.messageAvatarPlaceholder}>
+                  <Text style={styles.messageAvatarPlaceholderText}>
+                    {userName.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              <View style={[styles.messageBubble, styles.theirMessageBubble]}>
+                <View style={styles.typingIndicator}>
+                  <View style={styles.typingDot} />
+                  <View style={styles.typingDot} />
+                  <View style={styles.typingDot} />
+                </View>
               </View>
             </View>
-          </View>
-        )}
-      </ScrollView>
+          ) : null
+        }
+      />
 
       {(uploading || mediaError) && (
         <View

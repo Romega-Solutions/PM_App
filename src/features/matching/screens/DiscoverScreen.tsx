@@ -120,13 +120,8 @@ export const DiscoverScreen: React.FC = () => {
 
   const currentProfile = profiles[currentIndex] || null;
 
-  // Swipe gesture hook
-  const { pan, rotate, panResponder, resetPosition } = useSwipeGesture({
-    onSwipeLeft: handlePass,
-    onSwipeRight: handleLike,
-    onSwipeUp: handleSuperLike,
-    onShowDetails: () => setShowInfo(true),
-  });
+  const resetPositionRef = useRef<(() => void) | null>(null);
+
   const previewPan = React.useRef(new Animated.ValueXY()).current;
   const previewRotate = previewPan.x.interpolate({
     inputRange: [-1, 0, 1],
@@ -228,9 +223,20 @@ export const DiscoverScreen: React.FC = () => {
   }
 
   /**
+   * Move to next profile in stack
+   */
+  const moveToNextProfile = useCallback(() => {
+    setCurrentIndex((prev) => prev + 1);
+    setShowInfo(false);
+    setActionError(null);
+    setLastFailedAction(null);
+    resetPositionRef.current?.();
+  }, []);
+
+  /**
    * Handle like action
    */
-  async function handleLike() {
+  const handleLike = useCallback(async () => {
     if (!currentProfile || actionPending) return;
 
     // Seed profiles: just move to next card, no backend call
@@ -270,16 +276,16 @@ export const DiscoverScreen: React.FC = () => {
       console.error("Failed to like profile.");
       setActionError(MATCHING_ERRORS.LIKE);
       setLastFailedAction("like");
-      resetPosition();
+      resetPositionRef.current?.();
     } finally {
       setActionPending(false);
     }
-  }
+  }, [currentProfile, actionPending, userId, moveToNextProfile]);
 
   /**
    * Handle pass action
    */
-  async function handlePass() {
+  const handlePass = useCallback(async () => {
     if (!currentProfile || actionPending) return;
 
     // Seed profiles: just move to next card, no backend call
@@ -303,7 +309,7 @@ export const DiscoverScreen: React.FC = () => {
           result.error || MATCHING_ERRORS.PASS,
         );
         setLastFailedAction("pass");
-        resetPosition();
+        resetPositionRef.current?.();
         return;
       }
 
@@ -313,16 +319,16 @@ export const DiscoverScreen: React.FC = () => {
       console.error("Failed to pass profile.");
       setActionError(MATCHING_ERRORS.PASS);
       setLastFailedAction("pass");
-      resetPosition();
+      resetPositionRef.current?.();
     } finally {
       setActionPending(false);
     }
-  }
+  }, [currentProfile, actionPending, userId, moveToNextProfile]);
 
   /**
    * Handle super like action
    */
-  async function handleSuperLike() {
+  const handleSuperLike = useCallback(async () => {
     if (!currentProfile || actionPending) return;
 
     // Seed profiles: just move to next card, no backend call
@@ -362,24 +368,14 @@ export const DiscoverScreen: React.FC = () => {
       console.error("Failed to super like profile.");
       setActionError(MATCHING_ERRORS.SUPERLIKE);
       setLastFailedAction("superLike");
-      resetPosition();
+      resetPositionRef.current?.();
     } finally {
       setActionPending(false);
     }
-  }
+  }, [currentProfile, actionPending, userId, moveToNextProfile]);
 
-  /**
-   * Move to next profile in stack
-   */
-  function moveToNextProfile() {
-    setCurrentIndex((prev) => prev + 1);
-    setShowInfo(false);
-    setActionError(null);
-    setLastFailedAction(null);
-    resetPosition();
-  }
 
-  function retryLastFailedAction() {
+  const retryLastFailedAction = useCallback(() => {
     if (!lastFailedAction || actionPending) return;
 
     if (lastFailedAction === "pass") {
@@ -393,23 +389,39 @@ export const DiscoverScreen: React.FC = () => {
     }
 
     handleSuperLike();
-  }
+  }, [lastFailedAction, actionPending, handlePass, handleLike, handleSuperLike]);
 
-  /**
-   * Handle match modal actions
-   */
-  function handleKeepSwiping() {
+  // Swipe gesture hook
+  const { pan, rotate, panResponder, resetPosition } = useSwipeGesture({
+    onSwipeLeft: handlePass,
+    onSwipeRight: handleLike,
+    onSwipeUp: handleSuperLike,
+    onShowDetails: () => setShowInfo(true),
+  });
+
+  useEffect(() => {
+    resetPositionRef.current = resetPosition;
+  }, [resetPosition]);
+
+  const previewPan = React.useRef(new Animated.ValueXY()).current;
+  const previewRotate = previewPan.x.interpolate({
+    inputRange: [-1, 0, 1],
+    outputRange: ["0deg", "0deg", "0deg"],
+    extrapolate: "clamp",
+  });
+
+  const handleKeepSwiping = useCallback(() => {
     setShowMatchModal(false);
     setMatchedProfile(null);
-  }
+  }, []);
 
-  function handleSendMessage() {
+  const handleSendMessage = useCallback(() => {
     setShowMatchModal(false);
     setMatchedProfile(null);
     router.push("/(main)/likes");
-  }
+  }, [router]);
 
-  function handleReportCurrentProfile() {
+  const handleReportCurrentProfile = useCallback(() => {
     if (!currentProfile) return;
 
     setShowInfo(false);
@@ -421,7 +433,7 @@ export const DiscoverScreen: React.FC = () => {
         source: "discovery",
       },
     });
-  }
+  }, [currentProfile, router]);
 
   // Loading state
   if (loading) {
