@@ -50,6 +50,7 @@ import { MatchModal, MatchedProfile } from "../components/MatchModal";
 import { ProfileCard, ProfileCardData } from "../components/ProfileCard";
 import { ProfileDetailsModal } from "../components/ProfileDetailsModal";
 import { useSwipeGesture } from "../hooks/useSwipeGesture";
+import { getSeedProfiles } from "../data/seedProfiles";
 
 // Brand Colors
 const BRAND_BG = "#0F0814";
@@ -108,6 +109,7 @@ export const DiscoverScreen: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionPending, setActionPending] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [usingSeedProfiles, setUsingSeedProfiles] = useState(false);
   const [lastFailedAction, setLastFailedAction] = useState<
     "pass" | "like" | "superLike" | null
   >(null);
@@ -209,9 +211,11 @@ export const DiscoverScreen: React.FC = () => {
           convertDBProfileToDisplay,
         );
         setProfiles(displayProfiles);
+        setUsingSeedProfiles(false);
       } else {
-        // No profiles in database
-        setProfiles([]);
+        // No real profiles — show seed demo profiles
+        setProfiles(getSeedProfiles());
+        setUsingSeedProfiles(true);
       }
     } catch {
       console.error("Failed to fetch user data.");
@@ -227,7 +231,15 @@ export const DiscoverScreen: React.FC = () => {
    * Handle like action
    */
   async function handleLike() {
-    if (!userId || !currentProfile || actionPending) return;
+    if (!currentProfile || actionPending) return;
+
+    // Seed profiles: just move to next card, no backend call
+    if (currentProfile.isSeedProfile) {
+      moveToNextProfile();
+      return;
+    }
+
+    if (!userId) return;
 
     setActionPending(true);
     setActionError(null);
@@ -268,7 +280,15 @@ export const DiscoverScreen: React.FC = () => {
    * Handle pass action
    */
   async function handlePass() {
-    if (!userId || !currentProfile || actionPending) return;
+    if (!currentProfile || actionPending) return;
+
+    // Seed profiles: just move to next card, no backend call
+    if (currentProfile.isSeedProfile) {
+      moveToNextProfile();
+      return;
+    }
+
+    if (!userId) return;
 
     setActionPending(true);
     setActionError(null);
@@ -303,7 +323,15 @@ export const DiscoverScreen: React.FC = () => {
    * Handle super like action
    */
   async function handleSuperLike() {
-    if (!userId || !currentProfile || actionPending) return;
+    if (!currentProfile || actionPending) return;
+
+    // Seed profiles: just move to next card, no backend call
+    if (currentProfile.isSeedProfile) {
+      moveToNextProfile();
+      return;
+    }
+
+    if (!userId) return;
 
     setActionPending(true);
     setActionError(null);
@@ -531,6 +559,14 @@ export const DiscoverScreen: React.FC = () => {
         </Text>
       </View>
 
+      {usingSeedProfiles && (
+        <View style={styles.seedBanner}>
+          <Text style={styles.seedBannerText}>
+            Showing demo profiles — real members will appear once the community grows
+          </Text>
+        </View>
+      )}
+
       <LaunchStateNotice
         testID="discover-launch-state-notice"
         style={styles.discoveryNotice}
@@ -656,6 +692,25 @@ const styles = StyleSheet.create({
     fontFamily: "HelloParisSans",
     color: WHITE,
     letterSpacing: 1,
+  },
+
+  // Seed profile demo banner
+  seedBanner: {
+    marginHorizontal: 24,
+    marginBottom: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "rgba(141, 105, 246, 0.16)",
+    borderWidth: 1,
+    borderColor: "rgba(141, 105, 246, 0.32)",
+  },
+  seedBannerText: {
+    fontSize: 12,
+    fontFamily: "DMSans-Medium",
+    color: "rgba(255, 255, 255, 0.82)",
+    textAlign: "center",
+    lineHeight: 17,
   },
 
   // Cards

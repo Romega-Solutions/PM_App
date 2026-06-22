@@ -518,6 +518,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 10,
   },
+  demoBadge: {
+    position: "absolute",
+    top: 60,
+    right: 20,
+    backgroundColor: "rgba(141, 105, 246, 0.92)",
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    zIndex: 10,
+  },
+  demoBadgeText: {
+    fontSize: 11,
+    fontFamily: "DMSans-Bold",
+    color: WHITE,
+    letterSpacing: 0.5,
+  },
   matchScoreBadge: {
     position: "absolute",
     top: 20,
