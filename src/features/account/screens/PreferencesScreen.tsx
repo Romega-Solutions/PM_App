@@ -77,19 +77,19 @@ export default function PreferencesScreen() {
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={theme.colors.dalisay[950] ?? "#0F0814"}
+        backgroundColor={theme.semanticColors.background}
       />
       {Platform.OS !== "web" && (
         <View
           style={{
             height: insets.top,
-            backgroundColor: theme.colors.dalisay[950] ?? "#0F0814",
+            backgroundColor: theme.semanticColors.background,
           }}
         />
       )}
 
       <LinearGradient
-        colors={[theme.colors.dalisay[950] ?? "#0F0814", "#1A0F1F"]}
+        colors={[theme.semanticColors.background, theme.colors.dalisay[900]]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -181,7 +181,7 @@ export default function PreferencesScreen() {
 }
 
 const useStyles = makeStyles((theme) => ({
-  root: { flex: 1, backgroundColor: theme.colors.dalisay[950] ?? "#0F0814" },
+  root: { flex: 1, backgroundColor: theme.semanticColors.background },
   content: {
     paddingHorizontal: theme.spacing.lg ?? 24,
     paddingTop:

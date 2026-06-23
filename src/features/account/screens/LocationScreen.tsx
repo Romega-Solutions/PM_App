@@ -172,19 +172,19 @@ export default function LocationScreen() {
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={theme.colors.dalisay[950] ?? "#0F0814"}
+        backgroundColor={theme.semanticColors.background}
       />
       {Platform.OS !== "web" && (
         <View
           style={{
             height: insets.top,
-            backgroundColor: theme.colors.dalisay[950] ?? "#0F0814",
+            backgroundColor: theme.semanticColors.background,
           }}
         />
       )}
 
       <LinearGradient
-        colors={[theme.colors.dalisay[950] ?? "#0F0814", "#1A0F1F"]}
+        colors={[theme.semanticColors.background, theme.colors.dalisay[900]]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -231,7 +231,7 @@ export default function LocationScreen() {
                 accessibilityRole="alert"
                 accessibilityLabel={`Location notice. ${locationNotice}`}
               >
-                <AlertCircle size={16} color="#F59E0B" strokeWidth={2.4} />
+                <AlertCircle size={16} color={theme.semanticColors.warning} strokeWidth={2.4} />
                 <Text style={styles.noticeText}>{locationNotice}</Text>
               </View>
             ) : null}
@@ -304,7 +304,7 @@ export default function LocationScreen() {
                 accessible
                 accessibilityLabel={`Selected location: ${selectedLocation}. ${selectedLocationPrivacyLabel}`}
               >
-                <MapPin size={18} color="#EF3E78" />
+                <MapPin size={18} color={theme.semanticColors.primary} />
                 <View style={styles.selectedCopy}>
                   <Text style={styles.selectedText}>{selectedLocation}</Text>
                   <Text style={styles.selectedPrivacyText}>
@@ -336,7 +336,7 @@ export default function LocationScreen() {
 }
 
 const useStyles = makeStyles((theme) => ({
-  root: { flex: 1, backgroundColor: theme.colors.dalisay[950] ?? "#0F0814" },
+  root: { flex: 1, backgroundColor: theme.semanticColors.background },
   keyboardView: { flex: 1 },
   content: {
     paddingHorizontal: theme.spacing.lg ?? 24,
@@ -348,7 +348,7 @@ const useStyles = makeStyles((theme) => ({
   header: { alignItems: "center", marginBottom: 24 },
   title: {
     fontSize: 28,
-    color: "#FFF",
+    color: theme.colors.neutral.white,
     textAlign: "center",
     marginTop: 12,
     marginBottom: 8,
@@ -443,7 +443,7 @@ const useStyles = makeStyles((theme) => ({
   },
   selectedText: {
     fontSize: 15,
-    color: "#FFF",
+    color: theme.colors.neutral.white,
     fontWeight: "600",
   },
   selectedCopy: {

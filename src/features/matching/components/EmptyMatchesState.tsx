@@ -11,12 +11,10 @@ import {
   SlidersHorizontal,
 } from "lucide-react-native";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import { LaunchStateNotice } from "@/src/components/ui/LaunchStateNotice";
-
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
+import { useAppTheme } from "@/src/theme/ThemeContext";
+import { makeStyles } from "@/src/theme/makeStyles";
 
 type EmptyMatchesStateVariant = "empty" | "filtered" | "error";
 
@@ -50,6 +48,8 @@ export const EmptyMatchesState: React.FC<EmptyMatchesStateProps> = ({
   message,
   onAction,
 }) => {
+  const theme = useAppTheme();
+  const styles = useStyles();
   const copy = copyByVariant[variant];
   const Icon =
     variant === "error"
@@ -63,7 +63,7 @@ export const EmptyMatchesState: React.FC<EmptyMatchesStateProps> = ({
       <View style={styles.iconWrap}>
         <Icon
           size={38}
-          color={variant === "error" ? ACCENT_PINK : ACCENT_PURPLE}
+          color={variant === "error" ? theme.semanticColors.primary : theme.semanticColors.secondary}
           strokeWidth={1.8}
         />
       </View>
@@ -84,7 +84,7 @@ export const EmptyMatchesState: React.FC<EmptyMatchesStateProps> = ({
           accessibilityLabel={copy.action}
           accessibilityHint="Attempts to refresh your matches"
         >
-          <RefreshCw size={16} color={WHITE} strokeWidth={2.4} />
+          <RefreshCw size={16} color={theme.colors.neutral.white} strokeWidth={2.4} />
           <Text style={styles.actionButtonText}>{copy.action}</Text>
         </TouchableOpacity>
       ) : null}
@@ -92,7 +92,7 @@ export const EmptyMatchesState: React.FC<EmptyMatchesStateProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   emptyState: {
     flex: 1,
     justifyContent: "center",
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 21,
     fontFamily: "Lora-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
     marginTop: 20,
     marginBottom: 8,
     textAlign: "center",
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     marginTop: 22,
     paddingHorizontal: 20,
     borderRadius: 16,
-    backgroundColor: ACCENT_PINK,
+    backgroundColor: theme.semanticColors.primary,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -144,6 +144,6 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 15,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
   },
-});
+}));

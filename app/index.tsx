@@ -47,7 +47,7 @@ export default function Index() {
           {/* Logo Container */}
           <View style={styles.logoWrap}>
             <Image
-              source={require("../assets/images/brand/logo-no-bg.png")}
+              source={require("../assets/images/brand/logo-no-bg.webp")}
               style={styles.logo}
               resizeMode="contain"
               accessible

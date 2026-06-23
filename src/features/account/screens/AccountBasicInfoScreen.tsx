@@ -208,13 +208,13 @@ export default function AccountBasicInfoScreen() {
       <StatusBar
         barStyle="light-content"
         translucent={false}
-        backgroundColor={theme.colors.dalisay[950]}
+        backgroundColor={theme.semanticColors.background}
       />
       {Platform.OS !== "web" && (
         <View
           style={{
             height: insets.top,
-            backgroundColor: theme.colors.dalisay[950],
+            backgroundColor: theme.semanticColors.background,
           }}
         />
       )}
@@ -332,7 +332,7 @@ export default function AccountBasicInfoScreen() {
 }
 
 const useStyles = makeStyles((theme) => ({
-  root: { flex: 1, backgroundColor: theme.colors.dalisay[950] },
+  root: { flex: 1, backgroundColor: theme.semanticColors.background },
   keyboardView: { flex: 1 },
   scrollContent: {
     flexGrow: 1,

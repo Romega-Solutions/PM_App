@@ -15,6 +15,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { makeStyles } from "../../../theme/makeStyles";
+import { useAppTheme, AppTheme } from "../../../theme/ThemeContext";
 
 const BRAND_BG = "#0F0814";
 const ACCENT_PINK = "#EF3E78";
@@ -31,10 +33,12 @@ export const EditProfileHeader: React.FC<EditProfileHeaderProps> = ({
   onSave,
   isSaving,
 }) => {
+  const styles = useStyles();
+  const theme = useAppTheme();
   return (
     <>
       {Platform.OS !== "web" && (
-        <View style={{ height: 44, backgroundColor: BRAND_BG }} />
+        <View style={{ height: 44, backgroundColor: theme.semanticColors.background }} />
       )}
       <View style={styles.header}>
         <TouchableOpacity
@@ -46,7 +50,7 @@ export const EditProfileHeader: React.FC<EditProfileHeaderProps> = ({
           accessibilityLabel="Back to profile"
           accessibilityHint="Leaves edit profile without saving new changes"
         >
-          <ArrowLeft size={24} color={WHITE} />
+          <ArrowLeft size={24} color={theme.semanticColors.text} />
         </TouchableOpacity>
         <Text style={styles.title}>Edit Profile</Text>
         <TouchableOpacity
@@ -61,9 +65,9 @@ export const EditProfileHeader: React.FC<EditProfileHeaderProps> = ({
           accessibilityState={{ disabled: isSaving, busy: isSaving }}
         >
           {isSaving ? (
-            <ActivityIndicator size="small" color={ACCENT_PINK} />
+            <ActivityIndicator size="small" color={theme.semanticColors.primary} />
           ) : (
-            <Save size={24} color={ACCENT_PINK} />
+            <Save size={24} color={theme.semanticColors.primary} />
           )}
         </TouchableOpacity>
       </View>
@@ -71,7 +75,7 @@ export const EditProfileHeader: React.FC<EditProfileHeaderProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -91,7 +95,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    color: WHITE,
+    color: theme.semanticColors.text,
     fontFamily: "DMSans-Bold",
   },
-});
+}));

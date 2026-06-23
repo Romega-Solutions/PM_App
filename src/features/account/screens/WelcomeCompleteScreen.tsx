@@ -38,7 +38,7 @@ const SURFACE = "rgba(255,255,255,0.12)";
 export default function WelcomeCompleteScreen() {
   const theme = useAppTheme();
   const styles = useStyles();
-  const ACCENT_PURPLE = theme.colors.dalisay?.[500] ?? "#8D69F6";
+  const ACCENT_PURPLE = theme.semanticColors.secondary;
   const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -108,19 +108,19 @@ export default function WelcomeCompleteScreen() {
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={theme.colors.dalisay[950] ?? "#0F0814"}
+        backgroundColor={theme.semanticColors.background}
       />
       {Platform.OS !== "web" && (
         <View
           style={{
             height: insets.top,
-            backgroundColor: theme.colors.dalisay[950] ?? "#0F0814",
+            backgroundColor: theme.semanticColors.background,
           }}
         />
       )}
 
       <LinearGradient
-        colors={[theme.colors.dalisay[950] ?? "#0F0814", "#1A0F1F", "#2D1B35"]}
+        colors={[theme.semanticColors.background, theme.colors.dalisay[900], theme.colors.dalisay[900]]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -134,7 +134,7 @@ export default function WelcomeCompleteScreen() {
         {/* Logo */}
         <View style={styles.logoSection}>
           <Image
-            source={require("@/assets/images/brand/logo-no-bg.png")}
+            source={require("@/assets/images/brand/logo-no-bg.webp")}
             style={styles.logo}
             resizeMode="contain"
             accessible
@@ -368,10 +368,10 @@ export default function WelcomeCompleteScreen() {
 }
 
 const useStyles = makeStyles((theme) => {
-  const ACCENT_PURPLE = theme.colors.dalisay?.[500] ?? "#8D69F6";
-  const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
+  const ACCENT_PURPLE = theme.semanticColors.secondary;
+  const ACCENT_PINK = theme.semanticColors.primary;
   return {
-  root: { flex: 1, backgroundColor: theme.colors.dalisay[950] ?? "#0F0814" },
+  root: { flex: 1, backgroundColor: theme.semanticColors.background },
   content: {
     paddingHorizontal: 24,
     paddingTop: Platform.OS === "ios" ? 32 : 24,
@@ -436,7 +436,7 @@ const useStyles = makeStyles((theme) => {
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: theme.colors.dalisay[950],
+    borderColor: theme.semanticColors.background,
   },
   profileHeaderInfo: { flex: 1 },
   profileName: {

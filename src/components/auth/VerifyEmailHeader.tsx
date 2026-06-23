@@ -17,7 +17,7 @@ export default function VerifyEmailHeader({ email }: Props) {
     <View style={styles.container}>
       <View style={styles.logoWrap}>
         <Image
-          source={require("../../../assets/images/brand/logo-no-bg.png")}
+          source={require("../../../assets/images/brand/logo-no-bg.webp")}
           style={styles.logo}
           resizeMode="contain"
           accessible

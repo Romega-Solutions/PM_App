@@ -20,6 +20,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { makeStyles } from "../../../theme/makeStyles";
+import { useAppTheme, AppTheme } from "../../../theme/ThemeContext";
 
 const ACCENT_PINK = "#EF3E78";
 const ACCENT_PURPLE = "#8D69F6";
@@ -39,6 +41,8 @@ export const ProfilePhotoSection: React.FC<ProfilePhotoSectionProps> = ({
   uploadProgress,
   onChangePhoto,
 }) => {
+  const styles = useStyles();
+  const theme = useAppTheme();
   const remotePhotoUri = photoUri?.startsWith("http") ? photoUri : null;
   const uploadStatusLabel = `Uploading profile photo, ${uploadProgress}% complete`;
 
@@ -60,7 +64,7 @@ export const ProfilePhotoSection: React.FC<ProfilePhotoSectionProps> = ({
           />
         ) : (
           <View style={styles.photoPlaceholder}>
-            <User size={32} color={ACCENT_PINK} />
+            <User size={32} color={theme.semanticColors.primary} />
           </View>
         )}
         {isUploading && (
@@ -71,7 +75,7 @@ export const ProfilePhotoSection: React.FC<ProfilePhotoSectionProps> = ({
             accessibilityLabel={uploadStatusLabel}
             accessibilityLiveRegion="polite"
           >
-            <ActivityIndicator size="large" color={WHITE} />
+            <ActivityIndicator size="large" color={theme.semanticColors.text} />
             <Text style={styles.uploadProgress}>{uploadProgress}%</Text>
           </View>
         )}
@@ -92,7 +96,7 @@ export const ProfilePhotoSection: React.FC<ProfilePhotoSectionProps> = ({
         }
         accessibilityState={{ disabled: isUploading, busy: isUploading }}
       >
-        <Camera size={16} color={WHITE} />
+        <Camera size={16} color={theme.semanticColors.text} />
         <Text style={styles.changePhotoText}>
           {isUploading ? "Uploading..." : "Change Photo"}
         </Text>
@@ -101,7 +105,7 @@ export const ProfilePhotoSection: React.FC<ProfilePhotoSectionProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   photoSection: {
     alignItems: "center",
     marginTop: 20,
@@ -113,7 +117,7 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     overflow: "hidden",
     borderWidth: 3,
-    borderColor: ACCENT_PINK,
+    borderColor: theme.semanticColors.primary,
     marginBottom: 12,
   },
   photo: {
@@ -123,7 +127,7 @@ const styles = StyleSheet.create({
   photoPlaceholder: {
     width: "100%",
     height: "100%",
-    backgroundColor: SURFACE_STRONG,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -140,20 +144,24 @@ const styles = StyleSheet.create({
     borderColor: "rgba(141, 105, 246, 0.34)",
   },
   changePhotoText: {
-    color: ACCENT_PURPLE,
+    color: theme.semanticColors.secondary,
     fontSize: 14,
     fontFamily: "DMSans-SemiBold",
   },
   uploadOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: "rgba(0, 0, 0, 0.7)",
     justifyContent: "center",
     alignItems: "center",
     gap: 8,
   },
   uploadProgress: {
-    color: WHITE,
+    color: theme.semanticColors.text,
     fontSize: 16,
     fontFamily: "DMSans-Bold",
   },
-});
+}));

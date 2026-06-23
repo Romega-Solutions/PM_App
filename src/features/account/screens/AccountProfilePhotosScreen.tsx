@@ -93,19 +93,19 @@ export default function AccountProfilePhotosScreen() {
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={theme.colors.dalisay[950] ?? "#0F0814"}
+        backgroundColor={theme.semanticColors.background}
       />
       {Platform.OS !== "web" && (
         <View
           style={{
             height: insets.top,
-            backgroundColor: theme.colors.dalisay[950] ?? "#0F0814",
+            backgroundColor: theme.semanticColors.background,
           }}
         />
       )}
 
       <LinearGradient
-        colors={[theme.colors.dalisay[950] ?? "#0F0814", "#1A0F1F"]}
+        colors={[theme.semanticColors.background, theme.colors.dalisay[900]]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -128,12 +128,12 @@ export default function AccountProfilePhotosScreen() {
 
         <View style={styles.guidelinesCard}>
           <View style={styles.guidelinesHeader}>
-            <ShieldAlert size={20} color="#F59E0B" strokeWidth={2.4} />
+            <ShieldAlert size={20} color={theme.semanticColors.warning} strokeWidth={2.4} />
             <Text style={styles.guidelinesTitle}>Photo safety checklist</Text>
           </View>
           {photoGuidelines.map((guideline) => (
             <View key={guideline} style={styles.guidelineRow}>
-              <CheckCircle2 size={16} color="#22C55E" strokeWidth={2.4} />
+              <CheckCircle2 size={16} color={theme.semanticColors.success} strokeWidth={2.4} />
               <Text style={styles.guidelineText}>{guideline}</Text>
             </View>
           ))}
@@ -212,7 +212,7 @@ export default function AccountProfilePhotosScreen() {
 }
 
 const useStyles = makeStyles((theme) => ({
-  root: { flex: 1, backgroundColor: theme.colors.dalisay[950] ?? "#0F0814" },
+  root: { flex: 1, backgroundColor: theme.semanticColors.background },
   content: {
     paddingHorizontal: theme.spacing.lg ?? 24,
     paddingTop:

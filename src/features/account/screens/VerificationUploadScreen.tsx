@@ -59,7 +59,7 @@ export default function VerificationUploadScreen() {
     if (isSubmittedForReview) {
       return {
         Icon: Clock,
-        tone: "#F59E0B",
+        tone: theme.semanticColors.warning,
         title: "Review pending",
         body: "Your selfie and ID were submitted for review. Continue setup now; the verified badge appears only after approval.",
       };
@@ -68,7 +68,7 @@ export default function VerificationUploadScreen() {
     if (isProcessing) {
       return {
         Icon: Clock,
-        tone: "#F59E0B",
+        tone: theme.semanticColors.warning,
         title: "Review in progress",
         body: "Keep this screen open while your upload finishes. These files are not shown on your public profile.",
       };
@@ -77,7 +77,7 @@ export default function VerificationUploadScreen() {
     if (!hasSelfie) {
       return {
         Icon: Camera,
-        tone: "#8D69F6",
+        tone: theme.semanticColors.secondary,
         title: "Selfie needed first",
         body: "Take a clear selfie first. Use good lighting and keep only your face in frame.",
       };
@@ -86,7 +86,7 @@ export default function VerificationUploadScreen() {
     if (!hasDocument) {
       return {
         Icon: FileText,
-        tone: "#8D69F6",
+        tone: theme.semanticColors.secondary,
         title: "ID document needed",
         body: "Your selfie is saved. Upload a valid ID document to submit the private review request.",
       };
@@ -94,7 +94,7 @@ export default function VerificationUploadScreen() {
 
     return {
       Icon: Clock,
-      tone: "#F59E0B",
+      tone: theme.semanticColors.warning,
       title: "Submitted for review",
       body: "Your files were submitted for review. You can continue setup, and the verified badge appears only after approval.",
     };
@@ -144,19 +144,19 @@ export default function VerificationUploadScreen() {
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={theme.colors.dalisay[950] ?? "#0F0814"}
+        backgroundColor={theme.semanticColors.background}
       />
       {Platform.OS !== "web" && (
         <View
           style={{
             height: insets.top,
-            backgroundColor: theme.colors.dalisay[950] ?? "#0F0814",
+            backgroundColor: theme.semanticColors.background,
           }}
         />
       )}
 
       <LinearGradient
-        colors={[theme.colors.dalisay[950] ?? "#0F0814", "#1A0F1F"]}
+        colors={[theme.semanticColors.background, theme.colors.dalisay[900]]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -170,7 +170,7 @@ export default function VerificationUploadScreen() {
       >
         <View style={styles.header}>
           <AccountProgress steps={5} activeIndex={4} />
-          <Shield size={28} color="#EF3E78" style={{ marginTop: 12 }} />
+          <Shield size={28} color={theme.semanticColors.primary} style={{ marginTop: 12 }} />
           <Text style={styles.title}>Verify your identity</Text>
           <Text style={styles.subtitle}>
             Submit a clear selfie and ID for private review. Verification can
@@ -226,7 +226,7 @@ export default function VerificationUploadScreen() {
             accessibilityRole="alert"
             accessibilityLabel={`Verification error. ${error}`}
           >
-            <AlertCircle size={18} color="#FCA5A5" strokeWidth={2.4} />
+            <AlertCircle size={18} color={theme.semanticColors.error} strokeWidth={2.4} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
@@ -325,7 +325,7 @@ export default function VerificationUploadScreen() {
 }
 
 const useStyles = makeStyles((theme) => ({
-  root: { flex: 1, backgroundColor: theme.colors.dalisay[950] ?? "#0F0814" },
+  root: { flex: 1, backgroundColor: theme.semanticColors.background },
   content: {
     paddingHorizontal: 24,
     paddingTop: Platform.OS === "ios" ? 32 : 24,
@@ -333,7 +333,7 @@ const useStyles = makeStyles((theme) => ({
   header: { alignItems: "center", marginBottom: 24 },
   title: {
     fontSize: 28,
-    color: "#FFF",
+    color: theme.colors.neutral.white,
     textAlign: "center",
     marginTop: 12,
     marginBottom: 8,
@@ -355,9 +355,9 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: "rgba(239,68,68,0.12)",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#EF4444",
+    borderColor: theme.semanticColors.error,
   },
-  errorText: { flex: 1, color: "#FCA5A5", fontSize: 13, lineHeight: 19 },
+  errorText: { flex: 1, color: theme.semanticColors.error, fontSize: 13, lineHeight: 19 },
   statusPanel: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -378,7 +378,7 @@ const useStyles = makeStyles((theme) => ({
   statusTextWrap: { flex: 1 },
   statusTitle: {
     fontSize: 15,
-    color: "#FFF",
+    color: theme.colors.neutral.white,
     fontFamily: theme.fontFamilies?.body?.semiBold ?? "System",
     marginBottom: 4,
   },
@@ -415,7 +415,7 @@ const useStyles = makeStyles((theme) => ({
   },
   limitsTitle: {
     fontSize: 14,
-    color: "#FFF",
+    color: theme.colors.neutral.white,
     fontFamily: theme.fontFamilies?.body?.semiBold ?? "System",
   },
   limitsRow: {
@@ -427,7 +427,7 @@ const useStyles = makeStyles((theme) => ({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: "#EF3E78",
+    backgroundColor: theme.semanticColors.primary,
     marginTop: 6,
   },
   limitsText: {

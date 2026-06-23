@@ -38,12 +38,12 @@ export default function VerifyEmailActions({
         accessibilityHint="Opens your email app so you can tap the latest PinayMate verification link"
       >
         <LinearGradient
-          colors={["#EF3E78", "#8D69F6"]}
+          colors={[theme.semanticColors.primary, theme.semanticColors.secondary]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={StyleSheet.absoluteFill}
         />
-        <Mail size={18} color="#FFF" style={{ marginRight: 8 }} />
+        <Mail size={18} color={theme.colors.neutral.white} style={{ marginRight: 8 }} />
         <Text style={styles.openBtnText}>Open Email App</Text>
       </TouchableOpacity>
 
@@ -87,7 +87,7 @@ const useStyles = makeStyles((theme) => ({
     elevation: 10,
   },
   openBtnText: {
-    color: "#FFFFFF",
+    color: theme.colors.neutral.white,
     fontSize: 17,
     fontFamily: theme.fontFamilies.body.bold,
   },

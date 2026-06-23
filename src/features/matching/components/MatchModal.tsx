@@ -9,26 +9,23 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { Heart, MessageCircle, ShieldCheck } from "lucide-react-native";
 import React from "react";
-import {
+import { StyleSheet, 
   Dimensions,
   Image,
   Modal,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAppTheme } from "@/src/theme/ThemeContext";
+import { makeStyles } from "@/src/theme/makeStyles";
 
 const { width, height } = Dimensions.get("window");
 
 // Brand Colors
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
-
 export interface MatchedProfile {
   id: string;
   first_name: string;
@@ -48,6 +45,8 @@ export const MatchModal: React.FC<MatchModalProps> = ({
   onKeepSwiping,
   onSendMessage,
 }) => {
+  const theme = useAppTheme();
+  const styles = useStyles();
   const insets = useSafeAreaInsets();
 
   if (!matchedProfile) return null;
@@ -92,8 +91,8 @@ export const MatchModal: React.FC<MatchModalProps> = ({
             >
               <Heart
                 size={80}
-                color={ACCENT_PINK}
-                fill={ACCENT_PINK}
+                color={theme.semanticColors.primary}
+                fill={theme.semanticColors.primary}
                 strokeWidth={2}
               />
             </View>
@@ -110,7 +109,7 @@ export const MatchModal: React.FC<MatchModalProps> = ({
               accessible
               accessibilityLabel="Safety note. Keep chats in PinayMate until you feel comfortable, and do not rush into sharing private details."
             >
-              <ShieldCheck size={16} color={ACCENT_PURPLE} strokeWidth={2.4} />
+              <ShieldCheck size={16} color={theme.semanticColors.secondary} strokeWidth={2.4} />
               <Text style={styles.safetyNoteText}>
                 Keep chats in PinayMate until you feel comfortable. Do not rush
                 into sharing private details.
@@ -147,7 +146,7 @@ export const MatchModal: React.FC<MatchModalProps> = ({
                 accessibilityLabel={`Open ${matchedProfile.first_name} in matches`}
                 accessibilityHint="Takes you to your matches. Messaging may depend on account state."
               >
-                <MessageCircle size={20} color={WHITE} strokeWidth={2.5} />
+                <MessageCircle size={20} color={theme.colors.neutral.white} strokeWidth={2.5} />
                 <Text style={styles.sendMessageBtnText}>Open Match</Text>
               </TouchableOpacity>
 
@@ -169,7 +168,7 @@ export const MatchModal: React.FC<MatchModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   matchModalContainer: {
     flex: 1,
     paddingHorizontal: 24,
@@ -195,7 +194,7 @@ const styles = StyleSheet.create({
   matchTitle: {
     fontSize: 42,
     fontFamily: "Lora-Bold",
-    color: ACCENT_PINK,
+    color: theme.semanticColors.primary,
     letterSpacing: 1,
   },
   matchSubtitle: {
@@ -232,7 +231,7 @@ const styles = StyleSheet.create({
     borderRadius: 90,
     overflow: "hidden",
     borderWidth: 4,
-    borderColor: ACCENT_PINK,
+    borderColor: theme.semanticColors.primary,
     marginVertical: 10,
   },
   matchImage: {
@@ -245,7 +244,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.12)",
   },
   matchImagePlaceholderText: {
-    color: WHITE,
+    color: theme.colors.neutral.white,
     fontSize: 16,
     fontWeight: "700",
   },
@@ -266,10 +265,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sendMessageBtn: {
-    backgroundColor: ACCENT_PINK,
+    backgroundColor: theme.semanticColors.primary,
     ...Platform.select({
       ios: {
-        shadowColor: ACCENT_PINK,
+        shadowColor: theme.semanticColors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.4,
         shadowRadius: 12,
@@ -282,7 +281,7 @@ const styles = StyleSheet.create({
   sendMessageBtnText: {
     fontSize: 17,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
     letterSpacing: 0.5,
   },
   keepSwipingBtn: {
@@ -295,4 +294,4 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-SemiBold",
     color: "rgba(255, 255, 255, 0.8)",
   },
-});
+}));

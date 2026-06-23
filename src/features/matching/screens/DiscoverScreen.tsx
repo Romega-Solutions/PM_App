@@ -34,12 +34,11 @@ import {
   UserSearch,
 } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
-import {
+import { StyleSheet, 
   ActivityIndicator,
   Animated,
   Platform,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -51,11 +50,10 @@ import { ProfileCard, ProfileCardData } from "../components/ProfileCard";
 import { ProfileDetailsModal } from "../components/ProfileDetailsModal";
 import { useSwipeGesture } from "../hooks/useSwipeGesture";
 import { getSeedProfiles } from "../data/seedProfiles";
+import { useAppTheme } from "@/src/theme/ThemeContext";
+import { makeStyles } from "@/src/theme/makeStyles";
 
 // Brand Colors
-const BRAND_BG = "#0F0814";
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
 const TEXT_SECONDARY = "rgba(255, 255, 255, 0.74)";
 const TEXT_MUTED = "rgba(255, 255, 255, 0.56)";
 const SURFACE_BORDER = "rgba(239, 62, 120, 0.24)";
@@ -97,6 +95,8 @@ function convertDBProfileToDisplay(dbProfile: DBProfile): ProfileCardData {
 }
 
 export const DiscoverScreen: React.FC = () => {
+  const theme = useAppTheme();
+  const styles = useStyles();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -440,7 +440,7 @@ export const DiscoverScreen: React.FC = () => {
         ]}
       >
         <LinearGradient
-          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+          colors={[theme.semanticColors.background, theme.semanticColors.surface, theme.colors.dalisay[900], theme.semanticColors.background]}
           locations={[0, 0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
@@ -449,7 +449,7 @@ export const DiscoverScreen: React.FC = () => {
           <Text style={styles.stageEyebrow}>Discovery is calibrating</Text>
           <ActivityIndicator
             size="large"
-            color={ACCENT_PINK}
+            color={theme.semanticColors.primary}
             accessibilityLabel="Loading discover profiles"
           />
           <Text style={styles.loadingText}>
@@ -475,7 +475,7 @@ export const DiscoverScreen: React.FC = () => {
         ]}
       >
         <LinearGradient
-          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+          colors={[theme.semanticColors.background, theme.semanticColors.surface, theme.colors.dalisay[900], theme.semanticColors.background]}
           locations={[0, 0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
@@ -486,9 +486,9 @@ export const DiscoverScreen: React.FC = () => {
           </Text>
           <View style={styles.emptyIconWrap}>
             {loadError ? (
-              <RefreshCw size={34} color={ACCENT_PINK} strokeWidth={2} />
+              <RefreshCw size={34} color={theme.semanticColors.primary} strokeWidth={2} />
             ) : (
-              <UserSearch size={38} color={ACCENT_PINK} strokeWidth={1.8} />
+              <UserSearch size={38} color={theme.semanticColors.primary} strokeWidth={1.8} />
             )}
           </View>
           <Text style={styles.emptyText}>
@@ -502,7 +502,7 @@ export const DiscoverScreen: React.FC = () => {
           </Text>
           <View style={styles.emptyTrustRow}>
             <View style={styles.emptyTrustPill}>
-              <ShieldCheck size={13} color={WHITE} strokeWidth={2.2} />
+              <ShieldCheck size={13} color={theme.colors.neutral.white} strokeWidth={2.2} />
               <Text style={styles.emptyTrustText}>Visibility respected</Text>
             </View>
             <View style={styles.emptyTrustPillQuiet}>
@@ -518,7 +518,7 @@ export const DiscoverScreen: React.FC = () => {
               accessibilityHint="Attempts to load profiles again"
               activeOpacity={0.84}
             >
-              <RefreshCw size={18} color={WHITE} strokeWidth={2.4} />
+              <RefreshCw size={18} color={theme.colors.neutral.white} strokeWidth={2.4} />
               <Text style={styles.retryButtonText}>Refresh</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -529,7 +529,7 @@ export const DiscoverScreen: React.FC = () => {
               accessibilityHint="Opens age, distance, and relationship filters"
               activeOpacity={0.84}
             >
-              <SlidersHorizontal size={18} color={WHITE} strokeWidth={2.4} />
+              <SlidersHorizontal size={18} color={theme.colors.neutral.white} strokeWidth={2.4} />
               <Text style={styles.secondaryEmptyButtonText}>Adjust filters</Text>
             </TouchableOpacity>
           </View>
@@ -542,16 +542,16 @@ export const DiscoverScreen: React.FC = () => {
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={BRAND_BG}
+        backgroundColor={theme.semanticColors.background}
         translucent={false}
       />
       {Platform.OS !== "web" && (
-        <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+        <View style={{ height: insets.top, backgroundColor: theme.semanticColors.background }} />
       )}
 
       {/* Brand Gradient Background */}
       <LinearGradient
-        colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+        colors={[theme.semanticColors.background, theme.semanticColors.surface, theme.colors.dalisay[900], theme.semanticColors.background]}
         locations={[0, 0.3, 0.7, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -624,7 +624,7 @@ export const DiscoverScreen: React.FC = () => {
               accessibilityState={{ disabled: actionPending }}
               activeOpacity={0.84}
             >
-              <RotateCcw size={16} color={WHITE} strokeWidth={2.4} />
+              <RotateCcw size={16} color={theme.colors.neutral.white} strokeWidth={2.4} />
               <Text style={styles.retryActionButtonText}>
                 {actionPending ? "Retrying..." : "Retry this card"}
               </Text>
@@ -640,7 +640,7 @@ export const DiscoverScreen: React.FC = () => {
           accessibilityLiveRegion="polite"
           accessibilityLabel="Saving your discover choice"
         >
-          <ActivityIndicator size="small" color={WHITE} />
+          <ActivityIndicator size="small" color={theme.colors.neutral.white} />
           <Text style={styles.actionStatusText}>
             Saving your choice. The card will stay here until it finishes.
           </Text>
@@ -676,10 +676,10 @@ export const DiscoverScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   root: {
     flex: 1,
-    backgroundColor: BRAND_BG,
+    backgroundColor: theme.semanticColors.background,
   },
   centerContent: {
     justifyContent: "center",
@@ -696,7 +696,7 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 28,
     fontFamily: "HelloParisSans",
-    color: WHITE,
+    color: theme.colors.neutral.white,
     letterSpacing: 1,
   },
 
@@ -745,7 +745,7 @@ const styles = StyleSheet.create({
   actionErrorText: {
     fontSize: 13,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
     lineHeight: 18,
     textAlign: "center",
   },
@@ -754,7 +754,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: 14,
-    backgroundColor: ACCENT_PINK,
+    backgroundColor: theme.semanticColors.primary,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -763,7 +763,7 @@ const styles = StyleSheet.create({
   retryActionButtonText: {
     fontSize: 13,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
   },
   actionStatus: {
     marginHorizontal: 24,
@@ -856,7 +856,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 24,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
     marginBottom: 8,
     textAlign: "center",
   },
@@ -898,7 +898,7 @@ const styles = StyleSheet.create({
   emptyTrustText: {
     fontSize: 12,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
   },
   emptyTrustTextQuiet: {
     fontSize: 12,
@@ -916,7 +916,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingVertical: 13,
     borderRadius: 16,
-    backgroundColor: ACCENT_PINK,
+    backgroundColor: theme.semanticColors.primary,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -925,7 +925,7 @@ const styles = StyleSheet.create({
   retryButtonText: {
     fontSize: 15,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
   },
   secondaryEmptyButton: {
     minHeight: 50,
@@ -943,7 +943,7 @@ const styles = StyleSheet.create({
   secondaryEmptyButtonText: {
     fontSize: 15,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
   },
   helperText: {
     marginTop: 6,
@@ -967,4 +967,4 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 10,
   },
-});
+}));

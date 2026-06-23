@@ -16,7 +16,9 @@
 import { UserType } from "@/src/features/auth/api/authApi";
 import { MapPin, Sparkles, User } from "lucide-react-native";
 import React from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, Text, View } from "react-native";
+import { makeStyles } from "../../../theme/makeStyles";
+import { useAppTheme, AppTheme } from "../../../theme/ThemeContext";
 
 // Brand Colors
 const ACCENT_PURPLE = "#8D69F6";
@@ -59,6 +61,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   photoUri,
   isVerified,
 }) => {
+  const styles = useStyles();
+  const theme = useAppTheme();
   const formatUserType = (type: UserType | null): string | null => {
     if (!type) return null;
     return type === "filipina" ? "Filipina" : "Foreigner";
@@ -84,7 +88,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             accessible
             accessibilityLabel="No profile photo added"
           >
-            <User size={48} color={ACCENT_PINK} strokeWidth={2} />
+            <User size={48} color={theme.semanticColors.primary} strokeWidth={2} />
           </View>
         )}
       </View>
@@ -109,7 +113,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
       {/* Location */}
       <View style={styles.locationRow}>
-        <MapPin size={16} color={ACCENT_PINK} strokeWidth={2.5} />
+        <MapPin size={16} color={theme.semanticColors.primary} strokeWidth={2.5} />
         <Text style={styles.locationText}>
           {location || "Location not added yet"}
         </Text>
@@ -118,7 +122,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       {/* Verification Badge */}
       {isVerified ? (
         <View style={styles.verifiedPill}>
-          <Sparkles size={12} color={WHITE} strokeWidth={2.5} />
+          <Sparkles size={12} color={theme.semanticColors.text} strokeWidth={2.5} />
           <Text style={styles.verifiedText}>VERIFIED PROFILE</Text>
         </View>
       ) : (
@@ -130,7 +134,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   container: {
     alignItems: "center",
     paddingHorizontal: 24,
@@ -142,7 +146,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     borderWidth: 4,
-    borderColor: ACCENT_PURPLE,
+    borderColor: theme.semanticColors.secondary,
     padding: 4,
     marginBottom: 16,
   },
@@ -155,12 +159,12 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     borderRadius: 56,
-    backgroundColor: `${ACCENT_PURPLE}22`,
+    backgroundColor: "rgba(141, 105, 246, 0.13)",
     justifyContent: "center",
     alignItems: "center",
   },
   name: {
-    color: WHITE,
+    color: theme.semanticColors.text,
     fontSize: 28,
     fontFamily: "DMSans-Bold",
     letterSpacing: 0.5,
@@ -183,7 +187,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: ACCENT_PURPLE,
+    backgroundColor: theme.semanticColors.secondary,
   },
   locationRow: {
     flexDirection: "row",
@@ -201,7 +205,7 @@ const styles = StyleSheet.create({
   },
   verifiedPill: {
     marginTop: 12,
-    backgroundColor: VERIFIED_GREEN,
+    backgroundColor: theme.semanticColors.success,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -209,12 +213,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     borderWidth: 2,
-    borderColor: WHITE,
+    borderColor: theme.colors.neutral.white,
   },
   verifiedText: {
     fontSize: 10,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.semanticColors.text,
     letterSpacing: 1,
   },
   unverifiedPill: {
@@ -224,12 +228,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 2,
-    borderColor: WARNING_YELLOW,
+    borderColor: theme.semanticColors.warning,
   },
   unverifiedText: {
     fontSize: 10,
     fontFamily: "DMSans-Bold",
-    color: WARNING_YELLOW,
+    color: theme.semanticColors.warning,
     letterSpacing: 1,
   },
-});
+}));
