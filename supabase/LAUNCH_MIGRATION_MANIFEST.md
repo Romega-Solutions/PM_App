@@ -34,7 +34,7 @@ Apply these migrations in filename-runner order for the launch security, privacy
 27. `20260611142000_hide_empty_conversations_from_inbox.sql`
 28. `20260611143000_restrict_public_function_execute_defaults.sql`
 29. `999_restore_profile_visibility_filter.sql`
-30. `99_final_release_security_hardening.sql`
+30. `20260611144000_final_release_security_hardening.sql`
 
 ## Migration purposes
 
@@ -76,14 +76,14 @@ Apply these migrations in filename-runner order for the launch security, privacy
 
 This file is not deployment proof. It is the source-of-truth order that staging and production evidence must match.
 
-## Legacy filename ordering note
+## Tail migration ordering note
 
-`99_final_release_security_hardening.sql` and `999_restore_profile_visibility_filter.sql` are legacy tail migrations whose filenames sort after the timestamped `202606...` migrations in a normal filename-ordered runner. They must remain safe if applied last:
+`20260611144000_final_release_security_hardening.sql` is the final timestamped release hardening migration. `999_restore_profile_visibility_filter.sql` remains a legacy tail migration whose filename sorts after the timestamped `202606...` migrations in a normal filename-ordered runner. Both must remain safe if applied late:
 
-- `99_final_release_security_hardening.sql` must not grant direct `INSERT` on `public.messages`; message creation must stay behind `public.send_message`.
-- `99_final_release_security_hardening.sql` must not grant direct execute on `public.get_or_create_conversation`; conversation creation must stay behind `public.send_message`.
-- `99_final_release_security_hardening.sql` must not grant direct `INSERT` on `public.passes`; pass actions must stay behind `public.pass_profile`.
-- `99_final_release_security_hardening.sql` must keep `public.get_user_conversations` filtered to rows with `last_message_id IS NOT NULL`.
-- `99_final_release_security_hardening.sql`, `999_restore_profile_visibility_filter.sql`, and `20260611122000_fix_discovery_privacy_read_model.sql` must keep `public.discoverable_profiles` as `security_invoker = false` and enforce `user_privacy_settings.profile_visible`.
+- `20260611144000_final_release_security_hardening.sql` must not grant direct `INSERT` on `public.messages`; message creation must stay behind `public.send_message`.
+- `20260611144000_final_release_security_hardening.sql` must not grant direct execute on `public.get_or_create_conversation`; conversation creation must stay behind `public.send_message`.
+- `20260611144000_final_release_security_hardening.sql` must not grant direct `INSERT` on `public.passes`; pass actions must stay behind `public.pass_profile`.
+- `20260611144000_final_release_security_hardening.sql` must keep `public.get_user_conversations` filtered to rows with `last_message_id IS NOT NULL`.
+- `20260611144000_final_release_security_hardening.sql`, `999_restore_profile_visibility_filter.sql`, and `20260611122000_fix_discovery_privacy_read_model.sql` must keep `public.discoverable_profiles` as `security_invoker = false` and enforce `user_privacy_settings.profile_visible`.
 - Staging and production evidence must record the actual migration history/list output before claiming the backend privacy contract is live.
 - Environments that already applied earlier `20260611...` launch migrations must still include `20260611143000_restrict_public_function_execute_defaults.sql` in migration history before backend waitlist capture is considered safe to enable.

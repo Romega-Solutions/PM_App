@@ -82,7 +82,7 @@ Minimum unblock commands:
   - `claim_ocr_attempt` records a per-user quota claim before the function spends an OCR provider call
   - selfie capture no longer auto-verifies locally; successful OCR comparison submits verification for review instead of setting profile `is_verified`
 - Security hardening migration files are available:
-  - `supabase/migrations/04_production_security_hardening.sql` and `supabase/migrations/99_final_release_security_hardening.sql`
+  - `supabase/migrations/04_production_security_hardening.sql` and `supabase/migrations/20260611144000_final_release_security_hardening.sql`
   - `supabase/migrations/20260610094806_add_pinaymate_storage_buckets.sql` defines `profile-photos` and private `verification-docs` storage buckets plus user-folder storage policies
   - `supabase/migrations/20260610100323_add_ocr_rate_limit.sql` defines OCR quota tracking and `claim_ocr_attempt`
   - `supabase/migrations/20260610100523_add_basic_info_rpc.sql` defines `save_basic_info` and removes direct client mutation of `gender`/`user_type`
@@ -137,7 +137,7 @@ Minimum unblock commands:
   - `app/(auth)/account-setup/location.tsx` and `src/features/account/hooks/useLocationSearch.ts` location path
   - `src/services/ocrService.ts`, `src/features/account/hooks/useVerificationUpload.ts` OCR path
   - `src/services/__tests__/ocrService.test.ts`, `src/features/account/api/__tests__/verificationApi.test.ts`
-  - `supabase/migrations/04_production_security_hardening.sql`, `supabase/migrations/99_final_release_security_hardening.sql`, `supabase/migrations/20260610094806_add_pinaymate_storage_buckets.sql`, `supabase/migrations/20260610100323_add_ocr_rate_limit.sql`, and `supabase/migrations/20260610100523_add_basic_info_rpc.sql`
+  - `supabase/migrations/04_production_security_hardening.sql`, `supabase/migrations/20260611144000_final_release_security_hardening.sql`, `supabase/migrations/20260610094806_add_pinaymate_storage_buckets.sql`, `supabase/migrations/20260610100323_add_ocr_rate_limit.sql`, and `supabase/migrations/20260610100523_add_basic_info_rpc.sql`
   - `app/(modals)/report-user.tsx`, `src/features/safety/api/safetyApi.ts`
   - `src/features/safety/api/__tests__/safetyApi.test.ts`
   - `src/features/messaging/api/messages.api.ts`, `src/features/messaging/api/conversations.api.ts`, `src/features/matching/screens/LikesScreen.tsx`

@@ -16,7 +16,7 @@ Use this report for architectural context and migration backlog, then align laun
 - `PM_App/README.md`
 - `PM_App/SETUP_CHECKLIST.md` (environment bootstrap)
 
-**2026-06-10 release-hardening update:** migration `99_final_release_security_hardening.sql` now reasserts the final production contract after older setup/fix scripts. It protects profile approval columns from client writes, moves match creation to the `like_profile` RPC, denies blocked conversation/media access, and extends the safety smoke test to cover direct match-forging rejection.
+**2026-06-10 release-hardening update:** migration `20260611144000_final_release_security_hardening.sql` now reasserts the final production contract after older setup/fix scripts. It protects profile approval columns from client writes, moves match creation to the `like_profile` RPC, denies blocked conversation/media access, and extends the safety smoke test to cover direct match-forging rejection.
 
 ---
 
@@ -346,7 +346,7 @@ CREATE TABLE user_activity (
 
 **Still required before calling this production-verified:**
 
-- Apply migrations through `99_final_release_security_hardening.sql` to local/staging Supabase.
+- Apply migrations through `20260611144000_final_release_security_hardening.sql` to local/staging Supabase.
 - Run `supabase/tests/04_safety_smoke_test.sql`.
 - Record proof that report, block, unmatch, discovery filtering, and blocked-chat enforcement pass.
 

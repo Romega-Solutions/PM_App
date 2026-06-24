@@ -74,7 +74,7 @@ It does not prove migrations were applied to a live Supabase project, that RLS/s
 - `supabase/migrations/20260611141000_restrict_conversation_creation_rpc.sql`
 - `supabase/migrations/20260611142000_hide_empty_conversations_from_inbox.sql`
 - `supabase/migrations/999_restore_profile_visibility_filter.sql`
-- `supabase/migrations/99_final_release_security_hardening.sql`
+- `supabase/migrations/20260611144000_final_release_security_hardening.sql`
 - `supabase/tests/04_safety_smoke_test.sql`
 - `supabase/tests/05_release_preflight_audit.sql`
 

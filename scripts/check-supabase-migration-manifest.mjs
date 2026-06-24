@@ -36,12 +36,12 @@ const expectedOrder = [
   "20260611142000_hide_empty_conversations_from_inbox.sql",
   "20260611143000_restrict_public_function_execute_defaults.sql",
   "999_restore_profile_visibility_filter.sql",
-  "99_final_release_security_hardening.sql",
+  "20260611144000_final_release_security_hardening.sql",
 ];
 
-const legacyFilenameOrderHazards = [
+const tailMigrationOrderHazards = [
   {
-    name: "99_final_release_security_hardening.sql",
+    name: "20260611144000_final_release_security_hardening.sql",
     requiredMarkers: [
       "WITH (security_invoker = false)",
       "COALESCE(privacy_settings.profile_visible, TRUE) = TRUE",
@@ -261,9 +261,9 @@ if (!existsSync(manifestPath)) {
       );
     }
   }
-  if (!manifest.includes("Legacy filename ordering note")) {
+  if (!manifest.includes("Tail migration ordering note")) {
     failures.push(
-      "manifest must document the legacy 99_/999_ filename ordering hazard",
+      "manifest must document the tail migration filename ordering hazard",
     );
   }
 
@@ -272,11 +272,11 @@ if (!existsSync(manifestPath)) {
   );
 
   if (filenameOrder.join("\n") !== expectedOrder.join("\n")) {
-    for (const migration of legacyFilenameOrderHazards) {
+    for (const migration of tailMigrationOrderHazards) {
       const migrationPath = join(migrationsDir, migration.name);
 
       if (!existsSync(migrationPath)) {
-        failures.push(`missing legacy tail migration file: supabase/migrations/${migration.name}`);
+        failures.push(`missing tail migration file: supabase/migrations/${migration.name}`);
         continue;
       }
 
