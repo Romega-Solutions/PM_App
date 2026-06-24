@@ -221,18 +221,9 @@ export default function LikesScreen() {
     const matchName = match?.name || "this member";
 
     if (isSeedProfileId(String(id))) {
-      Alert.alert(
-        `Hide ${matchName}?`,
-        "This only removes the demo match from your beta preview. No real member action is sent.",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Hide",
-            style: "destructive",
-            onPress: () =>
-              setMatches((current) => current.filter((item) => item.id !== id)),
-          },
-        ],
+      setMatches((current) => current.filter((item) => item.id !== id));
+      AccessibilityInfo.announceForAccessibility(
+        `${matchName} was hidden from the beta preview. No real member action was sent.`,
       );
       return;
     }
