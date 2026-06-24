@@ -39,6 +39,10 @@ import { EmptyMatchesState } from "../components/EmptyMatchesState";
 import { LikesFilter } from "../components/LikesFilter";
 import { LikesHeader } from "../components/LikesHeader";
 import { Match, MatchCard } from "../components/MatchCard";
+import {
+  getSeedProfilesInOrder,
+  isSeedProfileId,
+} from "../data/seedProfiles";
 import { useAppTheme } from "@/src/theme/ThemeContext";
 import { makeStyles } from "@/src/theme/makeStyles";
 
@@ -51,6 +55,21 @@ function isMissingAuthSession(error: unknown) {
   );
 }
 
+function getSeedMatches(): Match[] {
+  return getSeedProfilesInOrder().slice(0, 10).map((profile, index) => ({
+    id: profile.id,
+    name: profile.name,
+    age: profile.age,
+    location: profile.location,
+    image: profile.image || undefined,
+    verified: false,
+    mutual: index % 3 !== 1,
+    gender: "female",
+    matchedAt: new Date(Date.now() - (index + 1) * 36 * 60 * 60 * 1000).toISOString(),
+    demo: true,
+  }));
+}
+
 export default function LikesScreen() {
   const theme = useAppTheme();
   const styles = useStyles();
@@ -60,10 +79,12 @@ export default function LikesScreen() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [usingSeedMatches, setUsingSeedMatches] = useState(false);
 
   const fetchMatches = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
+    setUsingSeedMatches(false);
 
     try {
       const {
@@ -75,10 +96,11 @@ export default function LikesScreen() {
         if (userError && !isMissingAuthSession(userError)) {
           console.error("Failed to fetch user.");
         }
-        const message = "Please sign in to view your matches.";
-        setLoadError(message);
-        AccessibilityInfo.announceForAccessibility(message);
-        setMatches([]);
+        setMatches(getSeedMatches());
+        setUsingSeedMatches(true);
+        AccessibilityInfo.announceForAccessibility(
+          "Showing demo matches for beta preview.",
+        );
         return;
       }
 
@@ -88,11 +110,11 @@ export default function LikesScreen() {
 
       if (matchesError) {
         console.error("Failed to fetch matches.");
-        const message =
-          "We could not refresh your matches. Check your connection and try again.";
-        setLoadError(message);
-        AccessibilityInfo.announceForAccessibility(message);
-        setMatches([]);
+        setMatches(getSeedMatches());
+        setUsingSeedMatches(true);
+        AccessibilityInfo.announceForAccessibility(
+          "Showing demo matches while live matches refresh.",
+        );
       } else if (dbMatches && dbMatches.length > 0) {
         const displayMatches: Match[] = dbMatches.map((match) => ({
           id: match.profile.id,
@@ -109,16 +131,18 @@ export default function LikesScreen() {
           matchedAt: match.matched_at,
         }));
         setMatches(displayMatches);
+        setUsingSeedMatches(false);
       } else {
-        setMatches([]);
+        setMatches(getSeedMatches());
+        setUsingSeedMatches(true);
       }
     } catch {
       console.error("Failed to fetch data.");
-      const message =
-        "We could not refresh your matches. Check your connection and try again.";
-      setLoadError(message);
-      AccessibilityInfo.announceForAccessibility(message);
-      setMatches([]);
+      setMatches(getSeedMatches());
+      setUsingSeedMatches(true);
+      AccessibilityInfo.announceForAccessibility(
+        "Showing demo matches while live matches refresh.",
+      );
     } finally {
       setLoading(false);
     }
@@ -136,6 +160,21 @@ export default function LikesScreen() {
 
     if (!match) {
       Alert.alert("Could not open conversation", "This match could not be found.");
+      return;
+    }
+
+    if (isSeedProfileId(String(id))) {
+      Alert.alert(
+        "Demo conversation",
+        "This beta match is sample data. Open Messages to preview seeded unread and active conversations.",
+        [
+          { text: "Stay here", style: "cancel" },
+          {
+            text: "Open Messages",
+            onPress: () => router.push("/(main)/messages"),
+          },
+        ],
+      );
       return;
     }
 
@@ -174,6 +213,23 @@ export default function LikesScreen() {
     const match = matches.find((item) => item.id === id);
     const matchName = match?.name || "this member";
 
+    if (isSeedProfileId(String(id))) {
+      Alert.alert(
+        `Hide ${matchName}?`,
+        "This only removes the demo match from your beta preview. No real member action is sent.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Hide",
+            style: "destructive",
+            onPress: () =>
+              setMatches((current) => current.filter((item) => item.id !== id)),
+          },
+        ],
+      );
+      return;
+    }
+
     Alert.alert(
       `Unmatch ${matchName}?`,
       "This removes the match from your list and closes the chat for you. If something unsafe happened, report first so support can review it.",
@@ -203,6 +259,14 @@ export default function LikesScreen() {
 
   const handleReport = (id: string | number) => {
     const match = matches.find((item) => item.id === id);
+
+    if (isSeedProfileId(String(id))) {
+      Alert.alert(
+        "Demo match",
+        "This is sample beta data, so no real report is needed.",
+      );
+      return;
+    }
 
     router.push({
       pathname: "/(modals)/report-user",
@@ -287,6 +351,20 @@ export default function LikesScreen() {
           </Text>
         </View>
       </View>
+
+      {usingSeedMatches && (
+        <View
+          style={styles.demoNotice}
+          accessible
+          accessibilityLabel="Demo matches are visible for beta preview. Real mutual matches will replace them when available."
+        >
+          <Text style={styles.demoNoticeTitle}>Beta preview</Text>
+          <Text style={styles.demoNoticeText}>
+            Demo matches and mutuals are visible now. Real matches replace these
+            automatically when Supabase returns live data.
+          </Text>
+        </View>
+      )}
 
       <ScrollView
         style={styles.scrollView}
@@ -439,6 +517,29 @@ const useStyles = makeStyles((theme) => ({
     lineHeight: 18,
     fontFamily: "DMSans-Medium",
     color: "rgba(255, 255, 255, 0.72)",
+  },
+  demoNotice: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: "rgba(141, 105, 246, 0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(141, 105, 246, 0.32)",
+  },
+  demoNoticeTitle: {
+    fontSize: 12,
+    fontFamily: "DMSans-Bold",
+    color: theme.colors.neutral.white,
+    letterSpacing: 0.2,
+    marginBottom: 4,
+  },
+  demoNoticeText: {
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: "DMSans-Medium",
+    color: "rgba(255, 255, 255, 0.74)",
   },
 }));
 // touch

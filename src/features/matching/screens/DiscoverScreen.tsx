@@ -15,7 +15,6 @@
  */
 
 import { supabase } from "@/src/config/supabase";
-import { LaunchStateNotice } from "@/src/components/ui/LaunchStateNotice";
 import {
   fetchDiscoverProfiles,
   likeProfile,
@@ -185,8 +184,9 @@ export const DiscoverScreen: React.FC = () => {
         if (userError && !isMissingAuthSession(userError)) {
           console.error("Failed to fetch user.");
         }
-        setLoadError("Please sign in to view discover profiles.");
-        setProfiles([]);
+        setUserId(null);
+        setProfiles(getSeedProfiles());
+        setUsingSeedProfiles(true);
         setLoading(false);
         return;
       }
@@ -199,9 +199,8 @@ export const DiscoverScreen: React.FC = () => {
 
       if (profilesError) {
         console.error("Failed to fetch profiles.");
-        setLoadError("We could not refresh your discover feed.");
-        // Show empty state - no fallback to mock data
-        setProfiles([]);
+        setProfiles(getSeedProfiles());
+        setUsingSeedProfiles(true);
       } else if (dbProfiles && dbProfiles.length > 0) {
         // Convert database profiles to display format
         const displayProfiles: ProfileCardData[] = dbProfiles.map(
@@ -216,9 +215,8 @@ export const DiscoverScreen: React.FC = () => {
       }
     } catch {
       console.error("Failed to fetch user data.");
-      setLoadError("We could not refresh your discover feed.");
-      // Show empty state - no fallback to mock data
-      setProfiles([]);
+      setProfiles(getSeedProfiles());
+      setUsingSeedProfiles(true);
     } finally {
       setLoading(false);
     }
@@ -434,6 +432,12 @@ export const DiscoverScreen: React.FC = () => {
     });
   }, [currentProfile, router]);
 
+  const remainingProfiles = Math.max(profiles.length - currentIndex, 0);
+  const statusTitle = usingSeedProfiles ? "Beta demo feed" : "Live discovery";
+  const statusText = usingSeedProfiles
+    ? "Seeded profiles are available now. Real members replace them when live data is ready."
+    : "Visibility, review status, filters, and current availability shape this feed.";
+
   // Loading state
   if (loading) {
     return (
@@ -561,30 +565,52 @@ export const DiscoverScreen: React.FC = () => {
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Header with Logo */}
+      {/* Header with compact discovery status */}
       <View style={styles.header}>
-        <Text style={styles.logoText}>PinayMate</Text>
-        <Text style={styles.helperText}>
-          Review details before choosing. You can pass, like, or report without
-          pressure.
-        </Text>
-      </View>
-
-      {usingSeedProfiles && (
-        <View style={styles.seedBanner}>
-          <Text style={styles.seedBannerText}>
-            Showing demo profiles — real members will appear once the community grows
-          </Text>
+        <View style={styles.headerTopRow}>
+          <View style={styles.brandBlock}>
+            <Text style={styles.logoText}>PinayMate</Text>
+            <Text style={styles.headerSubtitle}>Discover</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.headerFilterButton}
+            onPress={() => router.push("/(modals)/filters")}
+            activeOpacity={0.84}
+            accessibilityRole="button"
+            accessibilityLabel="Adjust discovery filters"
+            accessibilityHint="Opens age, distance, and relationship filters"
+          >
+            <SlidersHorizontal
+              size={20}
+              color={theme.colors.neutral.white}
+              strokeWidth={2.5}
+            />
+          </TouchableOpacity>
         </View>
-      )}
 
-      <LaunchStateNotice
-        testID="discover-launch-state-notice"
-        style={styles.discoveryNotice}
-        title="Preference-based discovery"
-        message="Visibility settings are respected. Discovery depends on privacy settings, review status, filters, and who is currently available. Review details before liking, report anything that feels off, and pass whenever you are unsure."
-        accessibilityLabel="Discovery safety note. Preference-based discovery respects visibility settings, profile review, filters, and current availability. Reports stay available, and passing is always okay."
-      />
+        <View
+          style={styles.discoveryStatus}
+          accessible
+          accessibilityLabel={`${statusTitle}. ${statusText}`}
+        >
+          <View style={styles.discoveryStatusIcon}>
+            <ShieldCheck
+              size={18}
+              color={theme.colors.neutral.white}
+              strokeWidth={2.4}
+            />
+          </View>
+          <View style={styles.discoveryStatusCopy}>
+            <Text style={styles.discoveryStatusTitle}>{statusTitle}</Text>
+            <Text style={styles.discoveryStatusText}>{statusText}</Text>
+          </View>
+          <View style={styles.discoveryStatusPill}>
+            <Text style={styles.discoveryStatusPillText}>
+              {remainingProfiles} left
+            </Text>
+          </View>
+        </View>
+      </View>
 
       {/* Cards Container */}
       <View style={styles.cardsContainer}>
@@ -694,9 +720,18 @@ const useStyles = makeStyles((theme) => ({
 
   // Header
   header: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 10,
+    gap: 12,
+  },
+  headerTopRow: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+  },
+  brandBlock: {
+    flex: 1,
   },
   logoText: {
     fontSize: 28,
@@ -704,24 +739,73 @@ const useStyles = makeStyles((theme) => ({
     color: theme.colors.neutral.white,
     letterSpacing: 1,
   },
-
-  // Seed profile demo banner
-  seedBanner: {
-    marginHorizontal: 24,
-    marginBottom: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: "rgba(141, 105, 246, 0.16)",
-    borderWidth: 1,
-    borderColor: "rgba(141, 105, 246, 0.32)",
+  headerSubtitle: {
+    marginTop: -2,
+    fontSize: 13,
+    fontFamily: "DMSans-Bold",
+    color: TEXT_SECONDARY,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
-  seedBannerText: {
+  headerFilterButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.16)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  discoveryStatus: {
+    minHeight: 68,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderRadius: 18,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.14)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  discoveryStatusIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(239, 62, 120, 0.72)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  discoveryStatusCopy: {
+    flex: 1,
+  },
+  discoveryStatusTitle: {
+    fontSize: 13,
+    fontFamily: "DMSans-Bold",
+    color: theme.colors.neutral.white,
+    marginBottom: 3,
+  },
+  discoveryStatusText: {
     fontSize: 12,
     fontFamily: "DMSans-Medium",
-    color: "rgba(255, 255, 255, 0.82)",
-    textAlign: "center",
+    color: TEXT_SECONDARY,
     lineHeight: 17,
+  },
+  discoveryStatusPill: {
+    minHeight: 30,
+    borderRadius: 15,
+    paddingHorizontal: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(141, 105, 246, 0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(141, 105, 246, 0.34)",
+  },
+  discoveryStatusPillText: {
+    fontSize: 11,
+    fontFamily: "DMSans-Bold",
+    color: theme.colors.neutral.white,
   },
 
   // Cards
@@ -949,27 +1033,5 @@ const useStyles = makeStyles((theme) => ({
     fontSize: 15,
     fontFamily: "DMSans-Bold",
     color: theme.colors.neutral.white,
-  },
-  helperText: {
-    marginTop: 6,
-    fontSize: 13,
-    fontFamily: "DMSans-Medium",
-    color: TEXT_MUTED,
-    textAlign: "center",
-    lineHeight: 18,
-    maxWidth: 310,
-  },
-  discoveryNotice: {
-    marginHorizontal: 22,
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 18,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.14)",
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
   },
 }));

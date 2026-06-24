@@ -63,6 +63,7 @@ export type Match = {
   mutual: boolean;
   gender: "female" | "male";
   matchedAt?: string;
+  demo?: boolean;
 };
 
 interface MatchCardProps {
@@ -133,6 +134,16 @@ export const MatchCard: React.FC<MatchCardProps> = React.memo(({
               fill={theme.semanticColors.primary}
               strokeWidth={2}
             />
+          </View>
+        )}
+
+        {match.demo && (
+          <View
+            style={styles.demoBadge}
+            accessible
+            accessibilityLabel="Demo match"
+          >
+            <Text style={styles.demoBadgeText}>Demo</Text>
           </View>
         )}
 
@@ -286,6 +297,7 @@ const useStyles = makeStyles((theme) => ({
   },
   verifiedBadge: {
     position: "absolute",
+    zIndex: 2,
     top: 8,
     right: 8,
     width: 24,
@@ -310,6 +322,7 @@ const useStyles = makeStyles((theme) => ({
   },
   mutualBadge: {
     position: "absolute",
+    zIndex: 2,
     top: 8,
     left: 8,
     width: 24,
@@ -331,6 +344,26 @@ const useStyles = makeStyles((theme) => ({
         elevation: 3,
       },
     }),
+  },
+  demoBadge: {
+    position: "absolute",
+    zIndex: 2,
+    bottom: 8,
+    left: 8,
+    minHeight: 24,
+    borderRadius: 12,
+    paddingHorizontal: 9,
+    backgroundColor: "rgba(15, 8, 20, 0.72)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.24)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  demoBadgeText: {
+    fontSize: 10,
+    fontFamily: "DMSans-Bold",
+    color: theme.colors.neutral.white,
+    letterSpacing: 0.2,
   },
   imageGradient: {
     position: "absolute",

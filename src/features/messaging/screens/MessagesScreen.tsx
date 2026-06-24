@@ -32,6 +32,7 @@ import {
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   ScrollView,
   StatusBar,
@@ -44,6 +45,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { supabase } from "@/src/config/supabase";
+import {
+  getSeedConversations,
+  isSeedConversationId,
+} from "@/src/features/messaging/data/seedConversations";
 import { useConversations } from "@/src/features/messaging/hooks/useConversations";
 import { useChatStore } from "@/src/stores/chatStore";
 import { ActiveUserCard } from "../components/ActiveUserCard";
@@ -125,7 +130,7 @@ export const MessagesScreen: React.FC = () => {
   const [filterType, setFilterType] = useState<ConversationFilter>("all");
 
   // Get global unread count from Zustand store
-  const totalUnreadCount = useChatStore((state) => state.totalUnreadCount);
+  const realTotalUnreadCount = useChatStore((state) => state.totalUnreadCount);
 
   // Get current user ID
   useEffect(() => {
@@ -142,27 +147,44 @@ export const MessagesScreen: React.FC = () => {
     autoLoad: true,
   });
 
+  const seedConversations = React.useMemo(
+    () => getSeedConversations(currentUserId),
+    [currentUserId],
+  );
+  const usingSeedConversations =
+    !loading && (Boolean(error) || conversations.length === 0);
+  const displayConversations = usingSeedConversations
+    ? seedConversations
+    : conversations;
+  const displayUnreadCount = usingSeedConversations
+    ? displayConversations.reduce(
+        (total, conv) => total + (conv.unread_count || 0),
+        0,
+      )
+    : realTotalUnreadCount;
+
   // Extract active users from online conversations
-  const activeUsers = conversations
+  const activeUsers = displayConversations
     .filter((conv) => conv.other_user?.is_active)
     .slice(0, 15)
     .map((conv) => ({
       id: conv.other_user.id,
+      conversationId: conv.id,
       name: conv.other_user.first_name,
       image: conv.other_user.photos?.[0] || null,
       isOnline: true,
     }));
-  const unreadConversationCount = conversations.filter(
+  const unreadConversationCount = displayConversations.filter(
     (conv) => (conv.unread_count || 0) > 0,
   ).length;
   const filterCounts: Record<ConversationFilter, number> = {
-    all: conversations.length,
+    all: displayConversations.length,
     unread: unreadConversationCount,
     online: activeUsers.length,
   };
 
   // Filter conversations based on search and the visible segmented control.
-  const filteredConversations = conversations.filter((conv) => {
+  const filteredConversations = displayConversations.filter((conv) => {
     if (!conv.other_user) return false;
     if (filterType === "unread" && (conv.unread_count || 0) === 0) {
       return false;
@@ -191,6 +213,14 @@ export const MessagesScreen: React.FC = () => {
 
   // Navigate to chat screen
   const handleChatPress = (conv: ConversationWithUser) => {
+    if (isSeedConversationId(conv.id)) {
+      Alert.alert(
+        "Demo conversation",
+        "This seeded beta chat previews unread and active states. Live chat opens when a real conversation exists.",
+      );
+      return;
+    }
+
     router.push({
       pathname: "/chat",
       params: {
@@ -207,6 +237,14 @@ export const MessagesScreen: React.FC = () => {
   const handleActiveUserPress = (userId: string) => {
     const user = activeUsers.find((u) => u.id === userId);
     if (!user) return;
+
+    if (isSeedConversationId(user.conversationId)) {
+      Alert.alert(
+        "Demo conversation",
+        "This active user is sample beta data. Live chat opens when a real conversation exists.",
+      );
+      return;
+    }
 
     router.push({
       pathname: "/chat",
@@ -242,37 +280,6 @@ export const MessagesScreen: React.FC = () => {
     );
   }
 
-  // Error state
-  if (error) {
-    return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <StatusBar barStyle="light-content" backgroundColor={BRAND_BG} />
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Messages</Text>
-        </View>
-        <View style={styles.loadingContainer} accessibilityRole="alert">
-          <View style={styles.errorIconWrap}>
-            <AlertCircle size={28} color={ACCENT_PURPLE} strokeWidth={2} />
-          </View>
-          <Text style={styles.errorText}>Failed to load conversations</Text>
-          <Text style={styles.errorSubtext}>
-            {getConversationErrorMessage(error)}
-          </Text>
-          <TouchableOpacity
-            style={styles.retryButton}
-            onPress={refresh}
-            activeOpacity={0.84}
-            accessibilityRole="button"
-            accessibilityLabel="Retry loading conversations"
-            accessibilityHint="Attempts to load your messages again"
-          >
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" backgroundColor={BRAND_BG} />
@@ -281,9 +288,9 @@ export const MessagesScreen: React.FC = () => {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.headerTitle}>Messages</Text>
-          {totalUnreadCount > 0 && (
+          {displayUnreadCount > 0 && (
             <View style={styles.headerBadge}>
-              <Text style={styles.headerBadgeText}>{totalUnreadCount}</Text>
+              <Text style={styles.headerBadgeText}>{displayUnreadCount}</Text>
             </View>
           )}
         </View>
@@ -392,6 +399,38 @@ export const MessagesScreen: React.FC = () => {
             </Text>
           </View>
         </View>
+
+        {usingSeedConversations && (
+          <View
+            style={styles.demoDataNote}
+            accessible
+            accessibilityLabel="Beta seeded inbox is showing sample active and unread conversations. Live conversations will replace it when available."
+          >
+            <View style={styles.demoDataIcon}>
+              {error ? (
+                <AlertCircle
+                  size={18}
+                  color={ACCENT_PURPLE}
+                  strokeWidth={2.4}
+                />
+              ) : (
+                <MessageCircle
+                  size={18}
+                  color={ACCENT_PURPLE}
+                  strokeWidth={2.4}
+                />
+              )}
+            </View>
+            <View style={styles.demoDataCopy}>
+              <Text style={styles.demoDataTitle}>Beta seeded inbox</Text>
+              <Text style={styles.demoDataText}>
+                {error
+                  ? `Live messages did not refresh: ${getConversationErrorMessage(error)} Sample unread and active chats are shown for testing.`
+                  : "Sample unread and active chats are shown until real conversations are available."}
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Active Users Section */}
         {activeUsers.length > 0 && (
@@ -675,6 +714,42 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-Regular",
     color: TEXT_SECONDARY,
     lineHeight: 19,
+  },
+  demoDataNote: {
+    minHeight: 66,
+    marginHorizontal: 20,
+    marginBottom: 22,
+    padding: 13,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(141,105,246,0.28)",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  demoDataIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(141,105,246,0.14)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  demoDataCopy: {
+    flex: 1,
+  },
+  demoDataTitle: {
+    fontSize: 13,
+    fontFamily: "DMSans-Bold",
+    color: WHITE,
+    marginBottom: 4,
+  },
+  demoDataText: {
+    fontSize: 12,
+    fontFamily: "DMSans-Medium",
+    color: TEXT_SECONDARY,
+    lineHeight: 17,
   },
   sectionHeader: {
     flexDirection: "row",
