@@ -1,7 +1,7 @@
 import "@/src/config/consoleGuard";
 import { setupDeepLinking } from "@/src/config/deepLinking";
 import { useAuthPersistence } from "@/src/hooks/useAuthPersistence";
-import { semanticColors } from "@/src/theme";
+import { semanticColors, ThemeProvider } from "@/src/theme";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -88,22 +88,24 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: semanticColors.background }}>
-      <StatusBar style="dark" backgroundColor={semanticColors.background} />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: {
-            backgroundColor: semanticColors.background,
-          },
-          animation: "slide_from_right",
-        }}
-      >
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(main)" />
-        <Stack.Screen name="(modals)" />
-      </Stack>
-    </GestureHandlerRootView>
+    <ThemeProvider>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: semanticColors.background }}>
+        <StatusBar style="light" backgroundColor={semanticColors.background} />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: {
+              backgroundColor: semanticColors.background,
+            },
+            animation: "slide_from_right",
+          }}
+        >
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(main)" />
+          <Stack.Screen name="(modals)" />
+        </Stack>
+      </GestureHandlerRootView>
+    </ThemeProvider>
   );
 }

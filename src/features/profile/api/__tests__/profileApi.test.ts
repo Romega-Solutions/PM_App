@@ -1,5 +1,6 @@
 import { decode } from "base64-arraybuffer";
 import * as FileSystem from "expo-file-system/legacy";
+import { Platform } from "react-native";
 import { supabase } from "@/src/config/supabase";
 import {
   deleteProfilePhoto,
@@ -86,6 +87,7 @@ describe("profileApi", () => {
     const userId = "11111111-1111-4111-8111-111111111111";
 
     beforeEach(() => {
+      (Platform as { OS: string }).OS = "ios";
       jest.spyOn(crypto, "randomUUID").mockReturnValue(
         "22222222-2222-4222-8222-222222222222",
       );
@@ -119,6 +121,44 @@ describe("profileApi", () => {
         "decoded-image",
         {
           contentType: "image/jpeg",
+          upsert: true,
+        },
+      );
+    });
+
+    it("uploads web blob profile photos using blob MIME type when the URI has no extension", async () => {
+      (Platform as { OS: string }).OS = "web";
+      const blob = new Blob(["image"], { type: "image/png" });
+      const upload = jest.fn().mockResolvedValue({ error: null });
+      const getPublicUrl = jest.fn(() => ({
+        data: {
+          publicUrl:
+            "https://project.supabase.co/storage/v1/object/public/profile-photos/11111111-1111-4111-8111-111111111111/1781049600000-22222222-2222-4222-8222-222222222222.png",
+        },
+      }));
+      (global as typeof globalThis & { fetch: jest.Mock }).fetch = jest
+        .fn()
+        .mockResolvedValue({
+          ok: true,
+          blob: jest.fn().mockResolvedValue(blob),
+        });
+      (supabase.storage.from as jest.Mock).mockReturnValue({
+        upload,
+        getPublicUrl,
+      });
+
+      const result = await uploadProfilePhoto(
+        "blob:https://app.pinaymate.com/photo",
+        userId,
+      );
+
+      expect(result.success).toBe(true);
+      expect(FileSystem.getInfoAsync).not.toHaveBeenCalled();
+      expect(upload).toHaveBeenCalledWith(
+        "11111111-1111-4111-8111-111111111111/1781049600000-22222222-2222-4222-8222-222222222222.png",
+        blob,
+        {
+          contentType: "image/png",
           upsert: true,
         },
       );

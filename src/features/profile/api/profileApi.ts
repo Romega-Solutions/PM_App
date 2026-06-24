@@ -48,6 +48,13 @@ const PROFILE_PHOTO_TYPES: Record<string, string> = {
   webp: "image/webp",
   heic: "image/heic",
 };
+const PROFILE_PHOTO_EXTENSIONS_BY_TYPE: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/heic": "heic",
+};
 const PROFILE_PHOTOS_BUCKET = "profile-photos";
 const PROFILE_PHOTO_PATH_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/[0-9]+-[a-z0-9-]+\.(?:jpg|png|webp|heic)$/i;
@@ -84,35 +91,49 @@ function sanitizeProfileUpdates(
   return sanitized;
 }
 
-function getProfilePhotoUploadType(uri: string) {
+function getProfilePhotoUploadType(uri: string, mimeType?: string) {
   const cleanUri = uri.split("?")[0].split("#")[0];
   const extension = cleanUri.split(".").pop()?.toLowerCase() ?? "";
   const contentType = PROFILE_PHOTO_TYPES[extension];
 
-  if (!contentType) {
+  if (contentType) {
+    return {
+      extension: extension === "jpeg" ? "jpg" : extension,
+      contentType,
+    };
+  }
+
+  const normalizedMimeType = mimeType?.split(";")[0]?.trim().toLowerCase() ?? "";
+  const mimeExtension = PROFILE_PHOTO_EXTENSIONS_BY_TYPE[normalizedMimeType];
+
+  if (!mimeExtension) {
     throw new Error("Unsupported profile photo type");
   }
 
-  return {
-    extension: extension === "jpeg" ? "jpg" : extension,
-    contentType,
-  };
+  return { extension: mimeExtension, contentType: normalizedMimeType };
 }
 
-async function assertProfilePhotoUpload(uri: string) {
+async function assertProfilePhotoUpload(uri: string, webBlob?: Blob) {
   const normalizedUri = uri.trim();
 
   if (!normalizedUri) {
     throw new Error("Profile photo URI is required");
   }
 
-  const uploadType = getProfilePhotoUploadType(normalizedUri);
-  
   if (Platform.OS === "web") {
-    // FileSystem.getInfoAsync is not reliable for blob URLs on web
+    if (!webBlob) {
+      throw new Error("Profile photo file does not exist");
+    }
+
+    if (webBlob.size <= 0 || webBlob.size > MAX_PROFILE_PHOTO_BYTES) {
+      throw new Error("Profile photo size is not allowed");
+    }
+
+    const uploadType = getProfilePhotoUploadType(normalizedUri, webBlob.type);
     return uploadType;
   }
 
+  const uploadType = getProfilePhotoUploadType(normalizedUri);
   const fileInfo = await FileSystem.getInfoAsync(normalizedUri);
 
   if (!fileInfo.exists) {
@@ -274,19 +295,29 @@ export async function uploadProfilePhoto(
     }
 
     const normalizedUri = uri.trim();
-    const { extension, contentType } = await assertProfilePhotoUpload(normalizedUri);
 
     // Read file payload
     let fileBody: any;
+    let webBlob: Blob | undefined;
     if (Platform.OS === "web") {
       const response = await fetch(normalizedUri);
-      fileBody = await response.blob();
+      if (!response.ok) {
+        throw new Error("Profile photo file does not exist");
+      }
+
+      webBlob = await response.blob();
+      fileBody = webBlob;
     } else {
       const base64 = await FileSystem.readAsStringAsync(normalizedUri, {
         encoding: "base64",
       });
       fileBody = decode(base64);
     }
+
+    const { extension, contentType } = await assertProfilePhotoUpload(
+      normalizedUri,
+      webBlob,
+    );
 
     // Generate unique filename
     const fileName = assertUserScopedProfilePhotoPath(userId, extension);

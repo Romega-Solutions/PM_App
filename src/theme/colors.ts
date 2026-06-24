@@ -78,10 +78,10 @@ export const semanticColors = {
   
   accent: colors.luna[500],
   
-  background: colors.neutral.white,
-  surface: colors.neutral[50],
-  text: colors.neutral[900],
-  textSecondary: colors.neutral[600],
+  background: '#0F0814',
+  surface: '#1A0F1F',
+  text: colors.neutral.white,
+  textSecondary: 'rgba(255,255,255,0.78)',
   
   success: colors.success[600],
   warning: colors.warning[600],
