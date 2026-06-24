@@ -62,7 +62,7 @@ export default function PreferencesScreen() {
     const res = await savePreferences();
     if (res?.ok) {
       router.push({
-        pathname: "/(auth)/account-setup/verification-upload",
+        pathname: "/(auth)/account-setup/welcome-complete",
         params: { userType },
       });
     }
@@ -102,7 +102,7 @@ export default function PreferencesScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <AccountProgress steps={5} activeIndex={3} />
+          <AccountProgress steps={4} activeIndex={3} />
           <Text style={styles.title}>Your preferences</Text>
           <Text style={styles.subtitle}>
             Set comfortable discovery boundaries for the profiles you want to

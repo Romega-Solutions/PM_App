@@ -15,10 +15,12 @@ import {
 } from "react-native";
 
 const { width, height } = Dimensions.get("window");
+const designWidth = Math.min(Math.max(width, 320), 430);
+const designHeight = Math.min(Math.max(height, 640), 900);
 
 // Responsive sizing helper
-const scale = (size: number) => (width / 375) * size; // Based on iPhone X width
-const verticalScale = (size: number) => (height / 812) * size; // Based on iPhone X height
+const scale = (size: number) => (designWidth / 375) * size; // Based on iPhone X width
+const verticalScale = (size: number) => (designHeight / 812) * size; // Based on iPhone X height
 
 export default function Index() {
   const [showSplash, setShowSplash] = useState(true);

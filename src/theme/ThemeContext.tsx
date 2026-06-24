@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, useMemo, useEffect } from "react";
-import { useColorScheme } from "react-native";
+import React, { createContext, useContext, useMemo } from "react";
 import { colors as defaultColors, semanticColors as defaultSemanticColors } from "./colors";
 import { spacing, borderRadius } from "../shared/utils/spacing";
 import { fontFamilies, fontSizes, lineHeights, textStyles } from "./typography";
@@ -34,10 +33,7 @@ const defaultTheme: AppTheme = {
 const ThemeContext = createContext<AppTheme>(defaultTheme);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const systemColorScheme = useColorScheme();
-  // Currently, we default to the dark theme to match the app's brand identity.
-  // In the future, we can easily inject light mode colors here.
-  const isDark = true; // systemColorScheme === "dark";
+  const isDark = true;
 
   const themeValue = useMemo<AppTheme>(() => {
     return {

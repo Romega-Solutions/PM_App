@@ -15,6 +15,10 @@ ALTER TABLE messages ADD COLUMN IF NOT EXISTS deleted_by UUID[];
 -- Add reply support (optional feature)
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS reply_to_message_id UUID REFERENCES messages(id);
 
+-- Keep fresh database runs compatible with later hardening migrations that
+-- standardize chat message body reads on messages.text.
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS text TEXT;
+
 -- ===================================================================
 -- STEP 2: CREATE CONVERSATIONS TABLE
 -- ===================================================================

@@ -17,6 +17,21 @@ type VerificationFailureState = {
   error: string;
 };
 
+const OCR_FALLBACK_REVIEW_REASON =
+  "Document OCR unavailable during beta test; manual review required";
+const OCR_FALLBACK_REVIEW_MESSAGE =
+  "Document scan did not complete, so we submitted your selfie and ID for manual review.";
+
+export const getOcrFallbackVerificationPayload = (
+  selfieUri: string,
+  documentUri: string,
+): VerificationData => ({
+  selfieUri,
+  documentUri,
+  isVerified: false,
+  mismatchReasons: [OCR_FALLBACK_REVIEW_REASON],
+});
+
 export const getVerificationFailureState = (
   err: unknown,
 ): VerificationFailureState => ({
@@ -79,7 +94,17 @@ export const useVerificationUpload = () => {
 
     try {
       // 1) Extract text via OCR
-      const ocrResult = await extractTextFromImage(res.assets[0].uri);
+      let ocrResult: Awaited<ReturnType<typeof extractTextFromImage>>;
+      try {
+        ocrResult = await extractTextFromImage(res.assets[0].uri);
+      } catch {
+        await accountApi.saveVerification(
+          getOcrFallbackVerificationPayload(selfieUri, res.assets[0].uri),
+        );
+        setDocumentStatus("submitted");
+        setError(OCR_FALLBACK_REVIEW_MESSAGE);
+        return;
+      }
 
       // 2) Calculate age from birthdate
       const extractedAge = ocrResult.birthDate
@@ -112,15 +137,12 @@ export const useVerificationUpload = () => {
 
       await accountApi.saveVerification(verificationPayload);
 
-      if (comparison.match) {
-        setDocumentStatus("submitted");
-        setError("");
-      } else {
-        setDocumentStatus("submitted");
-        setError(
-          `Submitted for manual review. We found details that need a reviewer to check: ${comparison.reasons.join("; ")}`,
-        );
-      }
+      setDocumentStatus("submitted");
+      setError(
+        comparison.match
+          ? ""
+          : `Submitted for manual review. We found details that need a reviewer to check: ${comparison.reasons.join("; ")}`,
+      );
     } catch (err) {
       const failureState = getVerificationFailureState(err);
       setDocumentUri(failureState.documentUri);
