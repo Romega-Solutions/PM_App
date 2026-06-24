@@ -1,8 +1,10 @@
 import * as ImagePicker from "expo-image-picker";
 import { useCallback, useEffect, useState } from "react";
+import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
 import { accountApi } from "../api/accountApi";
 
 export const useProfilePhotos = () => {
+  const isDemoMode = isBetaDemoModeEnabled();
   const [photos, setPhotos] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(false);
@@ -11,6 +13,13 @@ export const useProfilePhotos = () => {
   const load = useCallback(async () => {
     setLoadingInitial(true);
     setError("");
+
+    if (isDemoMode) {
+      setPhotos([]);
+      setLoadingInitial(false);
+      return;
+    }
+
     try {
       const existing = await accountApi.getProfilePhotos();
       setPhotos(existing ?? []);
@@ -21,7 +30,7 @@ export const useProfilePhotos = () => {
     } finally {
       setLoadingInitial(false);
     }
-  }, []);
+  }, [isDemoMode]);
 
   useEffect(() => {
     load();
@@ -63,6 +72,14 @@ export const useProfilePhotos = () => {
   const uploadPhoto = useCallback(async (uri: string) => {
     setLoading(true);
     setError("");
+
+    if (isDemoMode) {
+      const nextPhotos = [uri, ...photos.filter((photo) => photo !== uri)].slice(0, 6);
+      setPhotos(nextPhotos);
+      setLoading(false);
+      return nextPhotos;
+    }
+
     try {
       const res = await accountApi.saveProfilePhoto(uri);
       if (res?.ok) {
@@ -78,11 +95,19 @@ export const useProfilePhotos = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isDemoMode, photos]);
 
   const removePhoto = useCallback(async (uri: string) => {
     setLoading(true);
     setError("");
+
+    if (isDemoMode) {
+      const nextPhotos = photos.filter((photo) => photo !== uri);
+      setPhotos(nextPhotos);
+      setLoading(false);
+      return nextPhotos;
+    }
+
     try {
       const res = await accountApi.removeProfilePhoto(uri);
       if (res?.ok) setPhotos(res.data);
@@ -95,7 +120,7 @@ export const useProfilePhotos = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isDemoMode, photos]);
 
   return {
     photos,

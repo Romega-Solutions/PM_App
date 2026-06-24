@@ -13,11 +13,14 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { isSeedProfileId } from "@/src/features/matching/data/seedProfiles";
+import { isSeedConversationId } from "@/src/features/messaging/data/seedConversations";
 import { reportSafetyConcern } from "@/src/features/safety/workflows/reportSafetyConcern";
 import {
   blockUser,
   type SubmitUserReportInput,
 } from "@/src/features/safety/api/safetyApi";
+import { useAuthStore } from "@/src/stores/authStore";
 
 type ReportSource = NonNullable<SubmitUserReportInput["source"]>;
 
@@ -64,6 +67,7 @@ function getSafeReportSource(source?: string): ReportSource {
 export default function ReportUserModal() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
   const { userId, userName, conversationId, source } = useLocalSearchParams<{
     userId?: string;
     userName?: string;
@@ -80,6 +84,10 @@ export default function ReportUserModal() {
 
   const reportedName = userName || "this member";
   const reportSource = getSafeReportSource(source);
+  const isSeedReport =
+    isDemoMode ||
+    (userId ? isSeedProfileId(userId) : false) ||
+    (conversationId ? isSeedConversationId(conversationId) : false);
   const toggleShouldBlock = () => {
     setShouldBlock((current) => !current);
   };
@@ -96,6 +104,18 @@ export default function ReportUserModal() {
     }
 
     setSubmitting(true);
+
+    if (isSeedReport) {
+      setSubmitting(false);
+      Alert.alert(
+        shouldBlock ? "Demo report and block recorded" : "Demo report recorded",
+        shouldBlock
+          ? "No real report or block was sent. This keeps the beta preview safe while preserving the live safety flow for real members."
+          : "No real report was sent. This keeps the beta preview safe while preserving the live safety flow for real members.",
+        [{ text: "Close", onPress: () => router.back() }],
+      );
+      return;
+    }
 
     const result = await reportSafetyConcern({
       reportedUserId: userId,
@@ -139,6 +159,15 @@ export default function ReportUserModal() {
     if (!userId) {
       setFormError(
         "This member could not be identified. Go back and try again.",
+      );
+      return;
+    }
+
+    if (isSeedReport) {
+      Alert.alert(
+        "Demo block recorded",
+        "No real block was sent. This keeps the beta preview safe while preserving the live safety flow for real members.",
+        [{ text: "Close", onPress: () => router.back() }],
       );
       return;
     }

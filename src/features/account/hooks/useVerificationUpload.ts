@@ -1,4 +1,5 @@
 import { calculateAge, extractTextFromImage } from "@/src/services/ocrService";
+import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
 import * as ImagePicker from "expo-image-picker";
 import { useCallback, useState } from "react";
 import { accountApi, VerificationData } from "../api/accountApi";
@@ -44,6 +45,7 @@ export const getVerificationFailureState = (
 });
 
 export const useVerificationUpload = () => {
+  const isDemoMode = isBetaDemoModeEnabled();
   const [selfieUri, setSelfieUri] = useState<string>("");
   const [documentUri, setDocumentUri] = useState<string>("");
   const [selfieStatus, setSelfieStatus] =
@@ -91,6 +93,15 @@ export const useVerificationUpload = () => {
     setDocumentUri(res.assets[0].uri);
     setDocumentStatus("processing");
     setLoading(true);
+
+    if (isDemoMode) {
+      setDocumentStatus("submitted");
+      setError(
+        "Demo verification submitted for manual review. No OCR or private document upload was sent.",
+      );
+      setLoading(false);
+      return;
+    }
 
     try {
       // 1) Extract text via OCR
@@ -151,7 +162,7 @@ export const useVerificationUpload = () => {
     } finally {
       setLoading(false);
     }
-  }, [selfieUri]);
+  }, [isDemoMode, selfieUri]);
 
   const isSubmittedForReview = documentStatus === "submitted";
 

@@ -1,8 +1,9 @@
 import { accountApi } from "@/src/features/account/api/accountApi";
+import { useAuthStore } from "@/src/stores/authStore";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { AlertCircle, ArrowLeft, RefreshCw, Save } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -32,6 +33,7 @@ const SAVE_PREFERENCES_ERROR =
 export default function PreferencesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -42,14 +44,19 @@ export default function PreferencesScreen() {
   const [maxDistance, setMaxDistance] = useState("50");
   const [relationshipGoal, setRelationshipGoal] = useState("");
 
-  useEffect(() => {
-    fetchPreferences();
-  }, []);
-
-  const fetchPreferences = async () => {
+  const fetchPreferences = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     setSaveError(null);
+
+    if (isDemoMode) {
+      setAgeMin("18");
+      setAgeMax("38");
+      setMaxDistance("75");
+      setRelationshipGoal("serious relationship");
+      setLoading(false);
+      return;
+    }
 
     try {
       const preferences = await accountApi.getPreferences();
@@ -70,7 +77,11 @@ export default function PreferencesScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isDemoMode]);
+
+  useEffect(() => {
+    fetchPreferences();
+  }, [fetchPreferences]);
 
   const handleSave = async () => {
     const parsedAgeMin = Number.parseInt(ageMin, 10);
@@ -108,6 +119,15 @@ export default function PreferencesScreen() {
       setSaveError(
         "Add the kind of connection you want before saving preferences.",
       );
+      return;
+    }
+
+    if (isDemoMode) {
+      Alert.alert(
+        "Demo preferences saved",
+        "These match settings update this beta preview only. Live preferences will save to your account when demo mode is off.",
+      );
+      router.back();
       return;
     }
 

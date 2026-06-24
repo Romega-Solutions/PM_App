@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
 import { accountApi } from "../api/accountApi";
 
 export type PreferencesForm = {
@@ -9,6 +10,7 @@ export type PreferencesForm = {
 };
 
 export const usePreferences = () => {
+  const isDemoMode = isBetaDemoModeEnabled();
   const [form, setForm] = useState<PreferencesForm>({
     ageMin: 22,
     ageMax: 35,
@@ -31,6 +33,23 @@ export const usePreferences = () => {
   const savePreferences = useCallback(async () => {
     setLoading(true);
     try {
+      if (isDemoMode) {
+        return {
+          ok: true,
+          data: {
+            ageMin: form.ageMin,
+            ageMax: form.ageMax,
+            maxDistanceKm: form.maxDistanceKm,
+            relationshipGoal: form.relationshipGoal
+              .toLowerCase()
+              .replace(/\s+/g, "_"),
+            interestedIn: "Women",
+            userType: "foreigner",
+            createdAt: new Date().toISOString(),
+          },
+        } as const;
+      }
+
       // Get userType from basicInfo
       const basicInfo = await accountApi.getBasicInfo();
       if (!basicInfo?.userType) {
@@ -54,11 +73,21 @@ export const usePreferences = () => {
     } finally {
       setLoading(false);
     }
-  }, [form]);
+  }, [form, isDemoMode]);
 
   const load = useCallback(async () => {
     setLoadingInitial(true);
     try {
+      if (isDemoMode) {
+        setForm({
+          ageMin: 22,
+          ageMax: 38,
+          maxDistanceKm: 75,
+          relationshipGoal: "serious relationship",
+        });
+        return;
+      }
+
       const existing = await accountApi.getPreferences();
       if (existing) {
         setForm({
@@ -71,7 +100,7 @@ export const usePreferences = () => {
     } finally {
       setLoadingInitial(false);
     }
-  }, []);
+  }, [isDemoMode]);
 
   useEffect(() => {
     load();

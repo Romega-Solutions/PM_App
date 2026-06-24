@@ -6,6 +6,7 @@ import {
   type PrivacySettings,
 } from "@/src/features/account/api/accountApi";
 import { LaunchStateNotice } from "@/src/components/ui/LaunchStateNotice";
+import { useAuthStore } from "@/src/stores/authStore";
 import {
   AlertCircle,
   ArrowLeft,
@@ -77,6 +78,7 @@ function formatPrivacyUpdatedAt(value?: string) {
 export default function PrivacyScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
   const [isRequestingDeletion, setIsRequestingDeletion] = React.useState(false);
   const [settings, setSettings] = React.useState<PrivacySettings>(
     DEFAULT_PRIVACY_SETTINGS,
@@ -104,6 +106,21 @@ export default function PrivacyScreen() {
         setSettingsLoadError(null);
       }
 
+      if (isDemoMode) {
+        if (isMounted) {
+          setSettings({
+            ...DEFAULT_PRIVACY_SETTINGS,
+            showOnlineStatus: true,
+            showDistance: true,
+            readReceipts: true,
+            profileVisible: true,
+            updatedAt: new Date().toISOString(),
+          });
+          setIsLoadingSettings(false);
+        }
+        return;
+      }
+
       try {
         const loadedSettings = await accountApi.getPrivacySettings();
         if (isMounted) {
@@ -126,7 +143,7 @@ export default function PrivacyScreen() {
     return () => {
       isMounted = false;
     };
-  }, [reloadAttempt]);
+  }, [isDemoMode, reloadAttempt]);
 
   const saveSetting = async (key: PrivacySettingKey, value: boolean) => {
     if (isLoadingSettings || savingSetting || settingsLoadError) {
@@ -142,6 +159,15 @@ export default function PrivacyScreen() {
 
     setSettings(nextSettings);
     setSavingSetting(key);
+
+    if (isDemoMode) {
+      setSettings({
+        ...nextSettings,
+        updatedAt: new Date().toISOString(),
+      });
+      setSavingSetting(null);
+      return;
+    }
 
     try {
       const savedSettings = await accountApi.savePrivacySettings(nextSettings);
@@ -202,6 +228,18 @@ export default function PrivacyScreen() {
   const submitDeletionRequest = async () => {
     setDeletionFeedback(null);
     setIsRequestingDeletion(true);
+
+    if (isDemoMode) {
+      setIsRequestingDeletion(false);
+      setDeletionFeedback({
+        type: "success",
+        title: "Demo request recorded",
+        message:
+          "No account deletion request was sent. This preview keeps the real support workflow ready for live accounts.",
+      });
+      return;
+    }
+
     const result = await accountApi.requestAccountDeletion();
     setIsRequestingDeletion(false);
 

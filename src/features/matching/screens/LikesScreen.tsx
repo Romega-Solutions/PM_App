@@ -19,6 +19,7 @@
 
 import { supabase } from "@/src/config/supabase";
 import { getMatches } from "@/src/features/matching/api/matchingApi";
+import { getSeedConversationForProfileId } from "@/src/features/messaging/data/seedConversations";
 import { unmatchUser } from "@/src/features/safety/api/safetyApi";
 import { useRouter } from "expo-router";
 import { RefreshCw, ShieldCheck } from "lucide-react-native";
@@ -164,17 +165,23 @@ export default function LikesScreen() {
     }
 
     if (isSeedProfileId(String(id))) {
-      Alert.alert(
-        "Demo conversation",
-        "This beta match is sample data. Open Messages to preview seeded unread and active conversations.",
-        [
-          { text: "Stay here", style: "cancel" },
-          {
-            text: "Open Messages",
-            onPress: () => router.push("/(main)/messages"),
-          },
-        ],
-      );
+      const seedConversation = getSeedConversationForProfileId(String(id));
+
+      if (!seedConversation) {
+        router.push("/(main)/messages");
+        return;
+      }
+
+      router.push({
+        pathname: "/chat",
+        params: {
+          userId: seedConversation.other_user.id,
+          userName: seedConversation.other_user.first_name,
+          isOnline: seedConversation.other_user.is_active ? "true" : "false",
+          conversationId: seedConversation.id,
+          isDemo: "true",
+        },
+      });
       return;
     }
 
@@ -260,20 +267,13 @@ export default function LikesScreen() {
   const handleReport = (id: string | number) => {
     const match = matches.find((item) => item.id === id);
 
-    if (isSeedProfileId(String(id))) {
-      Alert.alert(
-        "Demo match",
-        "This is sample beta data, so no real report is needed.",
-      );
-      return;
-    }
-
     router.push({
       pathname: "/(modals)/report-user",
       params: {
         userId: String(id),
         userName: match?.name || "this member",
         source: "likes",
+        isDemo: isSeedProfileId(String(id)) ? "true" : undefined,
       },
     });
   };

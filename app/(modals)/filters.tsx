@@ -1,4 +1,5 @@
 import { accountApi } from "@/src/features/account/api/accountApi";
+import { useAuthStore } from "@/src/stores/authStore";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
@@ -37,6 +38,7 @@ const SAVE_FILTERS_ERROR =
 export default function Filters() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [ageMin, setAgeMin] = useState("18");
@@ -51,6 +53,16 @@ export default function Filters() {
 
     async function loadPreferences() {
       setLoadError(null);
+
+      if (isDemoMode) {
+        setAgeMin("18");
+        setAgeMax("38");
+        setMaxDistance("75");
+        setRelationshipGoal("serious relationship");
+        setLoading(false);
+        return;
+      }
+
       try {
         const preferences = await accountApi.getPreferences();
 
@@ -79,7 +91,7 @@ export default function Filters() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [isDemoMode]);
 
   const saveFilters = async () => {
     const parsedAgeMin = Number.parseInt(ageMin, 10);
@@ -118,6 +130,15 @@ export default function Filters() {
       return;
     }
 
+    if (isDemoMode) {
+      Alert.alert(
+        "Demo filters saved",
+        "These filters update the beta preview only. Live discovery filters will save to your account when demo mode is off.",
+      );
+      router.back();
+      return;
+    }
+
     setSaving(true);
     try {
       const basicInfo = await accountApi.getBasicInfo();
@@ -152,6 +173,15 @@ export default function Filters() {
     setLoading(true);
     setLoadError(null);
     setSaveError(null);
+
+    if (isDemoMode) {
+      setAgeMin("18");
+      setAgeMax("38");
+      setMaxDistance("75");
+      setRelationshipGoal("serious relationship");
+      setLoading(false);
+      return;
+    }
 
     accountApi
       .getPreferences()

@@ -5,8 +5,18 @@ function getWebHostname(): string {
   return window.location.hostname.toLowerCase();
 }
 
+function getPublicEnvValue(key: string): string | undefined {
+  const processRef = globalThis.process as
+    | { env?: Record<string, string | undefined> }
+    | undefined;
+
+  return processRef?.env?.[key];
+}
+
 export const isBetaDemoModeEnabled = () => {
-  const envValue = process.env.EXPO_PUBLIC_BETA_DEMO_MODE?.toLowerCase();
+  const envValue = getPublicEnvValue(
+    "EXPO_PUBLIC_BETA_DEMO_MODE",
+  )?.toLowerCase();
 
   if (envValue === "true") return true;
   if (envValue === "false") return false;

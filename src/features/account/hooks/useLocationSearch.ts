@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import * as ExpoLocation from "expo-location";
+import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
 import { accountApi, type SavedLocation } from "../api/accountApi";
 
 // ✅ Changed: Added city and country properties
@@ -138,6 +139,7 @@ export function getManualLocationFromQuery(value: string): Location | null {
 }
 
 export const useLocationSearch = () => {
+  const isDemoMode = isBetaDemoModeEnabled();
   const [query, setQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(
     null
@@ -158,6 +160,10 @@ export const useLocationSearch = () => {
     // Auto-save to database
     setSaving(true);
     try {
+      if (isDemoMode) {
+        return;
+      }
+
       const payload: SavedLocation = {
         locationType: "manual",
         locationName: getLocationName(location),
@@ -171,7 +177,7 @@ export const useLocationSearch = () => {
     } finally {
       setSaving(false);
     }
-  }, []);
+  }, [isDemoMode]);
 
   const getCurrentLocation = useCallback(async (): Promise<Location | null> => {
     const permission = await ExpoLocation.requestForegroundPermissionsAsync();
@@ -223,6 +229,10 @@ export const useLocationSearch = () => {
 
       setSelectedLocation(currentLocation);
 
+      if (isDemoMode) {
+        return currentLocation;
+      }
+
       const payload: SavedLocation = {
         locationType: "current",
         locationName: getLocationName(currentLocation),
@@ -239,7 +249,7 @@ export const useLocationSearch = () => {
     } finally {
       setSaving(false);
     };
-  }, []);
+  }, [isDemoMode]);
 
   return {
     query,

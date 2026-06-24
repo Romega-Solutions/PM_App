@@ -6,6 +6,7 @@ import {
   type NotificationPreferences,
 } from "@/src/features/account/api/accountApi";
 import { LaunchStateNotice } from "@/src/components/ui/LaunchStateNotice";
+import { useAuthStore } from "@/src/stores/authStore";
 import {
   AlertCircle,
   ArrowLeft,
@@ -67,6 +68,7 @@ function formatNotificationUpdatedAt(value?: string) {
 export default function NotificationsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
 
   const [preferences, setPreferences] = useState<NotificationPreferences>(
     DEFAULT_NOTIFICATION_PREFERENCES,
@@ -97,6 +99,22 @@ export default function NotificationsScreen() {
         setSaveError(null);
       }
 
+      if (isDemoMode) {
+        if (isMounted) {
+          setPreferences({
+            ...DEFAULT_NOTIFICATION_PREFERENCES,
+            pushEnabled: true,
+            newMatches: true,
+            newMessages: true,
+            newLikes: true,
+            emailUpdates: false,
+            updatedAt: new Date().toISOString(),
+          });
+          setIsLoadingPreferences(false);
+        }
+        return;
+      }
+
       try {
         const loadedPreferences = await accountApi.getNotificationPreferences();
         if (isMounted) {
@@ -119,7 +137,7 @@ export default function NotificationsScreen() {
     return () => {
       isMounted = false;
     };
-  }, [reloadAttempt]);
+  }, [isDemoMode, reloadAttempt]);
 
   const savePreference = async (
     key: NotificationPreferenceKey,
@@ -145,6 +163,15 @@ export default function NotificationsScreen() {
     setPreferences(nextPreferences);
     setSavingPreference(key);
     setSaveError(null);
+
+    if (isDemoMode) {
+      setPreferences({
+        ...nextPreferences,
+        updatedAt: new Date().toISOString(),
+      });
+      setSavingPreference(null);
+      return;
+    }
 
     try {
       const savedPreferences =

@@ -12,6 +12,18 @@ const DEMO_USER_IDS = [
   "00000000-0000-4000-8000-000000000106",
   "00000000-0000-4000-8000-000000000107",
   "00000000-0000-4000-8000-000000000108",
+  "00000000-0000-4000-8000-000000000109",
+  "00000000-0000-4000-8000-000000000110",
+  "00000000-0000-4000-8000-000000000111",
+  "00000000-0000-4000-8000-000000000112",
+  "00000000-0000-4000-8000-000000000113",
+  "00000000-0000-4000-8000-000000000114",
+  "00000000-0000-4000-8000-000000000115",
+  "00000000-0000-4000-8000-000000000116",
+  "00000000-0000-4000-8000-000000000117",
+  "00000000-0000-4000-8000-000000000118",
+  "00000000-0000-4000-8000-000000000119",
+  "00000000-0000-4000-8000-000000000120",
 ];
 
 const SEED_MESSAGE_FIXTURES = [
@@ -71,6 +83,90 @@ const SEED_MESSAGE_FIXTURES = [
     minutesAgo: 360,
     active: false,
   },
+  {
+    profileIndex: 1,
+    text: "Your photos have such warm energy. What made you choose those places?",
+    unread: 1,
+    minutesAgo: 420,
+    active: true,
+  },
+  {
+    profileIndex: 3,
+    text: "I noticed you enjoy cooking. What dish are you proudest of?",
+    unread: 0,
+    minutesAgo: 510,
+    active: false,
+  },
+  {
+    profileIndex: 5,
+    text: "A calm walk and good coffee sounds like my kind of weekend.",
+    unread: 2,
+    minutesAgo: 620,
+    active: true,
+  },
+  {
+    profileIndex: 6,
+    text: "I liked your answer about family. It felt very sincere.",
+    unread: 0,
+    minutesAgo: 760,
+    active: false,
+  },
+  {
+    profileIndex: 8,
+    text: "Have you ever tried island hopping around Palawan?",
+    unread: 1,
+    minutesAgo: 940,
+    active: true,
+  },
+  {
+    profileIndex: 9,
+    text: "I am more of a night market person than a club person too.",
+    unread: 0,
+    minutesAgo: 1120,
+    active: false,
+  },
+  {
+    profileIndex: 12,
+    text: "Your profile feels grounded. I appreciate that.",
+    unread: 2,
+    minutesAgo: 1320,
+    active: true,
+  },
+  {
+    profileIndex: 14,
+    text: "What is one place in Manila you would recommend to a first-time visitor?",
+    unread: 0,
+    minutesAgo: 1560,
+    active: false,
+  },
+  {
+    profileIndex: 15,
+    text: "I also prefer slow conversations over rushed replies.",
+    unread: 1,
+    minutesAgo: 1800,
+    active: true,
+  },
+  {
+    profileIndex: 16,
+    text: "Your weekend plans sound relaxing. I hope you get real rest.",
+    unread: 0,
+    minutesAgo: 2160,
+    active: false,
+  },
+  {
+    profileIndex: 18,
+    text: "I saw the music note in your profile. What song is on repeat lately?",
+    unread: 1,
+    minutesAgo: 2640,
+    active: true,
+  },
+  {
+    profileIndex: 19,
+    text: "It is nice to meet someone who values kindness and humor.",
+    unread: 0,
+    minutesAgo: 3180,
+    active: false,
+  },
 ] as const;
 
 function minutesAgoIso(minutesAgo: number): string {
@@ -124,6 +220,29 @@ export function getSeedConversations(
       unread_count: fixture.unread,
     };
   });
+}
+
+export function getSeedConversationForProfileId(
+  profileId: string,
+  currentUserId = DEMO_CURRENT_USER_ID,
+): ConversationWithUser | null {
+  const profileIndex = getSeedProfilesInOrder().findIndex(
+    (profile) => profile.id === profileId,
+  );
+
+  if (profileIndex < 0) {
+    return null;
+  }
+
+  const fixtureIndex = SEED_MESSAGE_FIXTURES.findIndex(
+    (fixture) => fixture.profileIndex === profileIndex,
+  );
+
+  if (fixtureIndex < 0) {
+    return null;
+  }
+
+  return getSeedConversations(currentUserId)[fixtureIndex] ?? null;
 }
 
 export function getSeedMessages(

@@ -1,4 +1,5 @@
 import { accountApi } from "@/src/features/account/api/accountApi";
+import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
 import type { UserType } from "@/src/features/auth/api/authApi";
 import { useState } from "react";
 
@@ -26,6 +27,7 @@ type TouchedFields = {
  * Gender is no longer part of the form - it's auto-assigned based on userType
  */
 export function useAccountBasicInfo(initialUserType: UserType) {
+  const isDemoMode = isBetaDemoModeEnabled();
   const [form, setForm] = useState<FormState>({
     firstName: "",
     lastName: "",
@@ -100,6 +102,22 @@ export function useAccountBasicInfo(initialUserType: UserType) {
   const saveBasicInfo = async () => {
     setLoading(true);
     try {
+      if (isDemoMode) {
+        const age = parseInt(form.age, 10);
+
+        return {
+          ok: true,
+          data: {
+            firstName: form.firstName.trim(),
+            lastName: form.lastName.trim(),
+            age,
+            gender: form.userType === "filipina" ? "female" : "male",
+            userType: form.userType,
+            createdAt: new Date().toISOString(),
+          },
+        } as const;
+      }
+
       const result = await accountApi.saveBasicInfo({
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
