@@ -316,6 +316,14 @@ export function getSeedProfiles(): ProfileCardData[] {
 }
 
 /**
+ * Returns the seed profiles in a stable order for beta scaffold surfaces
+ * that need consistent matches, mutuals, and messages.
+ */
+export function getSeedProfilesInOrder(): ProfileCardData[] {
+  return [...SEED_PROFILES];
+}
+
+/**
  * Check if a profile ID belongs to a seed/demo profile.
  */
 export function isSeedProfileId(id: string): boolean {
