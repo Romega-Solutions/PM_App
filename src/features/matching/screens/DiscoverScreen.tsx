@@ -49,7 +49,7 @@ import { MatchModal, MatchedProfile } from "../components/MatchModal";
 import { ProfileCard, ProfileCardData } from "../components/ProfileCard";
 import { ProfileDetailsModal } from "../components/ProfileDetailsModal";
 import { useSwipeGesture } from "../hooks/useSwipeGesture";
-import { getSeedProfiles } from "../data/seedProfiles";
+import { getSeedProfiles, isSeedProfileId } from "../data/seedProfiles";
 import { useAppTheme } from "@/src/theme/ThemeContext";
 import { makeStyles } from "@/src/theme/makeStyles";
 
@@ -91,6 +91,19 @@ function convertDBProfileToDisplay(dbProfile: DBProfile): ProfileCardData {
     relationshipGoal: dbProfile.relationship_goal,
     languages: dbProfile.languages,
     bodyType: dbProfile.body_type,
+  };
+}
+
+function isSeedDisplayProfile(profile: ProfileCardData): boolean {
+  return Boolean(profile.isSeedProfile || isSeedProfileId(profile.id));
+}
+
+function convertSeedProfileToMatch(profile: ProfileCardData): MatchedProfile {
+  return {
+    id: profile.id,
+    first_name: profile.name,
+    image: profile.image ?? undefined,
+    demo: true,
   };
 }
 
@@ -142,7 +155,7 @@ export const DiscoverScreen: React.FC = () => {
    * Load more profiles when running low
    */
   const loadMoreProfiles = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || usingSeedProfiles) return;
 
     try {
       const { data: dbProfiles } = await fetchDiscoverProfiles(userId, 10);
@@ -154,7 +167,7 @@ export const DiscoverScreen: React.FC = () => {
     } catch {
       console.error("Failed to load more profiles.");
     }
-  }, [userId]);
+  }, [userId, usingSeedProfiles]);
 
   /**
    * Load more profiles when running low
@@ -234,15 +247,24 @@ export const DiscoverScreen: React.FC = () => {
     resetPositionRef.current?.();
   }, []);
 
+  const showSeedMatch = useCallback(
+    (profile: ProfileCardData) => {
+      setMatchedProfile(convertSeedProfileToMatch(profile));
+      setShowMatchModal(true);
+      moveToNextProfile();
+    },
+    [moveToNextProfile],
+  );
+
   /**
    * Handle like action
    */
   const handleLike = useCallback(async () => {
     if (!currentProfile || actionPending) return;
 
-    // Seed profiles: just move to next card, no backend call
-    if (currentProfile.isSeedProfile) {
-      moveToNextProfile();
+    // Seed profiles: local-only demo match, no backend call
+    if (isSeedDisplayProfile(currentProfile)) {
+      showSeedMatch(currentProfile);
       return;
     }
 
@@ -281,7 +303,7 @@ export const DiscoverScreen: React.FC = () => {
     } finally {
       setActionPending(false);
     }
-  }, [currentProfile, actionPending, userId, moveToNextProfile]);
+  }, [currentProfile, actionPending, userId, moveToNextProfile, showSeedMatch]);
 
   /**
    * Handle pass action
@@ -290,7 +312,7 @@ export const DiscoverScreen: React.FC = () => {
     if (!currentProfile || actionPending) return;
 
     // Seed profiles: just move to next card, no backend call
-    if (currentProfile.isSeedProfile) {
+    if (isSeedDisplayProfile(currentProfile)) {
       moveToNextProfile();
       return;
     }
@@ -332,9 +354,9 @@ export const DiscoverScreen: React.FC = () => {
   const handleSuperLike = useCallback(async () => {
     if (!currentProfile || actionPending) return;
 
-    // Seed profiles: just move to next card, no backend call
-    if (currentProfile.isSeedProfile) {
-      moveToNextProfile();
+    // Seed profiles: local-only demo match, no backend call
+    if (isSeedDisplayProfile(currentProfile)) {
+      showSeedMatch(currentProfile);
       return;
     }
 
@@ -373,7 +395,7 @@ export const DiscoverScreen: React.FC = () => {
     } finally {
       setActionPending(false);
     }
-  }, [currentProfile, actionPending, userId, moveToNextProfile]);
+  }, [currentProfile, actionPending, userId, moveToNextProfile, showSeedMatch]);
 
 
   const retryLastFailedAction = useCallback(() => {

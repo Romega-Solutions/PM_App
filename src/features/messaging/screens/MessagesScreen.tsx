@@ -32,7 +32,7 @@ import {
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
+  Animated,
   Platform,
   ScrollView,
   StatusBar,
@@ -128,6 +128,8 @@ export const MessagesScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [filterType, setFilterType] = useState<ConversationFilter>("all");
+  const [showSeedSnackbar, setShowSeedSnackbar] = useState(false);
+  const seedSnackbarOpacity = React.useRef(new Animated.Value(0)).current;
 
   // Get global unread count from Zustand store
   const realTotalUnreadCount = useChatStore((state) => state.totalUnreadCount);
@@ -162,6 +164,45 @@ export const MessagesScreen: React.FC = () => {
         0,
       )
     : realTotalUnreadCount;
+  const seedSnackbarText = error
+    ? `Live messages did not refresh: ${getConversationErrorMessage(error)} Sample unread and active chats are shown for testing.`
+    : "Sample unread and active chats are shown until real conversations are available.";
+
+  useEffect(() => {
+    if (!usingSeedConversations) {
+      seedSnackbarOpacity.stopAnimation();
+      seedSnackbarOpacity.setValue(0);
+      setShowSeedSnackbar(false);
+      return;
+    }
+
+    setShowSeedSnackbar(true);
+    seedSnackbarOpacity.setValue(0);
+
+    const animation = Animated.sequence([
+      Animated.timing(seedSnackbarOpacity, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.delay(4600),
+      Animated.timing(seedSnackbarOpacity, {
+        toValue: 0,
+        duration: 420,
+        useNativeDriver: true,
+      }),
+    ]);
+
+    animation.start(({ finished }) => {
+      if (finished) {
+        setShowSeedSnackbar(false);
+      }
+    });
+
+    return () => {
+      animation.stop();
+    };
+  }, [seedSnackbarOpacity, usingSeedConversations, seedSnackbarText]);
 
   // Extract active users from online conversations
   const activeUsers = displayConversations
@@ -213,13 +254,7 @@ export const MessagesScreen: React.FC = () => {
 
   // Navigate to chat screen
   const handleChatPress = (conv: ConversationWithUser) => {
-    if (isSeedConversationId(conv.id)) {
-      Alert.alert(
-        "Demo conversation",
-        "This seeded beta chat previews unread and active states. Live chat opens when a real conversation exists.",
-      );
-      return;
-    }
+    const isSeedConversation = isSeedConversationId(conv.id);
 
     router.push({
       pathname: "/chat",
@@ -229,6 +264,7 @@ export const MessagesScreen: React.FC = () => {
         userImage: conv.other_user.photos?.[0] || undefined,
         isOnline: conv.other_user.is_active ? "true" : "false",
         conversationId: conv.id,
+        ...(isSeedConversation ? { isDemo: "true" } : {}),
       },
     });
   };
@@ -237,14 +273,7 @@ export const MessagesScreen: React.FC = () => {
   const handleActiveUserPress = (userId: string) => {
     const user = activeUsers.find((u) => u.id === userId);
     if (!user) return;
-
-    if (isSeedConversationId(user.conversationId)) {
-      Alert.alert(
-        "Demo conversation",
-        "This active user is sample beta data. Live chat opens when a real conversation exists.",
-      );
-      return;
-    }
+    const isSeedConversation = isSeedConversationId(user.conversationId);
 
     router.push({
       pathname: "/chat",
@@ -253,6 +282,9 @@ export const MessagesScreen: React.FC = () => {
         userName: user.name,
         userImage: user.image || undefined,
         isOnline: "true",
+        ...(isSeedConversation
+          ? { conversationId: user.conversationId, isDemo: "true" }
+          : {}),
       },
     });
   };
@@ -400,38 +432,6 @@ export const MessagesScreen: React.FC = () => {
           </View>
         </View>
 
-        {usingSeedConversations && (
-          <View
-            style={styles.demoDataNote}
-            accessible
-            accessibilityLabel="Beta seeded inbox is showing sample active and unread conversations. Live conversations will replace it when available."
-          >
-            <View style={styles.demoDataIcon}>
-              {error ? (
-                <AlertCircle
-                  size={18}
-                  color={ACCENT_PURPLE}
-                  strokeWidth={2.4}
-                />
-              ) : (
-                <MessageCircle
-                  size={18}
-                  color={ACCENT_PURPLE}
-                  strokeWidth={2.4}
-                />
-              )}
-            </View>
-            <View style={styles.demoDataCopy}>
-              <Text style={styles.demoDataTitle}>Beta seeded inbox</Text>
-              <Text style={styles.demoDataText}>
-                {error
-                  ? `Live messages did not refresh: ${getConversationErrorMessage(error)} Sample unread and active chats are shown for testing.`
-                  : "Sample unread and active chats are shown until real conversations are available."}
-              </Text>
-            </View>
-          </View>
-        )}
-
         {/* Active Users Section */}
         {activeUsers.length > 0 && (
           <View style={styles.section}>
@@ -542,6 +542,50 @@ export const MessagesScreen: React.FC = () => {
           )}
         </View>
       </ScrollView>
+
+      {showSeedSnackbar && usingSeedConversations && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.seedSnackbar,
+            {
+              bottom: Math.max(insets.bottom + 86, 92),
+              opacity: seedSnackbarOpacity,
+              transform: [
+                {
+                  translateY: seedSnackbarOpacity.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [12, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+          accessible
+          accessibilityLiveRegion="polite"
+          accessibilityLabel={`Beta seeded inbox. ${seedSnackbarText}`}
+        >
+          <View style={styles.seedSnackbarIcon}>
+            {error ? (
+              <AlertCircle
+                size={18}
+                color={ACCENT_PURPLE}
+                strokeWidth={2.4}
+              />
+            ) : (
+              <MessageCircle
+                size={18}
+                color={ACCENT_PURPLE}
+                strokeWidth={2.4}
+              />
+            )}
+          </View>
+          <View style={styles.seedSnackbarCopy}>
+            <Text style={styles.seedSnackbarTitle}>Beta seeded inbox</Text>
+            <Text style={styles.seedSnackbarText}>{seedSnackbarText}</Text>
+          </View>
+        </Animated.View>
+      )}
     </View>
   );
 };
@@ -715,19 +759,31 @@ const styles = StyleSheet.create({
     color: TEXT_SECONDARY,
     lineHeight: 19,
   },
-  demoDataNote: {
+  seedSnackbar: {
+    position: "absolute",
+    left: 16,
+    right: 16,
     minHeight: 66,
-    marginHorizontal: 20,
-    marginBottom: 22,
     padding: 13,
     borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "rgba(24, 14, 31, 0.96)",
     borderWidth: 1,
-    borderColor: "rgba(141,105,246,0.28)",
+    borderColor: "rgba(141,105,246,0.36)",
     flexDirection: "row",
     alignItems: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.32,
+        shadowRadius: 18,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
   },
-  demoDataIcon: {
+  seedSnackbarIcon: {
     width: 38,
     height: 38,
     borderRadius: 19,
@@ -736,16 +792,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 12,
   },
-  demoDataCopy: {
+  seedSnackbarCopy: {
     flex: 1,
   },
-  demoDataTitle: {
+  seedSnackbarTitle: {
     fontSize: 13,
     fontFamily: "DMSans-Bold",
     color: WHITE,
     marginBottom: 4,
   },
-  demoDataText: {
+  seedSnackbarText: {
     fontSize: 12,
     fontFamily: "DMSans-Medium",
     color: TEXT_SECONDARY,

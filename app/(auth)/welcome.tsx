@@ -16,6 +16,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PrimaryButton from "../../src/components/ui/PrimaryButton";
 import SecondaryButton from "../../src/components/ui/SecondaryButton";
+import {
+  BETA_DEMO_COPY,
+  isBetaDemoModeEnabled,
+} from "../../src/features/auth/demoMode";
+import { useAuthStore } from "../../src/stores/authStore";
 
 const { width } = Dimensions.get("window");
 
@@ -33,6 +38,12 @@ const OVERLAY = [
 export default function Welcome() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const startDemoSession = useAuthStore((state) => state.startDemoSession);
+
+  const handleBetaPreview = () => {
+    startDemoSession();
+    router.replace("/(main)");
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: BRAND_BG }}>
@@ -138,6 +149,22 @@ export default function Welcome() {
             accessibilityLabel="Sign In"
             accessibilityHint="Log in to your existing account"
           />
+          {isBetaDemoModeEnabled() ? (
+            <Pressable
+              style={styles.demoPreview}
+              onPress={handleBetaPreview}
+              accessibilityRole="button"
+              accessibilityLabel="Open beta preview with seeded demo data"
+              accessibilityHint="Opens the main app without creating an account or writing profile data"
+            >
+              <Text style={styles.demoPreviewTitle}>
+                {BETA_DEMO_COPY.title}
+              </Text>
+              <Text style={styles.demoPreviewText}>
+                Preview the main tabs with seeded data. No account is created.
+              </Text>
+            </Pressable>
+          ) : null}
           <View style={styles.legalWrap}>
             <Text style={[styles.legal, { fontFamily: "DMSans-Regular" }]}>
               By continuing, you agree to PinayMate's terms and privacy policy.
@@ -256,6 +283,29 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: 14,
+  },
+  demoPreview: {
+    minHeight: 68,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.24)",
+    backgroundColor: "rgba(255, 255, 255, 0.10)",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  demoPreviewTitle: {
+    color: WHITE,
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 14,
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  demoPreviewText: {
+    color: "rgba(255, 255, 255, 0.72)",
+    fontFamily: "DMSans-Regular",
+    fontSize: 12,
+    lineHeight: 17,
+    textAlign: "center",
   },
   legal: {
     fontSize: 12,

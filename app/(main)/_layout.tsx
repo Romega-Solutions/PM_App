@@ -62,7 +62,7 @@ const TabIconContainer: React.FC<TabIconProps> = ({
 );
 
 export default function MainLayout() {
-  const { isAuthenticated, isLoading } = useRequireAuth();
+  const { isAuthenticated, isDemoMode, isLoading } = useRequireAuth();
   const insets = useSafeAreaInsets();
 
   if (isLoading) {
@@ -79,9 +79,13 @@ export default function MainLayout() {
           color={ACCENT_PINK}
           accessibilityLabel="Checking session"
         />
-        <Text style={styles.authGateTitle}>Getting PinayMate ready</Text>
+        <Text style={styles.authGateTitle}>
+          {isDemoMode ? "Opening beta preview" : "Getting PinayMate ready"}
+        </Text>
         <Text style={styles.authGateText}>
-          Checking your secure session before opening the app.
+          {isDemoMode
+            ? "Seeded demo data is used for preview surfaces. No real account writes happen here."
+            : "Checking your secure session before opening the app."}
         </Text>
       </View>
     );

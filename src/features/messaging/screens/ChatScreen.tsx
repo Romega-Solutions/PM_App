@@ -38,6 +38,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Import hooks and types
 import { supabase } from "@/src/config/supabase";
+import {
+  DEMO_CURRENT_USER_ID,
+  isSeedConversationId,
+} from "@/src/features/messaging/data/seedConversations";
 import { useChatRealtime } from "@/src/features/messaging/hooks/useChatRealtime";
 import { useMessages } from "@/src/features/messaging/hooks/useMessages";
 import { useMessageUpload } from "@/src/features/messaging/hooks/useMessageUpload";
@@ -57,6 +61,7 @@ type ChatScreenParams = {
   userImage?: string;
   isOnline?: string;
   conversationId?: string;
+  isDemo?: string;
 };
 
 function getDateKey(dateString: string): string {
@@ -119,15 +124,26 @@ export default function ChatScreen() {
   const isSafetyActionPending = safetyAction !== null;
   const hasDraftMessage = inputText.trim().length > 0;
   const activeConversationId = params.conversationId ?? createdConversationId;
+  const isDemoChat =
+    params.isDemo === "true" ||
+    Boolean(activeConversationId && isSeedConversationId(activeConversationId));
+  const messagingUserId = isDemoChat
+    ? currentUserId || DEMO_CURRENT_USER_ID
+    : currentUserId;
 
   // Get current user ID
   useEffect(() => {
+    if (isDemoChat) {
+      setCurrentUserId(DEMO_CURRENT_USER_ID);
+      return;
+    }
+
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
         setCurrentUserId(data.user.id);
       }
     });
-  }, []);
+  }, [isDemoChat]);
 
   useEffect(() => {
     if (params.conversationId) {
@@ -147,14 +163,16 @@ export default function ChatScreen() {
     addMessage,
   } = useMessages({
     conversationId: activeConversationId,
-    userId: currentUserId,
+    userId: messagingUserId,
     recipientId: recipientId || "",
     autoLoad: true,
   });
   const isFirstMessageSetup = !activeConversationId && dbMessages.length === 0;
   const messageInputPlaceholder = isSafetyActionPending
     ? "Messaging paused while this finishes..."
-    : isFirstMessageSetup
+    : isDemoChat
+      ? "Reply in demo chat..."
+      : isFirstMessageSetup
       ? "Write the first message..."
       : "Type a respectful message...";
 
@@ -171,12 +189,12 @@ export default function ChatScreen() {
   }, [activeConversationId, dbMessages]);
 
   useEffect(() => {
-    if (!activeConversationId || !currentUserId || dbMessages.length === 0) {
+    if (!activeConversationId || !messagingUserId || dbMessages.length === 0) {
       return;
     }
 
     void markAsRead();
-  }, [activeConversationId, currentUserId, dbMessages.length, markAsRead]);
+  }, [activeConversationId, messagingUserId, dbMessages.length, markAsRead]);
 
   const {
     uploadImage,
@@ -189,8 +207,8 @@ export default function ChatScreen() {
 
   // Setup realtime subscriptions
   const { sendTyping } = useChatRealtime({
-    conversationId: activeConversationId,
-    userId: currentUserId,
+    conversationId: isDemoChat ? undefined : activeConversationId,
+    userId: messagingUserId,
     recipientId: recipientId || "",
     onNewMessage: (message) => {
       addMessage(message);
@@ -277,6 +295,15 @@ export default function ChatScreen() {
         return;
       }
 
+      if (isDemoChat) {
+        const message =
+          "Photo sharing is not available in demo chat. Text replies stay local on this device.";
+        setMediaError(message);
+        AccessibilityInfo.announceForAccessibility(message);
+        Alert.alert("Demo chat", message);
+        return;
+      }
+
       if (!activeConversationId) {
         const message =
           "Photo sharing unlocks after your first text starts this matched conversation. Send a short message first, then attach a photo.";
@@ -344,6 +371,7 @@ export default function ChatScreen() {
     }
   }, [
     isSafetyActionPending,
+    isDemoChat,
     activeConversationId,
     resetUpload,
     sendImageToDb,
@@ -352,6 +380,14 @@ export default function ChatScreen() {
   ]);
 
   const handleBlockUser = useCallback(() => {
+    if (isDemoChat) {
+      Alert.alert(
+        "Demo chat",
+        "Safety actions are disabled for seeded demo conversations. Live chats keep report, block, and unmatch available.",
+      );
+      return;
+    }
+
     if (!recipientId) {
       Alert.alert(
         "Could not block member",
@@ -405,9 +441,17 @@ export default function ChatScreen() {
         },
       ],
     );
-  }, [recipientId, router, userName]);
+  }, [isDemoChat, recipientId, router, userName]);
 
   const handleUnmatchUser = useCallback(() => {
+    if (isDemoChat) {
+      Alert.alert(
+        "Demo chat",
+        "Unmatch is disabled for seeded demo conversations. Live chats keep report, block, and unmatch available.",
+      );
+      return;
+    }
+
     if (!recipientId) {
       Alert.alert(
         "Could not unmatch",
@@ -461,9 +505,17 @@ export default function ChatScreen() {
         },
       ],
     );
-  }, [recipientId, router, userName]);
+  }, [isDemoChat, recipientId, router, userName]);
 
   const handleReportUser = useCallback(() => {
+    if (isDemoChat) {
+      Alert.alert(
+        "Demo chat",
+        "Reports are disabled for seeded demo conversations. Live chats can still be reported from Safety options.",
+      );
+      return;
+    }
+
     if (!recipientId) {
       Alert.alert(
         "Could not open report form",
@@ -481,7 +533,7 @@ export default function ChatScreen() {
         source: "chat",
       },
     });
-  }, [activeConversationId, recipientId, router, userName]);
+  }, [activeConversationId, isDemoChat, recipientId, router, userName]);
 
   const handleRetrySafetyAction = useCallback(() => {
     if (!safetyFeedback?.action) return;
@@ -497,6 +549,14 @@ export default function ChatScreen() {
   // More options handler
   const handleMoreOptions = useCallback(() => {
     if (isSafetyActionPending) return;
+
+    if (isDemoChat) {
+      Alert.alert(
+        "Demo chat",
+        "This is a local seeded chat for testing replies. Safety actions and reports are only available in live conversations.",
+      );
+      return;
+    }
 
     const options = [
       "Report safety concern",
@@ -553,6 +613,7 @@ export default function ChatScreen() {
     handleBlockUser,
     handleReportUser,
     handleUnmatchUser,
+    isDemoChat,
     isSafetyActionPending,
   ]);
 
@@ -615,7 +676,7 @@ export default function ChatScreen() {
         )}
         <MessageBubble
           message={item}
-          currentUserId={currentUserId}
+          currentUserId={messagingUserId}
           userName={userName}
           onSwipeToReply={handleSwipeToReply}
           userImage={params.userImage}
@@ -623,9 +684,9 @@ export default function ChatScreen() {
       </View>
     ),
     [
-      currentUserId,
       dbMessages,
       handleSwipeToReply,
+      messagingUserId,
       params.userImage,
       userName,
     ],
@@ -722,7 +783,7 @@ export default function ChatScreen() {
           <View
             style={styles.headerUserInfo}
             accessible
-            accessibilityLabel={`${userName}, ${isOnline ? "active now" : "offline"}`}
+            accessibilityLabel={`${userName}, ${isDemoChat ? "demo chat" : isOnline ? "active now" : "offline"}`}
           >
             <View style={styles.headerAvatarContainer}>
               {params.userImage && params.userImage.startsWith("http") ? (
@@ -744,7 +805,11 @@ export default function ChatScreen() {
             <View style={styles.headerUserText}>
               <Text style={styles.headerUserName}>{userName}</Text>
               <Text style={styles.headerUserStatus}>
-                {isOnline ? "Active now" : "Offline"}
+                {isDemoChat
+                  ? `Demo chat${isOnline ? " - Active now" : ""}`
+                  : isOnline
+                    ? "Active now"
+                    : "Offline"}
               </Text>
             </View>
           </View>
@@ -812,10 +877,15 @@ export default function ChatScreen() {
       )}
 
       <View style={styles.safetyReminder}>
-        <ShieldAlert size={17} color={DANGER_RED} strokeWidth={2.2} />
+        {isDemoChat ? (
+          <MessageCircle size={17} color={ACCENT_PURPLE} strokeWidth={2.2} />
+        ) : (
+          <ShieldAlert size={17} color={DANGER_RED} strokeWidth={2.2} />
+        )}
         <Text style={styles.safetyReminderText}>
-          Report first if support should review this chat. Block stops contact.
-          Unmatch only leaves the connection.
+          {isDemoChat
+            ? "Demo chat: replies append locally for this beta conversation. No live messages, reports, uploads, or safety actions are sent."
+            : "Report first if support should review this chat. Block stops contact. Unmatch only leaves the connection."}
         </Text>
         <TouchableOpacity
           style={[
@@ -830,7 +900,9 @@ export default function ChatScreen() {
           accessibilityHint="Report for support review, block to stop contact, or unmatch to leave the connection"
           accessibilityState={{ disabled: isSafetyActionPending }}
         >
-          <Text style={styles.safetyReminderButtonText}>Options</Text>
+          <Text style={styles.safetyReminderButtonText}>
+            {isDemoChat ? "Demo" : "Options"}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -1045,13 +1117,15 @@ export default function ChatScreen() {
             <TouchableOpacity
               style={[
                 styles.mediaButton,
-                (uploading || isSafetyActionPending) &&
+                (uploading || isSafetyActionPending || isDemoChat) &&
                   styles.mediaButtonDisabled,
               ]}
               accessibilityLabel={
                 uploading
                   ? "Uploading photo"
-                  : isSafetyActionPending
+                  : isDemoChat
+                    ? "Photo sharing unavailable in demo chat"
+                    : isSafetyActionPending
                     ? "Photo sharing paused"
                     : isFirstMessageSetup
                       ? "Photo sharing available after first message"
@@ -1059,19 +1133,21 @@ export default function ChatScreen() {
               }
               accessibilityRole="button"
               accessibilityHint={
-                isSafetyActionPending
+                isDemoChat
+                  ? "Demo chat supports local text replies only"
+                  : isSafetyActionPending
                   ? "Photo sharing is paused while the safety action finishes"
                   : isFirstMessageSetup
                     ? "Send a text first to start this matched conversation, then attach a photo"
                     : "Opens your photo library to send an image"
               }
               accessibilityState={{
-                disabled: uploading || isSafetyActionPending,
+                disabled: uploading || isSafetyActionPending || isDemoChat,
                 busy: uploading,
               }}
               activeOpacity={0.84}
               onPress={handleImagePick}
-              disabled={uploading || isSafetyActionPending}
+              disabled={uploading || isSafetyActionPending || isDemoChat}
             >
               {uploading ? (
                 <ActivityIndicator size="small" color={ACCENT_PURPLE} />
@@ -1093,7 +1169,9 @@ export default function ChatScreen() {
                 maxLength={1000}
                 accessibilityLabel="Message input"
                 accessibilityHint={
-                  isFirstMessageSetup
+                  isDemoChat
+                    ? "Adds this reply only to the local demo conversation"
+                    : isFirstMessageSetup
                     ? "Your first text starts this matched conversation after access checks pass"
                     : "Type your message before sending"
                 }
@@ -1133,7 +1211,9 @@ export default function ChatScreen() {
               accessibilityRole="button"
               accessibilityLabel={
                 hasDraftMessage
-                  ? isFirstMessageSetup
+                  ? isDemoChat
+                    ? "Send demo reply"
+                    : isFirstMessageSetup
                     ? "Send first message"
                     : "Send message"
                   : "Type a message before sending"
@@ -1141,6 +1221,8 @@ export default function ChatScreen() {
               accessibilityHint={
                 isSafetyActionPending
                   ? "Messaging is paused while the safety action finishes"
+                  : isDemoChat
+                    ? "Adds this message locally without contacting live chat services"
                   : isFirstMessageSetup
                     ? "Creates the matched conversation after access checks pass"
                   : "Sends this message to the current conversation"
@@ -1163,6 +1245,8 @@ export default function ChatScreen() {
           >
             {isFirstMessageSetup
               ? "Send a text first to start this matched conversation. Photo sharing stays locked until the chat exists."
+              : isDemoChat
+                ? "Demo chat replies stay local on this device. Live conversations keep uploads, reports, and backend delivery."
               : "Only send photos you are comfortable sharing in this chat. Never send passwords, codes, ID documents, or payment details. Report pressure or threats from Safety options."}
           </Text>
         </View>

@@ -12,6 +12,7 @@ import React from "react";
 import { StyleSheet, 
   Dimensions,
   Image,
+  ImageSourcePropType,
   Modal,
   Platform,
   ScrollView,
@@ -29,8 +30,10 @@ const { width, height } = Dimensions.get("window");
 export interface MatchedProfile {
   id: string;
   first_name: string;
+  image?: ImageSourcePropType;
   photos?: string[];
   is_active?: boolean;
+  demo?: boolean;
 }
 
 export interface MatchModalProps {
@@ -52,9 +55,10 @@ export const MatchModal: React.FC<MatchModalProps> = ({
 
   if (!matchedProfile) return null;
 
-  const profileImage = matchedProfile.photos?.[0]
-    ? { uri: matchedProfile.photos[0] }
-    : null;
+  const profileImage =
+    matchedProfile.image ??
+    (matchedProfile.photos?.[0] ? { uri: matchedProfile.photos[0] } : null);
+  const isDemoMatch = Boolean(matchedProfile.demo);
 
   return (
     <Modal
@@ -99,21 +103,29 @@ export const MatchModal: React.FC<MatchModalProps> = ({
             </View>
 
             {/* Match Text */}
-            <Text style={styles.matchTitle}>It's a Match!</Text>
+            <Text style={styles.matchTitle}>
+              {isDemoMatch ? "Demo Match!" : "It's a Match!"}
+            </Text>
             <Text style={styles.matchSubtitle}>
-              You and {matchedProfile.first_name} liked each other. Open the
-              match and start respectfully when you are ready.
+              {isDemoMatch
+                ? `${matchedProfile.first_name} is sample beta data. Open Matches to preview the seeded mutual match flow.`
+                : `You and ${matchedProfile.first_name} liked each other. Open the match and start respectfully when you are ready.`}
             </Text>
 
             <View
               style={styles.safetyNote}
               accessible
-              accessibilityLabel="Safety note. Keep chats in PinayMate until you feel comfortable, and do not rush into sharing private details."
+              accessibilityLabel={
+                isDemoMatch
+                  ? "Demo note. This match is sample beta data and no real member action was sent."
+                  : "Safety note. Keep chats in PinayMate until you feel comfortable, and do not rush into sharing private details."
+              }
             >
               <ShieldCheck size={16} color={theme.semanticColors.secondary} strokeWidth={2.4} />
               <Text style={styles.safetyNoteText}>
-                Keep chats in PinayMate until you feel comfortable. Do not rush
-                into sharing private details.
+                {isDemoMatch
+                  ? "Demo only. No real like, super like, match, or message was sent."
+                  : "Keep chats in PinayMate until you feel comfortable. Do not rush into sharing private details."}
               </Text>
             </View>
 

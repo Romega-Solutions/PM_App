@@ -152,7 +152,7 @@ export const MatchCard: React.FC<MatchCardProps> = React.memo(({
             accessible
             accessibilityLabel="Demo match"
           >
-            <Text style={styles.demoBadgeText}>Demo</Text>
+            <Text style={styles.demoBadgeText}>Demo match</Text>
           </View>
         )}
 

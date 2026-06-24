@@ -56,7 +56,7 @@ function isMissingAuthSession(error: unknown) {
 }
 
 function getSeedMatches(): Match[] {
-  return getSeedProfilesInOrder().slice(0, 10).map((profile, index) => ({
+  return getSeedProfilesInOrder().map((profile, index) => ({
     id: profile.id,
     name: profile.name,
     age: profile.age,

@@ -18,6 +18,7 @@
 
 import { supabase } from "@/src/config/supabase";
 import { authStorage } from "@/src/config/authStorage";
+import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
 import type { Session } from "@supabase/supabase-js";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "./persistStorage";
@@ -35,6 +36,7 @@ type AuthState = {
   user: User | null;
   session: Session | null;
   isAuthenticated: boolean;
+  isDemoMode: boolean;
   isLoading: boolean;
   isInitialized: boolean;
 
@@ -43,6 +45,8 @@ type AuthState = {
   setSession: (session: Session | null) => void;
   clearUser: () => void;
   updateUser: (updates: Partial<User>) => void;
+  startDemoSession: () => void;
+  endDemoSession: () => void;
   initialize: () => Promise<void>;
   refreshSession: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -55,6 +59,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       session: null,
       isAuthenticated: false,
+      isDemoMode: false,
       isLoading: false,
       isInitialized: false,
 
@@ -63,6 +68,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           user,
           isAuthenticated: true,
+          isDemoMode: false,
         }),
 
       // Set session from Supabase
@@ -70,6 +76,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           session,
           isAuthenticated: !!session,
+          isDemoMode: session ? false : get().isDemoMode,
         }),
 
       // Clear user on sign out
@@ -78,6 +85,7 @@ export const useAuthStore = create<AuthState>()(
           user: null,
           session: null,
           isAuthenticated: false,
+          isDemoMode: false,
         }),
 
       // Update user details
@@ -86,10 +94,32 @@ export const useAuthStore = create<AuthState>()(
           user: state.user ? { ...state.user, ...updates } : null,
         })),
 
+      startDemoSession: () => {
+        if (!isBetaDemoModeEnabled()) return;
+
+        set({
+          user: null,
+          session: null,
+          isAuthenticated: false,
+          isDemoMode: true,
+          isInitialized: true,
+          isLoading: false,
+        });
+      },
+
+      endDemoSession: () =>
+        set({
+          user: null,
+          session: null,
+          isAuthenticated: false,
+          isDemoMode: false,
+        }),
+
       // Initialize auth (restore session on app start)
       initialize: async () => {
         try {
           set({ isLoading: true });
+          const keepDemoMode = get().isDemoMode && isBetaDemoModeEnabled();
 
           const {
             data: { session },
@@ -102,6 +132,7 @@ export const useAuthStore = create<AuthState>()(
               session: null,
               user: null,
               isAuthenticated: false,
+              isDemoMode: keepDemoMode,
               isInitialized: true,
               isLoading: false,
             });
@@ -112,6 +143,7 @@ export const useAuthStore = create<AuthState>()(
             set({
               session,
               isAuthenticated: true,
+              isDemoMode: false,
               isInitialized: true,
               isLoading: false,
             });
@@ -120,6 +152,7 @@ export const useAuthStore = create<AuthState>()(
               session: null,
               user: null,
               isAuthenticated: false,
+              isDemoMode: keepDemoMode,
               isInitialized: true,
               isLoading: false,
             });
@@ -130,6 +163,7 @@ export const useAuthStore = create<AuthState>()(
             session: null,
             user: null,
             isAuthenticated: false,
+            isDemoMode: get().isDemoMode && isBetaDemoModeEnabled(),
             isInitialized: true,
             isLoading: false,
           });
@@ -138,6 +172,8 @@ export const useAuthStore = create<AuthState>()(
 
       // Refresh session before expiry
       refreshSession: async () => {
+        if (get().isDemoMode) return;
+
         try {
           const {
             data: { session },
@@ -150,6 +186,7 @@ export const useAuthStore = create<AuthState>()(
               session: null,
               user: null,
               isAuthenticated: false,
+              isDemoMode: false,
             });
             return;
           }
@@ -157,6 +194,7 @@ export const useAuthStore = create<AuthState>()(
           set({
             session,
             isAuthenticated: true,
+            isDemoMode: false,
           });
         } catch {
           console.error("Session refresh failed.");
@@ -173,6 +211,7 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             session: null,
             isAuthenticated: false,
+            isDemoMode: false,
             isLoading: false,
           });
         } catch {
@@ -190,6 +229,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         session: state.session,
         isAuthenticated: state.isAuthenticated,
+        isDemoMode: state.isDemoMode,
       }),
 
       // Restore state from the configured auth storage on app start

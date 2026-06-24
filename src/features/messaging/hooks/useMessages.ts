@@ -9,6 +9,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  createSeedOutgoingMessage,
+  DEMO_CURRENT_USER_ID,
+  getSeedMessages,
+  isSeedConversationId,
+} from "@/src/features/messaging/data/seedConversations";
+import {
     getMessages,
     getMessagesByConversationId,
     markConversationAsRead,
@@ -43,6 +49,9 @@ export function useMessages({
   recipientId,
   autoLoad = true,
 }: UseMessagesOptions): UseMessagesReturn {
+  const isSeedConversation = conversationId
+    ? isSeedConversationId(conversationId)
+    : false;
   // Grab global cached messages for instant rendering
   const cachedMessages = useMessageStore((state) => 
     conversationId ? state.messagesByConversation[conversationId] || [] : []
@@ -67,6 +76,24 @@ export function useMessages({
    * Load messages from database
    */
   const loadMessages = useCallback(async () => {
+    if (isSeedConversation && conversationId) {
+      setError(null);
+      setLoading(false);
+
+      if (cachedMessages.length === 0) {
+        setMessagesToStore(
+          conversationId,
+          getSeedMessages(
+            conversationId,
+            userId || DEMO_CURRENT_USER_ID,
+            recipientId,
+          ),
+        );
+      }
+
+      return;
+    }
+
     if (!userId || (!conversationId && !recipientId)) return;
 
     // Only show loading if we don't have cached messages
@@ -99,7 +126,14 @@ export function useMessages({
     } finally {
       setLoading(false);
     }
-  }, [userId, recipientId, conversationId, cachedMessages.length, setMessagesToStore]);
+  }, [
+    cachedMessages.length,
+    conversationId,
+    isSeedConversation,
+    recipientId,
+    setMessagesToStore,
+    userId,
+  ]);
 
   /**
    * Send text message
@@ -109,6 +143,18 @@ export function useMessages({
       if (!text.trim()) return null;
 
       try {
+        if (isSeedConversation && conversationId) {
+          const data = createSeedOutgoingMessage({
+            conversationId,
+            currentUserId: userId || DEMO_CURRENT_USER_ID,
+            recipientId,
+            text: text.trim(),
+          });
+
+          addMessageToStore(conversationId, data);
+          return data;
+        }
+
         const { data, error: sendError } = await sendTextMessage(
           userId,
           recipientId,
@@ -133,7 +179,13 @@ export function useMessages({
         throw err;
       }
     },
-    [userId, recipientId, conversationId, addMessageToStore],
+    [
+      addMessageToStore,
+      conversationId,
+      isSeedConversation,
+      recipientId,
+      userId,
+    ],
   );
 
   /**
@@ -142,6 +194,10 @@ export function useMessages({
   const sendImage = useCallback(
     async (imageUrl: string) => {
       try {
+        if (isSeedConversation) {
+          throw new Error("Photo sharing is not available in demo chat.");
+        }
+
         if (!conversationId) {
           throw new Error(
             "Photo sharing needs an active matched conversation before sending.",
@@ -168,7 +224,13 @@ export function useMessages({
         throw err;
       }
     },
-    [userId, recipientId, conversationId, addMessageToStore],
+    [
+      addMessageToStore,
+      conversationId,
+      isSeedConversation,
+      recipientId,
+      userId,
+    ],
   );
 
   /**
@@ -176,6 +238,11 @@ export function useMessages({
    */
   const markAsRead = useCallback(async () => {
     if (!conversationId) return;
+
+    if (isSeedConversation) {
+      markAsReadInStore(conversationId, userId || DEMO_CURRENT_USER_ID);
+      return;
+    }
 
     try {
       await markConversationAsRead(conversationId, userId);
@@ -185,7 +252,7 @@ export function useMessages({
     } catch {
       console.error("Error marking as read.");
     }
-  }, [conversationId, userId, markAsReadInStore]);
+  }, [conversationId, isSeedConversation, markAsReadInStore, userId]);
 
   /**
    * Apply read-receipt updates received over realtime.

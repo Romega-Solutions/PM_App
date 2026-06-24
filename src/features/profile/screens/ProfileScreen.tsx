@@ -40,6 +40,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "@/src/config/supabase";
 import { accountApi } from "@/src/features/account/api/accountApi";
 import { UserType } from "@/src/features/auth/api/authApi";
+import {
+  BETA_DEMO_COPY,
+  BETA_DEMO_PROFILE,
+} from "@/src/features/auth/demoMode";
+import { useAuthStore } from "@/src/stores/authStore";
 import { useProfileStore } from "@/src/stores/profileStore";
 import { ProfileHeader } from "../components/ProfileHeader";
 import {
@@ -122,6 +127,8 @@ export const ProfileScreen: React.FC = () => {
   const router = useRouter();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
+  const endDemoSession = useAuthStore((state) => state.endDemoSession);
 
   // Zustand store
   const { setProfile, clearProfile } = useProfileStore();
@@ -130,6 +137,20 @@ export const ProfileScreen: React.FC = () => {
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
+        if (isDemoMode) {
+          setProfileData({
+            firstName: BETA_DEMO_PROFILE.firstName,
+            lastName: BETA_DEMO_PROFILE.lastName,
+            age: BETA_DEMO_PROFILE.age,
+            userType: BETA_DEMO_PROFILE.userType,
+            location: BETA_DEMO_PROFILE.location,
+            photoUri: BETA_DEMO_PROFILE.photoUri,
+            isVerified: BETA_DEMO_PROFILE.isVerified,
+          });
+          setLoading(false);
+          return;
+        }
+
         // Get current session
         const {
           data: { session },
@@ -187,7 +208,7 @@ export const ProfileScreen: React.FC = () => {
     };
 
     fetchProfileData();
-  }, [router, setProfile]);
+  }, [isDemoMode, router, setProfile]);
 
   // Handle menu item press
   const handleMenuItemPress = (route: Href) => {
@@ -197,6 +218,13 @@ export const ProfileScreen: React.FC = () => {
   // Handle logout
   const handleLogout = async () => {
     try {
+      if (isDemoMode) {
+        endDemoSession();
+        clearProfile();
+        router.replace("/(auth)/welcome");
+        return;
+      }
+
       // Sign out from Supabase
       await supabase.auth.signOut();
 
@@ -365,6 +393,17 @@ export const ProfileScreen: React.FC = () => {
           </Text>
         </View>
 
+        {isDemoMode ? (
+          <View
+            style={styles.demoStatusStrip}
+            accessible
+            accessibilityLabel={`${BETA_DEMO_COPY.title}. ${BETA_DEMO_COPY.message}`}
+          >
+            <Text style={styles.demoStatusTitle}>{BETA_DEMO_COPY.title}</Text>
+            <Text style={styles.demoStatusText}>{BETA_DEMO_COPY.message}</Text>
+          </View>
+        ) : null}
+
         {/* Menu List Component */}
         <ProfileMenuList
           items={menuItems}
@@ -432,6 +471,27 @@ const useStyles = makeStyles((theme) => ({
     marginBottom: 6,
   },
   profileStatusText: {
+    fontSize: 13,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255, 255, 255, 0.72)",
+    lineHeight: 20,
+  },
+  demoStatusStrip: {
+    marginHorizontal: 24,
+    marginBottom: 8,
+    paddingLeft: 16,
+    paddingVertical: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: theme.semanticColors.primary,
+    backgroundColor: "rgba(239, 62, 120, 0.1)",
+  },
+  demoStatusTitle: {
+    fontSize: 15,
+    fontFamily: "DMSans-Bold",
+    color: theme.semanticColors.text,
+    marginBottom: 6,
+  },
+  demoStatusText: {
     fontSize: 13,
     fontFamily: "DMSans-Regular",
     color: "rgba(255, 255, 255, 0.72)",

@@ -1,7 +1,7 @@
 import { getSeedProfilesInOrder } from "@/src/features/matching/data/seedProfiles";
-import type { ConversationWithUser } from "../types/messaging.types";
+import type { ConversationWithUser, Message } from "../types/messaging.types";
 
-const DEMO_CURRENT_USER_ID = "00000000-0000-4000-8000-000000000001";
+export const DEMO_CURRENT_USER_ID = "00000000-0000-4000-8000-000000000001";
 
 const DEMO_USER_IDS = [
   "00000000-0000-4000-8000-000000000101",
@@ -81,6 +81,17 @@ export function isSeedConversationId(id: string): boolean {
   return id.startsWith("seed-conv-");
 }
 
+function getSeedConversationIndex(id: string): number | null {
+  if (!isSeedConversationId(id)) return null;
+
+  const index = Number.parseInt(id.replace("seed-conv-", ""), 10) - 1;
+  return Number.isInteger(index) &&
+    index >= 0 &&
+    index < SEED_MESSAGE_FIXTURES.length
+    ? index
+    : null;
+}
+
 export function getSeedConversations(
   currentUserId = DEMO_CURRENT_USER_ID,
 ): ConversationWithUser[] {
@@ -113,4 +124,113 @@ export function getSeedConversations(
       unread_count: fixture.unread,
     };
   });
+}
+
+export function getSeedMessages(
+  conversationId: string,
+  currentUserId = DEMO_CURRENT_USER_ID,
+  recipientId?: string,
+): Message[] {
+  const index = getSeedConversationIndex(conversationId);
+
+  if (index === null) {
+    return [];
+  }
+
+  const fixture = SEED_MESSAGE_FIXTURES[index];
+  const otherUserId = recipientId || DEMO_USER_IDS[index];
+  const senderId = currentUserId || DEMO_CURRENT_USER_ID;
+  const messageTimes = [
+    minutesAgoIso(fixture.minutesAgo + 42),
+    minutesAgoIso(fixture.minutesAgo + 26),
+    minutesAgoIso(fixture.minutesAgo + 12),
+    minutesAgoIso(fixture.minutesAgo),
+  ];
+  const seedReplies = [
+    "Hi, thanks for matching with me. Your profile caught my attention.",
+    "That is kind of you to say. I like conversations that feel easy and thoughtful.",
+    "Same here. I am curious what a relaxed weekend looks like for you.",
+  ];
+
+  return [
+    {
+      id: `${conversationId}-message-01`,
+      conversation_id: conversationId,
+      sender_id: otherUserId,
+      recipient_id: senderId,
+      text: seedReplies[0],
+      type: "text",
+      status: "delivered",
+      is_deleted: false,
+      created_at: messageTimes[0],
+      updated_at: messageTimes[0],
+    },
+    {
+      id: `${conversationId}-message-02`,
+      conversation_id: conversationId,
+      sender_id: senderId,
+      recipient_id: otherUserId,
+      text: seedReplies[1],
+      type: "text",
+      status: "read",
+      is_deleted: false,
+      read_at: messageTimes[2],
+      created_at: messageTimes[1],
+      updated_at: messageTimes[1],
+    },
+    {
+      id: `${conversationId}-message-03`,
+      conversation_id: conversationId,
+      sender_id: senderId,
+      recipient_id: otherUserId,
+      text: seedReplies[2],
+      type: "text",
+      status: "read",
+      is_deleted: false,
+      read_at: messageTimes[3],
+      created_at: messageTimes[2],
+      updated_at: messageTimes[2],
+    },
+    {
+      id: `${conversationId}-message-04`,
+      conversation_id: conversationId,
+      sender_id: otherUserId,
+      recipient_id: senderId,
+      text: fixture.text,
+      type: "text",
+      status: fixture.unread > 0 ? "delivered" : "read",
+      is_deleted: false,
+      read_at: fixture.unread > 0 ? undefined : messageTimes[3],
+      created_at: messageTimes[3],
+      updated_at: messageTimes[3],
+    },
+  ];
+}
+
+export function createSeedOutgoingMessage({
+  conversationId,
+  currentUserId = DEMO_CURRENT_USER_ID,
+  recipientId,
+  text,
+}: {
+  conversationId: string;
+  currentUserId?: string;
+  recipientId: string;
+  text: string;
+}): Message {
+  const timestamp = new Date().toISOString();
+
+  return {
+    id: `${conversationId}-local-${Date.now()}`,
+    conversation_id: conversationId,
+    sender_id: currentUserId || DEMO_CURRENT_USER_ID,
+    recipient_id: recipientId,
+    text,
+    type: "text",
+    status: "sent",
+    is_deleted: false,
+    delivery_method: "demo-local",
+    created_at: timestamp,
+    updated_at: timestamp,
+  };
 }

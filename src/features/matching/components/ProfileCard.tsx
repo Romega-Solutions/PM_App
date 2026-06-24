@@ -239,7 +239,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({
           accessible
           accessibilityLabel="Demo profile — not a real member"
         >
-          <Text style={styles.demoBadgeText}>Demo</Text>
+          <Text style={styles.demoBadgeText}>Demo profile</Text>
         </View>
       )}
 
