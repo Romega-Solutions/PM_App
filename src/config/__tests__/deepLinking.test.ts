@@ -106,4 +106,34 @@ describe("setupDeepLinking", () => {
       },
     });
   });
+
+  it("does not exchange a PKCE code again when Supabase already restored the session", async () => {
+    jest.useFakeTimers();
+    (Linking.getInitialURL as jest.Mock).mockResolvedValue(
+      "pinaymate://verification-success?code=already-used-code&type=signup"
+    );
+    (supabase.auth.getSession as jest.Mock).mockResolvedValue({
+      data: { session },
+    });
+    (ensureUserProfile as jest.Mock).mockResolvedValue(undefined);
+
+    setupDeepLinking();
+    await flushDeepLinkWork();
+
+    expect(supabase.auth.exchangeCodeForSession).not.toHaveBeenCalled();
+    expect(ensureUserProfile).toHaveBeenCalledWith({
+      userId: "user-123",
+      email: "maria@example.com",
+      firstName: "Maria",
+      userType: "filipina",
+    });
+    await jest.advanceTimersByTimeAsync(500);
+    expect(router.replace).toHaveBeenCalledWith({
+      pathname: "/(auth)/verification-success",
+      params: {
+        firstName: "Maria",
+        userType: "filipina",
+      },
+    });
+  });
 });

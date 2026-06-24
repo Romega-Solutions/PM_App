@@ -55,6 +55,22 @@ async function handleDeepLink(url: string) {
     const isPasswordRecovery = authType === "recovery";
 
     if (authCode) {
+      let existingSession: Session | null = null;
+
+      try {
+        const currentSession = await supabase.auth.getSession();
+        existingSession = currentSession?.data?.session ?? null;
+      } catch {
+        existingSession = null;
+      }
+
+      if (existingSession) {
+        await handleSessionEstablished(existingSession, {
+          mode: isPasswordRecovery ? "password-recovery" : "verification",
+        });
+        return;
+      }
+
       const { data, error } =
         await supabase.auth.exchangeCodeForSession(authCode);
 
