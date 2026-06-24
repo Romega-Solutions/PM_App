@@ -36,6 +36,7 @@ export default function VoiceCallScreen() {
 
   const displayName = userName || "this match";
   const canOpenSafetyReport = Boolean(userId);
+  const isDemoCall = isDemo === "true";
 
   const handleClose = () => {
     router.back();
@@ -65,7 +66,9 @@ export default function VoiceCallScreen() {
 
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerCopy}>
-          <Text style={styles.eyebrow}>Voice call</Text>
+          <Text style={styles.eyebrow}>
+            {isDemoCall ? "Demo voice preview" : "Voice call"}
+          </Text>
           <Text style={styles.headerTitle} numberOfLines={1}>
             {displayName}
           </Text>
@@ -109,12 +112,18 @@ export default function VoiceCallScreen() {
         <View style={styles.statusCard}>
           <View style={styles.statusPill}>
             <ShieldCheck size={16} color={theme.colors.neutral.white} />
-            <Text style={styles.statusPillText}>Safety first</Text>
+            <Text style={styles.statusPillText}>
+              {isDemoCall ? "Local preview" : "Safety first"}
+            </Text>
           </View>
 
-          <Text style={styles.title}>Keep this chat in messages</Text>
+          <Text style={styles.title}>
+            {isDemoCall ? "Simulated call screen" : "Keep this chat in messages"}
+          </Text>
           <Text style={styles.description}>
-            This screen does not start voice calls. No call was started and no microphone permission was requested.
+            {isDemoCall
+              ? "This beta preview opens like a call without requesting microphone permission or contacting a real member."
+              : "This screen does not start voice calls. No call was started and no microphone permission was requested."}
           </Text>
 
           <View style={styles.divider} />
@@ -122,9 +131,9 @@ export default function VoiceCallScreen() {
           <View style={styles.noteRow}>
             <MicOff size={20} color="rgba(255,255,255,0.78)" />
             <Text style={styles.noteText}>
-              You are still in chat with {displayName}. Keep the conversation in
-              messages, and use report, block, or unmatch if anything feels
-              unsafe.
+              {isDemoCall
+                ? `You can preview the call entry point for ${displayName}. Ending returns to the seeded chat, and report or block remains demo-safe.`
+                : `You are still in chat with ${displayName}. Keep the conversation in messages, and use report, block, or unmatch if anything feels unsafe.`}
             </Text>
           </View>
         </View>

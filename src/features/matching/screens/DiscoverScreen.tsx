@@ -50,6 +50,7 @@ import { ProfileCard, ProfileCardData } from "../components/ProfileCard";
 import { ProfileDetailsModal } from "../components/ProfileDetailsModal";
 import { useSwipeGesture } from "../hooks/useSwipeGesture";
 import { getSeedProfiles, isSeedProfileId } from "../data/seedProfiles";
+import { getSeedConversationForProfileId } from "@/src/features/messaging/data/seedConversations";
 import { useAppTheme } from "@/src/theme/ThemeContext";
 import { makeStyles } from "@/src/theme/makeStyles";
 
@@ -436,10 +437,31 @@ export const DiscoverScreen: React.FC = () => {
   }, []);
 
   const handleSendMessage = useCallback(() => {
+    const profile = matchedProfile;
+
     setShowMatchModal(false);
     setMatchedProfile(null);
+
+    if (profile?.demo || (profile?.id && isSeedProfileId(profile.id))) {
+      const seedConversation = getSeedConversationForProfileId(profile.id);
+
+      if (seedConversation) {
+        router.push({
+          pathname: "/chat",
+          params: {
+            userId: seedConversation.other_user.id,
+            userName: seedConversation.other_user.first_name,
+            isOnline: seedConversation.other_user.is_active ? "true" : "false",
+            conversationId: seedConversation.id,
+            isDemo: "true",
+          },
+        });
+        return;
+      }
+    }
+
     router.push("/(main)/likes");
-  }, [router]);
+  }, [matchedProfile, router]);
 
   const handleReportCurrentProfile = useCallback(() => {
     if (!currentProfile) return;

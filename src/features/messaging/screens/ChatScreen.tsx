@@ -127,6 +127,7 @@ export default function ChatScreen() {
   const isDemoChat =
     params.isDemo === "true" ||
     Boolean(activeConversationId && isSeedConversationId(activeConversationId));
+  const defaultEmoji = String.fromCodePoint(0x1f60a);
   const messagingUserId = isDemoChat
     ? currentUserId || DEMO_CURRENT_USER_ID
     : currentUserId;
@@ -651,13 +652,13 @@ export default function ChatScreen() {
     });
   }, [isDemoChat, router, recipientId, userName, params.userImage]);
 
-  // Emoji picker handler
   const handleEmojiPick = useCallback(() => {
-    Alert.alert(
-      "Use your keyboard for emoji",
-      "The emoji picker did not open. You can still type an emoji with your keyboard.",
-    );
-  }, []);
+    setInputText((current) => {
+      const prefix = current.trim().length > 0 ? `${current} ` : "";
+      return `${prefix}${defaultEmoji}`;
+    });
+    inputRef.current?.focus();
+  }, [defaultEmoji]);
 
   // ==================== END HANDLER FUNCTIONS ====================
 
@@ -894,7 +895,7 @@ export default function ChatScreen() {
         )}
         <Text style={styles.safetyReminderText}>
           {isDemoChat
-            ? "Demo chat: replies append locally for this beta conversation. No live messages, reports, uploads, or safety actions are sent."
+            ? "Demo chat: replies, photos, and safety actions run locally for this beta conversation. Live delivery and moderation stay ready for real conversations."
             : "Report first if support should review this chat. Block stops contact. Unmatch only leaves the connection."}
         </Text>
         <TouchableOpacity
