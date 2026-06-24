@@ -15,6 +15,7 @@
  */
 
 import { supabase } from "@/src/config/supabase";
+import { LaunchStateNotice } from "@/src/components/ui/LaunchStateNotice";
 import {
   fetchDiscoverProfiles,
   likeProfile,
@@ -610,6 +611,15 @@ export const DiscoverScreen: React.FC = () => {
             </Text>
           </View>
         </View>
+
+        <LaunchStateNotice
+          testID="discover-launch-state-notice"
+          title="Discovery depends on privacy settings"
+          message="Review details before liking. Discovery can show demo or available profiles, but visibility, matching, and chat access still depend on privacy settings, profile review, safety controls, and account availability."
+          meta="Preference-based discovery. Visibility settings are respected; report anything that feels off."
+          accessibilityLabel="Discovery depends on privacy settings. Review details before liking. Visibility, matching, and chat access depend on privacy settings, profile review, safety controls, and account availability."
+          style={styles.launchNotice}
+        />
       </View>
 
       {/* Cards Container */}
@@ -806,6 +816,9 @@ const useStyles = makeStyles((theme) => ({
     fontSize: 11,
     fontFamily: "DMSans-Bold",
     color: theme.colors.neutral.white,
+  },
+  launchNotice: {
+    marginBottom: 0,
   },
 
   // Cards
