@@ -570,6 +570,8 @@ export default function ChatScreen() {
 
   // ==================== END HANDLER FUNCTIONS ====================
 
+  const keyExtractor = useCallback((item: MessageType) => item.id, []);
+
   const renderItem = useCallback(({ item }: { item: MessageType }) => {
     return (
       <MessageBubble
@@ -580,7 +582,7 @@ export default function ChatScreen() {
         userImage={params.userImage}
       />
     );
-  }, [currentUserId, userName, params.userImage]);
+  }, [currentUserId, userName, params.userImage, handleSwipeToReply]);
 
   // Show loading state
   if (loading && dbMessages.length === 0) {
@@ -789,7 +791,7 @@ export default function ChatScreen() {
       <FlatList
         ref={flatListRef}
         data={dbMessages}
-        keyExtractor={(item) => item.id}
+        keyExtractor={keyExtractor}
         renderItem={renderItem}
         style={styles.messagesContainer}
         contentContainerStyle={[

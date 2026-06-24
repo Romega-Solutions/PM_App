@@ -65,8 +65,6 @@
     "expo-updates": "~29.0.11",
     "expo-web-browser": "~15.0.11",
     "lucide-react-native": "^0.562.0",
-    "nativewind": "^4.2.1",
-    "prettier-plugin-tailwindcss": "^0.5.14",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
@@ -79,7 +77,6 @@
     "react-native-vector-icons": "^10.3.0",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.5.1",
-    "tailwindcss": "^3.4.17",
     "zod": "^4.3.5",
     "zustand": "^5.0.8"
   },

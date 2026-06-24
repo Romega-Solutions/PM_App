@@ -1,4 +1,9 @@
-import React from "react";
+const fs = require('fs');
+const path = require('path');
+
+const filePath = path.join(process.cwd(), 'src/features/messaging/components/MessageBubble.tsx');
+
+const content = `import React from "react";
 import { View, Text, Image, StyleSheet } from "react-native";
 import type { Message as MessageType } from "@/src/features/messaging/types/messaging.types";
 import { Check, CheckCheck, AlertCircle, ShieldAlert, Reply } from "lucide-react-native";
@@ -36,8 +41,8 @@ const formatTime = (dateString: string) => {
   const minutes = date.getMinutes();
   const ampm = hours >= 12 ? "PM" : "AM";
   const formattedHours = hours % 12 || 12;
-  const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
-  return `${formattedHours}:${formattedMinutes} ${ampm}`;
+  const formattedMinutes = minutes < 10 ? \`0\${minutes}\` : minutes;
+  return \`\${formattedHours}:\${formattedMinutes} \${ampm}\`;
 };
 
 const renderMessageStatus = (status: MessageType["status"]) => {
@@ -62,7 +67,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
   const showAvatar = !isMyMessage;
   const messageAuthor = isMyMessage ? "You" : userName;
   const messageContent = message.type === "image" ? "Photo message" : message.text;
-  const messageStatus = isMyMessage && message.status ? `, ${message.status}` : "";
+  const messageStatus = isMyMessage && message.status ? \`, \${message.status}\` : "";
 
   // Entry animations
   const opacityAnim = useSharedValue(0);
@@ -147,7 +152,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
       <GestureDetector gesture={panGesture}>
         <Animated.View
           accessible
-          accessibilityLabel={`${messageAuthor}: ${messageContent}, ${formatTime(message.created_at)}${messageStatus}`}
+          accessibilityLabel={\`\${messageAuthor}: \${messageContent}, \${formatTime(message.created_at)}\${messageStatus}\`}
           style={[
             styles.messageRow,
             isMyMessage ? styles.myMessageRow : styles.theirMessageRow,
@@ -159,7 +164,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
               <Image
                 source={{ uri: userImage }}
                 style={styles.messageAvatar}
-                accessibilityLabel={`${userName} profile photo`}
+                accessibilityLabel={\`\${userName} profile photo\`}
               />
             ) : (
               <View style={styles.messageAvatarPlaceholder}>
@@ -182,7 +187,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
                   source={{ uri: message.image_url }}
                   style={styles.messageImage}
                   resizeMode="cover"
-                  accessibilityLabel={`${messageAuthor} sent a photo`}
+                  accessibilityLabel={\`\${messageAuthor} sent a photo\`}
                 />
                 <View
                   style={styles.imageSafetyStrip}
@@ -367,3 +372,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 });
+`;
+
+fs.writeFileSync(filePath, content, 'utf8');
+console.log('Successfully updated MessageBubble.tsx');

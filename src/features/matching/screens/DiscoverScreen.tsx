@@ -123,6 +123,8 @@ export const DiscoverScreen: React.FC = () => {
   const resetPositionRef = React.useRef<(() => void) | null>(null);
 
   const previewPan = React.useRef(new Animated.ValueXY()).current;
+  const emptyPanHandlers = React.useMemo(() => ({}), []);
+
   const previewRotate = previewPan.x.interpolate({
     inputRange: [-1, 0, 1],
     outputRange: ["0deg", "0deg", "0deg"],
@@ -404,6 +406,9 @@ export const DiscoverScreen: React.FC = () => {
   }, [resetPosition]);
 
 
+  const handleShowInfo = useCallback(() => setShowInfo(true), []);
+  const handleCloseInfo = useCallback(() => setShowInfo(false), []);
+
   const handleKeepSwiping = useCallback(() => {
     setShowMatchModal(false);
     setMatchedProfile(null);
@@ -589,7 +594,7 @@ export const DiscoverScreen: React.FC = () => {
             profile={profiles[currentIndex + 1]}
             pan={previewPan}
             rotate={previewRotate}
-            panHandlers={{}}
+            panHandlers={emptyPanHandlers}
             style={styles.nextCard}
             isPreview
           />
@@ -601,7 +606,7 @@ export const DiscoverScreen: React.FC = () => {
             profile={currentProfile}
             pan={pan}
             rotate={rotate}
-            panHandlers={actionPending ? {} : panResponder.panHandlers}
+            panHandlers={actionPending ? emptyPanHandlers : panResponder.panHandlers}
           />
         )}
       </View>
@@ -652,7 +657,7 @@ export const DiscoverScreen: React.FC = () => {
         onPass={handlePass}
         onLike={handleLike}
         onSuperLike={handleSuperLike}
-        onInfo={() => setShowInfo(true)}
+        onInfo={handleShowInfo}
         disabled={!currentProfile || actionPending}
         bottomInset={insets.bottom}
       />
@@ -661,7 +666,7 @@ export const DiscoverScreen: React.FC = () => {
       <ProfileDetailsModal
         visible={showInfo}
         profile={currentProfile}
-        onClose={() => setShowInfo(false)}
+        onClose={handleCloseInfo}
         onReport={handleReportCurrentProfile}
       />
 

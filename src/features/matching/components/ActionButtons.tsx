@@ -33,7 +33,7 @@ export interface ActionButtonsProps {
   bottomInset?: number;
 }
 
-export const ActionButtons: React.FC<ActionButtonsProps> = ({
+export const ActionButtons: React.FC<ActionButtonsProps> = React.memo(({
   onPass,
   onLike,
   onSuperLike,
@@ -143,7 +143,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       </TouchableOpacity>
     </View>
   );
-};
+});
 
 const useStyles = makeStyles((theme) => ({
   actionsContainer: {
@@ -214,3 +214,5 @@ const useStyles = makeStyles((theme) => ({
     opacity: 0.45,
   },
 }));
+
+ActionButtons.displayName = 'ActionButtons';
