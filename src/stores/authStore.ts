@@ -20,7 +20,7 @@ import { supabase } from "@/src/config/supabase";
 import { authStorage } from "@/src/config/authStorage";
 import type { Session } from "@supabase/supabase-js";
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "./persistStorage";
 import type { UserType } from "../features/auth/api/authApi";
 
 type User = {

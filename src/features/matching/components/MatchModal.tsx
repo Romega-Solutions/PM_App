@@ -33,6 +33,7 @@ export interface MatchedProfile {
   id: string;
   first_name: string;
   photos?: string[];
+  is_active?: boolean;
 }
 
 export interface MatchModalProps {

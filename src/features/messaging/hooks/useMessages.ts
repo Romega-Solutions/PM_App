@@ -31,6 +31,7 @@ interface UseMessagesReturn {
   sendText: (text: string) => Promise<Message | null>;
   sendImage: (imageUrl: string) => Promise<Message | null>;
   markAsRead: () => Promise<void>;
+  markMessageIdsAsReadLocal: (messageIds: string[]) => void;
   refresh: () => Promise<void>;
   addMessage: (message: Message) => void;
 }
@@ -163,6 +164,25 @@ export function useMessages({
   }, [conversationId, userId]);
 
   /**
+   * Apply read-receipt updates received over realtime.
+   */
+  const markMessageIdsAsReadLocal = useCallback((messageIds: string[]) => {
+    if (messageIds.length === 0) return;
+
+    setMessages((prev) =>
+      prev.map((msg) =>
+        messageIds.includes(msg.id)
+          ? {
+              ...msg,
+              status: "read",
+              read_at: msg.read_at || new Date().toISOString(),
+            }
+          : msg,
+      ),
+    );
+  }, []);
+
+  /**
    * Add message to local state (from realtime)
    */
   const addMessage = useCallback((message: Message) => {
@@ -200,6 +220,7 @@ export function useMessages({
     sendText,
     sendImage,
     markAsRead,
+    markMessageIdsAsReadLocal,
     refresh,
     addMessage,
   };
