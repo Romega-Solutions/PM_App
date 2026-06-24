@@ -117,6 +117,7 @@ export default function ChatScreen() {
     message: string;
     action?: "block" | "unmatch";
   } | null>(null);
+  const [safetyMenuOpen, setSafetyMenuOpen] = useState(false);
 
   const userName = params.userName || "User";
   const isOnline = params.isOnline === "true";
@@ -381,23 +382,15 @@ export default function ChatScreen() {
   ]);
 
   const handleBlockUser = useCallback(() => {
+    setSafetyMenuOpen(false);
+
     if (isDemoChat) {
-      Alert.alert(
-        `Block ${userName}?`,
-        "This records a local demo block only. No live member is affected, and the real block flow remains active for live conversations.",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Block in demo",
-            style: "destructive",
-            onPress: () =>
-              Alert.alert(
-                "Demo block recorded",
-                `${userName} would be blocked in a live conversation. No backend safety action was sent for this seeded chat.`,
-              ),
-          },
-        ],
-      );
+      const message = `${userName} would be blocked in a live conversation. No backend safety action was sent for this seeded chat.`;
+      setSafetyFeedback({
+        title: "Demo block recorded",
+        message,
+      });
+      AccessibilityInfo.announceForAccessibility(message);
       return;
     }
 
@@ -457,23 +450,15 @@ export default function ChatScreen() {
   }, [isDemoChat, recipientId, router, userName]);
 
   const handleUnmatchUser = useCallback(() => {
+    setSafetyMenuOpen(false);
+
     if (isDemoChat) {
-      Alert.alert(
-        `Unmatch ${userName}?`,
-        "This records a local demo unmatch only. No live member is affected, and the real unmatch flow remains active for live conversations.",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Unmatch in demo",
-            style: "destructive",
-            onPress: () =>
-              Alert.alert(
-                "Demo unmatch recorded",
-                `${userName} would be removed from your matches in a live conversation. No backend safety action was sent for this seeded chat.`,
-              ),
-          },
-        ],
-      );
+      const message = `${userName} would be removed from your matches in a live conversation. No backend safety action was sent for this seeded chat.`;
+      setSafetyFeedback({
+        title: "Demo unmatch recorded",
+        message,
+      });
+      AccessibilityInfo.announceForAccessibility(message);
       return;
     }
 
@@ -533,6 +518,8 @@ export default function ChatScreen() {
   }, [isDemoChat, recipientId, router, userName]);
 
   const handleReportUser = useCallback(() => {
+    setSafetyMenuOpen(false);
+
     if (!recipientId) {
       Alert.alert(
         "Could not open report form",
@@ -567,6 +554,11 @@ export default function ChatScreen() {
   // More options handler
   const handleMoreOptions = useCallback(() => {
     if (isSafetyActionPending) return;
+
+    if (Platform.OS === "web" || isDemoChat) {
+      setSafetyMenuOpen((current) => !current);
+      return;
+    }
 
     const options = [
       "Report safety concern",
@@ -623,6 +615,7 @@ export default function ChatScreen() {
     handleBlockUser,
     handleReportUser,
     handleUnmatchUser,
+    isDemoChat,
     isSafetyActionPending,
   ]);
 
@@ -916,6 +909,73 @@ export default function ChatScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {safetyMenuOpen && (
+        <View
+          style={styles.safetyOptionsPanel}
+          accessibilityRole="menu"
+          accessibilityLabel={`Safety options for ${userName}`}
+        >
+          <TouchableOpacity
+            style={styles.safetyOptionButton}
+            onPress={handleReportUser}
+            activeOpacity={0.84}
+            accessibilityRole="menuitem"
+            accessibilityLabel={`Report safety concern about ${userName}`}
+            accessibilityHint="Opens the private safety report form"
+          >
+            <ShieldAlert size={18} color={WHITE} strokeWidth={2.4} />
+            <View style={styles.safetyOptionContent}>
+              <Text style={styles.safetyOptionTitle}>Report safety concern</Text>
+              <Text style={styles.safetyOptionText}>
+                Opens a private report for support review.
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.safetyOptionGrid}>
+            <TouchableOpacity
+              style={[styles.safetyOptionButton, styles.safetyOptionDanger]}
+              onPress={handleBlockUser}
+              activeOpacity={0.84}
+              accessibilityRole="menuitem"
+              accessibilityLabel={
+                isDemoChat ? `Record demo block for ${userName}` : `Block ${userName}`
+              }
+            >
+              <ShieldAlert size={17} color={WHITE} strokeWidth={2.4} />
+              <Text style={styles.safetyOptionTitle}>
+                {isDemoChat ? "Demo block" : "Block member"}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.safetyOptionButton, styles.safetyOptionSecondary]}
+              onPress={handleUnmatchUser}
+              activeOpacity={0.84}
+              accessibilityRole="menuitem"
+              accessibilityLabel={
+                isDemoChat
+                  ? `Record demo unmatch with ${userName}`
+                  : `Unmatch with ${userName}`
+              }
+            >
+              <X size={17} color={WHITE} strokeWidth={2.4} />
+              <Text style={styles.safetyOptionTitle}>Unmatch only</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={styles.safetyOptionClose}
+            onPress={() => setSafetyMenuOpen(false)}
+            activeOpacity={0.84}
+            accessibilityRole="button"
+            accessibilityLabel="Close safety options"
+          >
+            <Text style={styles.safetyOptionCloseText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Messages */}
       <FlatList
@@ -1437,6 +1497,70 @@ const useStyles = makeStyles((theme) => {
   },
   safetyReminderButtonText: {
     color: WHITE,
+    fontSize: 13,
+    fontFamily: "DMSans-Bold",
+  },
+  safetyOptionsPanel: {
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 10,
+    padding: 12,
+    borderRadius: 18,
+    backgroundColor: "rgba(18, 10, 38, 0.96)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+    gap: 10,
+  },
+  safetyOptionGrid: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  safetyOptionButton: {
+    minHeight: 54,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: "rgba(141, 105, 246, 0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(141, 105, 246, 0.3)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+  },
+  safetyOptionDanger: {
+    backgroundColor: "rgba(255, 107, 107, 0.18)",
+    borderColor: "rgba(255, 107, 107, 0.38)",
+  },
+  safetyOptionSecondary: {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderColor: "rgba(255,255,255,0.16)",
+  },
+  safetyOptionContent: {
+    flex: 1,
+  },
+  safetyOptionTitle: {
+    color: WHITE,
+    fontSize: 13,
+    fontFamily: "DMSans-Bold",
+    lineHeight: 18,
+  },
+  safetyOptionText: {
+    color: TEXT_SECONDARY,
+    fontSize: 12,
+    fontFamily: "DMSans-Regular",
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  safetyOptionClose: {
+    minHeight: 42,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  safetyOptionCloseText: {
+    color: TEXT_SECONDARY,
     fontSize: 13,
     fontFamily: "DMSans-Bold",
   },
