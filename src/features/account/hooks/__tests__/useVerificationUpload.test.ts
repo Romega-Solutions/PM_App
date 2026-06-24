@@ -1,4 +1,7 @@
-import { getVerificationFailureState } from "../useVerificationUpload";
+import {
+  getOcrFallbackVerificationPayload,
+  getVerificationFailureState,
+} from "../useVerificationUpload";
 
 jest.mock("expo-image-picker", () => ({
   requestCameraPermissionsAsync: jest.fn(),
@@ -28,6 +31,21 @@ describe("getVerificationFailureState", () => {
       documentUri: "",
       documentStatus: "rejected",
       error: "Could not read the document.",
+    });
+  });
+});
+
+describe("getOcrFallbackVerificationPayload", () => {
+  it("submits OCR failures as unapproved manual-review verification", () => {
+    expect(
+      getOcrFallbackVerificationPayload("selfie-uri", "document-uri"),
+    ).toEqual({
+      selfieUri: "selfie-uri",
+      documentUri: "document-uri",
+      isVerified: false,
+      mismatchReasons: [
+        "Document OCR unavailable during beta test; manual review required",
+      ],
     });
   });
 });
