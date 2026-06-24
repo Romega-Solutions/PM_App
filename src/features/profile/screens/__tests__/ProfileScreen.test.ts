@@ -44,6 +44,15 @@ jest.mock("@/src/stores/profileStore", () => ({
   }),
 }));
 
+jest.mock("@/src/stores/authStore", () => ({
+  useAuthStore: jest.fn((selector) =>
+    selector({
+      isDemoMode: false,
+      endDemoSession: jest.fn(),
+    }),
+  ),
+}));
+
 jest.mock("@/src/features/profile/components/ProfileHeader", () => ({
   ProfileHeader: "ProfileHeader",
 }));

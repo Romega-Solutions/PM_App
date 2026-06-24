@@ -68,11 +68,12 @@ export default function ReportUserModal() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDemoMode = useAuthStore((state) => state.isDemoMode);
-  const { userId, userName, conversationId, source } = useLocalSearchParams<{
+  const { userId, userName, conversationId, source, isDemo } = useLocalSearchParams<{
     userId?: string;
     userName?: string;
     conversationId?: string;
     source?: string;
+    isDemo?: string;
   }>();
   const [reason, setReason] = useState(REASONS[0].label);
   const [details, setDetails] = useState("");
@@ -86,6 +87,7 @@ export default function ReportUserModal() {
   const reportSource = getSafeReportSource(source);
   const isSeedReport =
     isDemoMode ||
+    isDemo === "true" ||
     (userId ? isSeedProfileId(userId) : false) ||
     (conversationId ? isSeedConversationId(conversationId) : false);
   const toggleShouldBlock = () => {

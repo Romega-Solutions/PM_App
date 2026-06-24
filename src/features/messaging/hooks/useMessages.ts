@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  createSeedOutgoingImageMessage,
   createSeedOutgoingMessage,
   DEMO_CURRENT_USER_ID,
   getSeedMessages,
@@ -194,8 +195,16 @@ export function useMessages({
   const sendImage = useCallback(
     async (imageUrl: string) => {
       try {
-        if (isSeedConversation) {
-          throw new Error("Photo sharing is not available in demo chat.");
+        if (isSeedConversation && conversationId) {
+          const data = createSeedOutgoingImageMessage({
+            conversationId,
+            currentUserId: userId || DEMO_CURRENT_USER_ID,
+            recipientId,
+            imageUrl,
+          });
+
+          addMessageToStore(conversationId, data);
+          return data;
         }
 
         if (!conversationId) {

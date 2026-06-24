@@ -1,4 +1,5 @@
 import { supabase } from "@/src/config/supabase";
+import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import {
@@ -55,6 +56,11 @@ export function useUploadPhoto() {
       setError(null);
       setProgress(0);
 
+      if (isBetaDemoModeEnabled()) {
+        setProgress(100);
+        return { success: true, url: imageUri };
+      }
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -108,6 +114,10 @@ export function useUploadPhoto() {
   ): Promise<boolean> => {
     try {
       setError(null);
+
+      if (isBetaDemoModeEnabled()) {
+        return existingPhotos.includes(photoUrl);
+      }
 
       // Remove from storage
       const deleteResult = await deleteProfilePhoto(photoUrl);

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
 import { UpdateProfileData, updateUserProfile } from "../api/profileApi";
 
 const PROFILE_UPDATE_ERROR =
@@ -12,6 +13,10 @@ export function useUpdateProfile() {
     try {
       setUpdating(true);
       setError(null);
+
+      if (isBetaDemoModeEnabled()) {
+        return true;
+      }
 
       const result = await updateUserProfile(data);
 

@@ -353,3 +353,32 @@ export function createSeedOutgoingMessage({
     updated_at: timestamp,
   };
 }
+
+export function createSeedOutgoingImageMessage({
+  conversationId,
+  currentUserId = DEMO_CURRENT_USER_ID,
+  recipientId,
+  imageUrl,
+}: {
+  conversationId: string;
+  currentUserId?: string;
+  recipientId: string;
+  imageUrl: string;
+}): Message {
+  const timestamp = new Date().toISOString();
+
+  return {
+    id: `${conversationId}-local-image-${Date.now()}`,
+    conversation_id: conversationId,
+    sender_id: currentUserId || DEMO_CURRENT_USER_ID,
+    recipient_id: recipientId,
+    text: "Photo",
+    type: "image",
+    image_url: imageUrl,
+    status: "sent",
+    is_deleted: false,
+    delivery_method: "demo-local",
+    created_at: timestamp,
+    updated_at: timestamp,
+  };
+}

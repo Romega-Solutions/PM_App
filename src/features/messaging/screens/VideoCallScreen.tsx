@@ -32,10 +32,11 @@ const TEXT_MUTED = "rgba(255,255,255,0.62)";
 export default function VideoCallScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { userName, userAvatar, userId } = useLocalSearchParams<{
+  const { userName, userAvatar, userId, isDemo } = useLocalSearchParams<{
     userName: string;
     userAvatar: string;
     userId: string;
+    isDemo?: string;
   }>();
 
   const displayName = userName || "this match";
@@ -54,6 +55,7 @@ export default function VideoCallScreen() {
         userId,
         userName: displayName,
         source: "chat",
+        ...(isDemo === "true" ? { isDemo: "true" } : {}),
       },
     });
   };

@@ -295,15 +295,6 @@ export default function ChatScreen() {
         return;
       }
 
-      if (isDemoChat) {
-        const message =
-          "Photo sharing is not available in demo chat. Text replies stay local on this device.";
-        setMediaError(message);
-        AccessibilityInfo.announceForAccessibility(message);
-        Alert.alert("Demo chat", message);
-        return;
-      }
-
       if (!activeConversationId) {
         const message =
           "Photo sharing unlocks after your first text starts this matched conversation. Send a short message first, then attach a photo.";
@@ -337,6 +328,15 @@ export default function ChatScreen() {
         const imageUri = result.assets[0].uri;
 
         try {
+          if (isDemoChat) {
+            await sendImageToDb(imageUri);
+            AccessibilityInfo.announceForAccessibility(
+              "Demo photo message added.",
+            );
+            flatListRef.current?.scrollToEnd({ animated: true });
+            return;
+          }
+
           // Upload image to Supabase Storage
           const imageUrl = await uploadImage(
             imageUri,
@@ -382,8 +382,20 @@ export default function ChatScreen() {
   const handleBlockUser = useCallback(() => {
     if (isDemoChat) {
       Alert.alert(
-        "Demo chat",
-        "Safety actions are disabled for seeded demo conversations. Live chats keep report, block, and unmatch available.",
+        `Block ${userName}?`,
+        "This records a local demo block only. No live member is affected, and the real block flow remains active for live conversations.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Block in demo",
+            style: "destructive",
+            onPress: () =>
+              Alert.alert(
+                "Demo block recorded",
+                `${userName} would be blocked in a live conversation. No backend safety action was sent for this seeded chat.`,
+              ),
+          },
+        ],
       );
       return;
     }
@@ -446,8 +458,20 @@ export default function ChatScreen() {
   const handleUnmatchUser = useCallback(() => {
     if (isDemoChat) {
       Alert.alert(
-        "Demo chat",
-        "Unmatch is disabled for seeded demo conversations. Live chats keep report, block, and unmatch available.",
+        `Unmatch ${userName}?`,
+        "This records a local demo unmatch only. No live member is affected, and the real unmatch flow remains active for live conversations.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Unmatch in demo",
+            style: "destructive",
+            onPress: () =>
+              Alert.alert(
+                "Demo unmatch recorded",
+                `${userName} would be removed from your matches in a live conversation. No backend safety action was sent for this seeded chat.`,
+              ),
+          },
+        ],
       );
       return;
     }
@@ -508,14 +532,6 @@ export default function ChatScreen() {
   }, [isDemoChat, recipientId, router, userName]);
 
   const handleReportUser = useCallback(() => {
-    if (isDemoChat) {
-      Alert.alert(
-        "Demo chat",
-        "Reports are disabled for seeded demo conversations. Live chats can still be reported from Safety options.",
-      );
-      return;
-    }
-
     if (!recipientId) {
       Alert.alert(
         "Could not open report form",
@@ -531,6 +547,7 @@ export default function ChatScreen() {
         userName,
         conversationId: activeConversationId,
         source: "chat",
+        ...(isDemoChat ? { isDemo: "true" } : {}),
       },
     });
   }, [activeConversationId, isDemoChat, recipientId, router, userName]);
@@ -549,14 +566,6 @@ export default function ChatScreen() {
   // More options handler
   const handleMoreOptions = useCallback(() => {
     if (isSafetyActionPending) return;
-
-    if (isDemoChat) {
-      Alert.alert(
-        "Demo chat",
-        "This is a local seeded chat for testing replies. Safety actions and reports are only available in live conversations.",
-      );
-      return;
-    }
 
     const options = [
       "Report safety concern",
@@ -613,7 +622,6 @@ export default function ChatScreen() {
     handleBlockUser,
     handleReportUser,
     handleUnmatchUser,
-    isDemoChat,
     isSafetyActionPending,
   ]);
 
@@ -625,9 +633,10 @@ export default function ChatScreen() {
         userId: recipientId,
         userName: userName,
         userAvatar: params.userImage,
+        ...(isDemoChat ? { isDemo: "true" } : {}),
       },
     });
-  }, [router, recipientId, userName, params.userImage]);
+  }, [isDemoChat, router, recipientId, userName, params.userImage]);
 
   // Video call handler
   const handleVideoCall = useCallback(() => {
@@ -637,9 +646,10 @@ export default function ChatScreen() {
         userId: recipientId,
         userName: userName,
         userAvatar: params.userImage,
+        ...(isDemoChat ? { isDemo: "true" } : {}),
       },
     });
-  }, [router, recipientId, userName, params.userImage]);
+  }, [isDemoChat, router, recipientId, userName, params.userImage]);
 
   // Emoji picker handler
   const handleEmojiPick = useCallback(() => {
@@ -1117,14 +1127,13 @@ export default function ChatScreen() {
             <TouchableOpacity
               style={[
                 styles.mediaButton,
-                (uploading || isSafetyActionPending || isDemoChat) &&
-                  styles.mediaButtonDisabled,
+                (uploading || isSafetyActionPending) && styles.mediaButtonDisabled,
               ]}
               accessibilityLabel={
                 uploading
                   ? "Uploading photo"
                   : isDemoChat
-                    ? "Photo sharing unavailable in demo chat"
+                    ? "Attach demo photo"
                     : isSafetyActionPending
                     ? "Photo sharing paused"
                     : isFirstMessageSetup
@@ -1134,7 +1143,7 @@ export default function ChatScreen() {
               accessibilityRole="button"
               accessibilityHint={
                 isDemoChat
-                  ? "Demo chat supports local text replies only"
+                  ? "Opens your photo library and adds the image locally without uploading"
                   : isSafetyActionPending
                   ? "Photo sharing is paused while the safety action finishes"
                   : isFirstMessageSetup
@@ -1142,12 +1151,12 @@ export default function ChatScreen() {
                     : "Opens your photo library to send an image"
               }
               accessibilityState={{
-                disabled: uploading || isSafetyActionPending || isDemoChat,
+                disabled: uploading || isSafetyActionPending,
                 busy: uploading,
               }}
               activeOpacity={0.84}
               onPress={handleImagePick}
-              disabled={uploading || isSafetyActionPending || isDemoChat}
+              disabled={uploading || isSafetyActionPending}
             >
               {uploading ? (
                 <ActivityIndicator size="small" color={ACCENT_PURPLE} />
@@ -1246,7 +1255,7 @@ export default function ChatScreen() {
             {isFirstMessageSetup
               ? "Send a text first to start this matched conversation. Photo sharing stays locked until the chat exists."
               : isDemoChat
-                ? "Demo chat replies stay local on this device. Live conversations keep uploads, reports, and backend delivery."
+                ? "Demo chat replies and photos stay local on this device. Live conversations keep storage uploads, reports, and backend delivery."
               : "Only send photos you are comfortable sharing in this chat. Never send passwords, codes, ID documents, or payment details. Report pressure or threats from Safety options."}
           </Text>
         </View>

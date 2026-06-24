@@ -20,6 +20,7 @@
 import { useProfile } from "@/src/features/profile/hooks/userProfile";
 import { useUpdateProfile } from "@/src/features/profile/hooks/useUpdateProfile";
 import { useUploadPhoto } from "@/src/features/profile/hooks/useUploadPhoto";
+import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -44,6 +45,7 @@ export default function EditProfileScreen() {
   const styles = useStyles();
   const theme = useAppTheme();
   const router = useRouter();
+  const isDemoMode = isBetaDemoModeEnabled();
 
   // Use custom hooks
   const { profile, loading, refresh } = useProfile();
@@ -84,9 +86,17 @@ export default function EditProfileScreen() {
     if (result.success && result.url) {
       setProfileImage(result.url);
       setAllPhotos([result.url, ...allPhotos]);
-      Alert.alert("Success", "Photo uploaded successfully!");
-      // Refresh profile to get updated data
-      refresh();
+      Alert.alert(
+        "Success",
+        isDemoMode
+          ? "Demo photo added locally. Live uploads still save to storage when demo mode is off."
+          : "Photo uploaded successfully!",
+      );
+
+      if (!isDemoMode) {
+        // Refresh profile to get updated data
+        refresh();
+      }
     }
   };
 
@@ -100,7 +110,12 @@ export default function EditProfileScreen() {
     });
 
     if (success) {
-      Alert.alert("Success", "Profile updated successfully!");
+      Alert.alert(
+        "Success",
+        isDemoMode
+          ? "Demo profile changes saved locally for this preview."
+          : "Profile updated successfully!",
+      );
       router.back();
     } else {
       Alert.alert("Error", "Failed to update profile");

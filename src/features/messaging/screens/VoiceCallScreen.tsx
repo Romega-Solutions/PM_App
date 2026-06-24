@@ -27,10 +27,11 @@ export default function VoiceCallScreen() {
   const styles = useStyles();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { userName, userAvatar, userId } = useLocalSearchParams<{
+  const { userName, userAvatar, userId, isDemo } = useLocalSearchParams<{
     userName: string;
     userAvatar: string;
     userId: string;
+    isDemo?: string;
   }>();
 
   const displayName = userName || "this match";
@@ -49,6 +50,7 @@ export default function VoiceCallScreen() {
         userId,
         userName: displayName,
         source: "chat",
+        ...(isDemo === "true" ? { isDemo: "true" } : {}),
       },
     });
   };
