@@ -121,7 +121,7 @@ export default function HelpScreen() {
 
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.push("/(main)/profile")}
+          onPress={() => router.replace("/profile")}
           style={styles.backBtn}
           activeOpacity={0.78}
           accessibilityRole="button"

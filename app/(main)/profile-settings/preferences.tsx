@@ -127,7 +127,7 @@ export default function PreferencesScreen() {
         "Demo preferences saved",
         "These match settings update this beta preview only. Live preferences will save to your account when demo mode is off.",
       );
-      router.back();
+      router.replace("/profile");
       return;
     }
 
@@ -148,7 +148,7 @@ export default function PreferencesScreen() {
       });
 
       Alert.alert("Success", "Preferences updated successfully!");
-      router.back();
+      router.replace("/profile");
     } catch {
       console.error("Error saving preferences.");
       setSaveError(SAVE_PREFERENCES_ERROR);
@@ -199,7 +199,7 @@ export default function PreferencesScreen() {
 
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.push("/(main)/profile")}
+          onPress={() => router.replace("/profile")}
           style={styles.backBtn}
           activeOpacity={0.78}
           accessibilityRole="button"

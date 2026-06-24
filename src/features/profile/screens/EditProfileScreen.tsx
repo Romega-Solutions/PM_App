@@ -116,14 +116,14 @@ export default function EditProfileScreen() {
           ? "Demo profile changes saved locally for this preview."
           : "Profile updated successfully!",
       );
-      router.back();
+      router.replace("/profile");
     } else {
       Alert.alert("Error", "Failed to update profile");
     }
   };
 
   const handleBack = () => {
-    router.push("/(main)/profile");
+    router.replace("/profile");
   };
 
   if (loading) {

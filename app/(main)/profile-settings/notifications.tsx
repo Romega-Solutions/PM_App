@@ -209,7 +209,7 @@ export default function NotificationsScreen() {
 
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.push("/(main)/profile")}
+          onPress={() => router.replace("/profile")}
           style={styles.backBtn}
           accessibilityRole="button"
           accessibilityLabel="Back to profile"
