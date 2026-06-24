@@ -1,383 +1,397 @@
 // src/features/matching/api/__tests__/matchingApi.test.ts
 import { supabase } from "@/src/config/supabase";
-import { likeProfile, passProfile, superLikeProfile } from "../matchingApi";
+import {
+  fetchDiscoverProfiles,
+  getMatches,
+  likeProfile,
+  passProfile,
+  superLikeProfile,
+  undoLastSwipe,
+} from "../matchingApi";
 
 // Mock Supabase client
 jest.mock("@/src/config/supabase", () => ({
   supabase: {
     from: jest.fn(),
+    rpc: jest.fn(),
   },
 }));
 
-describe("likeProfile", () => {
-  const mockFromUserId = "user-123";
-  const mockToUserId = "user-456";
+function createQueryMock<T>(response: T) {
+  const query: any = {
+    select: jest.fn(() => query),
+    eq: jest.fn(() => query),
+    not: jest.fn(() => query),
+    gte: jest.fn(() => query),
+    lte: jest.fn(() => query),
+    limit: jest.fn(() => query),
+    single: jest.fn(() => Promise.resolve(response)),
+    then: (onFulfilled: any, onRejected: any) =>
+      Promise.resolve(response).then(onFulfilled, onRejected),
+  };
+
+  return query;
+}
+
+describe("fetchDiscoverProfiles", () => {
+  const mockUserId = "user-123";
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
   });
 
-  describe("✅ Success Cases", () => {
-    it("should successfully like a profile without match", async () => {
-      const mockLike = {
-        id: "like-123",
-        from_user_id: mockFromUserId,
-        to_user_id: mockToUserId,
-        is_match: false,
-        created_at: new Date().toISOString(),
-      };
-
-      // Mock insert like
-      const mockInsert = jest.fn().mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          single: jest.fn().mockResolvedValue({
-            data: mockLike,
-            error: null,
-          }),
-        }),
-      });
-
-      // Mock check for mutual like (none exists)
-      const mockSelect = jest.fn().mockReturnValue({
-        eq: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
-              data: null,
-              error: { code: "PGRST116" }, // Not found
-            }),
-          }),
-        }),
-      });
-
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === "likes") {
-          return {
-            insert: mockInsert,
-            select: mockSelect,
-          };
-        }
-      });
-
-      const result = await likeProfile(mockFromUserId, mockToUserId);
-
-      expect(result.success).toBe(true);
-      expect(result.isMatch).toBe(false);
-      expect(result.matchedProfile).toBeUndefined();
-    });
-
-    it("should create a match when mutual like exists", async () => {
-      const mockNewLike = {
-        id: "like-123",
-        from_user_id: mockFromUserId,
-        to_user_id: mockToUserId,
-        is_match: false,
-      };
-
-      const mockMutualLike = {
-        id: "like-456",
-        from_user_id: mockToUserId,
-        to_user_id: mockFromUserId,
-        is_match: false,
-      };
-
-      const mockMatchedProfile = {
-        id: mockToUserId,
+  it("reads candidates from discoverable_profiles and applies privacy filters", async () => {
+    const logSpy = jest
+      .spyOn(console, "log")
+      .mockImplementation(() => undefined);
+    const currentUser = {
+      id: mockUserId,
+      first_name: "John",
+      age: 32,
+      gender: "male",
+      user_type: "foreigner",
+      relationship_goal: "marriage",
+      interests: ["Travel", "Food"],
+      languages: ["English", "Tagalog"],
+      city: "Manila",
+      country: "Philippines",
+      looking_for_gender: "female",
+      age_preference_min: 24,
+      age_preference_max: 35,
+      is_verified: true,
+      is_active: true,
+    };
+    const safeCandidates = [
+      {
+        id: "candidate-strong",
         first_name: "Maria",
-        age: 25,
+        age: 29,
         gender: "female",
         user_type: "filipina",
-      };
+        relationship_goal: "marriage",
+        interests: ["Travel", "Food"],
+        languages: ["English", "Tagalog"],
+        city: "Manila",
+        country: "Philippines",
+        is_verified: true,
+        is_active: true,
+        last_active_at: new Date().toISOString(),
+      },
+      {
+        id: "candidate-weaker",
+        first_name: "Ana",
+        age: 34,
+        gender: "female",
+        user_type: "filipina",
+        relationship_goal: "dating",
+        interests: ["Books"],
+        languages: ["Tagalog"],
+        city: "Cebu",
+        country: "Philippines",
+        is_verified: false,
+        is_active: true,
+      },
+    ];
 
-      const mockUpdate = jest.fn().mockReturnValue({
-        eq: jest.fn().mockResolvedValue({ data: null, error: null }),
-      });
-
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === "likes") {
-          return {
-            insert: jest.fn().mockReturnValue({
-              select: jest.fn().mockReturnValue({
-                single: jest.fn().mockResolvedValue({
-                  data: mockNewLike,
-                  error: null,
-                }),
-              }),
-            }),
-            select: jest.fn().mockReturnValue({
-              eq: jest.fn().mockReturnValue({
-                eq: jest.fn().mockReturnValue({
-                  single: jest.fn().mockResolvedValue({
-                    data: mockMutualLike,
-                    error: null,
-                  }),
-                }),
-              }),
-            }),
-            update: mockUpdate,
-          };
-        } else if (table === "profiles") {
-          return {
-            select: jest.fn().mockReturnValue({
-              eq: jest.fn().mockReturnValue({
-                single: jest.fn().mockResolvedValue({
-                  data: mockMatchedProfile,
-                  error: null,
-                }),
-              }),
-            }),
-          };
-        }
-      });
-
-      const result = await likeProfile(mockFromUserId, mockToUserId);
-
-      expect(result.success).toBe(true);
-      expect(result.isMatch).toBe(true);
-      expect(result.matchedProfile).toEqual(mockMatchedProfile);
-      expect(mockUpdate).toHaveBeenCalledTimes(2); // Both likes updated
+    const currentUserQuery = createQueryMock({
+      data: currentUser,
+      error: null,
     });
+    const likedQuery = createQueryMock({
+      data: [{ to_user_id: "liked-1" }],
+      error: null,
+    });
+    const passedQuery = createQueryMock({
+      data: [{ to_user_id: "passed-1" }],
+      error: null,
+    });
+    const discoverableQuery = createQueryMock({
+      data: safeCandidates,
+      error: null,
+    });
+
+    (supabase.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "profiles") return currentUserQuery;
+      if (table === "likes") return likedQuery;
+      if (table === "passes") return passedQuery;
+      if (table === "discoverable_profiles") return discoverableQuery;
+      throw new Error(`Unexpected table: ${table}`);
+    });
+
+    const result = await fetchDiscoverProfiles(mockUserId, 1);
+
+    expect(result.error).toBeNull();
+    expect(result.data).toHaveLength(1);
+    expect(result.data?.[0].id).toBe("candidate-strong");
+    expect(result.data?.[0].matchScore).toBeGreaterThan(
+      result.data?.[1]?.matchScore ?? 0,
+    );
+    expect(supabase.from).toHaveBeenCalledWith("discoverable_profiles");
+    expect(discoverableQuery.select).toHaveBeenCalledWith(
+      expect.not.stringContaining("email"),
+    );
+    expect(discoverableQuery.eq).toHaveBeenCalledWith("user_type", "filipina");
+    expect(discoverableQuery.eq).toHaveBeenCalledWith("is_verified", true);
+    expect(discoverableQuery.eq).toHaveBeenCalledWith("is_active", true);
+    expect(discoverableQuery.eq).toHaveBeenCalledWith("gender", "female");
+    expect(discoverableQuery.gte).toHaveBeenCalledWith("age", 24);
+    expect(discoverableQuery.lte).toHaveBeenCalledWith("age", 35);
+    expect(discoverableQuery.not).toHaveBeenCalledWith(
+      "id",
+      "in",
+      "(liked-1,passed-1,user-123)",
+    );
+    expect(discoverableQuery.limit).toHaveBeenCalledWith(3);
+    logSpy.mockRestore();
   });
 
-  describe("❌ Error Cases", () => {
-    it("should handle database error when inserting like", async () => {
-      const mockError = {
-        message: "Database connection failed",
-        code: "PGRST500",
-      };
+  it("returns an empty list when the safe discovery view has no candidates", async () => {
+    const currentUserQuery = createQueryMock({
+      data: {
+        id: mockUserId,
+        user_type: "filipina",
+        looking_for_gender: "male",
+        is_verified: true,
+        is_active: true,
+      },
+      error: null,
+    });
+    const likedQuery = createQueryMock({ data: [], error: null });
+    const passedQuery = createQueryMock({ data: [], error: null });
+    const discoverableQuery = createQueryMock({ data: [], error: null });
 
-      (supabase.from as jest.Mock).mockReturnValue({
-        insert: jest.fn().mockReturnValue({
-          select: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
-              data: null,
-              error: mockError,
-            }),
-          }),
-        }),
-      });
-
-      const result = await likeProfile(mockFromUserId, mockToUserId);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe(mockError.message);
+    (supabase.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "profiles") return currentUserQuery;
+      if (table === "likes") return likedQuery;
+      if (table === "passes") return passedQuery;
+      if (table === "discoverable_profiles") return discoverableQuery;
+      throw new Error(`Unexpected table: ${table}`);
     });
 
-    it("should handle duplicate like error gracefully", async () => {
-      const duplicateError = {
-        message:
-          'duplicate key value violates unique constraint "likes_from_user_id_to_user_id_key"',
-        code: "23505",
-      };
+    const result = await fetchDiscoverProfiles(mockUserId);
 
-      (supabase.from as jest.Mock).mockReturnValue({
-        insert: jest.fn().mockReturnValue({
-          select: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
-              data: null,
-              error: duplicateError,
-            }),
-          }),
-        }),
-      });
-
-      const result = await likeProfile(mockFromUserId, mockToUserId);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain("duplicate");
-    });
-
-    it("should handle exception thrown during like process", async () => {
-      (supabase.from as jest.Mock).mockImplementation(() => {
-        throw new Error("Network error");
-      });
-
-      const result = await likeProfile(mockFromUserId, mockToUserId);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("Network error");
-    });
+    expect(result).toEqual({ data: [], error: null });
+    expect(supabase.from).toHaveBeenCalledWith("discoverable_profiles");
   });
 
-  describe("🔍 Edge Cases", () => {
-    it("should handle empty user IDs", async () => {
-      const result = await likeProfile("", mockToUserId);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBeDefined();
+  it("does not query discovery candidates when the current profile cannot be loaded", async () => {
+    const currentUserQuery = createQueryMock({
+      data: null,
+      error: { message: "Profile not found" },
     });
 
-    it("should handle same user liking themselves", async () => {
-      const sameUserId = "user-123";
-
-      (supabase.from as jest.Mock).mockReturnValue({
-        insert: jest.fn().mockReturnValue({
-          select: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
-              data: null,
-              error: {
-                message: "Cannot like yourself",
-                code: "CHECK_VIOLATION",
-              },
-            }),
-          }),
-        }),
-      });
-
-      const result = await likeProfile(sameUserId, sameUserId);
-
-      expect(result.success).toBe(false);
+    (supabase.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "profiles") return currentUserQuery;
+      throw new Error(`Unexpected table: ${table}`);
     });
 
-    it("should handle null profile data when match is created", async () => {
-      const mockNewLike = {
-        id: "like-123",
-        from_user_id: mockFromUserId,
-        to_user_id: mockToUserId,
-      };
-      const mockMutualLike = {
-        id: "like-456",
-        from_user_id: mockToUserId,
-        to_user_id: mockFromUserId,
-      };
+    const result = await fetchDiscoverProfiles(mockUserId);
 
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === "likes") {
-          return {
-            insert: jest.fn().mockReturnValue({
-              select: jest.fn().mockReturnValue({
-                single: jest
-                  .fn()
-                  .mockResolvedValue({ data: mockNewLike, error: null }),
-              }),
-            }),
-            select: jest.fn().mockReturnValue({
-              eq: jest.fn().mockReturnValue({
-                eq: jest.fn().mockReturnValue({
-                  single: jest
-                    .fn()
-                    .mockResolvedValue({ data: mockMutualLike, error: null }),
-                }),
-              }),
-            }),
-            update: jest.fn().mockReturnValue({
-              eq: jest.fn().mockResolvedValue({ data: null, error: null }),
-            }),
-          };
-        } else if (table === "profiles") {
-          return {
-            select: jest.fn().mockReturnValue({
-              eq: jest.fn().mockReturnValue({
-                single: jest
-                  .fn()
-                  .mockResolvedValue({ data: null, error: null }), // Profile not found
-              }),
-            }),
-          };
-        }
-      });
-
-      const result = await likeProfile(mockFromUserId, mockToUserId);
-
-      expect(result.success).toBe(true);
-      expect(result.isMatch).toBe(true);
-      expect(result.matchedProfile).toBeUndefined(); // Should handle gracefully
-    });
-
-    it("should handle UUID format validation", async () => {
-      const invalidUUID = "not-a-valid-uuid";
-
-      (supabase.from as jest.Mock).mockReturnValue({
-        insert: jest.fn().mockReturnValue({
-          select: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
-              data: null,
-              error: {
-                message: "invalid input syntax for type uuid",
-                code: "22P02",
-              },
-            }),
-          }),
-        }),
-      });
-
-      const result = await likeProfile(invalidUUID, mockToUserId);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain("uuid");
-    });
+    expect(result.data).toBeNull();
+    expect(result.error).toBe(
+      "Discovery could not load. Check your connection and try again.",
+    );
+    expect(supabase.from).not.toHaveBeenCalledWith("discoverable_profiles");
   });
 
-  describe("🔄 Race Conditions", () => {
-    it("should handle concurrent mutual likes", async () => {
-      // Simulate both users liking each other at the same time
-      const mockLike1 = {
-        id: "like-1",
-        from_user_id: mockFromUserId,
-        to_user_id: mockToUserId,
-      };
-      const mockLike2 = {
-        id: "like-2",
-        from_user_id: mockToUserId,
-        to_user_id: mockFromUserId,
-      };
-
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === "likes") {
-          return {
-            insert: jest.fn().mockReturnValue({
-              select: jest.fn().mockReturnValue({
-                single: jest
-                  .fn()
-                  .mockResolvedValue({ data: mockLike1, error: null }),
-              }),
-            }),
-            select: jest.fn().mockReturnValue({
-              eq: jest.fn().mockReturnValue({
-                eq: jest.fn().mockReturnValue({
-                  single: jest
-                    .fn()
-                    .mockResolvedValue({ data: mockLike2, error: null }),
-                }),
-              }),
-            }),
-            update: jest.fn().mockReturnValue({
-              eq: jest.fn().mockResolvedValue({ data: null, error: null }),
-            }),
-          };
-        } else if (table === "profiles") {
-          return {
-            select: jest.fn().mockReturnValue({
-              eq: jest.fn().mockReturnValue({
-                single: jest.fn().mockResolvedValue({
-                  data: { id: mockToUserId, first_name: "Maria" },
-                  error: null,
-                }),
-              }),
-            }),
-          };
-        }
-      });
-
-      const result = await likeProfile(mockFromUserId, mockToUserId);
-
-      expect(result.success).toBe(true);
-      expect(result.isMatch).toBe(true);
+  it("does not query discovery candidates before launch review approval", async () => {
+    const currentUserQuery = createQueryMock({
+      data: {
+        id: mockUserId,
+        user_type: "filipina",
+        looking_for_gender: "male",
+        is_verified: false,
+        is_active: true,
+      },
+      error: null,
     });
+
+    (supabase.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "profiles") return currentUserQuery;
+      throw new Error(`Unexpected table: ${table}`);
+    });
+
+    const result = await fetchDiscoverProfiles(mockUserId);
+
+    expect(result).toEqual({ data: [], error: null });
+    expect(supabase.from).not.toHaveBeenCalledWith("discoverable_profiles");
   });
 });
 
-describe("passProfile", () => {
-  const mockFromUserId = "user-123";
-  const mockToUserId = "user-456";
+describe("likeProfile", () => {
+  const mockFromUserId = "11111111-1111-4111-8111-111111111111";
+  const mockToUserId = "22222222-2222-4222-8222-222222222222";
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
+  });
+
+  it("calls the hardened like_profile RPC and returns a non-match", async () => {
+    (supabase.rpc as jest.Mock).mockResolvedValue({
+      data: {
+        success: true,
+        is_match: false,
+        matched_profile: null,
+        error: null,
+      },
+      error: null,
+    });
+
+    const result = await likeProfile(mockFromUserId, mockToUserId);
+
+    expect(result).toEqual({ success: true, isMatch: false });
+    expect(supabase.rpc).toHaveBeenCalledWith("like_profile", {
+      p_to_user_id: mockToUserId,
+    });
+    expect(supabase.from).not.toHaveBeenCalledWith("likes");
+  });
+
+  it("returns matched profile data from the hardened RPC", async () => {
+    const mockMatchedProfile = {
+      id: mockToUserId,
+      first_name: "Maria",
+      age: 25,
+      gender: "female",
+      user_type: "filipina",
+    };
+
+    (supabase.rpc as jest.Mock).mockResolvedValue({
+      data: {
+        success: true,
+        is_match: true,
+        matched_profile: mockMatchedProfile,
+        error: null,
+      },
+      error: null,
+    });
+
+    const result = await likeProfile(mockFromUserId, mockToUserId);
+
+    expect(result.success).toBe(true);
+    expect(result.isMatch).toBe(true);
+    expect(result.matchedProfile).toEqual(mockMatchedProfile);
+  });
+
+  it("handles RPC-level database errors", async () => {
+    const mockError = {
+      message: "Database connection failed",
+      code: "PGRST500",
+    };
+
+    (supabase.rpc as jest.Mock).mockResolvedValue({
+      data: null,
+      error: mockError,
+    });
+
+    const result = await likeProfile(mockFromUserId, mockToUserId);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe(
+      "Like did not send. Check your connection and try again.",
+    );
+  });
+
+  it("handles RPC business-rule errors", async () => {
+    (supabase.rpc as jest.Mock).mockResolvedValue({
+      data: {
+        success: false,
+        is_match: false,
+        matched_profile: null,
+        error: "This member is hidden by a safety setting",
+      },
+      error: null,
+    });
+
+    const result = await likeProfile(mockFromUserId, mockToUserId);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe(
+      "Like did not send. Check your connection and try again.",
+    );
+  });
+
+  it("handles exception thrown during like process", async () => {
+    const errorSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const networkError = new Error("Network error");
+    (supabase.rpc as jest.Mock).mockRejectedValue(networkError);
+
+    const result = await likeProfile(mockFromUserId, mockToUserId);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe(
+      "Like did not send. Check your connection and try again.",
+    );
+    expect(errorSpy).toHaveBeenCalledWith("Error liking profile.");
+    errorSpy.mockRestore();
+  });
+
+  it("rejects empty user IDs before calling the RPC", async () => {
+    const result = await likeProfile("", mockToUserId);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("Choose a member to like.");
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it("rejects same-user likes before calling the RPC", async () => {
+    const result = await likeProfile(mockFromUserId, mockFromUserId);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("You cannot like yourself.");
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid member IDs before calling the like RPC", async () => {
+    const result = await likeProfile(mockFromUserId, "not-a-member-id");
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe(
+      "This member could not be identified. Go back and try again.",
+    );
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+});
+describe("passProfile", () => {
+  const mockFromUserId = "11111111-1111-4111-8111-111111111111";
+  const mockToUserId = "22222222-2222-4222-8222-222222222222";
+
+  beforeEach(() => {
+    jest.resetAllMocks();
   });
 
   it("should successfully pass a profile", async () => {
-    (supabase.from as jest.Mock).mockReturnValue({
-      insert: jest.fn().mockResolvedValue({ data: null, error: null }),
+    (supabase.rpc as jest.Mock).mockResolvedValue({ data: true, error: null });
+
+    const result = await passProfile(mockFromUserId, mockToUserId);
+
+    expect(result.success).toBe(true);
+    expect(result.error).toBeUndefined();
+    expect(supabase.rpc).toHaveBeenCalledWith("pass_profile", {
+      p_to_user_id: mockToUserId,
     });
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("should handle database error when passing", async () => {
+    const mockError = { message: "Database error" };
+
+    (supabase.rpc as jest.Mock).mockResolvedValue({
+      data: null,
+      error: mockError,
+    });
+
+    const result = await passProfile(mockFromUserId, mockToUserId);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe(
+      "Pass did not save. Check your connection and try again.",
+    );
+  });
+
+  it("should treat duplicate passes as idempotent RPC success", async () => {
+    (supabase.rpc as jest.Mock).mockResolvedValue({ data: true, error: null });
 
     const result = await passProfile(mockFromUserId, mockToUserId);
 
@@ -385,121 +399,129 @@ describe("passProfile", () => {
     expect(result.error).toBeUndefined();
   });
 
-  it("should handle database error when passing", async () => {
-    const mockError = { message: "Database error" };
-
-    (supabase.from as jest.Mock).mockReturnValue({
-      insert: jest.fn().mockResolvedValue({ data: null, error: mockError }),
-    });
-
-    const result = await passProfile(mockFromUserId, mockToUserId);
+  it("should reject empty user IDs before inserting a pass", async () => {
+    const result = await passProfile(mockFromUserId, "");
 
     expect(result.success).toBe(false);
-    expect(result.error).toBe(mockError.message);
+    expect(result.error).toBe("Choose a member to pass.");
+    expect(supabase.from).not.toHaveBeenCalled();
   });
 
-  it("should handle duplicate pass", async () => {
-    const duplicateError = { message: "duplicate key", code: "23505" };
+  it("trims member IDs before calling the pass RPC", async () => {
+    (supabase.rpc as jest.Mock).mockResolvedValue({ data: true, error: null });
 
-    (supabase.from as jest.Mock).mockReturnValue({
-      insert: jest
-        .fn()
-        .mockResolvedValue({ data: null, error: duplicateError }),
+    const result = await passProfile(mockFromUserId, ` ${mockToUserId} `);
+
+    expect(result).toEqual({ success: true });
+    expect(supabase.rpc).toHaveBeenCalledWith("pass_profile", {
+      p_to_user_id: mockToUserId,
+    });
+  });
+});
+
+describe("getMatches", () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  it("omits matches whose profile is no longer discoverable", async () => {
+    const likes = [
+      {
+        id: "like-visible",
+        from_user_id: "user-123",
+        to_user_id: "visible-match",
+        matched_at: "2026-06-10T10:00:00.000Z",
+        created_at: "2026-06-10T09:00:00.000Z",
+      },
+      {
+        id: "like-hidden",
+        from_user_id: "user-123",
+        to_user_id: "hidden-match",
+        matched_at: "2026-06-10T11:00:00.000Z",
+        created_at: "2026-06-10T09:30:00.000Z",
+      },
+    ];
+    const visibleProfile = {
+      id: "visible-match",
+      first_name: "Maria",
+      age: 28,
+      gender: "female",
+      user_type: "filipina",
+      photos: [],
+    };
+    const likesQuery: any = {
+      select: jest.fn(() => likesQuery),
+      eq: jest.fn(() => likesQuery),
+      or: jest.fn(() => likesQuery),
+      order: jest.fn().mockResolvedValue({ data: likes, error: null }),
+    };
+    const profilesQuery: any = {
+      select: jest.fn(() => profilesQuery),
+      in: jest.fn().mockResolvedValue({ data: [visibleProfile], error: null }),
+    };
+
+    (supabase.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "likes") return likesQuery;
+      if (table === "discoverable_profiles") return profilesQuery;
+      throw new Error(`Unexpected table: ${table}`);
     });
 
-    const result = await passProfile(mockFromUserId, mockToUserId);
+    const result = await getMatches("user-123");
 
-    expect(result.success).toBe(false);
-    expect(result.error).toContain("duplicate");
+    expect(result.error).toBeNull();
+    expect(result.data).toEqual([
+      {
+        id: "like-visible",
+        profile: visibleProfile,
+        matched_at: "2026-06-10T10:00:00.000Z",
+        is_mutual: true,
+      },
+    ]);
+    expect(profilesQuery.in).toHaveBeenCalledWith("id", [
+      "visible-match",
+      "hidden-match",
+    ]);
   });
 });
 
 describe("superLikeProfile", () => {
-  const mockFromUserId = "user-123";
-  const mockToUserId = "user-456";
+  const mockFromUserId = "11111111-1111-4111-8111-111111111111";
+  const mockToUserId = "22222222-2222-4222-8222-222222222222";
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
   });
 
-  it("should successfully super like a profile without match", async () => {
-    const mockLike = {
-      id: "like-123",
-      from_user_id: mockFromUserId,
-      to_user_id: mockToUserId,
-    };
-
-    (supabase.from as jest.Mock).mockImplementation((table: string) => {
-      if (table === "likes") {
-        return {
-          insert: jest.fn().mockReturnValue({
-            select: jest.fn().mockReturnValue({
-              single: jest
-                .fn()
-                .mockResolvedValue({ data: mockLike, error: null }),
-            }),
-          }),
-          select: jest.fn().mockReturnValue({
-            eq: jest.fn().mockReturnValue({
-              eq: jest.fn().mockReturnValue({
-                single: jest
-                  .fn()
-                  .mockResolvedValue({
-                    data: null,
-                    error: { code: "PGRST116" },
-                  }),
-              }),
-            }),
-          }),
-        };
-      }
+  it("uses the same hardened RPC path as a regular like", async () => {
+    (supabase.rpc as jest.Mock).mockResolvedValue({
+      data: {
+        success: true,
+        is_match: false,
+        matched_profile: null,
+        error: null,
+      },
+      error: null,
     });
 
     const result = await superLikeProfile(mockFromUserId, mockToUserId);
 
-    expect(result.success).toBe(true);
-    expect(result.isMatch).toBe(false);
+    expect(result).toEqual({ success: true, isMatch: false });
+    expect(supabase.rpc).toHaveBeenCalledWith("like_profile", {
+      p_to_user_id: mockToUserId,
+    });
   });
 
-  it("should create match with super like when mutual like exists", async () => {
-    const mockNewLike = { id: "like-123" };
-    const mockMutualLike = { id: "like-456" };
+  it("returns match details from the hardened RPC", async () => {
     const mockProfile = { id: mockToUserId, first_name: "Sofia" };
 
-    (supabase.from as jest.Mock).mockImplementation((table: string) => {
-      if (table === "likes") {
-        return {
-          insert: jest.fn().mockReturnValue({
-            select: jest.fn().mockReturnValue({
-              single: jest
-                .fn()
-                .mockResolvedValue({ data: mockNewLike, error: null }),
-            }),
-          }),
-          select: jest.fn().mockReturnValue({
-            eq: jest.fn().mockReturnValue({
-              eq: jest.fn().mockReturnValue({
-                single: jest
-                  .fn()
-                  .mockResolvedValue({ data: mockMutualLike, error: null }),
-              }),
-            }),
-          }),
-          update: jest.fn().mockReturnValue({
-            eq: jest.fn().mockResolvedValue({ data: null, error: null }),
-          }),
-        };
-      } else if (table === "profiles") {
-        return {
-          select: jest.fn().mockReturnValue({
-            eq: jest.fn().mockReturnValue({
-              single: jest
-                .fn()
-                .mockResolvedValue({ data: mockProfile, error: null }),
-            }),
-          }),
-        };
-      }
+    (supabase.rpc as jest.Mock).mockResolvedValue({
+      data: {
+        success: true,
+        is_match: true,
+        matched_profile: mockProfile,
+        error: null,
+      },
+      error: null,
     });
 
     const result = await superLikeProfile(mockFromUserId, mockToUserId);
@@ -507,5 +529,33 @@ describe("superLikeProfile", () => {
     expect(result.success).toBe(true);
     expect(result.isMatch).toBe(true);
     expect(result.matchedProfile).toEqual(mockProfile);
+  });
+});
+
+describe("undoLastSwipe", () => {
+  const mockUserId = "user-123";
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  it("uses the hardened undo_last_swipe RPC instead of direct deletes", async () => {
+    (supabase.rpc as jest.Mock).mockResolvedValue({ error: null });
+
+    const result = await undoLastSwipe(mockUserId);
+
+    expect(result).toEqual({ success: true });
+    expect(supabase.rpc).toHaveBeenCalledWith("undo_last_swipe");
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("rejects missing user IDs before calling the RPC", async () => {
+    const result = await undoLastSwipe("");
+
+    expect(result).toEqual({
+      success: false,
+      error: "Sign in before undoing a swipe.",
+    });
+    expect(supabase.rpc).not.toHaveBeenCalled();
   });
 });

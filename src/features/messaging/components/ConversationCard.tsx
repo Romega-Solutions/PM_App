@@ -66,12 +66,23 @@ export const ConversationCard: React.FC<ConversationCardProps> = ({
   unreadCount,
   onPress,
 }) => {
+  const formattedTime = formatTimestamp(lastMessageTime);
+  const displayLastMessage = lastMessage?.trim() || "No messages yet";
+  const displayUnreadCount = unreadCount > 99 ? "99+" : `${unreadCount}`;
+  const unreadLabel =
+    unreadCount > 0
+      ? `${unreadCount} unread ${unreadCount === 1 ? "message" : "messages"}`
+      : "No unread messages";
+  const onlineLabel = isOnline ? "active now" : "offline";
+
   return (
     <TouchableOpacity
       style={styles.container}
       activeOpacity={0.85}
       accessibilityRole="button"
-      accessibilityLabel={`Open chat with ${userName}`}
+      accessibilityLabel={`Open chat with ${userName}, ${onlineLabel}. ${unreadLabel}. Last message: ${displayLastMessage}. ${formattedTime}.`}
+      accessibilityHint="Opens the conversation. Reply only when you are ready."
+      accessibilityState={{ selected: unreadCount > 0 }}
       onPress={onPress}
     >
       {/* Profile Image */}
@@ -82,6 +93,7 @@ export const ConversationCard: React.FC<ConversationCardProps> = ({
               source={{ uri: userPhoto }}
               style={styles.image}
               resizeMode="cover"
+              accessibilityLabel={`${userName} profile photo`}
             />
           ) : (
             <View style={styles.placeholderAvatar}>
@@ -91,14 +103,20 @@ export const ConversationCard: React.FC<ConversationCardProps> = ({
             </View>
           )}
         </View>
-        {isOnline && <View style={styles.onlineDot} />}
+        {isOnline && (
+          <View
+            style={styles.onlineDot}
+            accessible
+            accessibilityLabel={`${userName} is active now`}
+          />
+        )}
       </View>
 
       {/* Message Info */}
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.name}>{userName}</Text>
-          <Text style={styles.time}>{formatTimestamp(lastMessageTime)}</Text>
+          <Text style={styles.time}>{formattedTime}</Text>
         </View>
 
         <View style={styles.footer}>
@@ -110,13 +128,17 @@ export const ConversationCard: React.FC<ConversationCardProps> = ({
               ]}
               numberOfLines={1}
             >
-              {lastMessage}
+              {displayLastMessage}
             </Text>
           </View>
 
           {unreadCount > 0 && (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadText}>{unreadCount}</Text>
+            <View
+              style={styles.unreadBadge}
+              accessible
+              accessibilityLabel={unreadLabel}
+            >
+              <Text style={styles.unreadText}>{displayUnreadCount}</Text>
             </View>
           )}
         </View>
@@ -129,7 +151,11 @@ export const ConversationCard: React.FC<ConversationCardProps> = ({
  * Format timestamp for display
  */
 function formatTimestamp(timestamp: string): string {
+  if (!timestamp) return "No recent activity";
+
   const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "No recent activity";
+
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
@@ -149,6 +175,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
+    minHeight: 88,
     backgroundColor: SURFACE,
     borderWidth: 1,
     borderColor: SURFACE_BORDER,

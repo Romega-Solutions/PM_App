@@ -9,7 +9,7 @@
  * KISS: Simple API - just provide callbacks
  */
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Animated, Dimensions, PanResponder } from "react-native";
 
 const { width, height } = Dimensions.get("window");
@@ -39,11 +39,15 @@ export interface SwipeGestureReturn {
 export function useSwipeGesture(
   callbacks: SwipeGestureCallbacks,
 ): SwipeGestureReturn {
-  const { onSwipeLeft, onSwipeRight, onSwipeUp, onShowDetails } = callbacks;
+  const callbacksRef = useRef(callbacks);
 
   // Animation values
   const pan = useRef(new Animated.ValueXY()).current;
   const swipeUpValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    callbacksRef.current = callbacks;
+  }, [callbacks]);
 
   // Rotation based on horizontal drag
   const rotate = pan.x.interpolate({
@@ -115,21 +119,21 @@ export function useSwipeGesture(
         // Swipe left (Pass)
         if (gesture.dx < -120) {
           animateSwipe("left");
-          onSwipeLeft();
+          callbacksRef.current.onSwipeLeft();
         }
         // Swipe right (Like)
         else if (gesture.dx > 120) {
           animateSwipe("right");
-          onSwipeRight();
+          callbacksRef.current.onSwipeRight();
         }
         // Swipe up (Super Like)
         else if (gesture.dy < -100) {
           animateSwipe("up");
-          onSwipeUp();
+          callbacksRef.current.onSwipeUp();
         }
         // Tap or small swipe up (Show Details)
-        else if (gesture.dy < -20 && onShowDetails) {
-          onShowDetails();
+        else if (gesture.dy < -20 && callbacksRef.current.onShowDetails) {
+          callbacksRef.current.onShowDetails();
           resetPosition();
         }
         // Not enough swipe - reset

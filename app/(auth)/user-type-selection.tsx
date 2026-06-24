@@ -2,7 +2,13 @@ import AuthLayout from "@/src/components/auth/AuthLayout";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import { theme } from "@/src/theme";
 import { useRouter } from "expo-router";
-import { Heart, Users } from "lucide-react-native";
+import {
+  BadgeCheck,
+  Check,
+  Heart,
+  ShieldCheck,
+  Users,
+} from "lucide-react-native";
 import React, { useState } from "react";
 import {
   Dimensions,
@@ -48,9 +54,13 @@ export default function UserTypeSelectionScreen() {
 
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Who are you?</Text>
+          <Text style={styles.eyebrow}>Step 1 of profile setup</Text>
+          <Text style={styles.title}>Choose your profile path</Text>
           <Text style={styles.subtitle}>
-            This helps us create the perfect experience for you
+            This shapes your setup questions, safety reminders, and match
+            expectations. Launch access currently supports Filipina women and
+            foreign men profile paths; if that does not fit you, wait for
+            broader eligibility before continuing.
           </Text>
         </View>
 
@@ -67,6 +77,7 @@ export default function UserTypeSelectionScreen() {
             accessibilityRole="radio"
             accessibilityState={{ checked: selectedType === "filipina" }}
             accessibilityLabel="I am a Filipina woman"
+            accessibilityHint="Selects the Filipina onboarding path"
           >
             <View
               style={[
@@ -93,13 +104,18 @@ export default function UserTypeSelectionScreen() {
             <View style={styles.cardContent}>
               <Text style={styles.cardTitle}>I'm a Filipina</Text>
               <Text style={styles.cardDescription}>
-                Looking to connect with foreign men for meaningful relationships
+                Set your boundaries, add profile details, and prepare for
+                verification prompts before matching.
               </Text>
             </View>
 
             {selectedType === "filipina" && (
               <View style={styles.checkmark}>
-                <Text style={styles.checkmarkText}>✓</Text>
+                <Check
+                  size={17}
+                  color={theme.colors.neutral.white}
+                  strokeWidth={3}
+                />
               </View>
             )}
           </Pressable>
@@ -115,6 +131,7 @@ export default function UserTypeSelectionScreen() {
             accessibilityRole="radio"
             accessibilityState={{ checked: selectedType === "foreigner" }}
             accessibilityLabel="I am a foreign man"
+            accessibilityHint="Selects the foreign man onboarding path"
           >
             <View
               style={[
@@ -136,24 +153,45 @@ export default function UserTypeSelectionScreen() {
             <View style={styles.cardContent}>
               <Text style={styles.cardTitle}>I'm a Foreign Man</Text>
               <Text style={styles.cardDescription}>
-                Seeking genuine connections with Filipina women
+                Create a respectful profile with clear intent and safety
+                reminders before browsing matches.
               </Text>
             </View>
 
             {selectedType === "foreigner" && (
               <View style={styles.checkmark}>
-                <Text style={styles.checkmarkText}>✓</Text>
+                <Check
+                  size={17}
+                  color={theme.colors.neutral.white}
+                  strokeWidth={3}
+                />
               </View>
             )}
           </Pressable>
         </View>
 
         {/* Info Banner */}
-        <View style={styles.infoBanner}>
+        <View
+          style={styles.infoBanner}
+          accessible
+          accessibilityLabel="Community trust note. PinayMate uses this choice to tailor onboarding and safety prompts."
+        >
+          <ShieldCheck size={18} color={theme.colors.amihan[300]} />
           <Text style={styles.infoText}>
-            🔒 Your selection helps us match you with compatible partners and
-            ensure a safe community
+            PinayMate keeps this step simple so setup feels relevant, not
+            intrusive. Matching does not begin until your profile is ready.
           </Text>
+        </View>
+
+        <View style={styles.trustRow}>
+          <View style={styles.trustItem}>
+            <BadgeCheck size={15} color={theme.colors.neutral.white} />
+            <Text style={styles.trustText}>Verification-ready</Text>
+          </View>
+          <View style={styles.trustItem}>
+            <Users size={15} color={theme.colors.neutral.white} />
+            <Text style={styles.trustText}>Profile-first</Text>
+          </View>
         </View>
 
         {/* Continue Button */}
@@ -163,6 +201,12 @@ export default function UserTypeSelectionScreen() {
             onPress={handleContinue}
             disabled={!selectedType}
             showChevron
+            accessibilityLabel={
+              selectedType
+                ? "Continue to account signup"
+                : "Choose a profile type before continuing"
+            }
+            accessibilityHint="Continues to signup after a profile type is selected"
           />
         </View>
       </View>
@@ -189,12 +233,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: theme.spacing.xl,
   },
+  eyebrow: {
+    fontSize: 12,
+    fontFamily: theme.fontFamilies.body.semiBold,
+    color: theme.colors.amihan[300],
+    textTransform: "uppercase",
+    letterSpacing: 0,
+    marginBottom: theme.spacing.xs,
+  },
   title: {
-    fontSize: 32,
+    fontSize: 30,
     fontFamily: theme.fontFamilies.header.bold,
     color: theme.colors.neutral.white,
     textAlign: "center",
     marginBottom: theme.spacing.xs,
+    lineHeight: 36,
   },
   subtitle: {
     fontSize: 15,
@@ -209,6 +262,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
   },
   card: {
+    minHeight: 124,
     backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: 20,
     padding: theme.spacing.lg,
@@ -217,6 +271,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     position: "relative",
+    shadowColor: theme.colors.amihan[500],
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    elevation: 4,
   },
   cardSelected: {
     backgroundColor: "rgba(141,105,246,0.15)",
@@ -260,27 +319,49 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  checkmarkText: {
-    fontSize: 16,
-    color: theme.colors.neutral.white,
-    fontWeight: "bold",
-  },
   infoBanner: {
     backgroundColor: "rgba(141,105,246,0.12)",
     borderRadius: 14,
     padding: theme.spacing.md,
-    marginBottom: theme.spacing.xl,
+    marginBottom: theme.spacing.md,
     borderWidth: 1,
     borderColor: "rgba(141,105,246,0.25)",
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
   },
   infoText: {
+    flex: 1,
     fontSize: 13,
     fontFamily: theme.fontFamilies.body.regular,
     color: "rgba(255,255,255,0.85)",
-    textAlign: "center",
     lineHeight: 19,
   },
+  trustRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: theme.spacing.lg,
+  },
+  trustItem: {
+    minHeight: 44,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  trustText: {
+    color: "rgba(255,255,255,0.9)",
+    fontFamily: theme.fontFamilies.body.semiBold,
+    fontSize: 12,
+    lineHeight: 16,
+  },
   buttonContainer: {
-    paddingBottom: moderateScale(12),
+    paddingBottom: moderateScale(20),
   },
 });

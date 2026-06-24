@@ -65,8 +65,8 @@ export const useWelcomeData = () => {
         } else {
           setData(null);
         }
-      } catch (error) {
-        console.error("❌ Error fetching welcome data:", error);
+      } catch {
+        console.error("Error fetching welcome data.");
         setData(null);
       } finally {
         setLoading(false);
@@ -106,8 +106,8 @@ export const useWelcomeData = () => {
           },
         });
       }
-    } catch (error) {
-      console.error("❌ Error reloading welcome data:", error);
+    } catch {
+      console.error("Error reloading welcome data.");
     } finally {
       setLoading(false);
     }

@@ -9,11 +9,14 @@ interface Props {
   isCurrent?: boolean;
 }
 
-export default function LocationItem({ label, selected = false, onPress, isCurrent = false }: Props) {
+export default function LocationItem({
+  label,
+  selected = false,
+  onPress,
+  isCurrent = false,
+}: Props) {
   const ACCENT_PINK = "#EF3E78";
   const ACCENT_PURPLE = "#8D69F6";
-  const SURFACE = "rgba(255,255,255,0.08)";
-  const SURFACE_BORDER = "rgba(141,105,246,0.25)";
   const ICON_BG = "rgba(141,105,246,0.12)";
 
   return (
@@ -23,22 +26,42 @@ export default function LocationItem({ label, selected = false, onPress, isCurre
       activeOpacity={0.88}
       accessibilityRole="radio"
       accessibilityState={{ selected }}
-      accessibilityLabel={`Select ${label}`}
+      accessibilityLabel={`${label}${isCurrent ? ", current location option" : ""}${selected ? ", selected" : ""}`}
+      accessibilityHint="Selects this location for launch-stage discovery preferences."
+      hitSlop={{ top: 4, right: 4, bottom: 4, left: 4 }}
     >
-      <View style={[styles.iconBox, { backgroundColor: ICON_BG }]}>
+      <View
+        style={[styles.iconBox, { backgroundColor: ICON_BG }]}
+        accessible={false}
+        importantForAccessibility="no"
+      >
         {isCurrent ? (
-          <Navigation size={18} color={selected ? ACCENT_PINK : ACCENT_PURPLE} strokeWidth={2.5} />
+          <Navigation
+            size={18}
+            color={selected ? ACCENT_PINK : ACCENT_PURPLE}
+            strokeWidth={2.5}
+          />
         ) : (
-          <MapPin size={18} color={selected ? ACCENT_PINK : ACCENT_PURPLE} strokeWidth={2.5} />
+          <MapPin
+            size={18}
+            color={selected ? ACCENT_PINK : ACCENT_PURPLE}
+            strokeWidth={2.5}
+          />
         )}
       </View>
 
-      <Text style={[styles.label, selected && styles.labelActive]} numberOfLines={1}>
+      <Text
+        style={[styles.label, selected && styles.labelActive]}
+        numberOfLines={2}
+        maxFontSizeMultiplier={1.25}
+      >
         {label}
       </Text>
 
       <View style={[styles.radio, selected && { borderColor: ACCENT_PINK }]}>
-        {selected && <View style={[styles.radioDot, { backgroundColor: ACCENT_PINK }]} />}
+        {selected && (
+          <View style={[styles.radioDot, { backgroundColor: ACCENT_PINK }]} />
+        )}
       </View>
     </TouchableOpacity>
   );

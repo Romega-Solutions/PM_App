@@ -9,7 +9,6 @@ export default function ModalsLayout() {
     }}>
       <Stack.Screen name="filters" />
       <Stack.Screen name="report-user" />
-      <Stack.Screen name="subscription" />
     </Stack>
   );
 }

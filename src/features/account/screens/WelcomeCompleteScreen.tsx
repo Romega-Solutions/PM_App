@@ -65,8 +65,14 @@ export default function WelcomeCompleteScreen() {
           styles.root,
           { justifyContent: "center", alignItems: "center" },
         ]}
+        accessible
+        accessibilityLabel="Loading your completed profile summary"
       >
-        <ActivityIndicator size="large" color={ACCENT_PINK} />
+        <ActivityIndicator
+          size="large"
+          color={ACCENT_PINK}
+          accessibilityLabel="Loading completed profile summary"
+        />
         <Text style={styles.loadingText}>Loading your profile...</Text>
       </View>
     );
@@ -129,6 +135,8 @@ export default function WelcomeCompleteScreen() {
             source={require("@/assets/logo-no-bg.png")}
             style={styles.logo}
             resizeMode="contain"
+            accessible
+            accessibilityLabel="PinayMate logo"
           />
         </View>
 
@@ -140,8 +148,10 @@ export default function WelcomeCompleteScreen() {
             <Sparkles size={24} color={GOLD} fill={GOLD} />
           </View>
           <Text style={styles.welcomeSubtitle}>
-            Your profile is{" "}
-            {isVerified ? "complete and ready to shine!" : "almost complete!"}
+            Your setup is{" "}
+            {isVerified
+              ? "ready, and your verification has been approved."
+              : "ready, with verification still available from Settings."}
           </Text>
         </View>
 
@@ -154,13 +164,19 @@ export default function WelcomeCompleteScreen() {
                   <Image
                     source={{ uri: photos[0] }}
                     style={StyleSheet.absoluteFill}
+                    accessible
+                    accessibilityLabel={`${firstName}'s profile photo`}
                   />
                 ) : (
                   <User size={32} color={ACCENT_PINK} strokeWidth={2.5} />
                 )}
               </View>
               {photoCount > 0 && (
-                <View style={styles.photoBadge}>
+                <View
+                  style={styles.photoBadge}
+                  accessible={false}
+                  importantForAccessibility="no"
+                >
                   <Camera size={12} color={WHITE} strokeWidth={2.5} />
                 </View>
               )}
@@ -173,12 +189,20 @@ export default function WelcomeCompleteScreen() {
               <View style={styles.profileAgeRow}>
                 <Text style={styles.profileAge}>{age} years old</Text>
                 {isVerified ? (
-                  <View style={styles.verifiedBadge}>
+                  <View
+                    style={styles.verifiedBadge}
+                    accessible
+                    accessibilityLabel="Verification approved after review"
+                  >
                     <ShieldCheck size={12} color={WHITE} strokeWidth={2.5} />
                     <Text style={styles.verifiedText}>VERIFIED</Text>
                   </View>
                 ) : (
-                  <View style={styles.unverifiedBadge}>
+                  <View
+                    style={styles.unverifiedBadge}
+                    accessible
+                    accessibilityLabel="Verification not approved yet"
+                  >
                     <AlertCircle size={12} color={WHITE} strokeWidth={2.5} />
                     <Text style={styles.unverifiedText}>UNVERIFIED</Text>
                   </View>
@@ -236,13 +260,18 @@ export default function WelcomeCompleteScreen() {
 
         {/* Verification Warning (if not verified) */}
         {!isVerified && (
-          <View style={styles.warningBanner}>
+          <View
+            style={styles.warningBanner}
+            accessible
+            accessibilityLabel="Verification not approved yet. You can continue using PinayMate and submit verification again from Settings."
+          >
             <AlertCircle size={20} color={WARNING_YELLOW} strokeWidth={2.5} />
             <View style={styles.warningTextContainer}>
-              <Text style={styles.warningTitle}>Profile Not Verified</Text>
+              <Text style={styles.warningTitle}>Verification not approved yet</Text>
               <Text style={styles.warningSubtitle}>
-                Verified profiles get more visibility and trust. You can verify
-                anytime in Settings.
+                You can continue using PinayMate and return to verification
+                from Settings. A verified badge is a reviewed signal, not a
+                guarantee that someone is safe.
               </Text>
             </View>
           </View>
@@ -250,25 +279,64 @@ export default function WelcomeCompleteScreen() {
 
         {/* Success Banner (if verified) */}
         {isVerified && (
-          <View style={styles.successBanner}>
+          <View
+            style={styles.successBanner}
+            accessible
+            accessibilityLabel="Profile basics complete. Your profile has the context needed for discovery when matching is available to you."
+          >
             <Sparkles size={20} color={SUCCESS_GREEN} fill={SUCCESS_GREEN} />
             <View style={styles.successTextContainer}>
-              <Text style={styles.successTitle}>Profile Complete!</Text>
+              <Text style={styles.successTitle}>Profile basics complete</Text>
               <Text style={styles.successSubtitle}>
-                You're all set to start connecting with amazing Filipino singles
-                worldwide!
+                Your profile has the context needed for discovery when matching
+                is available to you.
               </Text>
             </View>
           </View>
         )}
 
+        <View
+          style={styles.setupPanel}
+          accessible
+          accessibilityLabel="Profile setup complete. You added the essentials for clearer discovery, better intent matching, and trust review."
+        >
+          <Text style={styles.setupEyebrow}>Profile setup complete</Text>
+          <Text style={styles.setupTitle}>
+            You added the essentials for clearer discovery, better intent
+            matching, and trust review. Matching can still vary by privacy
+            settings, review status, distance, and who is available.
+          </Text>
+          <View style={styles.setupGrid}>
+            <View style={styles.setupItem}>
+              <View style={styles.setupIcon}>
+                <User size={16} color={ACCENT_PINK} strokeWidth={2.4} />
+              </View>
+              <Text style={styles.setupLabel}>Profile</Text>
+            </View>
+            <View style={styles.setupItem}>
+              <View style={styles.setupIcon}>
+                <Heart size={16} color={ACCENT_PINK} strokeWidth={2.4} />
+              </View>
+              <Text style={styles.setupLabel}>Intent</Text>
+            </View>
+            <View style={styles.setupItem}>
+              <View style={styles.setupIcon}>
+                <ShieldCheck size={16} color={ACCENT_PINK} strokeWidth={2.4} />
+              </View>
+              <Text style={styles.setupLabel}>Trust</Text>
+            </View>
+          </View>
+        </View>
+
         {/* Stats */}
         <View style={styles.statsContainer}>
           <Text style={styles.statsText}>
-            Join 50,000+ verified Filipino singles
+            Early PinayMate members can review intent, profile detail, and
+            trust signals before making match decisions.
           </Text>
           <Text style={styles.statsSubtext}>
-            Ready to find meaningful connections
+            Continue into the app to review settings, report concerns, block
+            contact when needed, and use your own judgment before meeting.
           </Text>
         </View>
       </ScrollView>
@@ -280,8 +348,18 @@ export default function WelcomeCompleteScreen() {
           { paddingBottom: Math.max(insets.bottom + 16, 32) },
         ]}
       >
-        <PrimaryButton title="Start Dating" onPress={handleStartDating} />
-        <GhostButton title="Explore the App First" onPress={handleExploreApp} />
+        <PrimaryButton
+          title="Enter PinayMate"
+          onPress={handleStartDating}
+          accessibilityLabel="Enter PinayMate"
+          accessibilityHint="Opens the main app"
+        />
+        <GhostButton
+          title="Review settings first"
+          onPress={handleExploreApp}
+          accessibilityLabel="Review safety and settings before matching"
+          accessibilityHint="Opens the main app so you can review settings, reporting, and blocking controls before making match decisions"
+        />
       </View>
     </View>
   );
@@ -437,6 +515,58 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "rgba(16,185,129,0.3)",
     gap: 12,
+  },
+  setupPanel: {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 22,
+    padding: 20,
+    marginBottom: 22,
+    borderWidth: 1,
+    borderColor: "rgba(239,62,120,0.22)",
+  },
+  setupEyebrow: {
+    fontSize: 12,
+    fontFamily: theme.fontFamilies.body?.semiBold,
+    color: ACCENT_PINK,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+  setupTitle: {
+    fontSize: 17,
+    fontFamily: theme.fontFamilies.body?.semiBold,
+    color: WHITE,
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  setupGrid: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  setupItem: {
+    flex: 1,
+    minHeight: 72,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 8,
+  },
+  setupIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(239,62,120,0.14)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  setupLabel: {
+    fontSize: 13,
+    fontFamily: theme.fontFamilies.body?.semiBold,
+    color: "rgba(255,255,255,0.86)",
+    textAlign: "center",
   },
   successTextContainer: { flex: 1 },
   successTitle: {

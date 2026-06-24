@@ -1,272 +1,149 @@
-# 🚀 Pinaymate Supabase Database Setup Instructions
+# PinayMate Supabase Setup Instructions
 
-## ✅ What This Does
+Status: launch-stage. This document is the current setup guide for Supabase-backed PinayMate environments.
 
-This setup will:
+## What this setup does
 
-- Create a complete database schema with all necessary tables
-- **Disable email verification** - users can sign up and log in immediately
-- Auto-create profiles when users sign up
-- Set up proper security policies (Row Level Security)
-- Create tables for messages, likes, and matches
+- Enables email/password auth with email confirmation.
+- Supports password recovery through Supabase recovery emails.
+- Applies production hardening migrations for profiles, matching, messaging, reporting, verification, OCR quota, and storage.
+- Keeps verification documents in a private `verification-docs` bucket.
+- Uses RPCs for sensitive writes such as basic info, verification submission, reporting, blocking, unmatching, OCR quota, and message creation.
 
----
+## 1. Configure email auth
 
-## 📋 Step-by-Step Setup
+Supabase Dashboard -> Authentication -> Providers -> Email
 
-### 1️⃣ Reset Your Supabase Database (if needed)
+- Enable Email provider.
+- Enable Confirm email for staging and production.
+- Configure sender/domain settings.
+- Send test signup and password reset emails before launch.
 
-If your database was paused and data was lost:
+Do not use an autoverify-only setup as production proof.
 
-1. Go to your Supabase dashboard: https://supabase.com/dashboard
-2. Select your project: `dahvxddpirhfxpwmoxol`
-3. Your database should auto-resume when you access it
+## 2. Configure redirect URLs
 
----
+Supabase Dashboard -> Authentication -> URL Configuration
 
-### 2️⃣ Disable Email Confirmation in Supabase
+Development can include:
 
-**CRITICAL STEP - This allows users to sign up without email verification:**
-
-1. In your Supabase dashboard, go to: **Authentication** → **Settings**
-2. Scroll down to **Email Auth** section
-3. **DISABLE** the toggle for **"Enable email confirmations"**
-4. Click **Save**
-
-![Disable Email Confirmations](https://i.imgur.com/example.png)
-
----
-
-### 3️⃣ Run the Database Setup SQL
-
-1. In your Supabase dashboard, go to: **SQL Editor**
-2. Click **"+ New Query"**
-3. Copy the **entire contents** of this file:
-   ```
-   supabase/migrations/00_complete_database_setup.sql
-   ```
-4. Paste it into the SQL Editor
-5. Click **"Run"** or press `Ctrl+Enter`
-6. Wait for the success message: ✅ "Success. No rows returned"
-
-This will create:
-
-- ✅ `profiles` table with all user data fields
-- ✅ `messages` table for chat
-- ✅ `likes` table for matching
-- ✅ `passes` table for swipe history
-- ✅ Trigger functions to auto-create profiles on signup
-- ✅ Trigger to auto-verify email on signup (bypass email confirmation)
-- ✅ Security policies (RLS) for data protection
-- ✅ Indexes for fast queries
-
----
-
-### 4️⃣ Verify the Setup
-
-Run this query in SQL Editor to check if everything was created:
-
-```sql
--- Check if tables exist
-SELECT table_name
-FROM information_schema.tables
-WHERE table_schema = 'public'
-AND table_name IN ('profiles', 'messages', 'likes', 'passes');
+```text
+exp://*
+http://localhost:3000/*
+http://localhost:8081/*
+pinaymate://*
 ```
 
-You should see all 4 tables listed.
+Staging and production must use final owned destinations:
 
----
-
-### 5️⃣ Test Your App
-
-1. **Stop your Expo server** if it's running (press `Ctrl+C`)
-2. **Clear cache and restart:**
-   ```bash
-   npx expo start --clear
-   ```
-3. **Test the signup flow:**
-   - Select user type (Filipina or Foreigner)
-   - Fill in signup form
-   - Submit
-   - ✅ You should be **immediately redirected to account setup** (no email verification!)
-
----
-
-## 🔍 Database Schema Overview
-
-### `profiles` Table
-
-Stores all user profile information:
-
-| Column                   | Type        | Description                       |
-| ------------------------ | ----------- | --------------------------------- |
-| `id`                     | UUID        | Primary key (links to auth.users) |
-| `email`                  | TEXT        | User email                        |
-| `first_name`             | TEXT        | First name                        |
-| `last_name`              | TEXT        | Last name                         |
-| `age`                    | INTEGER     | Age (18-70)                       |
-| `gender`                 | TEXT        | 'male', 'female', 'other'         |
-| `user_type`              | TEXT        | 'filipina' or 'foreigner'         |
-| `photos`                 | TEXT[]      | Array of photo URLs               |
-| `bio`                    | TEXT        | About me text                     |
-| `country`                | TEXT        | Location country                  |
-| `city`                   | TEXT        | Location city                     |
-| `latitude`               | DOUBLE      | GPS latitude                      |
-| `longitude`              | DOUBLE      | GPS longitude                     |
-| `height_cm`              | INTEGER     | Height in cm                      |
-| `body_type`              | TEXT        | Body type preference              |
-| `education`              | TEXT        | Education level                   |
-| `occupation`             | TEXT        | Job title                         |
-| `relationship_goal`      | TEXT        | What they're looking for          |
-| `languages`              | TEXT[]      | Spoken languages                  |
-| `interests`              | TEXT[]      | Hobbies/interests                 |
-| `looking_for_gender`     | TEXT        | Gender preference                 |
-| `age_preference_min`     | INTEGER     | Min age preference                |
-| `age_preference_max`     | INTEGER     | Max age preference                |
-| `distance_preference_km` | INTEGER     | Max distance for matches          |
-| `is_verified`            | BOOLEAN     | Account verified                  |
-| `verification_status`    | TEXT        | 'pending', 'approved', 'rejected' |
-| `is_active`              | BOOLEAN     | Account active                    |
-| `is_premium`             | BOOLEAN     | Premium membership                |
-| `basic_info_completed`   | BOOLEAN     | Setup step tracker                |
-| `photos_completed`       | BOOLEAN     | Setup step tracker                |
-| `location_completed`     | BOOLEAN     | Setup step tracker                |
-| `preferences_completed`  | BOOLEAN     | Setup step tracker                |
-| `profile_completed`      | BOOLEAN     | All setup complete                |
-| `created_at`             | TIMESTAMPTZ | Account creation time             |
-| `updated_at`             | TIMESTAMPTZ | Last update time                  |
-
-### `messages` Table
-
-Stores chat messages between users.
-
-### `likes` Table
-
-Stores likes/matches between users.
-
-### `passes` Table
-
-Stores when users pass/swipe left on profiles.
-
----
-
-## 🔧 How the Auto-Signup Works
-
-When a user signs up:
-
-1. **Expo app** calls `supabase.auth.signUp()` with email, password, and metadata
-2. **Supabase** creates user in `auth.users` table
-3. **Database trigger** (`on_auth_user_created`) automatically:
-   - ✅ Sets `email_confirmed_at = NOW()` (auto-verifies email)
-   - ✅ Creates a profile in `profiles` table
-   - ✅ Extracts `first_name` and `user_type` from signup metadata
-   - ✅ Auto-assigns gender based on user_type
-4. **User gets an active session immediately** - no email verification needed!
-
----
-
-## 🧪 Testing & Debugging
-
-### Check if a user was created correctly:
-
-```sql
--- View all users
-SELECT
-  id,
-  email,
-  email_confirmed_at,
-  raw_user_meta_data
-FROM auth.users
-ORDER BY created_at DESC
-LIMIT 10;
-
--- View all profiles
-SELECT
-  id,
-  email,
-  first_name,
-  user_type,
-  gender,
-  created_at
-FROM public.profiles
-ORDER BY created_at DESC
-LIMIT 10;
+```text
+https://<staging-pinaymate-domain>/*
+https://<production-pinaymate-domain>/*
+pinaymate://*
 ```
 
-### Manually verify a user (if needed):
+Required redirect behavior:
 
-```sql
-SELECT * FROM manual_verify_user('user@example.com');
+- Signup verification redirects to `verification-success`.
+- Password recovery redirects to `reset-password`.
+- Supabase PKCE `code` callbacks are exchanged in the app before routing.
+- Expo Go success is not enough for launch signoff.
+
+## 3. Apply database migrations
+
+Use the Supabase CLI or approved deployment process for the target environment.
+
+Required launch migrations are listed in `supabase/LAUNCH_MIGRATION_MANIFEST.md` and include:
+
+- `04_production_security_hardening.sql`
+- `99_final_release_security_hardening.sql`
+- `20260610094806_add_pinaymate_storage_buckets.sql`
+- `20260610100323_add_ocr_rate_limit.sql`
+- `20260610100523_add_basic_info_rpc.sql`
+- `20260610112000_add_account_deletion_requests.sql`
+- `20260610113000_add_privacy_settings.sql`
+- `20260610114000_respect_read_receipts_privacy.sql`
+- `20260610115000_respect_online_status_privacy.sql`
+- `20260611120000_secure_send_message_rpc.sql`
+- `20260611121000_harden_user_report_payload.sql`
+- `999_restore_profile_visibility_filter.sql`
+- `20260611122000_fix_discovery_privacy_read_model.sql`
+
+After applying migrations, run:
+
+```powershell
+psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f .\supabase\tests\04_safety_smoke_test.sql
+psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f .\supabase\tests\05_release_preflight_audit.sql
 ```
 
-### Delete test users:
+Or run the same SQL in the Supabase SQL Editor with a privileged database role.
 
-```sql
--- ⚠️ CAREFUL - This deletes everything for a user
-DELETE FROM auth.users WHERE email = 'test@example.com';
--- Profile will be auto-deleted due to CASCADE
+## 4. Configure OCR
+
+The bundled OCR Edge Function requires `OCR_SPACE_API_KEY` in the target Supabase project.
+
+The app derives the OCR function URL from `EXPO_PUBLIC_SUPABASE_URL` unless `EXPO_PUBLIC_OCR_ENDPOINT` is explicitly configured.
+
+Required live checks:
+
+- unauthenticated request returns 401
+- valid authenticated request can process a test document
+- invalid document returns a safe recoverable error
+- oversized local document attempts are rejected before upload/OCR where possible
+- repeated attempts hit the quota path instead of bypassing rate limits
+
+## 5. Verify app environment
+
+Local `.env` needs:
+
+```text
+EXPO_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
 ```
 
----
+Never paste service-role keys into the mobile app.
 
-## 🐛 Common Issues & Solutions
+## 6. Run local checks
 
-### Issue: Network request failed
+```powershell
+npm install
+npm test -- --runInBand
+npx tsc --noEmit
+npm run lint
+npm run build:web
+```
 
-**Solution:**
+## 7. Run native QA
 
-- Make sure `.env` file has correct Supabase URL and key
-- Restart Expo with cache clear: `npx expo start --clear`
+Use `docs/NATIVE_QA_SCRIPT.md`.
 
-### Issue: "Email not confirmed" error
+Minimum auth proof:
 
-**Solution:**
+- signed-out users cannot access main tabs
+- signup email returns to verification-success
+- forgot-password email returns to reset-password
+- new password can be saved and used for sign-in
+- session restore and sign-out work after restart
 
-- Make sure you **disabled email confirmations** in Supabase settings (Step 2)
-- Run the SQL setup script to add the auto-verification trigger
+## Troubleshooting
 
-### Issue: Profile not created after signup
+### Email signups are disabled
 
-**Solution:**
+Enable the Email provider in Supabase Auth settings.
 
-- Check if trigger exists:
-  ```sql
-  SELECT * FROM pg_trigger WHERE tgname = 'on_auth_user_created';
-  ```
-- Re-run the setup SQL script
+### Email confirmation or reset links open the wrong page
 
-### Issue: Can't insert/update profile
+Check Supabase redirect allow list, Site URL, and `app.json` scheme/intent filters.
 
-**Solution:**
+### Basic info fails
 
-- Check RLS policies:
-  ```sql
-  SELECT * FROM pg_policies WHERE tablename = 'profiles';
-  ```
-- Make sure user is authenticated
+Confirm `save_basic_info` exists and authenticated users can execute it.
 
----
+### Verification submission fails
 
-## 📞 Support
+Confirm `verification-docs` is private, storage policies allow the user's own folder, and uploaded selfie/document object paths exist before `submit_verification` runs.
+The app rejects verification images over 6 MB before upload/OCR and uses generic manual-review mismatch messages instead of showing extracted identity values back to the user.
 
-If you encounter any issues:
+### Messages do not send
 
-1. Check the console logs in your Expo app
-2. Check the Supabase logs: **Dashboard** → **Logs** → **Postgres Logs**
-3. Verify your `.env` file has correct credentials
-
----
-
-## ✅ Checklist
-
-- [ ] Disabled email confirmations in Supabase Settings
-- [ ] Ran the complete SQL setup script
-- [ ] Verified tables exist in Supabase
-- [ ] Cleared Expo cache and restarted
-- [ ] Tested signup flow - goes directly to account setup
-- [ ] Verified user and profile created in database
-
----
-
-**🎉 That's it! Your Pinaymate app should now work with auto-verified signups!**
+Confirm `send_message` exists, authenticated users can execute it, direct authenticated inserts on `public.messages` are revoked, and `04_safety_smoke_test.sql` plus `05_release_preflight_audit.sql` pass in the target environment.

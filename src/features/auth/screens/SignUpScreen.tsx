@@ -1,18 +1,25 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Eye, EyeOff, Lock, Mail, User } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
-import { Alert, Dimensions, Image, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  Dimensions,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import AuthHeader from "@/src/components/auth/AuthHeader";
 import AuthLayout from "@/src/components/auth/AuthLayout";
 import SignUpPrompt from "@/src/components/auth/SignUpPrompt";
-import SocialSignInButton from "@/src/components/auth/SocialSignInButton";
 import CustomTextInput from "@/src/components/forms/CustomTextInput";
-import FormDivider from "@/src/components/forms/FormDivider";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import { supabase } from "@/src/config/supabase";
 import { useSignupStore } from "@/src/stores/signupStore";
 import { theme } from "@/src/theme";
+import { authValidation } from "../api/authApi";
 import { useSignUp } from "../hooks/useSignUp";
 
 const { width } = Dimensions.get("window");
@@ -73,10 +80,11 @@ function SignUpScreen() {
 
     if (!form.password) {
       e.password = "Password is required";
-    } else if (form.password.length < 8) {
-      e.password = "Password must be at least 8 characters";
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(form.password)) {
-      e.password = "Password must include uppercase, lowercase, and number";
+    } else {
+      const passwordCheck = authValidation.isValidPassword(form.password);
+      if (!passwordCheck.valid) {
+        e.password = passwordCheck.error;
+      }
     }
 
     if (form.password !== form.confirmPassword) {
@@ -98,7 +106,6 @@ function SignUpScreen() {
 
     try {
       // ⚠️ Sign out any existing session first to avoid conflicts
-      console.log("🚪 Signing out any existing session...");
       await supabase.auth.signOut();
 
       const signupData = {
@@ -106,8 +113,6 @@ function SignUpScreen() {
         firstName: form.firstName.trim(),
         userType: userType,
       };
-
-      console.log("🚀 Starting signup with:", signupData);
 
       // 💾 SAVE TO ZUSTAND STORE FIRST
       saveSignupData(signupData);
@@ -117,15 +122,8 @@ function SignUpScreen() {
         userType: userType,
       });
 
-      console.log("✅ Signup result:", result);
-
       // Always check if email verification is needed
       if (result?.needsVerification) {
-        console.log(
-          "📧 Email not verified yet - navigating to verification screen with params:",
-          signupData
-        );
-
         router.replace({
           pathname: "/(auth)/verify-email",
           params: signupData,
@@ -134,7 +132,6 @@ function SignUpScreen() {
       }
 
       // If email is already verified (shouldn't happen on first signup, but just in case)
-      console.log("✅ Email already verified - proceeding to account setup");
       router.replace({
         pathname: "/(auth)/account-setup/basic-info",
         params: {
@@ -143,10 +140,12 @@ function SignUpScreen() {
         },
       });
     } catch (err) {
-      console.error("❌ Signup error:", err);
+      console.error("Signup failed during account creation.");
       Alert.alert(
         "Sign Up Failed",
-        err instanceof Error ? err.message : "An error occurred"
+        err instanceof Error
+          ? err.message
+          : "We could not create your account. Check your connection and try again.",
       );
     }
   };
@@ -168,8 +167,8 @@ function SignUpScreen() {
       </View>
 
       <AuthHeader
-        title={`Create Your ${userTypeLabel} Account`}
-        subtitle="Join thousands of Filipino singles worldwide"
+        title={`Create your ${userTypeLabel} profile`}
+        subtitle="Start with email signup, then add the details that help PinayMate understand your profile, intent, and safety preferences."
         showLogo={false}
       />
 
@@ -180,6 +179,19 @@ function SignUpScreen() {
       </View>
 
       <View style={styles.formContainer}>
+        <View
+          style={styles.expectationCard}
+          accessible
+          accessibilityLabel="Account setup note. This creates your account and starts profile setup."
+        >
+          <Text style={styles.expectationTitle}>What this unlocks now</Text>
+          <Text style={styles.expectationText}>
+            Create your account, verify your email, and continue into profile
+            setup. You can adjust privacy, verification, and discovery settings
+            before deciding how to connect.
+          </Text>
+        </View>
+
         <CustomTextInput
           label="First name"
           value={form.firstName}
@@ -220,6 +232,9 @@ function SignUpScreen() {
           LeftIcon={Lock}
           RightIcon={showPassword ? EyeOff : Eye}
           onRightIconPress={() => setShowPassword((v) => !v)}
+          rightIconAccessibilityLabel={
+            showPassword ? "Hide password" : "Show password"
+          }
           secureTextEntry={!showPassword}
           autoComplete="password-new"
           error={errors.password}
@@ -236,23 +251,57 @@ function SignUpScreen() {
           LeftIcon={Lock}
           RightIcon={showConfirm ? EyeOff : Eye}
           onRightIconPress={() => setShowConfirm((v) => !v)}
+          rightIconAccessibilityLabel={
+            showConfirm ? "Hide confirm password" : "Show confirm password"
+          }
           secureTextEntry={!showConfirm}
           autoComplete="password-new"
           error={errors.confirmPassword}
         />
 
+        <View style={styles.legalConsent}>
+          <Text style={styles.legalConsentText}>
+            By creating a profile, you agree to PinayMate's
+          </Text>
+          <View style={styles.legalConsentLinks}>
+            <Pressable
+              onPress={() => router.push("/(auth)/terms")}
+              accessibilityRole="button"
+              accessibilityLabel="Read PinayMate terms of service"
+              accessibilityHint="Opens the PinayMate terms overview before signup"
+              hitSlop={10}
+            >
+              <Text style={styles.legalConsentLink}>Terms of Service</Text>
+            </Pressable>
+            <Text style={styles.legalConsentText}>and</Text>
+            <Pressable
+              onPress={() => router.push("/(auth)/privacy")}
+              accessibilityRole="button"
+              accessibilityLabel="Read PinayMate privacy policy"
+              accessibilityHint="Opens the PinayMate privacy overview before signup"
+              hitSlop={10}
+            >
+              <Text style={styles.legalConsentLink}>Privacy Policy</Text>
+            </Pressable>
+          </View>
+        </View>
+
         <PrimaryButton
-          title="Create Account"
+          title="Create profile"
           onPress={handleSignUp}
           loading={loading}
           showChevron
         />
 
-        <FormDivider text="Or continue with" />
-        <SocialSignInButton
-          provider="google"
-          onPress={() => console.log("google")}
-        />
+        <View style={styles.emailOnlyNotice}>
+          <Text style={styles.emailOnlyTitle}>
+            Email signup is the active path
+          </Text>
+          <Text style={styles.emailOnlyText}>
+            Social login and phone OTP will appear only when those sign-in
+            options are ready for members.
+          </Text>
+        </View>
 
         <SignUpPrompt
           questionText="Already have an account?"
@@ -297,5 +346,76 @@ const styles = StyleSheet.create({
   formContainer: {
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: moderateScale(12),
+  },
+  expectationCard: {
+    borderLeftWidth: 3,
+    borderLeftColor: theme.colors.dalisay[400],
+    backgroundColor: "rgba(141,105,246,0.08)",
+    paddingLeft: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
+  },
+  expectationTitle: {
+    color: theme.colors.neutral.white,
+    fontFamily: theme.fontFamilies.body.semiBold,
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: theme.spacing.xs,
+  },
+  expectationText: {
+    color: "rgba(255,255,255,0.72)",
+    fontFamily: theme.fontFamilies.body.regular,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  legalConsent: {
+    alignItems: "center",
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
+    paddingHorizontal: theme.spacing.sm,
+  },
+  legalConsentText: {
+    color: "rgba(255,255,255,0.68)",
+    fontFamily: theme.fontFamilies.body.regular,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: "center",
+  },
+  legalConsentLinks: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    justifyContent: "center",
+  },
+  legalConsentLink: {
+    color: theme.colors.neutral.white,
+    fontFamily: theme.fontFamilies.body.semiBold,
+    fontSize: 12,
+    lineHeight: 44,
+    minHeight: 44,
+    textAlign: "center",
+    textDecorationLine: "underline",
+  },
+  emailOnlyNotice: {
+    borderLeftWidth: 3,
+    borderLeftColor: "rgba(255,255,255,0.34)",
+    paddingLeft: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+  },
+  emailOnlyTitle: {
+    color: theme.colors.neutral.white,
+    fontFamily: theme.fontFamilies.body.semiBold,
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: theme.spacing.xs,
+  },
+  emailOnlyText: {
+    color: "rgba(255,255,255,0.68)",
+    fontFamily: theme.fontFamilies.body.regular,
+    fontSize: 13,
+    lineHeight: 19,
   },
 });

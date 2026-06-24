@@ -1,12 +1,20 @@
-import React from "react";
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, View, Platform } from "react-native";
 import { theme } from "@/src/theme";
+import React from "react";
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface GhostButtonProps {
   title: string;
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
+  loadingLabel?: string;
   icon?: React.ReactNode;
   accessibilityLabel?: string;
   accessibilityHint?: string;
@@ -17,11 +25,16 @@ export default function GhostButton({
   onPress,
   disabled = false,
   loading = false,
+  loadingLabel,
   icon,
   accessibilityLabel,
   accessibilityHint,
 }: GhostButtonProps) {
   const isDisabled = disabled || loading;
+  const visibleTitle = loading ? (loadingLabel ?? "Working...") : title;
+  const screenReaderLabel = loading
+    ? `${accessibilityLabel || title}. ${loadingLabel ?? "In progress."}`
+    : accessibilityLabel || title;
 
   return (
     <TouchableOpacity
@@ -30,18 +43,28 @@ export default function GhostButton({
       style={[styles.button, isDisabled && styles.buttonDisabled]}
       activeOpacity={0.7}
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel || title}
+      accessibilityLabel={screenReaderLabel}
       accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
+      accessibilityLiveRegion={loading ? "polite" : "none"}
       accessible
     >
-      {loading ? (
-        <ActivityIndicator size="small" color="rgba(255,255,255,0.85)" />
-      ) : (
-        <View style={styles.content}>
-          {icon && <View style={styles.icon}>{icon}</View>}
-          <Text style={[styles.text, isDisabled && styles.textDisabled]}>{title}</Text>
-        </View>
-      )}
+      <View style={styles.content}>
+        {loading ? (
+          <ActivityIndicator size="small" color="rgba(255,255,255,0.85)" />
+        ) : icon ? (
+          <View style={styles.icon}>{icon}</View>
+        ) : null}
+        <Text
+          style={[styles.text, isDisabled && styles.textDisabled]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.82}
+          maxFontSizeMultiplier={1.25}
+        >
+          {visibleTitle}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -55,6 +78,7 @@ const styles = StyleSheet.create({
     paddingVertical: Platform.OS === "ios" ? 16 : 14,
     paddingHorizontal: 24,
     minHeight: Platform.OS === "ios" ? 56 : 52,
+    minWidth: 48,
     backgroundColor: "transparent",
   },
   buttonDisabled: {
@@ -64,13 +88,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    justifyContent: "center",
+    maxWidth: "100%",
   },
   text: {
     fontSize: 16,
     fontFamily: theme.fontFamilies?.body?.semiBold ?? "System",
     color: "rgba(255,255,255,0.85)",
     textAlign: "center",
-    letterSpacing: 0.3,
+    letterSpacing: 0,
+    flexShrink: 1,
   },
   textDisabled: {
     opacity: 0.6,

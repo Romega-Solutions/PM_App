@@ -1,28 +1,33 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Mic, MicOff, PhoneOff, Volume2, VolumeX } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
 import {
-  Dimensions,
+  Flag,
+  MicOff,
+  PhoneOff,
+  ShieldCheck,
+  UserRound,
+  X,
+} from "lucide-react-native";
+import React from "react";
+import {
   Image,
+  Pressable,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// Brand Colors
 const BRAND_BG = "#0F0814";
 const ACCENT_PURPLE = "#8D69F6";
 const ACCENT_PINK = "#EF3E78";
 const WHITE = "#FFFFFF";
-const SURFACE = "rgba(255,255,255,0.06)";
-const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
-const DANGER_RED = "#EF4444";
-
-const { width, height } = Dimensions.get("window");
+const SURFACE = "rgba(255,255,255,0.08)";
+const SURFACE_STRONG = "rgba(255,255,255,0.14)";
+const TEXT_SECONDARY = "rgba(255,255,255,0.78)";
+const TEXT_MUTED = "rgba(255,255,255,0.62)";
 
 export default function VoiceCallScreen() {
   const router = useRouter();
@@ -33,165 +38,150 @@ export default function VoiceCallScreen() {
     userId: string;
   }>();
 
-  const [isMuted, setIsMuted] = useState(false);
-  const [isSpeaker, setIsSpeaker] = useState(false);
-  const [callDuration, setCallDuration] = useState(0);
-  const [callStatus, setCallStatus] = useState<
-    "connecting" | "ringing" | "connected"
-  >("connecting");
+  const displayName = userName || "this match";
+  const canOpenSafetyReport = Boolean(userId);
 
-  // Timer for call duration
-  useEffect(() => {
-    if (callStatus === "connected") {
-      const timer = setInterval(() => {
-        setCallDuration((prev) => prev + 1);
-      }, 1000);
-
-      return () => clearInterval(timer);
-    }
-  }, [callStatus]);
-
-  // Simulate call connection (for demo purposes)
-  useEffect(() => {
-    const connectTimer = setTimeout(() => {
-      setCallStatus("ringing");
-    }, 1000);
-
-    const answerTimer = setTimeout(() => {
-      setCallStatus("connected");
-    }, 3000);
-
-    return () => {
-      clearTimeout(connectTimer);
-      clearTimeout(answerTimer);
-    };
-  }, []);
-
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
-  const handleEndCall = () => {
+  const handleClose = () => {
     router.back();
   };
 
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-  };
+  const handleReport = () => {
+    if (!userId) return;
 
-  const toggleSpeaker = () => {
-    setIsSpeaker(!isSpeaker);
-  };
-
-  const getStatusText = () => {
-    switch (callStatus) {
-      case "connecting":
-        return "Connecting...";
-      case "ringing":
-        return "Ringing...";
-      case "connected":
-        return formatDuration(callDuration);
-      default:
-        return "";
-    }
+    router.push({
+      pathname: "/(modals)/report-user",
+      params: {
+        userId,
+        userName: displayName,
+        source: "chat",
+      },
+    });
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       <LinearGradient
-        colors={["#0F0814", "#1a0f2e", "#0F0814"]}
+        colors={["#1D1033", BRAND_BG, "#160913"]}
         style={StyleSheet.absoluteFillObject}
       />
 
-      <View style={[styles.content, { paddingTop: insets.top + 40 }]}>
-        {/* User Info */}
-        <View style={styles.userInfoContainer}>
-          <View style={styles.avatarContainer}>
-            <Image
-              source={
-                userAvatar
-                  ? { uri: userAvatar }
-                  : require("../../../../assets/girls/ai1.jpg")
-              }
-              style={styles.avatar}
-            />
-            <View style={styles.pulseRing}>
-              <LinearGradient
-                colors={["rgba(141, 105, 246, 0.3)", "rgba(239, 62, 120, 0.3)"]}
-                style={styles.pulseGradient}
-              />
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <View style={styles.headerCopy}>
+          <Text style={styles.eyebrow}>Voice call</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {displayName}
+          </Text>
+        </View>
+        <Pressable
+          onPress={handleClose}
+          style={({ pressed }) => [
+            styles.iconButton,
+            pressed && styles.buttonPressed,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Close voice call screen"
+          accessibilityHint="Returns to the chat"
+          hitSlop={8}
+        >
+          <X size={24} color={WHITE} />
+        </Pressable>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + 96, paddingBottom: insets.bottom + 32 },
+        ]}
+        bounces={false}
+      >
+        <View style={styles.avatarShell}>
+          {userAvatar ? (
+            <Image source={{ uri: userAvatar }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <UserRound size={56} color={TEXT_SECONDARY} strokeWidth={1.8} />
+              <Text style={styles.avatarFallbackText}>No photo</Text>
             </View>
+          )}
+          <View style={styles.unavailableBadge}>
+            <MicOff size={26} color={WHITE} />
+          </View>
+        </View>
+
+        <View style={styles.statusCard}>
+          <View style={styles.statusPill}>
+            <ShieldCheck size={16} color={WHITE} />
+            <Text style={styles.statusPillText}>Safety first</Text>
           </View>
 
-          <Text style={styles.userName}>{userName || "Unknown"}</Text>
-          <Text style={styles.callStatus}>{getStatusText()}</Text>
+          <Text style={styles.title}>Keep this chat in messages</Text>
+          <Text style={styles.description}>
+            This screen does not start voice calls. No call was started and no microphone permission was requested.
+          </Text>
+
+          <View style={styles.divider} />
+
+          <View style={styles.noteRow}>
+            <MicOff size={20} color={TEXT_SECONDARY} />
+            <Text style={styles.noteText}>
+              You are still in chat with {displayName}. Keep the conversation in
+              messages, and use report, block, or unmatch if anything feels
+              unsafe.
+            </Text>
+          </View>
         </View>
 
-        {/* Call Controls */}
-        <View
-          style={[
-            styles.controlsContainer,
-            { paddingBottom: insets.bottom + 40 },
+        <Pressable
+          onPress={handleReport}
+          disabled={!canOpenSafetyReport}
+          style={({ pressed }) => [
+            styles.safetyButton,
+            !canOpenSafetyReport && styles.safetyButtonDisabled,
+            pressed && styles.buttonPressed,
           ]}
+          accessibilityRole="button"
+          accessibilityLabel={
+            canOpenSafetyReport
+              ? `Report or block ${displayName}`
+              : "Report and block needs a member profile"
+          }
+          accessibilityHint={
+            canOpenSafetyReport
+              ? "Opens the private safety report form for this member"
+              : "Return to chat and open safety options once this member is identified"
+          }
+          accessibilityState={{ disabled: !canOpenSafetyReport }}
         >
-          {/* Mute Button */}
-          <TouchableOpacity
-            style={[
-              styles.controlButton,
-              isMuted && styles.controlButtonActive,
-            ]}
-            onPress={toggleMute}
-            activeOpacity={0.7}
-          >
-            {isMuted ? (
-              <MicOff size={28} color={WHITE} />
-            ) : (
-              <Mic size={28} color={WHITE} />
-            )}
-            <Text style={styles.controlLabel}>
-              {isMuted ? "Unmute" : "Mute"}
-            </Text>
-          </TouchableOpacity>
+          <Flag size={20} color="#FFB4B4" strokeWidth={2.4} />
+          <Text style={styles.safetyButtonText}>
+            {canOpenSafetyReport
+              ? "Report or block"
+              : "Return to chat for safety options"}
+          </Text>
+        </Pressable>
 
-          {/* End Call Button */}
-          <TouchableOpacity
-            style={styles.endCallButton}
-            onPress={handleEndCall}
-            activeOpacity={0.8}
+        <Pressable
+          onPress={handleClose}
+          style={({ pressed }) => [
+            styles.primaryButton,
+            pressed && styles.primaryButtonPressed,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Back to chat"
+          accessibilityHint="Closes this voice call screen"
+        >
+          <LinearGradient
+            colors={[ACCENT_PINK, ACCENT_PURPLE]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.primaryButtonGradient}
           >
-            <LinearGradient
-              colors={[DANGER_RED, "#DC2626"]}
-              style={styles.endCallGradient}
-            >
-              <PhoneOff size={32} color={WHITE} />
-            </LinearGradient>
-          </TouchableOpacity>
-
-          {/* Speaker Button */}
-          <TouchableOpacity
-            style={[
-              styles.controlButton,
-              isSpeaker && styles.controlButtonActive,
-            ]}
-            onPress={toggleSpeaker}
-            activeOpacity={0.7}
-          >
-            {isSpeaker ? (
-              <Volume2 size={28} color={WHITE} />
-            ) : (
-              <VolumeX size={28} color={WHITE} />
-            )}
-            <Text style={styles.controlLabel}>
-              {isSpeaker ? "Speaker" : "Earpiece"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+            <PhoneOff size={22} color={WHITE} />
+            <Text style={styles.primaryButtonText}>Back to chat</Text>
+          </LinearGradient>
+        </Pressable>
+      </ScrollView>
     </View>
   );
 }
@@ -201,87 +191,187 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BRAND_BG,
   },
-  content: {
-    flex: 1,
-    justifyContent: "space-between",
-  },
-  userInfoContainer: {
+  header: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    flexDirection: "row",
     alignItems: "center",
-    paddingTop: 60,
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
-  avatarContainer: {
-    position: "relative",
-    marginBottom: 32,
+  headerCopy: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  eyebrow: {
+    color: TEXT_MUTED,
+    fontSize: 13,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  headerTitle: {
+    color: WHITE,
+    fontSize: 20,
+    fontWeight: "800",
+    marginTop: 2,
+  },
+  iconButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: SURFACE,
+    borderWidth: 1,
+    borderColor: SURFACE_STRONG,
+  },
+  buttonPressed: {
+    opacity: 0.72,
+  },
+  content: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  avatarShell: {
+    alignSelf: "center",
+    width: 176,
+    height: 176,
+    borderRadius: 88,
+    padding: 4,
+    backgroundColor: SURFACE_STRONG,
+    marginBottom: 28,
   },
   avatar: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 4,
-    borderColor: SURFACE,
+    width: "100%",
+    height: "100%",
+    borderRadius: 84,
   },
-  pulseRing: {
-    position: "absolute",
-    top: -10,
-    left: -10,
-    right: -10,
-    bottom: -10,
-    borderRadius: 90,
-    opacity: 0.5,
+  avatarFallback: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 84,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
-  pulseGradient: {
-    flex: 1,
-    borderRadius: 90,
-  },
-  userName: {
-    fontSize: 32,
+  avatarFallbackText: {
+    color: TEXT_MUTED,
+    fontSize: 13,
     fontWeight: "700",
-    color: WHITE,
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  callStatus: {
-    fontSize: 18,
-    color: TEXT_SECONDARY,
-    fontWeight: "500",
-  },
-  controlsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    paddingHorizontal: 40,
-  },
-  controlButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: SURFACE,
-  },
-  controlButtonActive: {
-    backgroundColor: ACCENT_PURPLE,
-  },
-  controlLabel: {
     marginTop: 8,
-    fontSize: 12,
-    color: TEXT_SECONDARY,
-    fontWeight: "500",
   },
-  endCallButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    overflow: "hidden",
-    elevation: 8,
-    shadowColor: DANGER_RED,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-  },
-  endCallGradient: {
-    flex: 1,
+  unavailableBadge: {
+    position: "absolute",
+    right: 4,
+    bottom: 8,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "rgba(239, 62, 120, 0.94)",
+    borderWidth: 3,
+    borderColor: BRAND_BG,
+  },
+  statusCard: {
+    borderRadius: 28,
+    padding: 22,
+    backgroundColor: SURFACE,
+    borderWidth: 1,
+    borderColor: SURFACE_STRONG,
+  },
+  statusPill: {
+    alignSelf: "flex-start",
+    minHeight: 36,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(141, 105, 246, 0.22)",
+    marginBottom: 18,
+  },
+  statusPillText: {
+    color: WHITE,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  title: {
+    color: WHITE,
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: "800",
+    marginBottom: 12,
+  },
+  description: {
+    color: TEXT_SECONDARY,
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: SURFACE_STRONG,
+    marginVertical: 20,
+  },
+  noteRow: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "flex-start",
+  },
+  noteText: {
+    flex: 1,
+    color: TEXT_MUTED,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  safetyButton: {
+    minHeight: 52,
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: "rgba(255, 180, 180, 0.32)",
+    backgroundColor: "rgba(255, 180, 180, 0.12)",
+    marginTop: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingHorizontal: 20,
+  },
+  safetyButtonDisabled: {
+    opacity: 0.58,
+  },
+  safetyButtonText: {
+    color: WHITE,
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  primaryButton: {
+    minHeight: 56,
+    borderRadius: 28,
+    overflow: "hidden",
+    marginTop: 24,
+  },
+  primaryButtonPressed: {
+    opacity: 0.82,
+  },
+  primaryButtonGradient: {
+    minHeight: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingHorizontal: 20,
+  },
+  primaryButtonText: {
+    color: WHITE,
+    fontSize: 17,
+    fontWeight: "800",
   },
 });

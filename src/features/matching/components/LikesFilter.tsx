@@ -8,34 +8,44 @@
 import { Heart } from "lucide-react-native";
 import React from "react";
 import {
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const ACCENT_PINK = "#EF3E78";
 const WHITE = "#FFFFFF";
-const SURFACE = "rgba(255,255,255,0.06)";
-const SURFACE_BORDER = "rgba(141,105,246,0.18)";
+const FILTER_HIT_SLOP = { top: 8, right: 8, bottom: 8, left: 8 };
 
 interface LikesFilterProps {
   filter: "all" | "mutual";
   onFilterChange: (filter: "all" | "mutual") => void;
+  allCount?: number;
+  mutualCount?: number;
 }
 
 export const LikesFilter: React.FC<LikesFilterProps> = ({
   filter,
   onFilterChange,
+  allCount = 0,
+  mutualCount = 0,
 }) => {
   return (
-    <View style={styles.filterContainer}>
+    <View
+      style={styles.filterContainer}
+      accessibilityRole="tablist"
+      accessibilityLabel="Match filters"
+    >
       <TouchableOpacity
         style={[styles.filterTab, filter === "all" && styles.filterTabActive]}
         onPress={() => onFilterChange("all")}
-        accessibilityRole="button"
-        accessibilityLabel="Show all matches"
+        activeOpacity={0.82}
+        hitSlop={FILTER_HIT_SLOP}
+        accessibilityRole="tab"
+        accessibilityLabel={`Show all matches, ${allCount} total`}
+        accessibilityHint="Shows every current match in your list"
+        accessibilityState={{ selected: filter === "all" }}
       >
         <Text
           style={[
@@ -45,6 +55,7 @@ export const LikesFilter: React.FC<LikesFilterProps> = ({
         >
           All Matches
         </Text>
+        <Text style={styles.countText}>{allCount}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -53,8 +64,12 @@ export const LikesFilter: React.FC<LikesFilterProps> = ({
           filter === "mutual" && styles.filterTabActive,
         ]}
         onPress={() => onFilterChange("mutual")}
-        accessibilityRole="button"
-        accessibilityLabel="Show mutual matches only"
+        activeOpacity={0.82}
+        hitSlop={FILTER_HIT_SLOP}
+        accessibilityRole="tab"
+        accessibilityLabel={`Show mutual matches only, ${mutualCount} total`}
+        accessibilityHint="Shows only matches where both members liked each other"
+        accessibilityState={{ selected: filter === "mutual" }}
       >
         <Heart
           size={14}
@@ -70,6 +85,7 @@ export const LikesFilter: React.FC<LikesFilterProps> = ({
         >
           Mutual
         </Text>
+        <Text style={styles.countText}>{mutualCount}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -79,42 +95,36 @@ const styles = StyleSheet.create({
   filterContainer: {
     flexDirection: "row",
     paddingHorizontal: 24,
-    marginBottom: 20,
-    gap: 12,
+    marginBottom: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
   },
   filterTab: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    backgroundColor: SURFACE,
-    borderWidth: 1,
-    borderColor: SURFACE_BORDER,
+    minHeight: 48,
+    marginRight: 24,
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
   filterTabActive: {
-    backgroundColor: ACCENT_PINK,
-    borderColor: ACCENT_PINK,
-    ...Platform.select({
-      ios: {
-        shadowColor: ACCENT_PINK,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    borderBottomColor: ACCENT_PINK,
   },
   filterText: {
     fontSize: 14,
     fontFamily: "DMSans-SemiBold",
-    color: ACCENT_PINK,
+    color: "rgba(255,255,255,0.68)",
     letterSpacing: 0.3,
   },
   filterTextActive: {
     color: WHITE,
+  },
+  countText: {
+    color: "rgba(255,255,255,0.48)",
+    fontSize: 12,
+    fontFamily: "DMSans-Bold",
+    textAlign: "center",
   },
 });

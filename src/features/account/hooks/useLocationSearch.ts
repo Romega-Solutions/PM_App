@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import * as ExpoLocation from "expo-location";
 import { accountApi, type SavedLocation } from "../api/accountApi";
 
 // ✅ Changed: Added city and country properties
@@ -8,7 +9,9 @@ export type Location = {
   coordinates?: { lat: number; lng: number };
 };
 
-// ✅ Updated sample data with city and country
+const getLocationName = (location: Location) =>
+  location.country ? `${location.city}, ${location.country}` : location.city;
+
 const sampleLocations: Location[] = [
   {
     city: "Manila",
@@ -60,7 +63,79 @@ const sampleLocations: Location[] = [
     country: "Philippines",
     coordinates: { lat: 6.1164, lng: 125.1716 },
   },
+  {
+    city: "New York",
+    country: "United States",
+    coordinates: { lat: 40.7128, lng: -74.006 },
+  },
+  {
+    city: "Los Angeles",
+    country: "United States",
+    coordinates: { lat: 34.0522, lng: -118.2437 },
+  },
+  {
+    city: "San Francisco",
+    country: "United States",
+    coordinates: { lat: 37.7749, lng: -122.4194 },
+  },
+  {
+    city: "Honolulu",
+    country: "United States",
+    coordinates: { lat: 21.3099, lng: -157.8581 },
+  },
+  {
+    city: "Toronto",
+    country: "Canada",
+    coordinates: { lat: 43.6532, lng: -79.3832 },
+  },
+  {
+    city: "Vancouver",
+    country: "Canada",
+    coordinates: { lat: 49.2827, lng: -123.1207 },
+  },
+  {
+    city: "Sydney",
+    country: "Australia",
+    coordinates: { lat: -33.8688, lng: 151.2093 },
+  },
+  {
+    city: "Melbourne",
+    country: "Australia",
+    coordinates: { lat: -37.8136, lng: 144.9631 },
+  },
+  {
+    city: "London",
+    country: "United Kingdom",
+    coordinates: { lat: 51.5072, lng: -0.1276 },
+  },
+  {
+    city: "Singapore",
+    country: "Singapore",
+    coordinates: { lat: 1.3521, lng: 103.8198 },
+  },
 ];
+
+export function getManualLocationFromQuery(value: string): Location | null {
+  const cleaned = value.replace(/\s+/g, " ").trim();
+
+  if (cleaned.length < 2) {
+    return null;
+  }
+
+  const [cityPart, ...countryParts] = cleaned
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (!cityPart) {
+    return null;
+  }
+
+  return {
+    city: cityPart,
+    country: countryParts.join(", "),
+  };
+}
 
 export const useLocationSearch = () => {
   const [query, setQuery] = useState("");
@@ -69,7 +144,6 @@ export const useLocationSearch = () => {
   );
   const [saving, setSaving] = useState(false);
 
-  // ✅ Updated filter to search both city and country
   const filteredLocations = query.trim()
     ? sampleLocations.filter(
         (loc) =>
@@ -86,53 +160,85 @@ export const useLocationSearch = () => {
     try {
       const payload: SavedLocation = {
         locationType: "manual",
-        locationName: `${location.city}, ${location.country}`, // ✅ Updated
+        locationName: getLocationName(location),
         coordinates: location.coordinates || null,
         timestamp: new Date().toISOString(),
       };
 
       await accountApi.saveLocation(payload);
-      console.log(
-        "✅ Location auto-saved:",
-        `${location.city}, ${location.country}`
-      );
-    } catch (error) {
-      console.error("❌ Error saving location:", error);
+    } catch {
+      console.error("Error saving location.");
     } finally {
       setSaving(false);
     }
   }, []);
 
   const getCurrentLocation = useCallback(async (): Promise<Location | null> => {
-    // Simulate getting current location
-    // In production, use expo-location
-    const mockCurrent: Location = {
-      city: "Manila",
-      country: "Philippines",
-      coordinates: { lat: 14.5995, lng: 120.9842 },
-    };
+    const permission = await ExpoLocation.requestForegroundPermissionsAsync();
 
-    setSelectedLocation(mockCurrent);
+    if (permission.status !== "granted") {
+      throw new Error(
+        permission.canAskAgain
+          ? "Location permission is required to use your current location. You can also search for your city manually."
+          : "Location access is off. Turn it on in device settings, or search for your city manually."
+      );
+    }
 
-    // Auto-save to database
     setSaving(true);
     try {
+      const position = await ExpoLocation.getCurrentPositionAsync({
+        accuracy: ExpoLocation.Accuracy.Balanced,
+      });
+
+      const coordinates = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      };
+
+      let city = "Current location";
+      let country = "";
+
+      try {
+        const [place] = await ExpoLocation.reverseGeocodeAsync({
+          latitude: coordinates.lat,
+          longitude: coordinates.lng,
+        });
+
+        city =
+          place?.city?.trim() ||
+          place?.subregion?.trim() ||
+          place?.district?.trim() ||
+          place?.region?.trim() ||
+          city;
+        country = place?.country?.trim() || country;
+      } catch {
+        console.warn("Reverse geocoding failed.");
+      }
+
+      const currentLocation: Location = {
+        city,
+        country,
+        coordinates,
+      };
+
+      setSelectedLocation(currentLocation);
+
       const payload: SavedLocation = {
         locationType: "current",
-        locationName: `${mockCurrent.city}, ${mockCurrent.country}`,
-        coordinates: mockCurrent.coordinates,
+        locationName: getLocationName(currentLocation),
+        coordinates,
         timestamp: new Date().toISOString(),
       };
 
       await accountApi.saveLocation(payload);
-      console.log("✅ Current location saved");
+
+      return currentLocation;
     } catch (error) {
-      console.error("❌ Error saving location:", error);
+      console.error("Error saving current location.");
+      throw error;
     } finally {
       setSaving(false);
-    }
-
-    return mockCurrent;
+    };
   }, []);
 
   return {

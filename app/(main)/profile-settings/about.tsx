@@ -18,8 +18,6 @@ const BRAND_BG = "#0F0814";
 const ACCENT_PURPLE = "#8D69F6";
 const ACCENT_PINK = "#EF3E78";
 const WHITE = "#FFFFFF";
-const SURFACE_STRONG = "rgba(255, 255, 255, 0.08)";
-const TILE_BORDER = "rgba(168, 85, 247, 0.13)";
 
 export default function AboutScreen() {
   const router = useRouter();
@@ -42,14 +40,25 @@ export default function AboutScreen() {
         <TouchableOpacity
           onPress={() => router.push("/(main)/profile")}
           style={styles.backBtn}
+          activeOpacity={0.78}
+          accessibilityRole="button"
+          accessibilityLabel="Back to profile"
+          accessibilityHint="Returns to your profile screen"
         >
           <ArrowLeft size={24} color={WHITE} />
         </TouchableOpacity>
-        <Text style={styles.title}>About</Text>
-        <View style={{ width: 24 }} />
+        <Text style={styles.title}>About PinayMate</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={[
+          styles.contentBody,
+          { paddingBottom: Math.max(insets.bottom, 24) },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.logoSection}>
           <View style={styles.logoBg}>
             <Heart size={48} color={ACCENT_PINK} fill={ACCENT_PINK} />
@@ -59,42 +68,69 @@ export default function AboutScreen() {
         </View>
 
         <Text style={styles.description}>
-          PinayMate is a modern dating platform designed to connect Filipina
-          women with foreign men seeking meaningful relationships. Our mission
-          is to create authentic connections based on shared values and mutual
-          respect.
+          PinayMate helps Filipina women and foreign men build intentional
+          relationships with clearer profiles, trust checks, privacy controls,
+          and respectful conversations.
         </Text>
 
-        <View style={styles.featureCard}>
-          <Shield size={32} color={ACCENT_PURPLE} />
-          <Text style={styles.featureTitle}>Safe & Secure</Text>
-          <Text style={styles.featureDesc}>
-            Your privacy and safety are our top priorities. We use advanced
-            security measures to protect your data.
+        <View style={styles.missionStrip}>
+          <Text style={styles.missionStripTitle}>Dating with more context</Text>
+          <Text style={styles.missionStripText}>
+            We keep the focus on relationship intent, profile clarity, and safer
+            ways to decide who feels worth meeting.
           </Text>
         </View>
 
-        <View style={styles.featureCard}>
-          <Sparkles size={32} color={ACCENT_PURPLE} />
-          <Text style={styles.featureTitle}>Verified Profiles</Text>
-          <Text style={styles.featureDesc}>
-            All profiles go through a verification process to ensure
-            authenticity and create a trusted community.
-          </Text>
-        </View>
+        <View style={styles.valuesGroup}>
+          <View style={styles.valueRow}>
+            <View style={styles.valueIcon}>
+              <Shield size={24} color={ACCENT_PURPLE} />
+            </View>
+            <View style={styles.valueCopy}>
+              <Text style={styles.featureTitle}>
+                Privacy and safety controls
+              </Text>
+              <Text style={styles.featureDesc}>
+                Choose what others can see, report concerns, and keep your
+                account protected.
+              </Text>
+            </View>
+          </View>
 
-        <View style={styles.featureCard}>
-          <Heart size={32} color={ACCENT_PURPLE} />
-          <Text style={styles.featureTitle}>Meaningful Connections</Text>
-          <Text style={styles.featureDesc}>
-            We focus on helping you find genuine relationships built on shared
-            interests and values.
-          </Text>
+          <View style={styles.valueRow}>
+            <View style={styles.valueIcon}>
+              <Sparkles size={24} color={ACCENT_PURPLE} />
+            </View>
+            <View style={styles.valueCopy}>
+              <Text style={styles.featureTitle}>Verification review</Text>
+              <Text style={styles.featureDesc}>
+                Verified badges add useful context while still encouraging
+                thoughtful, careful conversations.
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.valueRow, styles.valueRowLast]}>
+            <View style={styles.valueIcon}>
+              <Heart size={24} color={ACCENT_PURPLE} />
+            </View>
+            <View style={styles.valueCopy}>
+              <Text style={styles.featureTitle}>Meaningful connections</Text>
+              <Text style={styles.featureDesc}>
+                Profiles highlight intent, interests, and values before either
+                person chooses to connect.
+              </Text>
+            </View>
+          </View>
         </View>
 
         <TouchableOpacity
           style={styles.websiteBtn}
           onPress={() => Linking.openURL("https://pinaymate.com")}
+          activeOpacity={0.84}
+          accessibilityRole="button"
+          accessibilityLabel="Visit the PinayMate website"
+          accessibilityHint="Opens pinaymate.com in your browser"
         >
           <Globe size={20} color={WHITE} />
           <Text style={styles.websiteBtnText}>Visit Our Website</Text>
@@ -104,10 +140,8 @@ export default function AboutScreen() {
           <Text style={styles.footerText}>
             © 2025 PinayMate. All rights reserved.
           </Text>
-          <Text style={styles.footerText}>Made with ❤️ in the Philippines</Text>
+          <Text style={styles.footerText}>Made in the Philippines</Text>
         </View>
-
-        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
@@ -126,16 +160,29 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   backBtn: {
-    padding: 4,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
+    flex: 1,
     fontSize: 20,
     color: WHITE,
     fontFamily: "DMSans-Bold",
+    textAlign: "center",
+  },
+  headerSpacer: {
+    width: 44,
+    height: 44,
   },
   content: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  contentBody: {
+    paddingBottom: 24,
   },
   logoSection: {
     alignItems: "center",
@@ -172,33 +219,70 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 32,
   },
-  featureCard: {
-    backgroundColor: SURFACE_STRONG,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: TILE_BORDER,
-    padding: 20,
-    alignItems: "center",
+  missionStrip: {
+    borderLeftWidth: 3,
+    borderLeftColor: ACCENT_PINK,
+    paddingLeft: 16,
+    paddingVertical: 6,
+    marginBottom: 18,
+  },
+  missionStripTitle: {
+    color: WHITE,
+    fontSize: 16,
+    fontFamily: "DMSans-Bold",
+    marginBottom: 6,
+  },
+  missionStripText: {
+    color: "rgba(255,255,255,0.72)",
+    fontSize: 14,
+    fontFamily: "DMSans-Regular",
+    lineHeight: 21,
+  },
+  valuesGroup: {
+    marginTop: 4,
     marginBottom: 16,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  valueRow: {
+    flexDirection: "row",
+    gap: 14,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.1)",
+  },
+  valueRowLast: {
+    borderBottomWidth: 0,
+  },
+  valueIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(141, 105, 246, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  valueCopy: {
+    flex: 1,
   },
   featureTitle: {
     color: WHITE,
     fontSize: 18,
     fontFamily: "DMSans-Bold",
-    marginTop: 12,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   featureDesc: {
     color: "rgba(255,255,255,0.7)",
     fontSize: 14,
     fontFamily: "DMSans-Regular",
-    textAlign: "center",
     lineHeight: 20,
   },
   websiteBtn: {
     backgroundColor: ACCENT_PURPLE,
     borderRadius: 12,
-    padding: 16,
+    minHeight: 54,
+    paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

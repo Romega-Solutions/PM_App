@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { theme } from "@/src/theme";
 
 export default function AccountSetupLayout() {
   return (
@@ -8,9 +9,10 @@ export default function AccountSetupLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          gestureEnabled: false, // Prevent going back during setup
+          gestureEnabled: true,
+          fullScreenGestureEnabled: true,
           animation: "slide_from_right",
-          contentStyle: { backgroundColor: "transparent" },
+          contentStyle: { backgroundColor: theme.colors.dalisay[950] },
         }}
       >
         <Stack.Screen

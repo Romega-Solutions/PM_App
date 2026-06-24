@@ -4,7 +4,7 @@
  * PURPOSE: Centralized auth state using Zustand with persistence
  *
  * SECURITY PRACTICES:
- * - Session tokens stored securely in AsyncStorage (encrypted by OS)
+ * - Session tokens use SecureStore on native builds and web-compatible storage on web
  * - Auto token refresh before expiry
  * - Proper cleanup on sign out
  * - No sensitive data persisted (passwords, etc.)
@@ -17,7 +17,7 @@
  */
 
 import { supabase } from "@/src/config/supabase";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { authStorage } from "@/src/config/authStorage";
 import type { Session } from "@supabase/supabase-js";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
@@ -97,7 +97,7 @@ export const useAuthStore = create<AuthState>()(
           } = await supabase.auth.getSession();
 
           if (error) {
-            console.error("❌ Failed to get session:", error.message);
+            console.error("Failed to restore auth session.");
             set({
               session: null,
               user: null,
@@ -115,7 +115,6 @@ export const useAuthStore = create<AuthState>()(
               isInitialized: true,
               isLoading: false,
             });
-            console.log("✅ Session restored for:", session.user.email);
           } else {
             set({
               session: null,
@@ -125,8 +124,8 @@ export const useAuthStore = create<AuthState>()(
               isLoading: false,
             });
           }
-        } catch (error) {
-          console.error("❌ Auth initialization error:", error);
+        } catch {
+          console.error("Auth initialization failed.");
           set({
             session: null,
             user: null,
@@ -146,7 +145,7 @@ export const useAuthStore = create<AuthState>()(
           } = await supabase.auth.refreshSession();
 
           if (error || !session) {
-            console.error("❌ Session refresh failed:", error?.message);
+            console.error("Session refresh failed.");
             set({
               session: null,
               user: null,
@@ -159,9 +158,8 @@ export const useAuthStore = create<AuthState>()(
             session,
             isAuthenticated: true,
           });
-          console.log("✅ Session refreshed successfully");
-        } catch (error) {
-          console.error("❌ Session refresh error:", error);
+        } catch {
+          console.error("Session refresh failed.");
         }
       },
 
@@ -177,28 +175,26 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
             isLoading: false,
           });
-
-          console.log("✅ User signed out successfully");
-        } catch (error) {
-          console.error("❌ Sign out error:", error);
+        } catch {
+          console.error("Sign out failed.");
           set({ isLoading: false });
         }
       },
     }),
     {
       name: "auth-storage",
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => authStorage),
 
-      // SECURITY: Only persist session, not sensitive data
+      // SECURITY: Only persist session state, not passwords or profile details.
+      // Native builds use SecureStore through authStorage.
       partialize: (state) => ({
         session: state.session,
         isAuthenticated: state.isAuthenticated,
       }),
 
-      // Restore state from AsyncStorage on app start
+      // Restore state from the configured auth storage on app start
       onRehydrateStorage: () => (state) => {
         if (state) {
-          console.log("🔄 Hydrating auth state from storage");
           state.initialize();
         }
       },

@@ -9,6 +9,7 @@
 
 import { supabase } from "@/src/config/supabase";
 import { RealtimeChannel } from "@supabase/supabase-js";
+import { hydrateMessageMedia } from "./messages.api";
 import type { Message } from "../types/messaging.types";
 
 export type MessageCallback = (message: Message) => void;
@@ -43,11 +44,17 @@ class RealtimeAPI {
           table: "messages",
           filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => {
-          const newMessage = payload.new as Message;
-          // Only notify if message is from another user
-          if (newMessage.sender_id !== userId) {
-            onNewMessage(newMessage);
+        async (payload) => {
+          try {
+            const newMessage = await hydrateMessageMedia(
+              payload.new as Message,
+            );
+            // Only notify if message is from another user
+            if (newMessage.sender_id !== userId) {
+              onNewMessage(newMessage);
+            }
+          } catch {
+            console.warn("Realtime message hydration failed.");
           }
         },
       )
@@ -59,9 +66,15 @@ class RealtimeAPI {
           table: "messages",
           filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => {
-          const updatedMessage = payload.new as Message;
-          onNewMessage(updatedMessage);
+        async (payload) => {
+          try {
+            const updatedMessage = await hydrateMessageMedia(
+              payload.new as Message,
+            );
+            onNewMessage(updatedMessage);
+          } catch {
+            console.warn("Realtime message update hydration failed.");
+          }
         },
       )
       .subscribe();
@@ -112,11 +125,15 @@ class RealtimeAPI {
       this.channels.set(channelName, channel);
     }
 
-    await channel.send({
-      type: "broadcast",
-      event: "typing",
-      payload: { user_id: userId, is_typing: isTyping },
-    });
+    try {
+      await channel.send({
+        type: "broadcast",
+        event: "typing",
+        payload: { user_id: userId, is_typing: isTyping },
+      });
+    } catch {
+      console.warn("Realtime typing broadcast failed.");
+    }
   }
 
   /**
@@ -158,11 +175,15 @@ class RealtimeAPI {
       this.channels.set(channelName, channel);
     }
 
-    await channel.send({
-      type: "broadcast",
-      event: "read",
-      payload: { message_ids: messageIds },
-    });
+    try {
+      await channel.send({
+        type: "broadcast",
+        event: "read",
+        payload: { message_ids: messageIds },
+      });
+    } catch {
+      console.warn("Realtime read receipt broadcast failed.");
+    }
   }
 
   /**
@@ -210,10 +231,14 @@ class RealtimeAPI {
 
     await channel.subscribe(async (status) => {
       if (status === "SUBSCRIBED") {
-        await channel.track({
-          user_id: userId,
-          online_at: new Date().toISOString(),
-        });
+        try {
+          await channel.track({
+            user_id: userId,
+            online_at: new Date().toISOString(),
+          });
+        } catch {
+          console.warn("Realtime presence tracking failed.");
+        }
       }
     });
 
@@ -226,7 +251,9 @@ class RealtimeAPI {
   private async unsubscribe(channelName: string): Promise<void> {
     const channel = this.channels.get(channelName);
     if (channel) {
-      await supabase.removeChannel(channel);
+      await supabase.removeChannel(channel).catch(() => {
+        console.warn("Realtime channel removal failed.");
+      });
       this.channels.delete(channelName);
     }
   }

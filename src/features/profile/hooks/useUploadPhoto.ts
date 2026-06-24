@@ -7,6 +7,14 @@ import {
     uploadProfilePhoto,
 } from "../api/profileApi";
 
+const PHOTO_PERMISSION_ERROR =
+  "Photo library permission is required to choose a profile photo.";
+const PHOTO_SIGN_IN_ERROR = "Please sign in before changing profile photos.";
+const PHOTO_UPLOAD_ERROR =
+  "Photo upload failed. Check your connection and try again.";
+const PHOTO_DELETE_ERROR =
+  "Photo could not be removed. Check your connection and try again.";
+
 export function useUploadPhoto() {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -24,7 +32,7 @@ export function useUploadPhoto() {
         await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (status !== "granted") {
-        setError("Permission to access gallery is required");
+        setError(PHOTO_PERMISSION_ERROR);
         return { success: false };
       }
 
@@ -51,11 +59,11 @@ export function useUploadPhoto() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        setError("Not authenticated");
+        setError(PHOTO_SIGN_IN_ERROR);
         return { success: false };
       }
 
-      // Simulate progress for UX
+      // Show optimistic progress while the storage SDK completes the upload.
       const progressInterval = setInterval(() => {
         setProgress((prev) => Math.min(prev + 10, 90));
       }, 200);
@@ -66,7 +74,7 @@ export function useUploadPhoto() {
       setProgress(100);
 
       if (!uploadResult.success || !uploadResult.url) {
-        setError(uploadResult.error || "Upload failed");
+        setError(uploadResult.error || PHOTO_UPLOAD_ERROR);
         return { success: false };
       }
 
@@ -77,14 +85,13 @@ export function useUploadPhoto() {
       const updateResult = await updateProfilePhotos(updatedPhotos);
 
       if (!updateResult.success) {
-        setError(updateResult.error || "Failed to update profile");
+        setError(updateResult.error || PHOTO_UPLOAD_ERROR);
         return { success: false };
       }
 
       return { success: true, url: uploadResult.url };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      setError(errorMessage);
+    } catch {
+      setError(PHOTO_UPLOAD_ERROR);
       return { success: false };
     } finally {
       setUploading(false);
@@ -106,7 +113,7 @@ export function useUploadPhoto() {
       const deleteResult = await deleteProfilePhoto(photoUrl);
 
       if (!deleteResult.success) {
-        setError(deleteResult.error || "Failed to delete photo");
+        setError(deleteResult.error || PHOTO_DELETE_ERROR);
         return false;
       }
 
@@ -115,14 +122,13 @@ export function useUploadPhoto() {
       const updateResult = await updateProfilePhotos(updatedPhotos);
 
       if (!updateResult.success) {
-        setError(updateResult.error || "Failed to update profile");
+        setError(updateResult.error || PHOTO_DELETE_ERROR);
         return false;
       }
 
       return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      setError(errorMessage);
+    } catch {
+      setError(PHOTO_DELETE_ERROR);
       return false;
     }
   };

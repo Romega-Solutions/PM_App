@@ -155,12 +155,12 @@ Basic Info Screen: "First Name" + "Last Name" inputs
 
 8. VERIFICATION (OPTIONAL)
    └─ Selfie + ID document
-   └─ Clear benefits of verification
+   └─ Clear review-based benefits and limits
    └─ Can skip and do later
 
 9. WELCOME COMPLETE
    └─ Profile summary
-   └─ Encourage to start browsing
+   └─ Explain the next available launch-stage action
 ```
 
 ---
@@ -223,8 +223,8 @@ const genderPreferences = {
 #### 2. **Verification Placement**
 
 - Move verification earlier (step 5 instead of 8)
-- Show verification boosts profile visibility by 300%
-- Make it feel less like a chore, more like a reward
+- Explain verification as a trust signal after review, not a fixed ranking boost
+- Make it feel useful without promising more matches or guaranteed safety
 
 #### 3. **Photo Upload Guidelines**
 
@@ -367,7 +367,7 @@ Welcome: Good → Completion
 - [ ] Add skip logic with warnings
 - [ ] Update preferences to match business logic
 - [ ] Add progress persistence
-- [ ] Add incentive messaging (verified = more matches)
+- [ ] Add incentive messaging around reviewed trust signals without promising more matches
 
 ### **Phase 3: Polish** (Nice to Have)
 

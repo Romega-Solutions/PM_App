@@ -90,9 +90,9 @@ Implemented an intelligent matching algorithm that scores potential matches from
 - **Adjacent level** (±1): 7 points
 - **Close level** (±2): 4 points
 
-### 7. Activity & Verification Bonus (5 points max)
+### 7. Activity Signal (2 points max)
 
-- **Verified user**: +3 points
+- **Verified user**: shown as a reviewed trust signal, not an automatic score boost
 - **Active < 24 hours**: +2 points
 - **Active < 3 days**: +1 point
 
@@ -181,7 +181,7 @@ console.log("🎯 Smart Matching: Found 10 profiles with scores:", [
    - Shared interests → higher score
    - Same relationship goal → higher score
    - Closer location → higher score
-   - Verified users get bonus
+   - Reviewed verification status is shown as a trust signal, not an automatic score boost
 
 ---
 
@@ -205,8 +205,8 @@ console.log("🎯 Smart Matching: Found 10 profiles with scores:", [
 ## 🔮 Future Enhancements
 
 - [ ] Add distance calculation from GPS
-- [ ] Weight verified users higher
-- [ ] Premium members get priority
+- [ ] Evaluate reviewed trust signals without promising more matches or guaranteed safety
+- [ ] Keep paid membership features separate from safety-sensitive ranking unless policy, billing, and fairness review approve otherwise
 - [ ] Machine learning for personal preferences
 - [ ] A/B test different scoring weights
 - [ ] Cache scores for performance

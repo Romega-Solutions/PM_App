@@ -2,28 +2,40 @@
 import { supabase } from "@/src/config/supabase";
 import { Match, Profile, SwipeResult } from "../types";
 
-/**
- * Calculate distance between two coordinates using Haversine formula
- * Returns distance in kilometers
- */
-const calculateDistance = (
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number => {
-  const R = 6371; // Earth's radius in km
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) *
-      Math.cos(lat2 * (Math.PI / 180)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
+const MATCHING_PROFILE_SELECT = `
+  id,
+  first_name,
+  age,
+  gender,
+  user_type,
+  photos,
+  bio,
+  country,
+  city,
+  height_cm,
+  body_type,
+  education,
+  occupation,
+  relationship_goal,
+  languages,
+  interests,
+  looking_for_gender,
+  age_preference_min,
+  age_preference_max,
+  distance_preference_km,
+  is_verified,
+  is_active,
+  is_premium,
+  created_at,
+  last_active_at
+`;
+
+const DISCOVERY_LOAD_ERROR =
+  "Discovery could not load. Check your connection and try again.";
+const MATCHES_LOAD_ERROR =
+  "Matches could not load. Check your connection and try again.";
+const LIKES_LOAD_ERROR =
+  "Likes could not load. Check your connection and try again.";
 
 /**
  * Calculate match score between current user and potential match
@@ -59,11 +71,11 @@ const calculateMatchScore = (currentUser: any, candidate: any): number => {
     candidate.interests.length > 0
   ) {
     const sharedInterests = currentUser.interests.filter((interest: string) =>
-      candidate.interests.includes(interest)
+      candidate.interests.includes(interest),
     );
     const interestScore = Math.min(
       20,
-      (sharedInterests.length / currentUser.interests.length) * 20
+      (sharedInterests.length / currentUser.interests.length) * 20,
     );
     score += interestScore;
   }
@@ -76,37 +88,19 @@ const calculateMatchScore = (currentUser: any, candidate: any): number => {
     candidate.languages.length > 0
   ) {
     const sharedLanguages = currentUser.languages.filter((lang: string) =>
-      candidate.languages.includes(lang)
+      candidate.languages.includes(lang),
     );
     const languageScore = Math.min(
       15,
       (sharedLanguages.length /
         Math.max(currentUser.languages.length, candidate.languages.length)) *
-        15
+        15,
     );
     score += languageScore;
   }
 
-  // 4. LOCATION/DISTANCE (15 points max)
+  // 4. LOCATION (15 points max)
   if (
-    currentUser.latitude &&
-    currentUser.longitude &&
-    candidate.latitude &&
-    candidate.longitude
-  ) {
-    const distance = calculateDistance(
-      currentUser.latitude,
-      currentUser.longitude,
-      candidate.latitude,
-      candidate.longitude
-    );
-    const maxDistance = currentUser.distance_preference_km || 100;
-    if (distance <= maxDistance) {
-      // Closer is better
-      const distanceScore = 15 * (1 - distance / maxDistance);
-      score += distanceScore;
-    }
-  } else if (
     currentUser.city &&
     candidate.city &&
     currentUser.city === candidate.city
@@ -144,10 +138,10 @@ const calculateMatchScore = (currentUser: any, candidate: any): number => {
       "phd",
     ];
     const userLevel = educationLevels.indexOf(
-      currentUser.education.toLowerCase()
+      currentUser.education.toLowerCase(),
     );
     const candidateLevel = educationLevels.indexOf(
-      candidate.education.toLowerCase()
+      candidate.education.toLowerCase(),
     );
     if (userLevel !== -1 && candidateLevel !== -1) {
       const levelDiff = Math.abs(userLevel - candidateLevel);
@@ -161,12 +155,9 @@ const calculateMatchScore = (currentUser: any, candidate: any): number => {
     }
   }
 
-  // 7. ACTIVITY & VERIFICATION BONUS (5 points max)
-  // Verified users get priority
-  if (candidate.is_verified) {
-    score += 3;
-  }
-  // Recently active users get priority
+  // 7. ACTIVITY SIGNAL (2 points max)
+  // Verification is shown as a trust signal, not an automatic ranking boost.
+  // Recently active users get priority.
   if (candidate.last_active_at) {
     const hoursSinceActive =
       (Date.now() - new Date(candidate.last_active_at).getTime()) /
@@ -181,6 +172,63 @@ const calculateMatchScore = (currentUser: any, candidate: any): number => {
   return Math.round(score);
 };
 
+const validateSwipeIds = (
+  fromUserId: string,
+  toUserId: string,
+  action: "like" | "pass",
+): { fromUserId?: string; toUserId?: string; error?: string } => {
+  const normalizedFromUserId = fromUserId.trim();
+  const normalizedToUserId = toUserId.trim();
+
+  if (!normalizedFromUserId || !normalizedToUserId) {
+    return { error: `Choose a member to ${action}.` };
+  }
+
+  if (!isUuid(normalizedFromUserId) || !isUuid(normalizedToUserId)) {
+    return {
+      error: "This member could not be identified. Go back and try again.",
+    };
+  }
+
+  if (normalizedFromUserId === normalizedToUserId) {
+    return { error: `You cannot ${action} yourself.` };
+  }
+
+  return { fromUserId: normalizedFromUserId, toUserId: normalizedToUserId };
+};
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
+type LikeProfileRpcResult = {
+  success?: boolean;
+  is_match?: boolean;
+  matched_profile?: Profile | null;
+  error?: string | null;
+};
+
+type MatchingAction = "like" | "pass" | "undo";
+
+const getSafeMatchingActionError = (action: MatchingAction): string => {
+  if (action === "pass") {
+    return "Pass did not save. Check your connection and try again.";
+  }
+
+  if (action === "undo") {
+    return "Undo did not complete. Check your connection and try again.";
+  }
+
+  return "Like did not send. Check your connection and try again.";
+};
+
+const isReviewedLaunchDiscoveryProfile = (profile: {
+  is_verified?: boolean | null;
+  is_active?: boolean | null;
+}) => profile.is_verified === true && profile.is_active === true;
+
 /**
  * Fetch profiles for discovery based on user preferences
  * - Filters by opposite user_type (filipinas see foreigners, foreigners see filipinas)
@@ -192,18 +240,22 @@ const calculateMatchScore = (currentUser: any, candidate: any): number => {
  */
 export const fetchDiscoverProfiles = async (
   userId: string,
-  limit: number = 20
+  limit: number = 20,
 ): Promise<{ data: Profile[] | null; error: any }> => {
   try {
     // Get current user's profile to determine preferences
     const { data: currentUser, error: userError } = await supabase
       .from("profiles")
-      .select("*")
+      .select(MATCHING_PROFILE_SELECT)
       .eq("id", userId)
       .single();
 
     if (userError || !currentUser) {
-      return { data: null, error: userError || "User not found" };
+      return { data: null, error: DISCOVERY_LOAD_ERROR };
+    }
+
+    if (!isReviewedLaunchDiscoveryProfile(currentUser)) {
+      return { data: [], error: null };
     }
 
     // Determine which user_type to show
@@ -224,9 +276,10 @@ export const fetchDiscoverProfiles = async (
 
     // Build query - fetch MORE profiles for better scoring
     let query = supabase
-      .from("profiles")
-      .select("*")
+      .from("discoverable_profiles")
+      .select(MATCHING_PROFILE_SELECT)
       .eq("user_type", targetUserType)
+      .eq("is_verified", true)
       .eq("is_active", true)
       .not("id", "in", `(${excludedIds.join(",")})`)
       .limit(limit * 3); // Fetch 3x to allow for better scoring
@@ -250,7 +303,7 @@ export const fetchDiscoverProfiles = async (
     const { data: profiles, error } = await query;
 
     if (error) {
-      return { data: null, error };
+      return { data: null, error: DISCOVERY_LOAD_ERROR };
     }
 
     if (!profiles || profiles.length === 0) {
@@ -269,15 +322,10 @@ export const fetchDiscoverProfiles = async (
     // Take top matches up to limit
     const topMatches = scoredProfiles.slice(0, limit);
 
-    console.log(
-      `🎯 Smart Matching: Found ${topMatches.length} profiles with scores:`,
-      topMatches.map((p) => ({ name: p.first_name, score: p.matchScore }))
-    );
-
     return { data: topMatches, error: null };
   } catch (error) {
-    console.error("Error fetching discover profiles:", error);
-    return { data: null, error };
+    console.error("Error fetching discover profiles.");
+    return { data: null, error: DISCOVERY_LOAD_ERROR };
   }
 };
 
@@ -289,66 +337,41 @@ export const fetchDiscoverProfiles = async (
  */
 export const likeProfile = async (
   fromUserId: string,
-  toUserId: string
+  toUserId: string,
 ): Promise<SwipeResult> => {
-  try {
-    // Insert the like
-    const { data: newLike, error: likeError } = await supabase
-      .from("likes")
-      .insert({
-        from_user_id: fromUserId,
-        to_user_id: toUserId,
-        is_match: false,
-      })
-      .select()
-      .single();
+  const validatedIds = validateSwipeIds(fromUserId, toUserId, "like");
+  if (validatedIds.error || !validatedIds.toUserId) {
+    return { success: false, error: validatedIds.error };
+  }
 
-    if (likeError) {
-      return { success: false, error: likeError.message };
+  try {
+    const { data, error } = await supabase.rpc("like_profile", {
+      p_to_user_id: validatedIds.toUserId,
+    });
+
+    if (error) {
+      return { success: false, error: getSafeMatchingActionError("like") };
     }
 
-    // Check if the other user already liked this user (mutual like = match)
-    const { data: mutualLike, error: mutualError } = await supabase
-      .from("likes")
-      .select("*")
-      .eq("from_user_id", toUserId)
-      .eq("to_user_id", fromUserId)
-      .single();
+    const result = (
+      Array.isArray(data) ? data[0] : data
+    ) as LikeProfileRpcResult | null;
 
-    // If mutual like exists, it's a match!
-    if (mutualLike && !mutualError) {
-      // Update both likes to is_match = true
-      const matchedAt = new Date().toISOString();
-
-      await Promise.all([
-        supabase
-          .from("likes")
-          .update({ is_match: true, matched_at: matchedAt })
-          .eq("id", newLike.id),
-        supabase
-          .from("likes")
-          .update({ is_match: true, matched_at: matchedAt })
-          .eq("id", mutualLike.id),
-      ]);
-
-      // Get the matched profile
-      const { data: matchedProfile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", toUserId)
-        .single();
-
+    if (!result?.success) {
       return {
-        success: true,
-        isMatch: true,
-        matchedProfile: matchedProfile || undefined,
+        success: false,
+        error: getSafeMatchingActionError("like"),
       };
     }
 
-    return { success: true, isMatch: false };
-  } catch (error: any) {
-    console.error("Error liking profile:", error);
-    return { success: false, error: error.message };
+    return {
+      success: true,
+      isMatch: Boolean(result.is_match),
+      matchedProfile: result.matched_profile || undefined,
+    };
+  } catch {
+    console.error("Error liking profile.");
+    return { success: false, error: getSafeMatchingActionError("like") };
   }
 };
 
@@ -359,22 +382,28 @@ export const likeProfile = async (
  */
 export const passProfile = async (
   fromUserId: string,
-  toUserId: string
+  toUserId: string,
 ): Promise<{ success: boolean; error?: string }> => {
+  const validatedIds = validateSwipeIds(fromUserId, toUserId, "pass");
+  if (validatedIds.error || !validatedIds.toUserId) {
+    return { success: false, error: validatedIds.error };
+  }
+
   try {
-    const { error } = await supabase.from("passes").insert({
-      from_user_id: fromUserId,
-      to_user_id: toUserId,
+    void fromUserId;
+
+    const { error } = await supabase.rpc("pass_profile", {
+      p_to_user_id: validatedIds.toUserId,
     });
 
     if (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: getSafeMatchingActionError("pass") };
     }
 
     return { success: true };
-  } catch (error: any) {
-    console.error("Error passing profile:", error);
-    return { success: false, error: error.message };
+  } catch {
+    console.error("Error passing profile.");
+    return { success: false, error: getSafeMatchingActionError("pass") };
   }
 };
 
@@ -384,7 +413,7 @@ export const passProfile = async (
  * - Includes profile details
  */
 export const getMatches = async (
-  userId: string
+  userId: string,
 ): Promise<{ data: Match[] | null; error: any }> => {
   try {
     // Get all likes where this user is involved and is_match = true
@@ -396,7 +425,7 @@ export const getMatches = async (
       .order("matched_at", { ascending: false });
 
     if (likesError) {
-      return { data: null, error: likesError };
+      return { data: null, error: MATCHES_LOAD_ERROR };
     }
 
     if (!likes || likes.length === 0) {
@@ -405,37 +434,45 @@ export const getMatches = async (
 
     // Get the matched user IDs (the other person in each match)
     const matchedUserIds = likes.map((like) =>
-      like.from_user_id === userId ? like.to_user_id : like.from_user_id
+      like.from_user_id === userId ? like.to_user_id : like.from_user_id,
     );
 
     // Fetch profiles for all matched users
     const { data: profiles, error: profilesError } = await supabase
-      .from("profiles")
-      .select("*")
+      .from("discoverable_profiles")
+      .select(MATCHING_PROFILE_SELECT)
       .in("id", matchedUserIds);
 
     if (profilesError) {
-      return { data: null, error: profilesError };
+      return { data: null, error: MATCHES_LOAD_ERROR };
     }
 
-    // Combine likes with profiles
-    const matches: Match[] = likes.map((like) => {
+    // Combine likes with profiles. If the profile is no longer discoverable
+    // because of privacy/blocking/moderation state, omit it instead of
+    // returning a broken or misleading match card.
+    const matches: Match[] = likes.flatMap((like) => {
       const matchedUserId =
         like.from_user_id === userId ? like.to_user_id : like.from_user_id;
       const profile = profiles?.find((p) => p.id === matchedUserId);
 
-      return {
-        id: like.id,
-        profile: profile!,
-        matched_at: like.matched_at || like.created_at,
-        is_mutual: true,
-      };
+      if (!profile) {
+        return [];
+      }
+
+      return [
+        {
+          id: like.id,
+          profile,
+          matched_at: like.matched_at || like.created_at,
+          is_mutual: true,
+        },
+      ];
     });
 
     return { data: matches, error: null };
   } catch (error) {
-    console.error("Error fetching matches:", error);
-    return { data: null, error };
+    console.error("Error fetching matches.");
+    return { data: null, error: MATCHES_LOAD_ERROR };
   }
 };
 
@@ -445,7 +482,7 @@ export const getMatches = async (
  * - Doesn't include mutual matches (those are in getMatches)
  */
 export const getLikesReceived = async (
-  userId: string
+  userId: string,
 ): Promise<{ data: Profile[] | null; error: any }> => {
   try {
     const { data: likes, error: likesError } = await supabase
@@ -455,7 +492,7 @@ export const getLikesReceived = async (
       .eq("is_match", false);
 
     if (likesError) {
-      return { data: null, error: likesError };
+      return { data: null, error: LIKES_LOAD_ERROR };
     }
 
     if (!likes || likes.length === 0) {
@@ -465,74 +502,54 @@ export const getLikesReceived = async (
     const userIds = likes.map((like) => like.from_user_id);
 
     const { data: profiles, error: profilesError } = await supabase
-      .from("profiles")
-      .select("*")
+      .from("discoverable_profiles")
+      .select(MATCHING_PROFILE_SELECT)
       .in("id", userIds);
 
-    return { data: profiles, error: profilesError };
+    if (profilesError) {
+      return { data: null, error: LIKES_LOAD_ERROR };
+    }
+
+    return { data: profiles, error: null };
   } catch (error) {
-    console.error("Error fetching received likes:", error);
-    return { data: null, error };
+    console.error("Error fetching received likes.");
+    return { data: null, error: LIKES_LOAD_ERROR };
   }
 };
 
 /**
- * Super like a profile (future premium feature)
- * - Same as like but with special flag
+ * Super like a profile.
+ * Currently uses the same hardened server-side match flow as a regular like.
  */
 export const superLikeProfile = async (
   fromUserId: string,
-  toUserId: string
+  toUserId: string,
 ): Promise<SwipeResult> => {
-  // For now, just treat it as a regular like
-  // In the future, add a super_like flag to the likes table
   return await likeProfile(fromUserId, toUserId);
 };
 
 /**
- * Undo last swipe (future premium feature)
+ * Undo last swipe.
  */
 export const undoLastSwipe = async (
-  userId: string
+  userId: string,
 ): Promise<{ success: boolean; error?: string }> => {
+  if (!userId) {
+    return { success: false, error: "Sign in before undoing a swipe." };
+  }
+
   try {
-    // Get the most recent like or pass
-    const [{ data: lastLike }, { data: lastPass }] = await Promise.all([
-      supabase
-        .from("likes")
-        .select("*")
-        .eq("from_user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single(),
-      supabase
-        .from("passes")
-        .select("*")
-        .eq("from_user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single(),
-    ]);
+    void userId;
 
-    // Determine which was more recent
-    const lastLikeTime = lastLike?.created_at
-      ? new Date(lastLike.created_at).getTime()
-      : 0;
-    const lastPassTime = lastPass?.created_at
-      ? new Date(lastPass.created_at).getTime()
-      : 0;
+    const { error } = await supabase.rpc("undo_last_swipe");
 
-    if (lastLikeTime > lastPassTime && lastLike) {
-      // Delete the like
-      await supabase.from("likes").delete().eq("id", lastLike.id);
-    } else if (lastPass) {
-      // Delete the pass
-      await supabase.from("passes").delete().eq("id", lastPass.id);
+    if (error) {
+      return { success: false, error: getSafeMatchingActionError("undo") };
     }
 
     return { success: true };
-  } catch (error: any) {
-    console.error("Error undoing swipe:", error);
-    return { success: false, error: error.message };
+  } catch {
+    console.error("Error undoing swipe.");
+    return { success: false, error: getSafeMatchingActionError("undo") };
   }
 };

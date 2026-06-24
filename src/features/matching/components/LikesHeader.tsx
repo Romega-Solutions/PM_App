@@ -19,14 +19,20 @@ export const LikesHeader: React.FC<LikesHeaderProps> = ({
   matchCount,
   filter,
 }) => {
+  const subtitle =
+    matchCount === 0
+      ? filter === "mutual"
+        ? "No mutual matches in this view"
+        : "No matches yet"
+      : `${matchCount} ${filter === "mutual" ? "mutual " : ""}match${
+          matchCount !== 1 ? "es" : ""
+        } ready`;
+
   return (
     <View style={styles.header}>
       <View>
         <Text style={styles.title}>Your Matches</Text>
-        <Text style={styles.subtitle}>
-          {matchCount} {filter === "mutual" ? "mutual" : ""} match
-          {matchCount !== 1 ? "es" : ""} waiting
-        </Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
       </View>
     </View>
   );

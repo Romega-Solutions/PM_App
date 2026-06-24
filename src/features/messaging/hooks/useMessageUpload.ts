@@ -10,6 +10,9 @@
 import { useCallback, useState } from "react";
 import { uploadChatImage } from "../api/messages.api";
 
+// Import supabase for auth check
+import { supabase } from "@/src/config/supabase";
+
 interface UseMessageUploadReturn {
   uploading: boolean;
   progress: number;
@@ -31,10 +34,17 @@ export function useMessageUpload(): UseMessageUploadReturn {
       setUploading(true);
       setProgress(0);
       setError(null);
+      let progressInterval: ReturnType<typeof setInterval> | null = null;
 
       try {
-        // Simulate progress (since fetch doesn't provide upload progress easily)
-        const progressInterval = setInterval(() => {
+        if (!conversationId) {
+          throw new Error(
+            "Photo sharing needs an active matched conversation before upload.",
+          );
+        }
+
+        // Show optimistic progress because fetch does not expose upload progress.
+        progressInterval = setInterval(() => {
           setProgress((prev) => Math.min(prev + 10, 90));
         }, 200);
 
@@ -47,23 +57,25 @@ export function useMessageUpload(): UseMessageUploadReturn {
           throw new Error("User not authenticated");
         }
 
-        const { url, error: uploadError } = await uploadChatImage(
+        const { path, error: uploadError } = await uploadChatImage(
           user.id,
           conversationId,
           uri,
         );
 
-        clearInterval(progressInterval);
-
         if (uploadError) throw uploadError;
 
         setProgress(100);
-        return url;
+        return path;
       } catch (err) {
-        console.error("❌ Error uploading image:", err);
+        console.error("Error uploading image.");
         setError(err as Error);
         return null;
       } finally {
+        if (progressInterval) {
+          clearInterval(progressInterval);
+        }
+
         setUploading(false);
         // Reset progress after 1 second
         setTimeout(() => setProgress(0), 1000);
@@ -89,6 +101,3 @@ export function useMessageUpload(): UseMessageUploadReturn {
     reset,
   };
 }
-
-// Import supabase for auth check
-import { supabase } from "@/src/config/supabase";

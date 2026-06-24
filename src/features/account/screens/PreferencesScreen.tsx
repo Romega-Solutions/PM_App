@@ -3,6 +3,7 @@ import AgeRangeSlider from "@/src/components/preferences/AgeRangeSlider";
 import DistanceSlider from "@/src/components/preferences/DistanceSlider";
 import PreferenceSection from "@/src/components/preferences/PreferenceSection";
 import RelationshipOption from "@/src/components/preferences/RelationshipOption";
+import { LaunchStateNotice } from "@/src/components/ui/LaunchStateNotice";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import type { UserType } from "@/src/features/auth/api/authApi";
 import { theme } from "@/src/theme";
@@ -100,15 +101,25 @@ export default function PreferencesScreen() {
         <View style={styles.header}>
           <AccountProgress steps={5} activeIndex={3} />
           <Text style={styles.title}>Your preferences</Text>
-          <Text style={styles.subtitle}>Help us find your perfect match</Text>
+          <Text style={styles.subtitle}>
+            Set comfortable discovery boundaries for the profiles you want to
+            see. You can adjust them later.
+          </Text>
         </View>
 
         <View style={styles.form}>
+          <LaunchStateNotice
+            testID="account-preferences-launch-state-notice"
+            title="Preference-based discovery"
+            message="Preferences guide discovery when available. These choices help shape who you may see, but they do not guarantee visibility, chat, or a match and they do not override privacy settings, profile review, safety controls, or account availability."
+            accessibilityLabel="Preference guidance. Preference-based discovery guides who you may see when available but preferences do not guarantee a match or override privacy settings, profile review, safety controls, or account availability."
+          />
+
           {/* Auto-assigned: No need for selection */}
           <View style={styles.autoAssignedBadge}>
             <Heart size={18} color={theme.colors.dalisay[400]} />
             <Text style={styles.autoAssignedText}>
-              Looking for:{" "}
+              Discovery direction:{" "}
               <Text style={styles.autoAssignedValue}>{interestedInText}</Text>
             </Text>
           </View>
@@ -127,14 +138,14 @@ export default function PreferencesScreen() {
             />
           </PreferenceSection>
 
-          <PreferenceSection Icon={MapPin} title="Maximum distance">
+          <PreferenceSection Icon={MapPin} title="Maximum distance from you">
             <DistanceSlider
               value={form.maxDistanceKm}
               onChange={(val) => setField("maxDistanceKm", val)}
             />
           </PreferenceSection>
 
-          <PreferenceSection Icon={Heart} title="Looking for">
+          <PreferenceSection Icon={Heart} title="Relationship intention">
             <View style={{ gap: 12 }}>
               {relationshipOptions.map((opt) => (
                 <RelationshipOption

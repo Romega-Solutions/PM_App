@@ -25,14 +25,14 @@ import { useRouter } from "expo-router";
 import { Settings } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -42,8 +42,8 @@ import { UserType } from "@/src/features/auth/api/authApi";
 import { useProfileStore } from "@/src/stores/profileStore";
 import { ProfileHeader } from "../components/ProfileHeader";
 import {
-    ProfileMenuList,
-    getDefaultMenuItems,
+  ProfileMenuList,
+  getDefaultMenuItems,
 } from "../components/ProfileMenuList";
 
 // Brand Colors
@@ -55,14 +55,63 @@ const WHITE = "#FFFFFF";
 /**
  * Profile data interface
  */
-interface ProfileData {
-  firstName: string;
-  lastName: string;
-  age: number;
-  userType: UserType;
-  location: string;
+export interface ProfileData {
+  firstName: string | null;
+  lastName: string | null;
+  age: number | null;
+  userType: UserType | null;
+  location: string | null;
   photoUri: string | null;
   isVerified: boolean;
+}
+
+type ProfileRow = {
+  id: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  age?: number | null;
+  user_type?: string | null;
+  location_name?: string | null;
+  photos?: string[] | null;
+  is_verified?: boolean | null;
+};
+
+function cleanString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : null;
+}
+
+function cleanAge(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : null;
+}
+
+function cleanUserType(value: unknown): UserType | null {
+  return value === "filipina" || value === "foreigner" ? value : null;
+}
+
+function cleanPhotos(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((photo): photo is string => cleanString(photo) !== null)
+    : [];
+}
+
+export function createProfileData(profileFromDB: ProfileRow): ProfileData {
+  const photosArray = cleanPhotos(profileFromDB.photos);
+  const firstPhoto =
+    photosArray.find((photo) => photo.startsWith("http")) ?? null;
+
+  return {
+    firstName: cleanString(profileFromDB.first_name),
+    lastName: cleanString(profileFromDB.last_name),
+    age: cleanAge(profileFromDB.age),
+    userType: cleanUserType(profileFromDB.user_type),
+    location: cleanString(profileFromDB.location_name),
+    photoUri: firstPhoto,
+    isVerified: profileFromDB.is_verified === true,
+  };
 }
 
 /**
@@ -78,7 +127,7 @@ export const ProfileScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Zustand store
-  const { profile, setProfile, clearProfile } = useProfileStore();
+  const { setProfile, clearProfile } = useProfileStore();
 
   // Fetch profile data on mount
   useEffect(() => {
@@ -90,8 +139,9 @@ export const ProfileScreen: React.FC = () => {
         } = await supabase.auth.getSession();
 
         if (!session?.user) {
-          console.log("❌ No session found");
+          setProfileData(null);
           setLoading(false);
+          router.replace("/(auth)/welcome");
           return;
         }
 
@@ -107,27 +157,15 @@ export const ProfileScreen: React.FC = () => {
           .single();
 
         if (error) {
-          console.error("❌ Failed to fetch profile:", error);
+          console.error("Failed to fetch profile.");
+          setProfileData(null);
           setLoading(false);
           return;
         }
 
         if (profileFromDB) {
-          console.log("✅ Profile loaded:", profileFromDB);
-
-          // Parse photos array
-          const photosArray = profileFromDB.photos || [];
-          const firstPhoto = photosArray.length > 0 ? photosArray[0] : null;
-
-          const data: ProfileData = {
-            firstName: profileFromDB.first_name || "Unknown",
-            lastName: profileFromDB.last_name || "",
-            age: profileFromDB.age || 0,
-            userType: profileFromDB.user_type as UserType,
-            location: profileFromDB.location_name || "Unknown Location",
-            photoUri: firstPhoto,
-            isVerified: profileFromDB.is_verified || false,
-          };
+          const photosArray = cleanPhotos(profileFromDB.photos);
+          const data = createProfileData(profileFromDB);
 
           // Update local state
           setProfileData(data);
@@ -135,23 +173,24 @@ export const ProfileScreen: React.FC = () => {
           // Update Zustand store
           setProfile({
             id: profileFromDB.id,
-            firstName: data.firstName,
-            lastName: data.lastName,
-            age: data.age,
-            location: data.location,
+            firstName: data.firstName ?? "",
+            lastName: data.lastName ?? "",
+            age: data.age ?? 0,
+            location: data.location ?? "",
             photos: photosArray,
             isVerified: data.isVerified,
           });
         }
-      } catch (error) {
-        console.error("❌ Failed to fetch profile data:", error);
+      } catch {
+        console.error("Failed to fetch profile data.");
+        setProfileData(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchProfileData();
-  }, [setProfile]);
+  }, [router, setProfile]);
 
   // Handle menu item press
   const handleMenuItemPress = (route: string) => {
@@ -173,11 +212,9 @@ export const ProfileScreen: React.FC = () => {
       accountApi.clearPreferences();
       accountApi.clearVerification();
 
-      // Navigate to welcome screen
       router.replace("/(auth)/welcome");
-    } catch (error) {
-      console.error("❌ Error during logout:", error);
-      // Still navigate to welcome even if there's an error
+    } catch {
+      console.error("Error during logout.");
       router.replace("/(auth)/welcome");
     }
   };
@@ -199,8 +236,12 @@ export const ProfileScreen: React.FC = () => {
           locations={[0, 0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
-        <ActivityIndicator size="large" color={ACCENT_PINK} />
-        <Text style={styles.loadingText}>Loading profile...</Text>
+        <ActivityIndicator
+          size="large"
+          color={ACCENT_PINK}
+          accessibilityLabel="Loading profile"
+        />
+        <Text style={styles.loadingText}>Loading your profile...</Text>
       </View>
     );
   }
@@ -222,10 +263,24 @@ export const ProfileScreen: React.FC = () => {
           locations={[0, 0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
-        <Text style={styles.errorText}>Profile not found</Text>
+        <View
+          style={styles.emptyProfilePanel}
+          accessible
+          accessibilityLabel="Could not load profile. Sign in again to restore your profile and settings."
+        >
+          <Text style={styles.emptyTitle}>Profile needs a refresh</Text>
+          <Text style={styles.emptyText}>
+            We could not load your profile. Sign in again to restore your
+            profile, privacy settings, and discovery controls.
+          </Text>
+        </View>
         <TouchableOpacity
           style={styles.retryBtn}
           onPress={() => router.replace("/(auth)/welcome")}
+          activeOpacity={0.78}
+          accessibilityRole="button"
+          accessibilityLabel="Go to sign in"
+          accessibilityHint="Returns to the welcome screen so you can sign in again"
         >
           <Text style={styles.retryText}>Go to Sign In</Text>
         </TouchableOpacity>
@@ -263,8 +318,12 @@ export const ProfileScreen: React.FC = () => {
         <View style={styles.header}>
           <Text style={styles.title}>Profile</Text>
           <TouchableOpacity
+            onPress={() => router.push("/(main)/profile-settings/preferences")}
+            style={styles.settingsBtn}
+            activeOpacity={0.78}
             accessibilityRole="button"
-            accessibilityLabel="Settings"
+            accessibilityLabel="Open profile preferences"
+            accessibilityHint="Opens match preference settings"
           >
             <Settings size={28} color={ACCENT_PURPLE} />
           </TouchableOpacity>
@@ -280,6 +339,19 @@ export const ProfileScreen: React.FC = () => {
           photoUri={profileData.photoUri}
           isVerified={profileData.isVerified}
         />
+
+        <View
+          style={styles.profileStatusStrip}
+          accessible
+          accessibilityLabel="Profile notice. Your profile information loads from your account. Discovery and connection features depend on your privacy settings, review status, and available app access."
+        >
+          <Text style={styles.profileStatusTitle}>Profile access</Text>
+          <Text style={styles.profileStatusText}>
+            Your profile information loads from your account. Discovery and
+            connection features depend on privacy settings, review status, and
+            available app access.
+          </Text>
+        </View>
 
         {/* Menu List Component */}
         <ProfileMenuList
@@ -317,23 +389,73 @@ const styles = StyleSheet.create({
     color: WHITE,
     letterSpacing: 0.5,
   },
+  settingsBtn: {
+    minWidth: 44,
+    minHeight: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  profileStatusStrip: {
+    marginHorizontal: 24,
+    marginTop: 16,
+    marginBottom: 8,
+    paddingLeft: 16,
+    paddingVertical: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: ACCENT_PURPLE,
+    backgroundColor: "rgba(141, 105, 246, 0.08)",
+  },
+  profileStatusTitle: {
+    fontSize: 15,
+    fontFamily: "DMSans-Bold",
+    color: WHITE,
+    marginBottom: 6,
+  },
+  profileStatusText: {
+    fontSize: 13,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255, 255, 255, 0.72)",
+    lineHeight: 20,
+  },
   loadingText: {
     fontSize: 16,
     fontFamily: "DMSans-Medium",
     color: "rgba(255, 255, 255, 0.75)",
     marginTop: 16,
   },
-  errorText: {
-    fontSize: 18,
+  emptyProfilePanel: {
+    width: "100%",
+    maxWidth: 320,
+    paddingLeft: 18,
+    paddingVertical: 14,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderLeftWidth: 3,
+    borderLeftColor: ACCENT_PURPLE,
+    marginBottom: 20,
+  },
+  emptyTitle: {
+    fontSize: 19,
     fontFamily: "DMSans-Bold",
     color: "rgba(255, 255, 255, 0.85)",
-    marginBottom: 20,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  emptyText: {
+    fontSize: 14,
+    fontFamily: "DMSans-Regular",
+    color: "rgba(255, 255, 255, 0.72)",
+    lineHeight: 21,
+    textAlign: "center",
   },
   retryBtn: {
     backgroundColor: ACCENT_PURPLE,
+    minHeight: 44,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
   retryText: {
     fontSize: 16,

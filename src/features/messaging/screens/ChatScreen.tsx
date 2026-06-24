@@ -2,24 +2,29 @@ import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
+  AlertCircle,
   ArrowLeft,
   Check,
   CheckCheck,
   Image as ImageIcon,
-  MoreVertical,
+  MessageCircle,
   Phone,
+  RefreshCw,
   Send,
+  ShieldAlert,
+  X,
   Smile,
+  UploadCloud,
   Video,
 } from "lucide-react-native";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActionSheetIOS,
   ActivityIndicator,
+  AccessibilityInfo,
   Alert,
   FlatList,
   Image,
-  Keyboard,
   KeyboardAvoidingView,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -40,14 +45,14 @@ import { useMessages } from "@/src/features/messaging/hooks/useMessages";
 import { useMessageUpload } from "@/src/features/messaging/hooks/useMessageUpload";
 import type { Message as MessageType } from "@/src/features/messaging/types/messaging.types";
 import { DateHeader } from "@/src/features/messaging/components/DateHeader";
-import { EmptyChatState } from "@/src/features/messaging/components/EmptyChatState";
 import { ScrollToBottomFab } from "@/src/features/messaging/components/ScrollToBottomFab";
 import { TypingIndicator } from "@/src/features/messaging/components/TypingIndicator";
+import { blockUser, unmatchUser } from "@/src/features/safety/api/safetyApi";
 
 // Brand Colors
 const BRAND_BG = "#0F0814";
 const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
+const DANGER_RED = "#FF6B6B";
 const ONLINE_GREEN = "#10B981";
 const WHITE = "#FFFFFF";
 const SURFACE = "rgba(255,255,255,0.06)";
@@ -70,16 +75,31 @@ export default function ChatScreen() {
   const params = useLocalSearchParams<ChatScreenParams>();
   const flatListRef = useRef<FlatList<MessageType>>(null);
   const inputRef = useRef<TextInput>(null);
-  const [showScrollFab, setShowScrollFab] = useState(false);
 
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [showScrollFab, setShowScrollFab] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [createdConversationId, setCreatedConversationId] = useState<
+    string | undefined
+  >(params.conversationId);
+  const [mediaError, setMediaError] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [safetyAction, setSafetyAction] = useState<
+    "blocking" | "unmatching" | null
+  >(null);
+  const [safetyFeedback, setSafetyFeedback] = useState<{
+    title: string;
+    message: string;
+    action?: "block" | "unmatch";
+  } | null>(null);
 
   const userName = params.userName || "User";
   const isOnline = params.isOnline === "true";
   const recipientId = params.userId;
+  const isSafetyActionPending = safetyAction !== null;
+  const hasDraftMessage = inputText.trim().length > 0;
+  const activeConversationId = params.conversationId ?? createdConversationId;
 
   // Get current user ID
   useEffect(() => {
@@ -90,6 +110,12 @@ export default function ChatScreen() {
     });
   }, []);
 
+  useEffect(() => {
+    if (params.conversationId) {
+      setCreatedConversationId(params.conversationId);
+    }
+  }, [params.conversationId]);
+
   // Initialize messaging hooks
   const {
     messages: dbMessages,
@@ -98,19 +124,53 @@ export default function ChatScreen() {
     sendText,
     sendImage: sendImageToDb,
     markAsRead,
+    refresh,
     addMessage,
   } = useMessages({
-    conversationId: params.conversationId,
+    conversationId: activeConversationId,
     userId: currentUserId,
     recipientId: recipientId || "",
     autoLoad: true,
   });
+  const isFirstMessageSetup = !activeConversationId && dbMessages.length === 0;
+  const messageInputPlaceholder = isSafetyActionPending
+    ? "Messaging paused while this finishes..."
+    : isFirstMessageSetup
+      ? "Write the first message..."
+      : "Type a respectful message...";
 
-  const { uploadImage, uploading } = useMessageUpload();
+  useEffect(() => {
+    if (activeConversationId) return;
+
+    const messageConversationId = dbMessages.find(
+      (message) => message.conversation_id,
+    )?.conversation_id;
+
+    if (messageConversationId) {
+      setCreatedConversationId(messageConversationId);
+    }
+  }, [activeConversationId, dbMessages]);
+
+  useEffect(() => {
+    if (!activeConversationId || !currentUserId || dbMessages.length === 0) {
+      return;
+    }
+
+    void markAsRead();
+  }, [activeConversationId, currentUserId, dbMessages.length, markAsRead]);
+
+  const {
+    uploadImage,
+    uploading,
+    progress: uploadProgress,
+    error: uploadError,
+    reset: resetUpload,
+  } = useMessageUpload();
+  const uploadProgressValue = Math.max(uploadProgress, uploading ? 5 : 0);
 
   // Setup realtime subscriptions
   const { sendTyping } = useChatRealtime({
-    conversationId: params.conversationId,
+    conversationId: activeConversationId,
     userId: currentUserId,
     recipientId: recipientId || "",
     onNewMessage: (message) => {
@@ -122,26 +182,11 @@ export default function ChatScreen() {
     },
   });
 
-  // Keyboard listeners
   useEffect(() => {
-    const keyboardWillShow = Keyboard.addListener(
-      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
-      (e) => {
-        setKeyboardHeight(e.endCoordinates.height);
-      },
-    );
-    const keyboardWillHide = Keyboard.addListener(
-      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
-      () => {
-        setKeyboardHeight(0);
-      },
-    );
+    if (!uploadError) return;
 
-    return () => {
-      keyboardWillShow.remove();
-      keyboardWillHide.remove();
-    };
-  }, []);
+    setMediaError(uploadError.message || "Photo upload failed. Try again.");
+  }, [uploadError]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -170,22 +215,58 @@ export default function ChatScreen() {
     if (inputText.trim().length === 0) return;
 
     const messageText = inputText.trim();
+    setSendError(null);
     setInputText("");
 
     try {
-      await sendText(messageText);
+      const sentMessage = await sendText(messageText);
+
+      if (sentMessage?.conversation_id) {
+        setCreatedConversationId(sentMessage.conversation_id);
+      }
+
       flatListRef.current?.scrollToEnd({ animated: true });
-    } catch (error) {
-      console.error("❌ Error sending message:", error);
-      Alert.alert("Error", "Failed to send message. Please try again.");
+    } catch {
+      console.error("Error sending message.");
+      const recoveryMessage =
+        "Message was not sent. Check your connection, review the text, and try again.";
+      setSendError(recoveryMessage);
+      AccessibilityInfo.announceForAccessibility(recoveryMessage);
+      Alert.alert("Message not sent", recoveryMessage);
       // Restore input text on error
       setInputText(messageText);
     }
   }, [inputText, sendText]);
 
+  const handleInputChange = useCallback(
+    (text: string) => {
+      setInputText(text);
+      if (sendError) {
+        setSendError(null);
+      }
+    },
+    [sendError],
+  );
+
   // Image picker handler
   const handleImagePick = useCallback(async () => {
     try {
+      resetUpload();
+      setMediaError(null);
+
+      if (uploading || isSafetyActionPending) {
+        return;
+      }
+
+      if (!activeConversationId) {
+        const message =
+          "Photo sharing unlocks after your first text starts this matched conversation. Send a short message first, then attach a photo.";
+        setMediaError(message);
+        AccessibilityInfo.announceForAccessibility(message);
+        Alert.alert("Could not send photo", message);
+        return;
+      }
+
       // Request permission
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -213,7 +294,7 @@ export default function ChatScreen() {
           // Upload image to Supabase Storage
           const imageUrl = await uploadImage(
             imageUri,
-            params.conversationId || "",
+            activeConversationId,
           );
 
           if (!imageUrl) {
@@ -222,96 +303,239 @@ export default function ChatScreen() {
 
           // Send image message to database
           await sendImageToDb(imageUrl);
+          AccessibilityInfo.announceForAccessibility("Photo sent.");
           flatListRef.current?.scrollToEnd({ animated: true });
         } catch (uploadError) {
-          console.error("❌ Error uploading image:", uploadError);
+          console.error("Error uploading image.");
+          setMediaError(
+            uploadError instanceof Error
+              ? uploadError.message
+              : "Could not upload image. Please try again.",
+          );
           Alert.alert(
             "Upload Failed",
             "Could not upload image. Please try again.",
           );
         }
       }
-    } catch (error) {
-      console.error("❌ Error picking image:", error);
+    } catch {
+      console.error("Error picking image.");
+      setMediaError("Could not open your photo library. Please try again.");
       Alert.alert("Error", "Failed to pick image. Please try again.");
     }
-  }, [uploadImage, sendImageToDb, params.conversationId]);
+  }, [
+    isSafetyActionPending,
+    activeConversationId,
+    resetUpload,
+    sendImageToDb,
+    uploadImage,
+    uploading,
+  ]);
+
+  const handleBlockUser = useCallback(() => {
+    if (!recipientId) {
+      Alert.alert(
+        "Could not block member",
+        "This member could not be identified. Go back and try again.",
+      );
+      return;
+    }
+
+    Alert.alert(
+      `Block ${userName}?`,
+      "Use Block when you want contact to stop. This removes the match, closes the chat for you, and prevents this member from messaging you again. If something unsafe happened, report first so support can review it.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Block member",
+          style: "destructive",
+          onPress: async () => {
+            setSafetyFeedback(null);
+            setSafetyAction("blocking");
+            const result = await blockUser(recipientId);
+            setSafetyAction(null);
+
+            if (!result.success) {
+              const message =
+                result.error ||
+                "Block did not finish. Check your connection and try again.";
+              setSafetyFeedback({
+                title: "Block did not finish",
+                message,
+                action: "block",
+              });
+              AccessibilityInfo.announceForAccessibility(message);
+              Alert.alert("Block failed", message);
+              return;
+            }
+
+            AccessibilityInfo.announceForAccessibility(
+              `${userName} has been blocked.`,
+            );
+            Alert.alert(
+              "Member blocked",
+              `${userName} can no longer message you. You can report this member from their profile if support should review what happened.`,
+              [
+                {
+                  text: "Back to messages",
+                  onPress: () => router.replace("/messages"),
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
+  }, [recipientId, router, userName]);
+
+  const handleUnmatchUser = useCallback(() => {
+    if (!recipientId) {
+      Alert.alert(
+        "Could not unmatch",
+        "This member could not be identified. Go back and try again.",
+      );
+      return;
+    }
+
+    Alert.alert(
+      `Unmatch ${userName}?`,
+      "Use Unmatch when you simply want to leave the connection. This removes the match and closes this conversation for you. If there was harassment, threats, fraud, or pressure, report instead so support can review it.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Unmatch",
+          style: "destructive",
+          onPress: async () => {
+            setSafetyFeedback(null);
+            setSafetyAction("unmatching");
+            const result = await unmatchUser(recipientId);
+            setSafetyAction(null);
+
+            if (!result.success) {
+              const message =
+                result.error ||
+                "Unmatch did not finish. Check your connection and try again.";
+              setSafetyFeedback({
+                title: "Unmatch did not finish",
+                message,
+                action: "unmatch",
+              });
+              AccessibilityInfo.announceForAccessibility(message);
+              Alert.alert("Unmatch failed", message);
+              return;
+            }
+
+            AccessibilityInfo.announceForAccessibility(
+              `${userName} has been unmatched.`,
+            );
+            Alert.alert(
+              "Match removed",
+              `${userName} has been removed from your matches. Use Report next time if the conversation needs support review.`,
+              [
+                {
+                  text: "Back to messages",
+                  onPress: () => router.replace("/messages"),
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
+  }, [recipientId, router, userName]);
+
+  const handleReportUser = useCallback(() => {
+    if (!recipientId) {
+      Alert.alert(
+        "Could not open report form",
+        "This member could not be identified. Go back and try again.",
+      );
+      return;
+    }
+
+    router.push({
+      pathname: "/(modals)/report-user",
+      params: {
+        userId: recipientId,
+        userName,
+        conversationId: activeConversationId,
+        source: "chat",
+      },
+    });
+  }, [activeConversationId, recipientId, router, userName]);
+
+  const handleRetrySafetyAction = useCallback(() => {
+    if (!safetyFeedback?.action) return;
+
+    if (safetyFeedback.action === "block") {
+      handleBlockUser();
+      return;
+    }
+
+    handleUnmatchUser();
+  }, [handleBlockUser, handleUnmatchUser, safetyFeedback?.action]);
 
   // More options handler
   const handleMoreOptions = useCallback(() => {
+    if (isSafetyActionPending) return;
+
     const options = [
-      "View Profile",
-      "Mute Notifications",
-      "Block User",
-      "Report User",
-      "Clear Chat History",
+      "Report safety concern",
+      "Block member",
+      "Unmatch only",
       "Cancel",
     ];
 
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
+          title: "Safety options",
+          message:
+            "Report sends this chat for support review. Block stops future contact. Unmatch only removes the connection.",
           options,
-          destructiveButtonIndex: [2, 3, 4],
-          cancelButtonIndex: 5,
+          destructiveButtonIndex: [1, 2],
+          cancelButtonIndex: 3,
         },
         (buttonIndex) => {
           switch (buttonIndex) {
             case 0:
-              console.log("View Profile");
-              // TODO: Navigate to user profile
+              handleReportUser();
               break;
             case 1:
-              console.log("Mute Notifications");
-              // TODO: Mute chat notifications
+              handleBlockUser();
               break;
             case 2:
-              console.log("Block User");
-              // TODO: Block user functionality
-              break;
-            case 3:
-              console.log("Report User");
-              // TODO: Report user functionality
-              break;
-            case 4:
-              Alert.alert(
-                "Clear Chat",
-                "Are you sure you want to clear all messages?",
-                [
-                  { text: "Cancel", style: "cancel" },
-                  {
-                    text: "Clear",
-                    style: "destructive",
-                    onPress: () => console.log("Clear chat - TODO: implement"),
-                  },
-                ],
-              );
+              handleUnmatchUser();
               break;
           }
         },
       );
     } else {
-      // Android - show simple alert for now
-      Alert.alert("More Options", "Choose an action:", [
-        { text: "View Profile", onPress: () => console.log("View Profile") },
-        { text: "Mute Notifications", onPress: () => console.log("Mute") },
-        { text: "Block User", onPress: () => console.log("Block") },
-        { text: "Report User", onPress: () => console.log("Report") },
-        {
-          text: "Clear Chat",
-          onPress: () =>
-            Alert.alert("Clear Chat", "Are you sure?", [
-              { text: "Cancel" },
-              {
-                text: "Clear",
-                onPress: () => console.log("Clear - TODO: implement"),
-              },
-            ]),
-        },
-        { text: "Cancel", style: "cancel" },
-      ]);
+      Alert.alert(
+        "Safety options",
+        "Report sends this chat for support review. Block stops future contact. Unmatch only removes the connection.",
+        [
+          { text: "Report safety concern", onPress: handleReportUser },
+          {
+            text: "Block member",
+            style: "destructive",
+            onPress: handleBlockUser,
+          },
+          {
+            text: "Unmatch only",
+            style: "destructive",
+            onPress: handleUnmatchUser,
+          },
+          { text: "Cancel", style: "cancel" },
+        ],
+      );
     }
-  }, []);
+  }, [
+    handleBlockUser,
+    handleReportUser,
+    handleUnmatchUser,
+    isSafetyActionPending,
+  ]);
 
   // Phone call handler
   const handlePhoneCall = useCallback(() => {
@@ -339,8 +563,10 @@ export default function ChatScreen() {
 
   // Emoji picker handler
   const handleEmojiPick = useCallback(() => {
-    console.log("Emoji picker - TODO: implement");
-    // TODO: Implement emoji picker
+    Alert.alert(
+      "Use your keyboard for emoji",
+      "The emoji picker did not open. You can still type an emoji with your keyboard.",
+    );
   }, []);
 
   // ==================== END HANDLER FUNCTIONS ====================
@@ -362,7 +588,8 @@ export default function ChatScreen() {
 
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+      const { contentOffset, contentSize, layoutMeasurement } =
+        event.nativeEvent;
       const distanceFromBottom =
         contentSize.height - layoutMeasurement.height - contentOffset.y;
       setShowScrollFab(distanceFromBottom > 200);
@@ -394,6 +621,8 @@ export default function ChatScreen() {
         return <CheckCheck size={14} color={TEXT_MUTED} strokeWidth={2.5} />;
       case "read":
         return <CheckCheck size={14} color={ACCENT_PURPLE} strokeWidth={2.5} />;
+      case "failed":
+        return <AlertCircle size={14} color={DANGER_RED} strokeWidth={2.5} />;
       default:
         return null;
     }
@@ -402,10 +631,19 @@ export default function ChatScreen() {
   const renderMessage = (message: MessageType, index: number) => {
     const isMyMessage = message.sender_id === currentUserId;
     const showAvatar = !isMyMessage;
+    const messageAuthor = isMyMessage ? "You" : userName;
+    const messageContent =
+      message.type === "image" ? "Photo message" : message.text;
+    const messageStatus =
+      isMyMessage && message.status ? `, ${message.status}` : "";
 
     return (
       <View
         key={message.id}
+        accessible
+        accessibilityLabel={`${messageAuthor}: ${messageContent}, ${formatTime(
+          message.created_at,
+        )}${messageStatus}`}
         style={[
           styles.messageRow,
           isMyMessage ? styles.myMessageRow : styles.theirMessageRow,
@@ -416,6 +654,7 @@ export default function ChatScreen() {
             <Image
               source={{ uri: params.userImage }}
               style={styles.messageAvatar}
+              accessibilityLabel={`${userName} profile photo`}
             />
           ) : (
             <View style={styles.messageAvatarPlaceholder}>
@@ -429,14 +668,26 @@ export default function ChatScreen() {
           style={[
             styles.messageBubble,
             isMyMessage ? styles.myMessageBubble : styles.theirMessageBubble,
+            message.type === "image" && styles.imageBubble,
           ]}
         >
           {message.type === "image" && message.image_url ? (
-            <Image
-              source={{ uri: message.image_url }}
-              style={styles.messageImage}
-              resizeMode="cover"
-            />
+            <View style={styles.imageMessageContainer}>
+              <Image
+                source={{ uri: message.image_url }}
+                style={styles.messageImage}
+                resizeMode="cover"
+                accessibilityLabel={`${messageAuthor} sent a photo`}
+              />
+              <View
+                style={styles.imageSafetyStrip}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              >
+                <ShieldAlert size={13} color={WHITE} strokeWidth={2.2} />
+                <Text style={styles.imageSafetyText}>Private chat photo</Text>
+              </View>
+            </View>
           ) : (
             <Text
               style={[
@@ -458,6 +709,9 @@ export default function ChatScreen() {
               </View>
             )}
           </View>
+          {message.status === "failed" && (
+            <Text style={styles.messageFailedText}>Not sent</Text>
+          )}
         </View>
       </View>
     );
@@ -467,8 +721,17 @@ export default function ChatScreen() {
   if (loading && dbMessages.length === 0) {
     return (
       <View style={[styles.root, styles.centerContent]}>
-        <ActivityIndicator size="large" color={ACCENT_PURPLE} />
+        <ActivityIndicator
+          size="large"
+          color={ACCENT_PURPLE}
+          accessibilityRole="progressbar"
+          accessibilityLabel={`Loading messages with ${userName}`}
+        />
         <Text style={styles.loadingText}>Loading messages...</Text>
+        <Text style={styles.loadingSubtext}>
+          Opening your matched chat with {userName}. If this is your first
+          message, the conversation is created only after you send it.
+        </Text>
       </View>
     );
   }
@@ -476,11 +739,24 @@ export default function ChatScreen() {
   // Show error state
   if (error) {
     return (
-      <View style={[styles.root, styles.centerContent]}>
-        <Text style={styles.errorText}>Failed to load messages</Text>
+      <View
+        style={[styles.root, styles.centerContent]}
+        accessibilityRole="alert"
+      >
+        <View style={styles.errorIconWrap}>
+          <RefreshCw size={30} color={ACCENT_PURPLE} strokeWidth={1.8} />
+        </View>
+        <Text style={styles.errorText}>Messages did not load</Text>
+        <Text style={styles.errorSubtext}>
+          Check your connection and try again. If this is a new chat, send the
+          first text only after the screen loads cleanly.
+        </Text>
         <TouchableOpacity
           style={styles.retryButton}
-          onPress={() => router.replace("/messages")}
+          onPress={refresh}
+          activeOpacity={0.86}
+          accessibilityRole="button"
+          accessibilityLabel="Retry loading messages"
         >
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
@@ -523,17 +799,23 @@ export default function ChatScreen() {
             style={styles.backButton}
             accessibilityLabel="Go back"
             accessibilityRole="button"
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
             <ArrowLeft size={24} color={WHITE} strokeWidth={2.5} />
           </TouchableOpacity>
 
           {/* User Info */}
-          <TouchableOpacity style={styles.headerUserInfo} activeOpacity={0.7}>
+          <View
+            style={styles.headerUserInfo}
+            accessible
+            accessibilityLabel={`${userName}, ${isOnline ? "active now" : "offline"}`}
+          >
             <View style={styles.headerAvatarContainer}>
               {params.userImage && params.userImage.startsWith("http") ? (
                 <Image
                   source={{ uri: params.userImage }}
                   style={styles.headerAvatar}
+                  accessibilityLabel={`${userName} profile photo`}
                 />
               ) : (
                 <View style={styles.headerAvatarPlaceholder}>
@@ -551,33 +833,91 @@ export default function ChatScreen() {
                 {isOnline ? "Active now" : "Offline"}
               </Text>
             </View>
-          </TouchableOpacity>
+          </View>
 
           {/* Actions */}
           <View style={styles.headerActions}>
             <TouchableOpacity
               style={styles.headerActionBtn}
               onPress={handlePhoneCall}
-              accessibilityLabel="Voice call"
+              activeOpacity={0.84}
+              accessibilityRole="button"
+              accessibilityLabel={`Keep voice with ${userName} in messages`}
+              accessibilityHint="Opens a safe explanation. No microphone permission will be requested."
             >
               <Phone size={20} color={ACCENT_PURPLE} strokeWidth={2.5} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.headerActionBtn}
               onPress={handleVideoCall}
-              accessibilityLabel="Video call"
+              activeOpacity={0.84}
+              accessibilityRole="button"
+              accessibilityLabel={`Keep video with ${userName} in messages`}
+              accessibilityHint="Opens a safe explanation. No camera or microphone permission will be requested."
             >
               <Video size={20} color={ACCENT_PURPLE} strokeWidth={2.5} />
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.headerActionBtn}
+              style={[
+                styles.headerActionBtn,
+                styles.headerSafetyBtn,
+                isSafetyActionPending && styles.headerActionBtnDisabled,
+              ]}
               onPress={handleMoreOptions}
-              accessibilityLabel="More options"
+              activeOpacity={0.84}
+              accessibilityRole="button"
+              accessibilityLabel={`Open safety options for ${userName}`}
+              accessibilityHint="Lets you report, block, or unmatch this member"
+              accessibilityState={{ disabled: isSafetyActionPending }}
+              disabled={isSafetyActionPending}
             >
-              <MoreVertical size={20} color={ACCENT_PURPLE} strokeWidth={2.5} />
+              <ShieldAlert size={20} color={DANGER_RED} strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
         </View>
+      </View>
+
+      {isSafetyActionPending && (
+        <View
+          style={styles.safetyBusyBanner}
+          accessibilityRole="progressbar"
+          accessibilityLiveRegion="polite"
+          accessibilityLabel={
+            safetyAction === "blocking"
+              ? `Blocking ${userName}`
+              : `Unmatching ${userName}`
+          }
+        >
+          <ActivityIndicator size="small" color={WHITE} />
+          <Text style={styles.safetyBusyText}>
+            {safetyAction === "blocking"
+              ? "Blocking member..."
+              : "Removing match..."}
+          </Text>
+        </View>
+      )}
+
+      <View style={styles.safetyReminder}>
+        <ShieldAlert size={17} color={DANGER_RED} strokeWidth={2.2} />
+        <Text style={styles.safetyReminderText}>
+          Report first if support should review this chat. Block stops contact.
+          Unmatch only leaves the connection.
+        </Text>
+        <TouchableOpacity
+          style={[
+            styles.safetyReminderButton,
+            isSafetyActionPending && styles.headerActionBtnDisabled,
+          ]}
+          onPress={handleMoreOptions}
+          disabled={isSafetyActionPending}
+          activeOpacity={0.84}
+          accessibilityRole="button"
+          accessibilityLabel={`Open safety options for ${userName}`}
+          accessibilityHint="Report for support review, block to stop contact, or unmatch to leave the connection"
+          accessibilityState={{ disabled: isSafetyActionPending }}
+        >
+          <Text style={styles.safetyReminderButtonText}>Options</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Messages */}
@@ -594,7 +934,47 @@ export default function ChatScreen() {
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={100}
-        ListEmptyComponent={<EmptyChatState userName={userName} />}
+        ListEmptyComponent={
+          <View style={styles.emptyChatState}>
+            <View style={styles.emptyChatIconWrap}>
+              <MessageCircle
+                size={36}
+                color={ACCENT_PURPLE}
+                strokeWidth={1.8}
+              />
+            </View>
+            <Text style={styles.emptyChatTitle}>Send the first message</Text>
+            <Text style={styles.emptyChatText}>
+              Your first text creates the matched conversation after access
+              checks pass. Keep it specific, kind, and easy to reply to.
+            </Text>
+            <View style={styles.emptyChatSafetyRow}>
+              <ShieldAlert size={14} color={TEXT_SECONDARY} strokeWidth={2} />
+              <Text style={styles.emptyChatSafetyText}>
+                Photos unlock after the first text. Never share passwords,
+                codes, IDs, or payment details in chat.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.emptyChatSafetyButton,
+                isSafetyActionPending && styles.headerActionBtnDisabled,
+              ]}
+              onPress={handleMoreOptions}
+              disabled={isSafetyActionPending}
+              activeOpacity={0.84}
+              accessibilityRole="button"
+              accessibilityLabel={`Open safety options for ${userName}`}
+              accessibilityHint="Report this chat, block future contact, or unmatch only"
+              accessibilityState={{ disabled: isSafetyActionPending }}
+            >
+              <ShieldAlert size={16} color={WHITE} strokeWidth={2.4} />
+              <Text style={styles.emptyChatSafetyButtonText}>
+                Report or leave chat
+              </Text>
+            </TouchableOpacity>
+          </View>
+        }
         renderItem={({ item, index }) => (
           <View>
             {shouldShowDateHeader(dbMessages, index) && (
@@ -626,8 +1006,114 @@ export default function ChatScreen() {
         }
       />
 
-      {/* Scroll to Bottom FAB */}
       <ScrollToBottomFab visible={showScrollFab} onPress={scrollToBottom} />
+
+      {(uploading || mediaError) && (
+        <View
+          style={[
+            styles.mediaStatusBanner,
+            mediaError && styles.mediaStatusBannerError,
+          ]}
+          accessibilityRole={uploading ? "progressbar" : "alert"}
+          accessibilityLabel={
+            uploading
+              ? `Uploading photo, ${uploadProgressValue} percent complete`
+              : mediaError || "Photo upload failed"
+          }
+        >
+          <View style={styles.mediaStatusIconWrap}>
+            {uploading ? (
+              <UploadCloud size={18} color={WHITE} strokeWidth={2.3} />
+            ) : (
+              <AlertCircle size={18} color={WHITE} strokeWidth={2.3} />
+            )}
+          </View>
+          <View style={styles.mediaStatusContent}>
+            <Text style={styles.mediaStatusTitle}>
+              {uploading ? "Uploading photo" : "Photo was not sent"}
+            </Text>
+            <Text style={styles.mediaStatusText}>
+              {uploading
+                ? `${uploadProgressValue}% complete. Keep this screen open until the upload finishes. This photo stays in the matched chat path.`
+                : mediaError || "Check your connection and try again."}
+            </Text>
+            {uploading && (
+              <View style={styles.mediaProgressTrack}>
+                <View
+                  style={[
+                    styles.mediaProgressFill,
+                    { width: `${uploadProgressValue}%` },
+                  ]}
+                />
+              </View>
+            )}
+          </View>
+          {mediaError && (
+            <TouchableOpacity
+              style={styles.mediaRetryButton}
+              onPress={handleImagePick}
+              activeOpacity={0.84}
+              accessibilityRole="button"
+              accessibilityLabel="Try sending a photo again"
+              accessibilityHint="Reopens your photo library so you can choose the photo again"
+            >
+              <RefreshCw size={18} color={WHITE} strokeWidth={2.3} />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {sendError && (
+        <View
+          style={styles.sendErrorBanner}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+          accessibilityLabel={sendError}
+        >
+          <AlertCircle size={18} color={WHITE} strokeWidth={2.3} />
+          <Text style={styles.sendErrorText}>{sendError}</Text>
+        </View>
+      )}
+
+      {safetyFeedback && (
+        <View
+          style={styles.safetyFeedbackBanner}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+          accessibilityLabel={`${safetyFeedback.title}. ${safetyFeedback.message}`}
+        >
+          <AlertCircle size={18} color={WHITE} strokeWidth={2.3} />
+          <View style={styles.safetyFeedbackContent}>
+            <Text style={styles.safetyFeedbackTitle}>
+              {safetyFeedback.title}
+            </Text>
+            <Text style={styles.safetyFeedbackText}>
+              {safetyFeedback.message}
+            </Text>
+          </View>
+          {safetyFeedback.action && (
+            <TouchableOpacity
+              style={styles.safetyFeedbackRetry}
+              onPress={handleRetrySafetyAction}
+              activeOpacity={0.84}
+              accessibilityRole="button"
+              accessibilityLabel={`Retry ${safetyFeedback.action}`}
+              accessibilityHint="Opens the confirmation before trying this safety action again"
+            >
+              <RefreshCw size={17} color={WHITE} strokeWidth={2.3} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={styles.safetyFeedbackDismiss}
+            onPress={() => setSafetyFeedback(null)}
+            activeOpacity={0.84}
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss safety message"
+          >
+            <X size={18} color={WHITE} strokeWidth={2.3} />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Input Area */}
       <KeyboardAvoidingView
@@ -652,11 +1138,33 @@ export default function ChatScreen() {
             <TouchableOpacity
               style={[
                 styles.mediaButton,
-                uploading && styles.mediaButtonDisabled,
+                (uploading || isSafetyActionPending) &&
+                  styles.mediaButtonDisabled,
               ]}
-              accessibilityLabel="Attach media"
+              accessibilityLabel={
+                uploading
+                  ? "Uploading photo"
+                  : isSafetyActionPending
+                    ? "Photo sharing paused"
+                    : isFirstMessageSetup
+                      ? "Photo sharing available after first message"
+                      : "Attach photo"
+              }
+              accessibilityRole="button"
+              accessibilityHint={
+                isSafetyActionPending
+                  ? "Photo sharing is paused while the safety action finishes"
+                  : isFirstMessageSetup
+                    ? "Send a text first to start this matched conversation, then attach a photo"
+                    : "Opens your photo library to send an image"
+              }
+              accessibilityState={{
+                disabled: uploading || isSafetyActionPending,
+                busy: uploading,
+              }}
+              activeOpacity={0.84}
               onPress={handleImagePick}
-              disabled={uploading}
+              disabled={uploading || isSafetyActionPending}
             >
               {uploading ? (
                 <ActivityIndicator size="small" color={ACCENT_PURPLE} />
@@ -670,19 +1178,32 @@ export default function ChatScreen() {
               <TextInput
                 ref={inputRef}
                 value={inputText}
-                onChangeText={setInputText}
-                placeholder="Type a message..."
+                onChangeText={handleInputChange}
+                placeholder={messageInputPlaceholder}
                 placeholderTextColor={TEXT_MUTED}
                 style={styles.textInput}
                 multiline
                 maxLength={1000}
                 accessibilityLabel="Message input"
+                accessibilityHint={
+                  isFirstMessageSetup
+                    ? "Your first text starts this matched conversation after access checks pass"
+                    : "Type your message before sending"
+                }
+                editable={!isSafetyActionPending}
               />
 
               {/* Emoji Button */}
               <TouchableOpacity
-                style={styles.emojiButton}
+                style={[
+                  styles.emojiButton,
+                  isSafetyActionPending && styles.iconButtonDisabled,
+                ]}
                 accessibilityLabel="Add emoji"
+                accessibilityRole="button"
+                accessibilityHint="Opens a note about using your keyboard for emoji"
+                accessibilityState={{ disabled: isSafetyActionPending }}
+                disabled={isSafetyActionPending}
                 onPress={handleEmojiPick}
               >
                 <Smile size={20} color={TEXT_MUTED} strokeWidth={2} />
@@ -693,20 +1214,50 @@ export default function ChatScreen() {
             <TouchableOpacity
               style={[
                 styles.sendButton,
-                inputText.trim().length > 0 && styles.sendButtonActive,
+                hasDraftMessage &&
+                  !isSafetyActionPending &&
+                  styles.sendButtonActive,
+                (!hasDraftMessage || isSafetyActionPending) &&
+                  styles.sendButtonDisabled,
               ]}
               onPress={handleSend}
-              disabled={inputText.trim().length === 0}
-              accessibilityLabel="Send message"
+              disabled={!hasDraftMessage || isSafetyActionPending}
+              activeOpacity={0.86}
+              accessibilityRole="button"
+              accessibilityLabel={
+                hasDraftMessage
+                  ? isFirstMessageSetup
+                    ? "Send first message"
+                    : "Send message"
+                  : "Type a message before sending"
+              }
+              accessibilityHint={
+                isSafetyActionPending
+                  ? "Messaging is paused while the safety action finishes"
+                  : isFirstMessageSetup
+                    ? "Creates the matched conversation after access checks pass"
+                  : "Sends this message to the current conversation"
+              }
+              accessibilityState={{
+                disabled: !hasDraftMessage || isSafetyActionPending,
+              }}
             >
               <Send
                 size={20}
                 color={WHITE}
                 strokeWidth={2.5}
-                fill={inputText.trim().length > 0 ? WHITE : "transparent"}
+                fill={hasDraftMessage ? WHITE : "transparent"}
               />
             </TouchableOpacity>
           </View>
+          <Text
+            style={styles.chatMediaSafetyHint}
+            accessibilityRole="text"
+          >
+            {isFirstMessageSetup
+              ? "Send a text first to start this matched conversation. Photo sharing stays locked until the chat exists."
+              : "Only send photos you are comfortable sharing in this chat. Never send passwords, codes, ID documents, or payment details. Report pressure or threats from Safety options."}
+          </Text>
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -743,9 +1294,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -812,14 +1363,198 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   headerActionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "rgba(141, 105, 246, 0.15)",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
     borderColor: "rgba(141, 105, 246, 0.25)",
+  },
+  headerSafetyBtn: {
+    backgroundColor: "rgba(255, 107, 107, 0.12)",
+    borderColor: "rgba(255, 107, 107, 0.28)",
+  },
+  headerActionBtnDisabled: {
+    opacity: 0.5,
+  },
+  safetyBusyBanner: {
+    minHeight: 48,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: "rgba(239, 62, 120, 0.18)",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(239, 62, 120, 0.35)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  safetyBusyText: {
+    color: WHITE,
+    fontSize: 14,
+    fontFamily: "DMSans-Bold",
+  },
+  safetyReminder: {
+    minHeight: 54,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: "rgba(255, 107, 107, 0.09)",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 107, 107, 0.2)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  safetyReminderText: {
+    flex: 1,
+    color: TEXT_SECONDARY,
+    fontSize: 13,
+    fontFamily: "DMSans-Medium",
+    lineHeight: 18,
+  },
+  safetyReminderButton: {
+    minHeight: 44,
+    minWidth: 88,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "rgba(255, 107, 107, 0.38)",
+    backgroundColor: "rgba(255, 107, 107, 0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  safetyReminderButtonText: {
+    color: WHITE,
+    fontSize: 13,
+    fontFamily: "DMSans-Bold",
+  },
+  mediaStatusBanner: {
+    minHeight: 72,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    padding: 12,
+    borderRadius: 18,
+    backgroundColor: "rgba(141, 105, 246, 0.22)",
+    borderWidth: 1,
+    borderColor: "rgba(141, 105, 246, 0.38)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  mediaStatusBannerError: {
+    backgroundColor: "rgba(255, 107, 107, 0.16)",
+    borderColor: "rgba(255, 107, 107, 0.42)",
+  },
+  mediaStatusIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.14)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  mediaStatusContent: {
+    flex: 1,
+  },
+  mediaStatusTitle: {
+    color: WHITE,
+    fontSize: 14,
+    fontFamily: "DMSans-Bold",
+  },
+  mediaStatusText: {
+    color: TEXT_SECONDARY,
+    fontSize: 13,
+    fontFamily: "DMSans-Regular",
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  mediaProgressTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    overflow: "hidden",
+    marginTop: 8,
+  },
+  mediaProgressFill: {
+    height: "100%",
+    borderRadius: 2,
+    backgroundColor: WHITE,
+  },
+  mediaRetryButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.14)",
+  },
+  sendErrorBanner: {
+    minHeight: 56,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 107, 107, 0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 107, 107, 0.42)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  sendErrorText: {
+    flex: 1,
+    color: WHITE,
+    fontSize: 13,
+    fontFamily: "DMSans-Medium",
+    lineHeight: 18,
+  },
+  safetyFeedbackBanner: {
+    minHeight: 72,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 107, 107, 0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 107, 107, 0.42)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  safetyFeedbackContent: {
+    flex: 1,
+  },
+  safetyFeedbackTitle: {
+    color: WHITE,
+    fontSize: 13,
+    fontFamily: "DMSans-Bold",
+    lineHeight: 18,
+  },
+  safetyFeedbackText: {
+    color: TEXT_SECONDARY,
+    fontSize: 13,
+    fontFamily: "DMSans-Regular",
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  safetyFeedbackRetry: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.14)",
+  },
+  safetyFeedbackDismiss: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   // Messages
@@ -829,6 +1564,73 @@ const styles = StyleSheet.create({
   messagesContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
+    flexGrow: 1,
+  },
+  emptyChatState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+    paddingBottom: 40,
+  },
+  emptyChatIconWrap: {
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    backgroundColor: "rgba(141, 105, 246, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(141, 105, 246, 0.24)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  emptyChatTitle: {
+    fontSize: 20,
+    fontFamily: "DMSans-Bold",
+    color: WHITE,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  emptyChatText: {
+    fontSize: 15,
+    fontFamily: "DMSans-Regular",
+    color: TEXT_SECONDARY,
+    textAlign: "center",
+    lineHeight: 22,
+    maxWidth: 300,
+  },
+  emptyChatSafetyRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    marginTop: 16,
+    maxWidth: 300,
+  },
+  emptyChatSafetyText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "DMSans-Medium",
+    color: "rgba(255,255,255,0.62)",
+    lineHeight: 20,
+  },
+  emptyChatSafetyButton: {
+    minHeight: 46,
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 107, 107, 0.24)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 107, 107, 0.38)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  emptyChatSafetyButtonText: {
+    color: WHITE,
+    fontSize: 14,
+    fontFamily: "DMSans-Bold",
   },
   timestampContainer: {
     alignItems: "center",
@@ -925,6 +1727,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
     alignSelf: "flex-end",
   },
+  messageFailedText: {
+    color: DANGER_RED,
+    fontSize: 11,
+    fontFamily: "DMSans-Bold",
+    marginTop: 4,
+  },
 
   // Image Messages
   imageBubble: {
@@ -940,6 +1748,25 @@ const styles = StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 12,
+  },
+  imageSafetyStrip: {
+    position: "absolute",
+    left: 8,
+    right: 8,
+    bottom: 8,
+    minHeight: 30,
+    borderRadius: 15,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "rgba(15, 8, 20, 0.72)",
+  },
+  imageSafetyText: {
+    color: WHITE,
+    fontSize: 11,
+    fontFamily: "DMSans-Bold",
   },
   imageUploadingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -993,9 +1820,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   mediaButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: "rgba(141, 105, 246, 0.15)",
     justifyContent: "center",
     alignItems: "center",
@@ -1012,26 +1839,33 @@ const styles = StyleSheet.create({
     borderColor: "rgba(141, 105, 246, 0.2)",
     paddingHorizontal: 16,
     paddingVertical: 10,
-    minHeight: 42,
+    minHeight: 48,
     maxHeight: 100,
   },
   textInput: {
     flex: 1,
     color: WHITE,
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: "DMSans-Regular",
-    letterSpacing: 0.2,
+    letterSpacing: 0,
     maxHeight: 80,
     paddingTop: Platform.OS === "ios" ? 2 : 0,
   },
   emojiButton: {
     marginLeft: 8,
-    padding: 4,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  iconButtonDisabled: {
+    opacity: 0.45,
   },
   sendButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: "rgba(141, 105, 246, 0.3)",
     justifyContent: "center",
     alignItems: "center",
@@ -1053,6 +1887,17 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  sendButtonDisabled: {
+    opacity: 0.62,
+  },
+  chatMediaSafetyHint: {
+    marginTop: 8,
+    color: "rgba(255,255,255,0.58)",
+    fontSize: 12,
+    fontFamily: "DMSans-Regular",
+    lineHeight: 17,
+    textAlign: "center",
+  },
 
   // Loading and Error States
   centerContent: {
@@ -1065,17 +1910,47 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "DMSans-Regular",
   },
+  loadingSubtext: {
+    marginTop: 8,
+    color: TEXT_MUTED,
+    fontSize: 14,
+    fontFamily: "DMSans-Regular",
+    textAlign: "center",
+  },
   errorText: {
-    color: ACCENT_PINK,
-    fontSize: 16,
-    fontFamily: "DMSans-Medium",
-    marginBottom: 16,
+    color: WHITE,
+    fontSize: 20,
+    fontFamily: "DMSans-Bold",
+    marginTop: 18,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  errorSubtext: {
+    color: TEXT_SECONDARY,
+    fontSize: 15,
+    fontFamily: "DMSans-Regular",
+    lineHeight: 22,
+    marginBottom: 18,
+    textAlign: "center",
+  },
+  errorIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(141, 105, 246, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(141, 105, 246, 0.24)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   retryButton: {
     backgroundColor: ACCENT_PURPLE,
     paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    minHeight: 48,
     borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
   retryButtonText: {
     color: WHITE,

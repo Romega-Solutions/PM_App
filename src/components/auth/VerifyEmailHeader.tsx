@@ -17,19 +17,26 @@ export default function VerifyEmailHeader({ email }: Props) {
           source={require("../../../assets/logo-no-bg.png")}
           style={styles.logo}
           resizeMode="contain"
+          accessible
+          accessibilityLabel="PinayMate logo"
         />
       </View>
 
-      <View style={styles.iconWrap}>
+      <View
+        style={styles.iconWrap}
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel="Email verification step"
+      >
         <Mail size={48} color="#EF3E78" strokeWidth={2} />
       </View>
 
-      <Text style={styles.title}>Check Your Email</Text>
+      <Text style={styles.title}>Check your email</Text>
 
       <Text style={styles.body}>
-        We sent a verification link to{"\n"}
+        We sent a secure verification link to{"\n"}
         <Text style={styles.emailText}>{email ?? "your email address"}</Text>
-        {"\n"}Tap the link to verify your account.
+        {"\n"}Tap the newest link to protect your profile setup.
       </Text>
     </View>
   );

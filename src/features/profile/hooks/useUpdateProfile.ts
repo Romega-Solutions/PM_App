@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { UpdateProfileData, updateUserProfile } from "../api/profileApi";
 
+const PROFILE_UPDATE_ERROR =
+  "Profile changes did not save. Check your connection and try again.";
+
 export function useUpdateProfile() {
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -13,14 +16,13 @@ export function useUpdateProfile() {
       const result = await updateUserProfile(data);
 
       if (!result.success) {
-        setError(result.error || "Failed to update profile");
+        setError(result.error || PROFILE_UPDATE_ERROR);
         return false;
       }
 
       return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      setError(errorMessage);
+    } catch {
+      setError(PROFILE_UPDATE_ERROR);
       return false;
     } finally {
       setUpdating(false);

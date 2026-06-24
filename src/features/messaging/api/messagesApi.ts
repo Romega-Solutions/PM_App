@@ -1,6 +1,11 @@
 // src/features/messaging/api/messagesApi.ts
 import { supabase } from "@/src/config/supabase";
 
+const LEGACY_CONVERSATIONS_ERROR =
+  "Conversations could not be loaded. Check your connection and try again.";
+const LEGACY_READ_STATUS_ERROR =
+  "Message read status did not update. Check your connection and try again.";
+
 export interface Conversation {
   id: string;
   other_user_id: string;
@@ -12,6 +17,19 @@ export interface Conversation {
   is_online: boolean;
 }
 
+type ConversationRpcRow = {
+  id: string;
+  last_message_text?: string | null;
+  last_message_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  other_user_id: string;
+  other_user_first_name?: string | null;
+  other_user_photos?: string[] | null;
+  other_user_is_active?: boolean | null;
+  unread_count?: number | null;
+};
+
 /**
  * Get all conversations for the current user
  * Returns a list of conversations with the latest message
@@ -20,73 +38,34 @@ export const getConversations = async (
   userId: string
 ): Promise<{ data: Conversation[] | null; error: any }> => {
   try {
-    // Get all messages where user is either sender or receiver
-    const { data: messages, error: messagesError } = await supabase
-      .from("messages")
-      .select(
-        `
-        *,
-        sender:sender_id(id, first_name, photos, is_active),
-        recipient:recipient_id(id, first_name, photos, is_active)
-      `
-      )
-      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
-      .order("created_at", { ascending: false });
+    const { data, error } = await supabase.rpc("get_user_conversations", {
+      p_user_id: userId,
+    });
 
-    if (messagesError) {
-      return { data: null, error: messagesError };
+    if (error) {
+      return { data: null, error: new Error(LEGACY_CONVERSATIONS_ERROR) };
     }
 
-    if (!messages || messages.length === 0) {
+    if (!data || data.length === 0) {
       return { data: [], error: null };
     }
 
-    // Group messages by conversation (other user)
-    const conversationsMap = new Map<string, any>();
-
-    messages.forEach((message: any) => {
-      // Determine the other user in the conversation
-      const isCurrentUserSender = message.sender_id === userId;
-      const otherUser = isCurrentUserSender
-        ? message.recipient
-        : message.sender;
-      const otherUserId = isCurrentUserSender
-        ? message.recipient_id
-        : message.sender_id;
-
-      // If this conversation doesn't exist yet, or this message is newer
-      if (!conversationsMap.has(otherUserId)) {
-        conversationsMap.set(otherUserId, {
-          message,
-          otherUser,
-          otherUserId,
-        });
-      }
-    });
-
-    // Get unread counts for each conversation
-    const conversationsList: Conversation[] = [];
-
-    for (const [otherUserId, convData] of conversationsMap.entries()) {
-      // Count unread messages from this user
-      const { count } = await supabase
-        .from("messages")
-        .select("*", { count: "exact", head: true })
-        .eq("sender_id", otherUserId)
-        .eq("recipient_id", userId)
-        .eq("is_read", false);
-
-      conversationsList.push({
-        id: convData.message.conversation_id || otherUserId,
-        other_user_id: otherUserId,
-        other_user_name: convData.otherUser?.first_name || "User",
-        other_user_image: convData.otherUser?.photos?.[0] || null,
-        latest_message: convData.message.text || convData.message.content || "",
-        latest_message_time: convData.message.created_at,
-        unread_count: count || 0,
-        is_online: convData.otherUser?.is_active || false,
-      });
-    }
+    const conversationsList: Conversation[] = (data as ConversationRpcRow[]).map(
+      (conversation) => ({
+        id: conversation.id,
+        other_user_id: conversation.other_user_id,
+        other_user_name: conversation.other_user_first_name || "User",
+        other_user_image: conversation.other_user_photos?.[0] || null,
+        latest_message: conversation.last_message_text || "",
+        latest_message_time:
+          conversation.last_message_at ||
+          conversation.updated_at ||
+          conversation.created_at ||
+          "",
+        unread_count: conversation.unread_count || 0,
+        is_online: Boolean(conversation.other_user_is_active),
+      }),
+    );
 
     // Sort by latest message time
     conversationsList.sort(
@@ -96,9 +75,9 @@ export const getConversations = async (
     );
 
     return { data: conversationsList, error: null };
-  } catch (error) {
-    console.error("Error fetching conversations:", error);
-    return { data: null, error };
+  } catch {
+    console.error("Error fetching conversations.");
+    return { data: null, error: new Error(LEGACY_CONVERSATIONS_ERROR) };
   }
 };
 
@@ -110,20 +89,19 @@ export const markConversationAsRead = async (
   otherUserId: string
 ): Promise<{ success: boolean; error?: any }> => {
   try {
-    const { error } = await supabase
-      .from("messages")
-      .update({ is_read: true })
-      .eq("sender_id", otherUserId)
-      .eq("recipient_id", userId)
-      .eq("is_read", false);
+    void userId;
+
+    const { error } = await supabase.rpc("mark_pair_messages_read", {
+      p_other_user_id: otherUserId,
+    });
 
     if (error) {
-      return { success: false, error };
+      return { success: false, error: new Error(LEGACY_READ_STATUS_ERROR) };
     }
 
     return { success: true };
-  } catch (error) {
-    console.error("Error marking conversation as read:", error);
-    return { success: false, error };
+  } catch {
+    console.error("Error marking conversation as read.");
+    return { success: false, error: new Error(LEGACY_READ_STATUS_ERROR) };
   }
 };

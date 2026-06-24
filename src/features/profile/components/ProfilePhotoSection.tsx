@@ -39,18 +39,38 @@ export const ProfilePhotoSection: React.FC<ProfilePhotoSectionProps> = ({
   uploadProgress,
   onChangePhoto,
 }) => {
+  const remotePhotoUri = photoUri?.startsWith("http") ? photoUri : null;
+  const uploadStatusLabel = `Uploading profile photo, ${uploadProgress}% complete`;
+
   return (
     <View style={styles.photoSection}>
-      <View style={styles.photoWrap}>
-        {photoUri && photoUri.startsWith("http") ? (
-          <Image source={{ uri: photoUri }} style={styles.photo} />
+      <View
+        style={styles.photoWrap}
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={
+          remotePhotoUri ? "Current profile photo" : "Profile photo placeholder"
+        }
+      >
+        {remotePhotoUri ? (
+          <Image
+            source={{ uri: remotePhotoUri }}
+            style={styles.photo}
+            accessible={false}
+          />
         ) : (
           <View style={styles.photoPlaceholder}>
             <User size={32} color={ACCENT_PINK} />
           </View>
         )}
         {isUploading && (
-          <View style={styles.uploadOverlay}>
+          <View
+            style={styles.uploadOverlay}
+            accessible
+            accessibilityRole="progressbar"
+            accessibilityLabel={uploadStatusLabel}
+            accessibilityLiveRegion="polite"
+          >
             <ActivityIndicator size="large" color={WHITE} />
             <Text style={styles.uploadProgress}>{uploadProgress}%</Text>
           </View>
@@ -60,6 +80,17 @@ export const ProfilePhotoSection: React.FC<ProfilePhotoSectionProps> = ({
         style={styles.changePhotoBtn}
         onPress={onChangePhoto}
         disabled={isUploading}
+        activeOpacity={0.84}
+        accessibilityRole="button"
+        accessibilityLabel={
+          isUploading ? "Profile photo is uploading" : "Change profile photo"
+        }
+        accessibilityHint={
+          isUploading
+            ? "Wait for the upload to finish before choosing another photo"
+            : "Opens your photo picker to choose a new profile photo"
+        }
+        accessibilityState={{ disabled: isUploading, busy: isUploading }}
       >
         <Camera size={16} color={WHITE} />
         <Text style={styles.changePhotoText}>
@@ -100,8 +131,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    minHeight: 48,
     paddingHorizontal: 20,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    borderRadius: 24,
+    backgroundColor: "rgba(141, 105, 246, 0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(141, 105, 246, 0.34)",
   },
   changePhotoText: {
     color: ACCENT_PURPLE,

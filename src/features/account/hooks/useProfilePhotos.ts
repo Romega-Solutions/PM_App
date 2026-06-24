@@ -49,7 +49,6 @@ export const useProfilePhotos = () => {
   const uploadPhoto = useCallback(async (uri: string) => {
     setLoading(true);
     try {
-      // simulate upload + persist via accountApi
       const res = await accountApi.saveProfilePhoto(uri);
       if (res?.ok) {
         setPhotos(res.data.photos);

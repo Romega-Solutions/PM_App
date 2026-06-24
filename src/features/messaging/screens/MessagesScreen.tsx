@@ -22,22 +22,24 @@
 
 import { useRouter } from "expo-router";
 import {
-    Filter,
-    MessageCircle,
-    Search
+  AlertCircle,
+  MessageCircle,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  X,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Dimensions,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -47,8 +49,6 @@ import { useChatStore } from "@/src/stores/chatStore";
 import { ActiveUserCard } from "../components/ActiveUserCard";
 import { ConversationCard } from "../components/ConversationCard";
 
-const { width } = Dimensions.get("window");
-
 // Brand Colors
 const BRAND_BG = "#0F0814";
 const ACCENT_PURPLE = "#8D69F6";
@@ -57,6 +57,58 @@ const SURFACE = "rgba(255,255,255,0.06)";
 const SURFACE_BORDER = "rgba(141,105,246,0.18)";
 const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
 const TEXT_MUTED = "rgba(255,255,255,0.5)";
+
+type ConversationFilter = "all" | "unread" | "online";
+
+const FILTER_OPTIONS: {
+  key: ConversationFilter;
+  label: string;
+  accessibilityLabel: string;
+}[] = [
+  {
+    key: "all",
+    label: "All",
+    accessibilityLabel: "Show all conversations",
+  },
+  {
+    key: "unread",
+    label: "Unread",
+    accessibilityLabel: "Show unread conversations",
+  },
+  {
+    key: "online",
+    label: "Active",
+    accessibilityLabel: "Show active conversations",
+  },
+];
+
+function getConversationErrorMessage(error: Error): string {
+  const message = error.message?.trim();
+
+  if (!message) {
+    return "Check your connection and try again.";
+  }
+
+  const lowerMessage = message.toLowerCase();
+
+  if (
+    lowerMessage.includes("network") ||
+    lowerMessage.includes("fetch") ||
+    lowerMessage.includes("timeout")
+  ) {
+    return "Check your connection and try again.";
+  }
+
+  if (
+    lowerMessage.includes("jwt") ||
+    lowerMessage.includes("session") ||
+    lowerMessage.includes("auth")
+  ) {
+    return "Please sign in again to load your messages.";
+  }
+
+  return message;
+}
 
 /**
  * MessagesScreen Component
@@ -69,9 +121,7 @@ export const MessagesScreen: React.FC = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string>("");
-  const [filterType, setFilterType] = useState<"all" | "unread" | "online">(
-    "all",
-  );
+  const [filterType, setFilterType] = useState<ConversationFilter>("all");
 
   // Get global unread count from Zustand store
   const totalUnreadCount = useChatStore((state) => state.totalUnreadCount);
@@ -91,14 +141,6 @@ export const MessagesScreen: React.FC = () => {
     autoLoad: true,
   });
 
-  // Filter conversations based on search
-  const filteredConversations = conversations.filter((conv) => {
-    if (!conv.other_user) return false;
-    if (!searchQuery) return true;
-    const firstName = conv.other_user.first_name || "";
-    return firstName.toLowerCase().includes(searchQuery.toLowerCase());
-  });
-
   // Extract active users from online conversations
   const activeUsers = conversations
     .filter((conv) => conv.other_user?.is_active)
@@ -109,6 +151,42 @@ export const MessagesScreen: React.FC = () => {
       image: conv.other_user.photos?.[0] || null,
       isOnline: true,
     }));
+  const unreadConversationCount = conversations.filter(
+    (conv) => (conv.unread_count || 0) > 0,
+  ).length;
+  const filterCounts: Record<ConversationFilter, number> = {
+    all: conversations.length,
+    unread: unreadConversationCount,
+    online: activeUsers.length,
+  };
+
+  // Filter conversations based on search and the visible segmented control.
+  const filteredConversations = conversations.filter((conv) => {
+    if (!conv.other_user) return false;
+    if (filterType === "unread" && (conv.unread_count || 0) === 0) {
+      return false;
+    }
+    if (filterType === "online" && !conv.other_user.is_active) {
+      return false;
+    }
+    if (!searchQuery) return true;
+    const firstName = conv.other_user.first_name || "";
+    return firstName.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+  const emptyTitle = searchQuery
+    ? "No conversations found"
+    : filterType === "unread"
+      ? "No unread messages"
+      : filterType === "online"
+        ? "No one active right now"
+        : "No conversations yet";
+  const emptyMessage = searchQuery
+    ? "Try a first name, or clear the search to see all chats."
+    : filterType === "unread"
+      ? "You are caught up. New replies will appear here when they arrive."
+      : filterType === "online"
+        ? "Active matches will appear here when they are available. You can still open any existing chat from All."
+        : "Mutual matches appear here when a conversation starts. A specific, respectful hello is enough.";
 
   // Navigate to chat screen
   const handleChatPress = (conv: any) => {
@@ -148,9 +226,16 @@ export const MessagesScreen: React.FC = () => {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Messages</Text>
         </View>
-        <View style={styles.loadingContainer}>
+        <View
+          style={styles.loadingContainer}
+          accessibilityRole="progressbar"
+          accessibilityLabel="Loading conversations"
+        >
           <ActivityIndicator size="large" color={ACCENT_PURPLE} />
           <Text style={styles.loadingText}>Loading conversations...</Text>
+          <Text style={styles.loadingSubtext}>
+            Checking your latest matches and unread messages.
+          </Text>
         </View>
       </View>
     );
@@ -164,10 +249,22 @@ export const MessagesScreen: React.FC = () => {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Messages</Text>
         </View>
-        <View style={styles.loadingContainer}>
+        <View style={styles.loadingContainer} accessibilityRole="alert">
+          <View style={styles.errorIconWrap}>
+            <AlertCircle size={28} color={ACCENT_PURPLE} strokeWidth={2} />
+          </View>
           <Text style={styles.errorText}>Failed to load conversations</Text>
-          <Text style={styles.errorSubtext}>{error.message}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={refresh}>
+          <Text style={styles.errorSubtext}>
+            {getConversationErrorMessage(error)}
+          </Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={refresh}
+            activeOpacity={0.84}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading conversations"
+            accessibilityHint="Attempts to load your messages again"
+          >
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -189,12 +286,6 @@ export const MessagesScreen: React.FC = () => {
             </View>
           )}
         </View>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => setFilterType("all")}
-        >
-          <Filter size={22} color={WHITE} strokeWidth={2.5} />
-        </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
@@ -212,8 +303,71 @@ export const MessagesScreen: React.FC = () => {
             placeholderTextColor={TEXT_MUTED}
             value={searchQuery}
             onChangeText={setSearchQuery}
+            accessibilityLabel="Search conversations"
+            accessibilityHint="Filters conversations by first name"
+            returnKeyType="search"
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearSearchButton}
+              onPress={() => setSearchQuery("")}
+              activeOpacity={0.84}
+              accessibilityRole="button"
+              accessibilityLabel="Clear conversation search"
+            >
+              <X size={18} color={TEXT_SECONDARY} strokeWidth={2.5} />
+            </TouchableOpacity>
+          )}
         </View>
+      </View>
+
+      <View
+        style={styles.filterTabs}
+        accessibilityRole="tablist"
+        accessibilityLabel="Conversation filters"
+      >
+        {FILTER_OPTIONS.map((option) => {
+          const isSelected = filterType === option.key;
+
+          return (
+            <TouchableOpacity
+              key={option.key}
+              style={[
+                styles.filterTab,
+                isSelected && styles.filterTabSelected,
+              ]}
+              onPress={() => setFilterType(option.key)}
+              activeOpacity={0.84}
+              accessibilityRole="tab"
+              accessibilityLabel={`${option.accessibilityLabel}, ${filterCounts[option.key]} available`}
+              accessibilityState={{ selected: isSelected }}
+            >
+              <Text
+                style={[
+                  styles.filterTabText,
+                  isSelected && styles.filterTabTextSelected,
+                ]}
+              >
+                {option.label}
+              </Text>
+              <View
+                style={[
+                  styles.filterCount,
+                  isSelected && styles.filterCountSelected,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.filterCountText,
+                    isSelected && styles.filterCountTextSelected,
+                  ]}
+                >
+                  {filterCounts[option.key]}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       <ScrollView
@@ -221,6 +375,23 @@ export const MessagesScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
+        <View
+          style={styles.trustNote}
+          accessible
+          accessibilityLabel="Chat at your pace. Keep conversations respectful. You never need to share private contact details, payment details, or meet before you are ready."
+        >
+          <View style={styles.trustIconWrap}>
+            <ShieldCheck size={20} color={ACCENT_PURPLE} strokeWidth={2.4} />
+          </View>
+          <View style={styles.trustCopy}>
+            <Text style={styles.trustTitle}>Chat at your pace</Text>
+            <Text style={styles.trustText}>
+              Keep it respectful. You never need to share private contact or
+              payment details before you are ready.
+            </Text>
+          </View>
+        </View>
+
         {/* Active Users Section */}
         {activeUsers.length > 0 && (
           <View style={styles.section}>
@@ -237,6 +408,7 @@ export const MessagesScreen: React.FC = () => {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.activeUsersContainer}
+              accessibilityLabel="Active conversations"
             >
               {activeUsers.map((user) => (
                 <ActiveUserCard
@@ -263,17 +435,50 @@ export const MessagesScreen: React.FC = () => {
 
           {filteredConversations.length === 0 ? (
             <View style={styles.emptyState}>
-              <MessageCircle size={48} color={TEXT_MUTED} strokeWidth={1.5} />
+              <View style={styles.emptyIconWrap}>
+                <MessageCircle
+                  size={42}
+                  color={ACCENT_PURPLE}
+                  strokeWidth={1.7}
+                />
+              </View>
               <Text style={styles.emptyStateText}>
-                {searchQuery
-                  ? "No conversations found"
-                  : "No conversations yet"}
+                {emptyTitle}
               </Text>
               <Text style={styles.emptyStateSubtext}>
-                {searchQuery
-                  ? "Try adjusting your search"
-                  : "Start matching to begin chatting"}
+                {emptyMessage}
               </Text>
+              <View
+                style={styles.emptySafetyNote}
+                accessible
+                accessibilityLabel="Safety reminder. If a chat feels unsafe, use the chat safety options to report, block, or unmatch."
+              >
+                <ShieldCheck
+                  size={15}
+                  color={TEXT_SECONDARY}
+                  strokeWidth={2.2}
+                />
+                <Text style={styles.emptySafetyText}>
+                  If a chat feels unsafe, use Safety options inside the chat to
+                  report, block, or unmatch.
+                </Text>
+              </View>
+              {searchQuery || filterType !== "all" ? (
+                <TouchableOpacity
+                  style={styles.emptyActionButton}
+                  onPress={() => {
+                    setSearchQuery("");
+                    setFilterType("all");
+                  }}
+                  activeOpacity={0.84}
+                  accessibilityRole="button"
+                  accessibilityLabel="Show all conversations"
+                  accessibilityHint="Clears search and resets conversation filters"
+                >
+                  <RefreshCw size={18} color={WHITE} strokeWidth={2.4} />
+                  <Text style={styles.emptyActionButtonText}>Show all</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           ) : (
             <View style={styles.conversationsContainer}>
@@ -338,19 +543,9 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-Bold",
     color: WHITE,
   },
-  headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: SURFACE,
-    borderWidth: 1,
-    borderColor: SURFACE_BORDER,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   searchContainer: {
     paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingBottom: 12,
   },
   searchInputWrapper: {
     flexDirection: "row",
@@ -372,6 +567,69 @@ const styles = StyleSheet.create({
     color: WHITE,
     paddingVertical: 0,
   },
+  clearSearchButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: -10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  filterTabs: {
+    minHeight: 52,
+    marginHorizontal: 20,
+    marginBottom: 18,
+    padding: 4,
+    borderRadius: 18,
+    backgroundColor: SURFACE,
+    borderWidth: 1,
+    borderColor: SURFACE_BORDER,
+    flexDirection: "row",
+    gap: 4,
+  },
+  filterTab: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+  filterTabSelected: {
+    backgroundColor: "rgba(141,105,246,0.24)",
+    borderWidth: 1,
+    borderColor: "rgba(141,105,246,0.42)",
+  },
+  filterTabText: {
+    fontSize: 13,
+    fontFamily: "DMSans-Bold",
+    color: TEXT_MUTED,
+  },
+  filterTabTextSelected: {
+    color: WHITE,
+  },
+  filterCount: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    paddingHorizontal: 7,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  filterCountSelected: {
+    backgroundColor: ACCENT_PURPLE,
+  },
+  filterCountText: {
+    fontSize: 12,
+    fontFamily: "DMSans-Bold",
+    color: TEXT_MUTED,
+  },
+  filterCountTextSelected: {
+    color: WHITE,
+  },
   scrollView: {
     flex: 1,
   },
@@ -380,6 +638,42 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 24,
+  },
+  trustNote: {
+    minHeight: 72,
+    marginHorizontal: 20,
+    marginBottom: 22,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: "rgba(141,105,246,0.1)",
+    borderWidth: 1,
+    borderColor: SURFACE_BORDER,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  trustIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(141,105,246,0.14)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  trustCopy: {
+    flex: 1,
+  },
+  trustTitle: {
+    fontSize: 14,
+    fontFamily: "DMSans-Bold",
+    color: WHITE,
+    marginBottom: 4,
+  },
+  trustText: {
+    fontSize: 13,
+    fontFamily: "DMSans-Regular",
+    color: TEXT_SECONDARY,
+    lineHeight: 19,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -409,29 +703,72 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: "center",
-    paddingVertical: 60,
-    paddingHorizontal: 40,
+    paddingVertical: 64,
+    paddingHorizontal: 32,
+  },
+  emptyIconWrap: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: "rgba(141,105,246,0.12)",
+    borderWidth: 1,
+    borderColor: SURFACE_BORDER,
+    justifyContent: "center",
+    alignItems: "center",
   },
   emptyStateText: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: "DMSans-Bold",
-    color: TEXT_SECONDARY,
+    color: WHITE,
     marginTop: 20,
     textAlign: "center",
   },
   emptyStateSubtext: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: "DMSans-Regular",
-    color: TEXT_MUTED,
+    color: TEXT_SECONDARY,
     marginTop: 8,
     textAlign: "center",
+    lineHeight: 22,
+    maxWidth: 300,
+  },
+  emptySafetyNote: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    marginTop: 16,
+    maxWidth: 300,
+  },
+  emptySafetyText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "DMSans-Medium",
+    color: "rgba(255,255,255,0.62)",
     lineHeight: 20,
+    textAlign: "left",
+  },
+  emptyActionButton: {
+    marginTop: 18,
+    minHeight: 48,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    backgroundColor: ACCENT_PURPLE,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  emptyActionButtonText: {
+    fontSize: 14,
+    fontFamily: "DMSans-Bold",
+    color: WHITE,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 60,
+    paddingHorizontal: 32,
   },
   loadingText: {
     fontSize: 14,
@@ -439,11 +776,20 @@ const styles = StyleSheet.create({
     color: TEXT_SECONDARY,
     marginTop: 16,
   },
-  errorText: {
-    fontSize: 16,
-    fontFamily: "DMSans-Bold",
-    color: TEXT_SECONDARY,
+  loadingSubtext: {
+    fontSize: 13,
+    fontFamily: "DMSans-Regular",
+    color: TEXT_MUTED,
+    marginTop: 8,
     textAlign: "center",
+    lineHeight: 19,
+  },
+  errorText: {
+    fontSize: 18,
+    fontFamily: "DMSans-Bold",
+    color: WHITE,
+    textAlign: "center",
+    marginTop: 18,
   },
   errorSubtext: {
     fontSize: 14,
@@ -456,14 +802,27 @@ const styles = StyleSheet.create({
   retryButton: {
     marginTop: 20,
     paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    minHeight: 48,
     backgroundColor: ACCENT_PURPLE,
     borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
   retryButtonText: {
     fontSize: 14,
     fontFamily: "DMSans-Bold",
     color: WHITE,
     letterSpacing: 0.3,
+  },
+  errorIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(141,105,246,0.12)",
+    borderWidth: 1,
+    borderColor: SURFACE_BORDER,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

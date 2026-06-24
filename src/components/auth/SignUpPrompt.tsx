@@ -41,9 +41,11 @@ export default function SignUpPrompt({
       <Text style={styles.question}>{questionText}</Text>
       <TouchableOpacity
         onPress={handlePress}
+        style={styles.actionButton}
         accessible
         accessibilityRole="button"
         accessibilityLabel={actionText}
+        accessibilityHint="Opens the next account access step"
       >
         <Text style={styles.action}>{actionText}</Text>
       </TouchableOpacity>
@@ -66,7 +68,13 @@ const styles = StyleSheet.create({
   action: {
     color: semanticColors.primary,
     fontSize: moderateScale(16),
+    lineHeight: moderateScale(22),
     letterSpacing: Platform.select({ ios: 0.3, android: 0.2, web: 0.3 }),
     fontFamily: theme.fontFamilies.body.bold,
+  },
+  actionButton: {
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: moderateScale(8),
   },
 });

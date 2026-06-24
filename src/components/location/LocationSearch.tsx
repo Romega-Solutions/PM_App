@@ -8,16 +8,23 @@ interface Props {
   placeholder?: string;
 }
 
-export default function LocationSearch({ value, onChange, placeholder = "Type your city name..." }: Props) {
+export default function LocationSearch({
+  value,
+  onChange,
+  placeholder = "Type your city name...",
+}: Props) {
   return (
     <CustomTextInput
-      label="Search Location"
+      label="Search city"
       value={value}
       onChangeText={onChange}
       placeholder={placeholder}
       LeftIcon={Search}
       autoCapitalize="words"
       autoComplete="off"
+      returnKeyType="search"
+      accessibilityLabel="Search city or province"
+      accessibilityHint="Type a city or province to narrow the available launch-stage location list."
     />
   );
 }

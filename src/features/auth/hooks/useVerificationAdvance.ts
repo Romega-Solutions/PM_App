@@ -7,32 +7,24 @@ export const useVerificationAdvance = () => {
 
   const checkAuthentication = useCallback(async () => {
     try {
-      console.log('🔍 Checking authentication status...');
-      
       const {
         data: { session },
         error,
       } = await supabase.auth.getSession();
 
       if (error) {
-        console.error("❌ Error checking session:", error);
+        console.error("Unable to check verification session.");
         return false;
       }
 
       if (session?.user) {
         const isVerified = !!session.user.email_confirmed_at;
-        console.log(`${isVerified ? '✅' : '⏳'} User auth status:`, {
-          userId: session.user.id,
-          email: session.user.email,
-          verified: isVerified,
-        });
         return isVerified;
       }
 
-      console.log("⏳ No active session found");
       return false;
-    } catch (error) {
-      console.error("❌ Exception checking auth:", error);
+    } catch {
+      console.error("Unable to check verification session.");
       return false;
     }
   }, []);
@@ -40,34 +32,30 @@ export const useVerificationAdvance = () => {
   const manualCheck = useCallback(
     async (onAdvance: () => void) => {
       if (didAdvance.current) {
-        console.log('⚠️ Already advanced, skipping check');
         return false;
       }
 
       setIsChecking(true);
-      console.log("🔍 Manual verification check...");
 
       try {
         const isAuthenticated = await checkAuthentication();
 
         if (isAuthenticated) {
-          console.log('✅ User verified!');
           didAdvance.current = true;
           setIsChecking(false);
           onAdvance();
           return true;
         }
 
-        console.log('⏳ User not verified yet');
         setIsChecking(false);
         return false;
-      } catch (error) {
-        console.error('❌ Error during manual check:', error);
+      } catch {
+        console.error("Manual verification check failed.");
         setIsChecking(false);
         return false;
       }
     },
-    [checkAuthentication]
+    [checkAuthentication],
   );
 
   return {

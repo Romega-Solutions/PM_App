@@ -1,4 +1,5 @@
 import { colors, semanticColors, theme } from "@/src/theme";
+import { useAuthStore } from "@/src/stores/authStore";
 import { LinearGradient } from "expo-linear-gradient";
 import { Redirect } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -21,6 +22,7 @@ const verticalScale = (size: number) => (height / 812) * size; // Based on iPhon
 
 export default function Index() {
   const [showSplash, setShowSplash] = useState(true);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 1800);
@@ -48,27 +50,34 @@ export default function Index() {
               source={require("../assets/logo-no-bg.png")}
               style={styles.logo}
               resizeMode="contain"
+              accessible
+              accessibilityLabel="PinayMate logo"
             />
           </View>
 
           {/* Brand Name */}
-          <Text style={styles.brandText}>PinayMate</Text>
+          <Text style={styles.brandText} maxFontSizeMultiplier={1.16}>
+            PinayMate
+          </Text>
 
           {/* Tagline */}
-          <Text style={styles.tagline}>Elite Filipino Dating</Text>
+          <Text style={styles.tagline} maxFontSizeMultiplier={1.25}>
+            Profile-first Filipino dating
+          </Text>
 
           {/* Loading Indicator */}
           <ActivityIndicator
             size="large"
             color={semanticColors.primary}
             style={styles.loader}
+            accessibilityLabel="Preparing PinayMate"
           />
         </LinearGradient>
       </View>
     );
   }
 
-  return <Redirect href="/(auth)/welcome" />;
+  return <Redirect href={isAuthenticated ? "/(main)" : "/(auth)/welcome"} />;
 }
 
 const styles = StyleSheet.create({

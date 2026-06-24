@@ -13,6 +13,197 @@ import type {
     MessageStatus
 } from "../types/messaging.types";
 
+const CHAT_IMAGES_BUCKET = "chat-images";
+const CHAT_IMAGE_SIGNED_URL_TTL_SECONDS = 60 * 60;
+const MAX_CHAT_IMAGE_BYTES = 6 * 1024 * 1024;
+const CHAT_IMAGE_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/heic": "heic",
+};
+const MAX_TEXT_MESSAGE_LENGTH = 1000;
+const MESSAGE_SEND_ERROR =
+  "Message did not send. Check your connection and try again.";
+const SELF_MESSAGE_ERROR = "Choose a different member to message.";
+const MESSAGE_LOAD_ERROR =
+  "Messages could not be loaded. Check your connection and try again.";
+const MESSAGE_READ_ERROR =
+  "Message read status did not update. Check your connection and try again.";
+const MESSAGE_STATUS_ERROR =
+  "Message status did not update. Check your connection and try again.";
+const MESSAGE_DELETE_ERROR =
+  "Message could not be deleted. Check your connection and try again.";
+const MESSAGE_UNREAD_ERROR =
+  "Unread message count could not be loaded. Check your connection and try again.";
+const CHAT_IMAGE_UPLOAD_ERROR =
+  "Photo message did not upload. Check your connection and try again.";
+const CHAT_IMAGE_DELETE_ERROR =
+  "Photo message could not be removed. Check your connection and try again.";
+
+function getChatImageStoragePath(imageUrlOrPath?: string | null): string | null {
+  if (!imageUrlOrPath) return null;
+
+  if (!/^https?:\/\//i.test(imageUrlOrPath)) {
+    return imageUrlOrPath.replace(/^\/+/, "");
+  }
+
+  const marker = `/${CHAT_IMAGES_BUCKET}/`;
+  const markerIndex = imageUrlOrPath.indexOf(marker);
+
+  if (markerIndex === -1) {
+    return null;
+  }
+
+  const pathWithQuery = imageUrlOrPath.slice(markerIndex + marker.length);
+  return decodeURIComponent(pathWithQuery.split("?")[0]);
+}
+
+function assertConversationImagePath(
+  imageStoragePath: string,
+  conversationId: string,
+) {
+  const normalizedPath = getChatImageStoragePath(imageStoragePath);
+
+  if (
+    !normalizedPath ||
+    normalizedPath.includes("..") ||
+    normalizedPath.startsWith("/") ||
+    !normalizedPath.startsWith(`${conversationId}/`)
+  ) {
+    throw new Error("Invalid chat image path");
+  }
+
+  return normalizedPath;
+}
+
+function assertChatImageDeletePath(imageUrlOrPath: string): string {
+  const filePath = getChatImageStoragePath(imageUrlOrPath);
+
+  if (!filePath || filePath.includes("..") || filePath.startsWith("/")) {
+    throw new Error("Invalid chat image path");
+  }
+
+  return filePath;
+}
+
+function getImageTypeFromUri(uri: string): string | null {
+  const extension = uri
+    .split("?")[0]
+    .split("#")[0]
+    .split(".")
+    .pop()
+    ?.toLowerCase();
+
+  if (extension === "jpg" || extension === "jpeg") return "image/jpeg";
+  if (extension === "png") return "image/png";
+  if (extension === "webp") return "image/webp";
+  if (extension === "heic") return "image/heic";
+
+  return null;
+}
+
+function assertChatImageUpload(blob: Blob, imageUri: string) {
+  const contentType = blob.type || getImageTypeFromUri(imageUri);
+
+  if (!contentType || !(contentType in CHAT_IMAGE_TYPES)) {
+    throw new Error("Unsupported chat image type");
+  }
+
+  if (blob.size <= 0 || blob.size > MAX_CHAT_IMAGE_BYTES) {
+    throw new Error("Chat image size is not allowed");
+  }
+
+  return {
+    contentType,
+    extension: CHAT_IMAGE_TYPES[contentType],
+  };
+}
+
+function normalizeTextMessageContent(content: string): string {
+  const normalizedContent = content.trim();
+
+  if (
+    !normalizedContent ||
+    normalizedContent.length > MAX_TEXT_MESSAGE_LENGTH
+  ) {
+    throw new Error("Invalid message content");
+  }
+
+  return normalizedContent;
+}
+
+export async function hydrateMessageMedia(message: Message): Promise<Message> {
+  if (message.type !== "image" || !message.image_url) {
+    return message;
+  }
+
+  const storedPath = getChatImageStoragePath(message.image_url);
+
+  if (!storedPath) {
+    return message;
+  }
+
+  const { data, error } = await supabase.storage
+    .from(CHAT_IMAGES_BUCKET)
+    .createSignedUrl(storedPath, CHAT_IMAGE_SIGNED_URL_TTL_SECONDS);
+
+  if (error || !data?.signedUrl) {
+    console.warn("Unable to sign chat image URL.");
+    return message;
+  }
+
+  return {
+    ...message,
+    image_url: data.signedUrl,
+  };
+}
+
+async function hydrateMessagesMedia(messages: Message[]): Promise<Message[]> {
+  return Promise.all(messages.map((message) => hydrateMessageMedia(message)));
+}
+
+async function getAuthenticatedUserId(): Promise<string> {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user?.id) {
+    throw new Error("Authentication required");
+  }
+
+  return user.id;
+}
+
+function clampMessageLimit(limit: number): number {
+  if (!Number.isFinite(limit)) return 100;
+
+  return Math.min(Math.max(Math.trunc(limit), 1), 100);
+}
+
+function assertUuid(value: string, label: string): void {
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    )
+  ) {
+    throw new Error(`Invalid ${label}`);
+  }
+}
+
+function assertOptionalUuid(value: string | undefined, label: string): void {
+  if (!value) return;
+
+  assertUuid(value, label);
+}
+
+function assertUuidList(values: string[], label: string): void {
+  if (values.length === 0) return;
+
+  values.forEach((value) => assertUuid(value, label));
+}
+
 /**
  * Send a text message
  * Creates a new message in the database
@@ -24,42 +215,31 @@ export async function sendTextMessage(
   conversationId?: string,
 ): Promise<{ data: Message | null; error: Error | null }> {
   try {
-    // Get or create conversation if not provided
-    let convId = conversationId;
-    if (!convId) {
-      const { data: convData, error: convError } = await supabase.rpc(
-        "get_or_create_conversation",
-        {
-          p_user1_id: senderId,
-          p_user2_id: recipientId,
-        },
-      );
+    const authUserId = await getAuthenticatedUserId();
+    void senderId;
+    assertUuid(recipientId, "recipient ID");
 
-      if (convError) throw convError;
-      convId = convData;
+    if (authUserId === recipientId) {
+      return { data: null, error: new Error(SELF_MESSAGE_ERROR) };
     }
 
-    // Insert message
-    const { data, error } = await supabase
-      .from("messages")
-      .insert({
-        conversation_id: convId,
-        sender_id: senderId,
-        recipient_id: recipientId,
-        text: content, // Using 'text' column (your DB schema)
-        type: "text", // Using 'type' column (your DB schema)
-        status: "sent",
-        is_deleted: false,
-      })
-      .select()
-      .single();
+    assertOptionalUuid(conversationId, "conversation ID");
+    const normalizedContent = normalizeTextMessageContent(content);
+
+    const { data, error } = await supabase.rpc("send_message", {
+      p_recipient_id: recipientId,
+      p_content: normalizedContent,
+      p_message_type: "text",
+      p_image_url: null,
+      p_conversation_id: conversationId ?? null,
+    });
 
     if (error) throw error;
 
     return { data: data as Message, error: null };
-  } catch (error) {
-    console.error("❌ Error sending text message:", error);
-    return { data: null, error: error as Error };
+  } catch {
+    console.error("Error sending text message.");
+    return { data: null, error: new Error(MESSAGE_SEND_ERROR) };
   }
 }
 
@@ -70,47 +250,38 @@ export async function sendTextMessage(
 export async function sendImageMessage(
   senderId: string,
   recipientId: string,
-  imageUrl: string,
-  conversationId?: string,
+  imageStoragePath: string,
+  conversationId: string,
 ): Promise<{ data: Message | null; error: Error | null }> {
   try {
-    // Get or create conversation if not provided
-    let convId = conversationId;
-    if (!convId) {
-      const { data: convData, error: convError } = await supabase.rpc(
-        "get_or_create_conversation",
-        {
-          p_user1_id: senderId,
-          p_user2_id: recipientId,
-        },
-      );
+    const authUserId = await getAuthenticatedUserId();
+    void senderId;
+    assertUuid(recipientId, "recipient ID");
 
-      if (convError) throw convError;
-      convId = convData;
+    if (authUserId === recipientId) {
+      return { data: null, error: new Error(SELF_MESSAGE_ERROR) };
     }
 
-    // Insert message
-    const { data, error } = await supabase
-      .from("messages")
-      .insert({
-        conversation_id: convId,
-        sender_id: senderId,
-        recipient_id: recipientId,
-        text: "", // Empty text for image messages
-        type: "image", // Using 'type' column (your DB schema)
-        image_url: imageUrl,
-        status: "sent",
-        is_deleted: false,
-      })
-      .select()
-      .single();
+    assertUuid(conversationId, "conversation ID");
+    const normalizedImagePath = assertConversationImagePath(
+      imageStoragePath,
+      conversationId,
+    );
+
+    const { data, error } = await supabase.rpc("send_message", {
+      p_recipient_id: recipientId,
+      p_content: "",
+      p_message_type: "image",
+      p_image_url: normalizedImagePath,
+      p_conversation_id: conversationId,
+    });
 
     if (error) throw error;
 
-    return { data: data as Message, error: null };
-  } catch (error) {
-    console.error("❌ Error sending image message:", error);
-    return { data: null, error: error as Error };
+    return { data: await hydrateMessageMedia(data as Message), error: null };
+  } catch {
+    console.error("Error sending image message.");
+    return { data: null, error: new Error(MESSAGE_SEND_ERROR) };
   }
 }
 
@@ -124,21 +295,25 @@ export async function getMessages(
   limit: number = 100,
 ): Promise<{ data: Message[] | null; error: Error | null }> {
   try {
+    const authUserId = await getAuthenticatedUserId();
+    void userId;
+    assertUuid(recipientId, "recipient ID");
+
     const { data, error } = await supabase
       .from("messages")
       .select("*")
       .or(
-        `and(sender_id.eq.${userId},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${userId})`,
+        `and(sender_id.eq.${authUserId},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${authUserId})`,
       )
       .order("created_at", { ascending: true })
-      .limit(limit);
+      .limit(clampMessageLimit(limit));
 
     if (error) throw error;
 
-    return { data: data as Message[], error: null };
-  } catch (error) {
-    console.error("❌ Error fetching messages:", error);
-    return { data: null, error: error as Error };
+    return { data: await hydrateMessagesMedia(data as Message[]), error: null };
+  } catch {
+    console.error("Error fetching messages.");
+    return { data: null, error: new Error(MESSAGE_LOAD_ERROR) };
   }
 }
 
@@ -151,19 +326,22 @@ export async function getMessagesByConversationId(
   limit: number = 100,
 ): Promise<{ data: Message[] | null; error: Error | null }> {
   try {
+    await getAuthenticatedUserId();
+    assertUuid(conversationId, "conversation ID");
+
     const { data, error } = await supabase
       .from("messages")
       .select("*")
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: true })
-      .limit(limit);
+      .limit(clampMessageLimit(limit));
 
     if (error) throw error;
 
-    return { data: data as Message[], error: null };
-  } catch (error) {
-    console.error("❌ Error fetching messages by conversation:", error);
-    return { data: null, error: error as Error };
+    return { data: await hydrateMessagesMedia(data as Message[]), error: null };
+  } catch {
+    console.error("Error fetching messages by conversation.");
+    return { data: null, error: new Error(MESSAGE_LOAD_ERROR) };
   }
 }
 
@@ -176,18 +354,20 @@ export async function markMessagesAsRead(
   userId: string,
 ): Promise<{ success: boolean; error: Error | null }> {
   try {
-    const { error } = await supabase
-      .from("messages")
-      .update({ status: "read" })
-      .in("id", messageIds)
-      .eq("recipient_id", userId); // Only recipient can mark as read
+    await getAuthenticatedUserId();
+    void userId;
+    assertUuidList(messageIds, "message ID");
+
+    const { error } = await supabase.rpc("mark_messages_read", {
+      p_message_ids: messageIds,
+    });
 
     if (error) throw error;
 
     return { success: true, error: null };
-  } catch (error) {
-    console.error("❌ Error marking messages as read:", error);
-    return { success: false, error: error as Error };
+  } catch {
+    console.error("Error marking messages as read.");
+    return { success: false, error: new Error(MESSAGE_READ_ERROR) };
   }
 }
 
@@ -200,28 +380,20 @@ export async function markConversationAsRead(
   userId: string,
 ): Promise<{ success: boolean; error: Error | null }> {
   try {
-    // Update message status
-    const { error: messagesError } = await supabase
-      .from("messages")
-      .update({ status: "read" })
-      .eq("conversation_id", conversationId)
-      .eq("recipient_id", userId)
-      .neq("status", "read"); // Only update unread messages
+    await getAuthenticatedUserId();
+    void userId;
+    assertUuid(conversationId, "conversation ID");
 
-    if (messagesError) throw messagesError;
-
-    // Reset unread count
-    const { error: unreadError } = await supabase.rpc("reset_unread_count", {
+    const { error } = await supabase.rpc("mark_conversation_read", {
       p_conversation_id: conversationId,
-      p_user_id: userId,
     });
 
-    if (unreadError) throw unreadError;
+    if (error) throw error;
 
     return { success: true, error: null };
-  } catch (error) {
-    console.error("❌ Error marking conversation as read:", error);
-    return { success: false, error: error as Error };
+  } catch {
+    console.error("Error marking conversation as read.");
+    return { success: false, error: new Error(MESSAGE_READ_ERROR) };
   }
 }
 
@@ -234,17 +406,20 @@ export async function updateMessageStatus(
   status: MessageStatus,
 ): Promise<{ success: boolean; error: Error | null }> {
   try {
-    const { error } = await supabase
-      .from("messages")
-      .update({ status })
-      .eq("id", messageId);
+    await getAuthenticatedUserId();
+    assertUuid(messageId, "message ID");
+
+    const { error } = await supabase.rpc("update_message_status", {
+      p_message_id: messageId,
+      p_status: status,
+    });
 
     if (error) throw error;
 
     return { success: true, error: null };
-  } catch (error) {
-    console.error("❌ Error updating message status:", error);
-    return { success: false, error: error as Error };
+  } catch {
+    console.error("Error updating message status.");
+    return { success: false, error: new Error(MESSAGE_STATUS_ERROR) };
   }
 }
 
@@ -258,42 +433,31 @@ export async function deleteMessage(
   deleteForEveryone: boolean = false,
 ): Promise<{ success: boolean; error: Error | null }> {
   try {
+    await getAuthenticatedUserId();
+    assertUuid(messageId, "message ID");
+
     if (deleteForEveryone) {
-      // Delete for everyone (only sender can do this)
-      const { error } = await supabase
-        .from("messages")
-        .update({ is_deleted: true })
-        .eq("id", messageId)
-        .eq("sender_id", userId);
+      void userId;
+
+      const { error } = await supabase.rpc("delete_message_for_everyone", {
+        p_message_id: messageId,
+      });
 
       if (error) throw error;
     } else {
-      // Delete for me only - add to deleted_by array
-      const { data: message, error: fetchError } = await supabase
-        .from("messages")
-        .select("deleted_by")
-        .eq("id", messageId)
-        .single();
+      void userId;
 
-      if (fetchError) throw fetchError;
-
-      const deletedBy = message.deleted_by || [];
-      if (!deletedBy.includes(userId)) {
-        deletedBy.push(userId);
-      }
-
-      const { error: updateError } = await supabase
-        .from("messages")
-        .update({ deleted_by: deletedBy })
-        .eq("id", messageId);
+      const { error: updateError } = await supabase.rpc("delete_message_for_me", {
+        p_message_id: messageId,
+      });
 
       if (updateError) throw updateError;
     }
 
     return { success: true, error: null };
-  } catch (error) {
-    console.error("❌ Error deleting message:", error);
-    return { success: false, error: error as Error };
+  } catch {
+    console.error("Error deleting message.");
+    return { success: false, error: new Error(MESSAGE_DELETE_ERROR) };
   }
 }
 
@@ -305,58 +469,65 @@ export async function getUnreadCount(
   userId: string,
 ): Promise<{ count: number; error: Error | null }> {
   try {
+    const authUserId = await getAuthenticatedUserId();
+    void userId;
+
     const { count, error } = await supabase
       .from("messages")
       .select("*", { count: "exact", head: true })
-      .eq("recipient_id", userId)
+      .eq("recipient_id", authUserId)
       .eq("status", "sent");
 
     if (error) throw error;
 
     return { count: count || 0, error: null };
-  } catch (error) {
-    console.error("❌ Error getting unread count:", error);
-    return { count: 0, error: error as Error };
+  } catch {
+    console.error("Error getting unread count.");
+    return { count: 0, error: new Error(MESSAGE_UNREAD_ERROR) };
   }
 }
 
 /**
  * Upload image to Supabase Storage
- * Returns the public URL of the uploaded image
+ * Returns the durable storage path. Messages store this path and sign it at read time.
  */
 export async function uploadChatImage(
   userId: string,
   conversationId: string,
   imageUri: string,
-): Promise<{ url: string | null; error: Error | null }> {
+): Promise<{ path: string | null; error: Error | null }> {
   try {
+    const authUserId = await getAuthenticatedUserId();
+    void userId;
+    assertUuid(conversationId, "conversation ID");
+
     // Convert image URI to blob
     const response = await fetch(imageUri);
+    if (!response.ok) {
+      throw new Error("Unable to read image");
+    }
     const blob = await response.blob();
+    const { contentType, extension } = assertChatImageUpload(blob, imageUri);
 
     // Generate unique filename
-    const fileName = `${conversationId}/${Date.now()}_${userId}.jpg`;
+    const fileName = `${conversationId}/${Date.now()}_${authUserId}.${extension}`;
 
     // Upload to storage
     const { data, error: uploadError } = await supabase.storage
       .from("chat-images")
       .upload(fileName, blob, {
-        contentType: "image/jpeg",
+        contentType,
         cacheControl: "3600",
         upsert: false,
       });
 
     if (uploadError) throw uploadError;
 
-    // Get public URL
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("chat-images").getPublicUrl(fileName);
-
-    return { url: publicUrl, error: null };
-  } catch (error) {
-    console.error("❌ Error uploading image:", error);
-    return { url: null, error: error as Error };
+    const storedPath = data?.path || fileName;
+    return { path: storedPath, error: null };
+  } catch {
+    console.error("Error uploading image.");
+    return { path: null, error: new Error(CHAT_IMAGE_UPLOAD_ERROR) };
   }
 }
 
@@ -364,26 +535,21 @@ export async function uploadChatImage(
  * Delete image from storage
  */
 export async function deleteChatImage(
-  imageUrl: string,
+  imageUrlOrPath: string,
 ): Promise<{ success: boolean; error: Error | null }> {
   try {
-    // Extract file path from URL
-    const urlParts = imageUrl.split("/chat-images/");
-    if (urlParts.length < 2) {
-      throw new Error("Invalid image URL");
-    }
-
-    const filePath = urlParts[1];
+    await getAuthenticatedUserId();
+    const filePath = assertChatImageDeletePath(imageUrlOrPath);
 
     const { error } = await supabase.storage
-      .from("chat-images")
+      .from(CHAT_IMAGES_BUCKET)
       .remove([filePath]);
 
     if (error) throw error;
 
     return { success: true, error: null };
-  } catch (error) {
-    console.error("❌ Error deleting image:", error);
-    return { success: false, error: error as Error };
+  } catch {
+    console.error("Error deleting image.");
+    return { success: false, error: new Error(CHAT_IMAGE_DELETE_ERROR) };
   }
 }

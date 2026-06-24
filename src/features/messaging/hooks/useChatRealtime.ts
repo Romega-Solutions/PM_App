@@ -37,8 +37,6 @@ export function useChatRealtime({
   useEffect(() => {
     if (!conversationId || !userId || !onNewMessage) return;
 
-    console.log("🔴 Subscribing to messages for conversation:", conversationId);
-
     const unsubscribe = realtimeApi.subscribeToMessages(
       conversationId,
       userId,
@@ -46,7 +44,6 @@ export function useChatRealtime({
     );
 
     return () => {
-      console.log("🔴 Unsubscribing from messages");
       unsubscribe();
     };
   }, [conversationId, userId, onNewMessage]);
@@ -56,8 +53,6 @@ export function useChatRealtime({
    */
   useEffect(() => {
     if (!conversationId || !onTyping) return;
-
-    console.log("⌨️ Subscribing to typing indicators");
 
     const unsubscribe = realtimeApi.subscribeToTyping(
       conversationId,
@@ -70,7 +65,6 @@ export function useChatRealtime({
     );
 
     return () => {
-      console.log("⌨️ Unsubscribing from typing");
       unsubscribe();
     };
   }, [conversationId, recipientId, onTyping]);
@@ -81,15 +75,12 @@ export function useChatRealtime({
   useEffect(() => {
     if (!conversationId || !onReadReceipt) return;
 
-    console.log("✅ Subscribing to read receipts");
-
     const unsubscribe = realtimeApi.subscribeToReadReceipts(
       conversationId,
       onReadReceipt,
     );
 
     return () => {
-      console.log("✅ Unsubscribing from read receipts");
       unsubscribe();
     };
   }, [conversationId, onReadReceipt]);
@@ -103,8 +94,8 @@ export function useChatRealtime({
 
       try {
         await realtimeApi.broadcastTyping(conversationId, userId, isTyping);
-      } catch (err) {
-        console.error("❌ Error broadcasting typing:", err);
+      } catch {
+        console.error("Unable to broadcast typing status.");
       }
     },
     [conversationId, userId],
@@ -119,8 +110,8 @@ export function useChatRealtime({
 
       try {
         await realtimeApi.broadcastReadReceipt(conversationId, messageIds);
-      } catch (err) {
-        console.error("❌ Error broadcasting read receipt:", err);
+      } catch {
+        console.error("Unable to broadcast read receipt.");
       }
     },
     [conversationId],

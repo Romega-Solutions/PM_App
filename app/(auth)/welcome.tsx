@@ -1,10 +1,13 @@
 // app/(auth)/welcome.tsx
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { BadgeCheck, ShieldCheck, Users } from "lucide-react-native";
 import React from "react";
 import {
   Dimensions,
   Image,
+  Pressable,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -18,12 +21,14 @@ const { width } = Dimensions.get("window");
 
 // Brand-aligned colors
 const BRAND_BG = "#0F0814"; // deep aubergine
+const WHITE = "#FFFFFF";
+const TEXT_SECONDARY = "rgba(255, 255, 255, 0.88)";
 const OVERLAY = [
   "rgba(141,105,246,0.10)", // soft purple haze
   "rgba(239,62,120,0.15)", // subtle pink tint
   "rgba(15,8,20,0.85)", // dark base blend
   "rgba(15,8,20,0.98)", // near-opaque base
-];
+] as const;
 
 export default function Welcome() {
   const router = useRouter();
@@ -54,19 +59,20 @@ export default function Welcome() {
       </View>
 
       {/* Content */}
-      <View
-        style={[
+      <ScrollView
+        contentContainerStyle={[
           styles.content,
           {
             paddingTop: insets.top + 8,
-            paddingBottom: 24,
+            paddingBottom: Math.max(insets.bottom + 24, 36),
             paddingHorizontal: 24,
           },
         ]}
+        bounces={false}
+        showsVerticalScrollIndicator={false}
       >
         {/* Center header */}
         <View style={styles.header}>
-          {/* Logo only (removed wordmark) */}
           <View
             style={styles.logoContainer}
             accessible
@@ -84,23 +90,46 @@ export default function Welcome() {
           <View style={styles.heroTextWrap} accessible>
             <Text
               style={[styles.heroHeading, { fontFamily: "HelloParis-Bold" }]}
+              maxFontSizeMultiplier={1.22}
             >
-              Find Love in the{"\n"}Filipino Community
+              Filipino dating,{"\n"}started with care
             </Text>
-            <Text style={[styles.subtitle, { fontFamily: "Lora-Regular" }]}>
-              Connect with verified Filipino singles{"\n"}worldwide. Start
-              meaningful relationships today.
+            <Text
+              style={[styles.subtitle, { fontFamily: "Lora-Regular" }]}
+              maxFontSizeMultiplier={1.25}
+            >
+              Build a profile with clear expectations, safety prompts, and
+              privacy-aware setup before matching begins.
             </Text>
+          </View>
+
+          <View
+            style={styles.trustGrid}
+            accessible
+            accessibilityLabel="PinayMate trust signals include profile-first setup, review cues, and clear privacy terms"
+          >
+            <View style={styles.trustPill}>
+              <ShieldCheck size={16} color={WHITE} strokeWidth={2.4} />
+              <Text style={styles.trustText}>Safety cues</Text>
+            </View>
+            <View style={styles.trustPill}>
+              <BadgeCheck size={16} color={WHITE} strokeWidth={2.4} />
+              <Text style={styles.trustText}>Review cues</Text>
+            </View>
+            <View style={styles.trustPill}>
+              <Users size={16} color={WHITE} strokeWidth={2.4} />
+              <Text style={styles.trustText}>Mutual intent</Text>
+            </View>
           </View>
         </View>
 
         {/* Bottom actions */}
-        <View style={{ gap: 14 }}>
+        <View style={[styles.actions, { paddingBottom: insets.bottom + 8 }]}>
           <PrimaryButton
-            title="Create Account"
+            title="Start Profile Setup"
             onPress={() => router.push("/(auth)/user-type-selection")}
-            accessibilityLabel="Create Account"
-            accessibilityHint="Sign up to start finding matches"
+            accessibilityLabel="Start PinayMate profile setup"
+            accessibilityHint="Starts onboarding for your PinayMate profile"
           />
           <SecondaryButton
             title="Sign In"
@@ -109,15 +138,42 @@ export default function Welcome() {
             accessibilityLabel="Sign In"
             accessibilityHint="Log in to your existing account"
           />
-          <Text
-            style={[styles.legal, { fontFamily: "DMSans-Regular" }]}
-            accessible
-          >
-            By continuing, you agree to our Terms of Service{"\n"}and Privacy
-            Policy
-          </Text>
+          <View style={styles.legalWrap}>
+            <Text style={[styles.legal, { fontFamily: "DMSans-Regular" }]}>
+              By continuing, you agree to PinayMate's terms and privacy policy.
+            </Text>
+            <View style={styles.legalLinks}>
+              <Pressable
+                onPress={() => router.push("/(auth)/terms")}
+                accessibilityRole="button"
+                accessibilityLabel="Read PinayMate terms of service"
+                accessibilityHint="Opens the PinayMate terms overview"
+                hitSlop={10}
+              >
+                <Text
+                  style={[styles.legalLink, { fontFamily: "DMSans-SemiBold" }]}
+                >
+                  Terms of Service
+                </Text>
+              </Pressable>
+              <Text style={styles.legalSeparator}>and</Text>
+              <Pressable
+                onPress={() => router.push("/(auth)/privacy")}
+                accessibilityRole="button"
+                accessibilityLabel="Read PinayMate privacy policy"
+                accessibilityHint="Opens the PinayMate privacy overview"
+                hitSlop={10}
+              >
+                <Text
+                  style={[styles.legalLink, { fontFamily: "DMSans-SemiBold" }]}
+                >
+                  Privacy Policy
+                </Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -127,58 +183,114 @@ const styles = StyleSheet.create({
   gradient: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
 
   content: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "space-between",
     zIndex: 2,
   },
   header: { alignItems: "center", flex: 1, justifyContent: "center" },
 
   logoContainer: {
-    width: 200,
-    height: 200,
+    width: Math.min(width * 0.42, 170),
+    height: Math.min(width * 0.42, 170),
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 18,
     shadowColor: "#EF3E78",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 40,
     elevation: 20,
   },
-  logoImage: { width: 140, height: 140 },
+  logoImage: {
+    width: Math.min(width * 0.28, 118),
+    height: Math.min(width * 0.28, 118),
+  },
 
   heroTextWrap: { alignItems: "center", marginBottom: 24 },
   heroHeading: {
-    fontSize: Math.min(width * 0.09, 40),
-    color: "#FFFFFF",
+    fontSize: 31,
+    color: WHITE,
     textAlign: "center",
-    lineHeight: Math.min(width * 0.115, 48),
+    lineHeight: 37,
     marginBottom: 16,
     textShadowColor: "rgba(239, 62, 120, 0.5)",
     textShadowOffset: { width: 0, height: 3 },
     textShadowRadius: 12,
-    letterSpacing: -0.5,
+    letterSpacing: 0,
     paddingHorizontal: 10,
   },
   subtitle: {
-    fontSize: Math.min(width * 0.043, 17),
-    color: "rgba(255, 255, 255, 0.95)",
+    fontSize: 16,
+    color: TEXT_SECONDARY,
     textAlign: "center",
-    lineHeight: Math.min(width * 0.063, 25),
+    lineHeight: 24,
     paddingHorizontal: 16,
     textShadowColor: "rgba(0, 0, 0, 0.6)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
+  },
+  trustGrid: {
+    width: "100%",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 4,
+  },
+  trustPill: {
+    minHeight: 44,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.22)",
+    backgroundColor: "rgba(255, 255, 255, 0.10)",
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  trustText: {
+    color: WHITE,
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  actions: {
+    gap: 14,
   },
   legal: {
     fontSize: 12,
     color: "rgba(255, 255, 255, 0.65)",
     textAlign: "center",
     lineHeight: 17,
-    marginTop: 16,
     paddingHorizontal: 16,
     textShadowColor: "rgba(0, 0, 0, 0.5)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
+  },
+  legalWrap: {
+    alignItems: "center",
+    marginTop: 16,
+    gap: 4,
+  },
+  legalLinks: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  legalLink: {
+    minHeight: 44,
+    paddingHorizontal: 4,
+    color: "#FFFFFF",
+    fontSize: 12,
+    lineHeight: 44,
+    textAlign: "center",
+    textDecorationLine: "underline",
+  },
+  legalSeparator: {
+    color: "rgba(255, 255, 255, 0.65)",
+    fontSize: 12,
+    lineHeight: 18,
   },
 });
