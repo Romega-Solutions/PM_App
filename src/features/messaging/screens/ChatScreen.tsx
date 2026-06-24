@@ -627,10 +627,20 @@ export default function ChatScreen() {
         userId: recipientId,
         userName: userName,
         userAvatar: params.userImage,
+        conversationId: activeConversationId,
+        isOnline: params.isOnline,
         ...(isDemoChat ? { isDemo: "true" } : {}),
       },
     });
-  }, [isDemoChat, router, recipientId, userName, params.userImage]);
+  }, [
+    activeConversationId,
+    isDemoChat,
+    params.isOnline,
+    params.userImage,
+    recipientId,
+    router,
+    userName,
+  ]);
 
   // Video call handler
   const handleVideoCall = useCallback(() => {
@@ -640,10 +650,20 @@ export default function ChatScreen() {
         userId: recipientId,
         userName: userName,
         userAvatar: params.userImage,
+        conversationId: activeConversationId,
+        isOnline: params.isOnline,
         ...(isDemoChat ? { isDemo: "true" } : {}),
       },
     });
-  }, [isDemoChat, router, recipientId, userName, params.userImage]);
+  }, [
+    activeConversationId,
+    isDemoChat,
+    params.isOnline,
+    params.userImage,
+    recipientId,
+    router,
+    userName,
+  ]);
 
   const handleEmojiPick = useCallback(() => {
     setInputText((current) => {

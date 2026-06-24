@@ -32,11 +32,14 @@ const TEXT_MUTED = "rgba(255,255,255,0.62)";
 export default function VideoCallScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { userName, userAvatar, userId, isDemo } = useLocalSearchParams<{
+  const { userName, userAvatar, userId, isDemo, conversationId, isOnline } =
+    useLocalSearchParams<{
     userName: string;
     userAvatar: string;
     userId: string;
     isDemo?: string;
+    conversationId?: string;
+    isOnline?: string;
   }>();
 
   const displayName = userName || "this match";
@@ -44,6 +47,21 @@ export default function VideoCallScreen() {
   const isDemoCall = isDemo === "true";
 
   const handleClose = () => {
+    if (isDemoCall && userId) {
+      router.replace({
+        pathname: "/chat",
+        params: {
+          userId,
+          userName: displayName,
+          userImage: userAvatar,
+          isOnline: isOnline ?? "true",
+          ...(conversationId ? { conversationId } : {}),
+          isDemo: "true",
+        },
+      });
+      return;
+    }
+
     router.back();
   };
 

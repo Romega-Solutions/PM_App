@@ -27,11 +27,14 @@ export default function VoiceCallScreen() {
   const styles = useStyles();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { userName, userAvatar, userId, isDemo } = useLocalSearchParams<{
+  const { userName, userAvatar, userId, isDemo, conversationId, isOnline } =
+    useLocalSearchParams<{
     userName: string;
     userAvatar: string;
     userId: string;
     isDemo?: string;
+    conversationId?: string;
+    isOnline?: string;
   }>();
 
   const displayName = userName || "this match";
@@ -39,6 +42,21 @@ export default function VoiceCallScreen() {
   const isDemoCall = isDemo === "true";
 
   const handleClose = () => {
+    if (isDemoCall && userId) {
+      router.replace({
+        pathname: "/chat",
+        params: {
+          userId,
+          userName: displayName,
+          userImage: userAvatar,
+          isOnline: isOnline ?? "true",
+          ...(conversationId ? { conversationId } : {}),
+          isDemo: "true",
+        },
+      });
+      return;
+    }
+
     router.back();
   };
 
