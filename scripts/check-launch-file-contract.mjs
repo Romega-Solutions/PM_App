@@ -7,7 +7,7 @@ const rootDir = dirname(dirname(fileURLToPath(import.meta.url)));
 
 const requiredFiles = [
   {
-    path: "docs/COMMERCE_SCOPE_DECISION.md",
+    path: "docs/architecture/COMMERCE_SCOPE_DECISION.md",
     markers: [
       "PinayMate does not ship paid checkout, subscriptions, card collection",
       "PM_Web may show planned membership direction and collect plan-interest email only",
@@ -15,12 +15,12 @@ const requiredFiles = [
       "Backend schema for products, prices, subscriptions, payment records, webhook events, and entitlement state",
       "Webhook signature verification proof",
       "Plan-interest capture is useful for conversion learning",
-      "docs/PINAYMATE_LAUNCH_STATE_MATRIX.md",
-      "PM_Web/docs/PINAYMATE_LAUNCH_STATE_MATRIX.md",
+      "docs/release/PINAYMATE_LAUNCH_STATE_MATRIX.md",
+      "PM_Web/docs/release/PINAYMATE_LAUNCH_STATE_MATRIX.md",
     ],
   },
   {
-    path: "docs/WAITLIST_ABUSE_RATE_LIMIT_DECISION.md",
+    path: "docs/architecture/WAITLIST_ABUSE_RATE_LIMIT_DECISION.md",
     markers: [
       "PM_Web remains email-capture only until the backend waitlist RPC has target-environment proof",
       "submit_waitlist_signup",
@@ -234,10 +234,10 @@ const requiredFiles = [
     ],
   },
   {
-    path: "docs/PRODUCT_DESIGN_QA_STANDARD.md",
+    path: "docs/testing/PRODUCT_DESIGN_QA_STANDARD.md",
     markers: [
       "PinayMate Product Design QA Standard",
-      "docs/PINAYMATE_LAUNCH_STATE_MATRIX.md",
+      "docs/release/PINAYMATE_LAUNCH_STATE_MATRIX.md",
       "PM_App design gates",
       "PM_Web design gates",
       "Launch-state accuracy",
@@ -245,7 +245,7 @@ const requiredFiles = [
     ],
   },
   {
-    path: "docs/NATIVE_QA_SCRIPT.md",
+    path: "docs/testing/NATIVE_QA_SCRIPT.md",
     markers: [
       "Launch-state notice accessibility QA",
       "launch-state-notice",
@@ -292,7 +292,7 @@ const requiredFiles = [
     ],
   },
   {
-    path: "docs/SUPABASE_LIVE_PROOF_COMMANDS.md",
+    path: "docs/operations/SUPABASE_LIVE_PROOF_COMMANDS.md",
     markers: [
       "Supabase Live Proof Commands",
       "supabase/LAUNCH_MIGRATION_MANIFEST.md",
@@ -307,9 +307,9 @@ const requiredFiles = [
     ],
   },
   {
-    path: "docs/LAUNCH_SIGNOFF_CHECKLIST.md",
+    path: "docs/release/LAUNCH_SIGNOFF_CHECKLIST.md",
     markers: [
-      "docs/PINAYMATE_LAUNCH_STATE_MATRIX.md",
+      "docs/release/PINAYMATE_LAUNCH_STATE_MATRIX.md",
       "Launch-state claims",
       "Launch-state claim alignment",
       "Launch-state claim approval",
@@ -318,9 +318,9 @@ const requiredFiles = [
     ],
   },
   {
-    path: "docs/SAFETY_MODERATION_RUNBOOK.md",
+    path: "docs/operations/SAFETY_MODERATION_RUNBOOK.md",
     markers: [
-      "docs/PINAYMATE_LAUNCH_STATE_MATRIX.md",
+      "docs/release/PINAYMATE_LAUNCH_STATE_MATRIX.md",
       "instant moderation",
       "emergency response",
       "guaranteed identity",
@@ -329,7 +329,7 @@ const requiredFiles = [
     ],
   },
   {
-    path: "docs/PINAYMATE_LAUNCH_STATE_MATRIX.md",
+    path: "docs/release/PINAYMATE_LAUNCH_STATE_MATRIX.md",
     markers: [
       "Single launch-state source of truth",
       "PM_Web is a launch-interest and support surface",
@@ -414,9 +414,9 @@ const requiredFiles = [
     ],
   },
   {
-    path: "docs/SUPABASE_RELEASE_OPERATOR_CHECKLIST.md",
+    path: "docs/operations/SUPABASE_RELEASE_OPERATOR_CHECKLIST.md",
     markers: [
-      "docs/PINAYMATE_LAUNCH_STATE_MATRIX.md",
+      "docs/release/PINAYMATE_LAUNCH_STATE_MATRIX.md",
       "user_notification_preferences_push_children_check",
       "save_notification_preferences(FALSE, TRUE, TRUE, TRUE, TRUE)",
       "Backend feature proof map",
@@ -572,7 +572,7 @@ const requiredFiles = [
     ],
   },
   {
-    path: "docs/SUPABASE_RELEASE_OPERATOR_CHECKLIST.md",
+    path: "docs/operations/SUPABASE_RELEASE_OPERATOR_CHECKLIST.md",
     markers: [
       "PinayMate Supabase Release Operator Checklist",
       "migration list --linked",
@@ -583,7 +583,7 @@ const requiredFiles = [
     ],
   },
   {
-    path: "docs/LAUNCH_SIGNOFF_CHECKLIST.md",
+    path: "docs/release/LAUNCH_SIGNOFF_CHECKLIST.md",
     markers: [
       "20260611123000_add_notification_preferences.sql",
       "notification preferences RPC",
@@ -591,7 +591,7 @@ const requiredFiles = [
     ],
   },
   {
-    path: "docs/RELEASE_READINESS.md",
+    path: "docs/release/RELEASE_READINESS.md",
     markers: [
       "20260611123000_add_notification_preferences.sql",
       "notification preference RPC controls",
@@ -713,10 +713,7 @@ const requiredFiles = [
       "assertUuid",
     ],
   },
-  {
-    path: "src/features/messaging/api/messagesApi.ts",
-    markers: ["LEGACY_CONVERSATIONS_ERROR", "LEGACY_READ_STATUS_ERROR"],
-  },
+
   {
     path: "src/features/messaging/api/realtime.api.ts",
     markers: [

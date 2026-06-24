@@ -1,5 +1,7 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
+import { useAppTheme } from "../../theme/ThemeContext";
+import { makeStyles } from "../../theme/makeStyles";
 
 interface Props {
   locations: string[];
@@ -12,6 +14,9 @@ export default function LocationsList({
   onSelect,
   emptyLabel = "No locations found",
 }: Props) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   return (
     <View style={styles.container}>
       {locations.length === 0 ? (
@@ -51,7 +56,7 @@ export default function LocationsList({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   container: { gap: 10 },
   button: {
     backgroundColor: "rgba(255,255,255,0.06)",
@@ -63,27 +68,26 @@ const styles = StyleSheet.create({
     minHeight: 48,
     justifyContent: "center",
   },
-  buttonText: { color: "#FFF", fontSize: 15, lineHeight: 21 },
+  buttonText: { color: "#FFFFFF", fontSize: 15, lineHeight: 21 },
   emptyState: {
     backgroundColor: "rgba(255,255,255,0.06)",
     borderColor: "rgba(255,255,255,0.08)",
     borderRadius: 14,
     borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    padding: 24,
+    alignItems: "center",
   },
   emptyTitle: {
-    color: "rgba(255,255,255,0.86)",
-    fontSize: 15,
-    fontWeight: "700",
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 6,
     textAlign: "center",
-    lineHeight: 21,
   },
   emptyHelp: {
-    color: "rgba(255,255,255,0.64)",
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 4,
+    color: "rgba(255,255,255,0.74)",
+    fontSize: 14,
     textAlign: "center",
+    lineHeight: 20,
   },
-});
+}));

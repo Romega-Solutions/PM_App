@@ -243,13 +243,18 @@ const requiredFiles = [
       "Messaging paused while this finishes...",
       "Message was not sent. Check your connection, review the text, and try again.",
       "Photo sharing unlocks after your first text starts this matched conversation",
-      "Private chat photo",
       "Photo sharing available after first message",
       "Only send photos you are comfortable sharing in this chat",
       "Never",
       "Report safety concern",
       "Block member",
       "Unmatch only",
+    ],
+  },
+  {
+    path: "src/features/messaging/components/MessageBubble.tsx",
+    markers: [
+      "Private chat photo",
     ],
   },
   {
@@ -342,10 +347,10 @@ const requiredFiles = [
     ],
   },
   {
-    path: "docs/PRODUCT_DESIGN_QA_STANDARD.md",
+    path: "docs/testing/PRODUCT_DESIGN_QA_STANDARD.md",
     markers: [
       "PinayMate Product Design QA Standard",
-      "docs/PINAYMATE_LAUNCH_STATE_MATRIX.md",
+      "docs/release/PINAYMATE_LAUNCH_STATE_MATRIX.md",
       "PM_App design gates",
       "PM_Web design gates",
       "Launch-state accuracy",
@@ -363,7 +368,7 @@ const requiredFiles = [
     ],
   },
   {
-    path: "docs/PINAYMATE_LAUNCH_STATE_MATRIX.md",
+    path: "docs/release/PINAYMATE_LAUNCH_STATE_MATRIX.md",
     markers: [
       "Single launch-state source of truth",
       "PM_App is a launch-stage app experience",

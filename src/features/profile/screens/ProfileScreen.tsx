@@ -21,7 +21,7 @@
  */
 
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { Settings } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
@@ -29,11 +29,12 @@ import {
   Platform,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { makeStyles } from "../../../theme/makeStyles";
+import { useAppTheme } from "../../../theme/ThemeContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { supabase } from "@/src/config/supabase";
@@ -45,12 +46,6 @@ import {
   ProfileMenuList,
   getDefaultMenuItems,
 } from "../components/ProfileMenuList";
-
-// Brand Colors
-const BRAND_BG = "#0F0814";
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
 
 /**
  * Profile data interface
@@ -121,6 +116,8 @@ export function createProfileData(profileFromDB: ProfileRow): ProfileData {
  * Integrates with Zustand for global state.
  */
 export const ProfileScreen: React.FC = () => {
+  const styles = useStyles();
+  const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
@@ -193,8 +190,8 @@ export const ProfileScreen: React.FC = () => {
   }, [router, setProfile]);
 
   // Handle menu item press
-  const handleMenuItemPress = (route: string) => {
-    router.push(route as any);
+  const handleMenuItemPress = (route: Href) => {
+    router.push(route);
   };
 
   // Handle logout
@@ -225,20 +222,25 @@ export const ProfileScreen: React.FC = () => {
       <View style={[styles.root, styles.centerContent]}>
         <StatusBar
           barStyle="light-content"
-          backgroundColor={BRAND_BG}
+          backgroundColor={theme.semanticColors.background}
           translucent={false}
         />
-        {Platform.OS === "ios" && (
-          <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+        {Platform.OS !== "web" && (
+          <View style={{ height: insets.top, backgroundColor: theme.semanticColors.background }} />
         )}
         <LinearGradient
-          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+          colors={[
+            theme.semanticColors.background,
+            theme.colors.dalisay[900],
+            theme.colors.dalisay[900],
+            theme.semanticColors.background,
+          ]}
           locations={[0, 0.3, 0.7, 1]}
-          style={StyleSheet.absoluteFill}
+          style={styles.absoluteFill}
         />
         <ActivityIndicator
           size="large"
-          color={ACCENT_PINK}
+          color={theme.semanticColors.primary}
           accessibilityLabel="Loading profile"
         />
         <Text style={styles.loadingText}>Loading your profile...</Text>
@@ -252,16 +254,21 @@ export const ProfileScreen: React.FC = () => {
       <View style={[styles.root, styles.centerContent]}>
         <StatusBar
           barStyle="light-content"
-          backgroundColor={BRAND_BG}
+          backgroundColor={theme.semanticColors.background}
           translucent={false}
         />
-        {Platform.OS === "ios" && (
-          <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+        {Platform.OS !== "web" && (
+          <View style={{ height: insets.top, backgroundColor: theme.semanticColors.background }} />
         )}
         <LinearGradient
-          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+          colors={[
+            theme.semanticColors.background,
+            theme.colors.dalisay[900],
+            theme.colors.dalisay[900],
+            theme.semanticColors.background,
+          ]}
           locations={[0, 0.3, 0.7, 1]}
-          style={StyleSheet.absoluteFill}
+          style={styles.absoluteFill}
         />
         <View
           style={styles.emptyProfilePanel}
@@ -289,24 +296,29 @@ export const ProfileScreen: React.FC = () => {
   }
 
   // Menu items
-  const menuItems = getDefaultMenuItems();
+  const menuItems = getDefaultMenuItems(theme);
 
   return (
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={BRAND_BG}
+        backgroundColor={theme.semanticColors.background}
         translucent={false}
       />
-      {Platform.OS === "ios" && (
-        <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+      {Platform.OS !== "web" && (
+        <View style={{ height: insets.top, backgroundColor: theme.semanticColors.background }} />
       )}
 
       {/* Brand gradient background */}
       <LinearGradient
-        colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+        colors={[
+          theme.semanticColors.background,
+          theme.colors.dalisay[900],
+          theme.colors.dalisay[900],
+          theme.semanticColors.background,
+        ]}
         locations={[0, 0.3, 0.7, 1]}
-        style={StyleSheet.absoluteFill}
+        style={styles.absoluteFill}
       />
 
       <ScrollView
@@ -325,7 +337,7 @@ export const ProfileScreen: React.FC = () => {
             accessibilityLabel="Open profile preferences"
             accessibilityHint="Opens match preference settings"
           >
-            <Settings size={28} color={ACCENT_PURPLE} />
+            <Settings size={28} color={theme.semanticColors.secondary} />
           </TouchableOpacity>
         </View>
 
@@ -366,14 +378,21 @@ export const ProfileScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   root: {
     flex: 1,
-    backgroundColor: BRAND_BG,
+    backgroundColor: theme.semanticColors.background,
   },
   centerContent: {
     justifyContent: "center",
     alignItems: "center",
+  },
+  absoluteFill: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
   },
   header: {
     flexDirection: "row",
@@ -386,7 +405,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.semanticColors.text,
     letterSpacing: 0.5,
   },
   settingsBtn: {
@@ -403,13 +422,13 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
     paddingVertical: 12,
     borderLeftWidth: 3,
-    borderLeftColor: ACCENT_PURPLE,
+    borderLeftColor: theme.semanticColors.secondary,
     backgroundColor: "rgba(141, 105, 246, 0.08)",
   },
   profileStatusTitle: {
     fontSize: 15,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.semanticColors.text,
     marginBottom: 6,
   },
   profileStatusText: {
@@ -431,7 +450,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     backgroundColor: "rgba(255,255,255,0.08)",
     borderLeftWidth: 3,
-    borderLeftColor: ACCENT_PURPLE,
+    borderLeftColor: theme.semanticColors.secondary,
     marginBottom: 20,
   },
   emptyTitle: {
@@ -449,7 +468,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   retryBtn: {
-    backgroundColor: ACCENT_PURPLE,
+    backgroundColor: theme.semanticColors.secondary,
     minHeight: 44,
     paddingHorizontal: 32,
     paddingVertical: 14,
@@ -460,6 +479,6 @@ const styles = StyleSheet.create({
   retryText: {
     fontSize: 16,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
   },
-});
+}));

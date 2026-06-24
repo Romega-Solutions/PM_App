@@ -16,6 +16,7 @@ import {
     sendTextMessage,
 } from "../api/messages.api";
 import type { Message } from "../types/messaging.types";
+import { useMessageStore } from "@/src/stores/messageStore";
 
 interface UseMessagesOptions {
   conversationId?: string;
@@ -42,9 +43,25 @@ export function useMessages({
   recipientId,
   autoLoad = true,
 }: UseMessagesOptions): UseMessagesReturn {
-  const [messages, setMessages] = useState<Message[]>([]);
+  // Grab global cached messages for instant rendering
+  const cachedMessages = useMessageStore((state) => 
+    conversationId ? state.messagesByConversation[conversationId] || [] : []
+  );
+  
+  const setMessagesToStore = useMessageStore((state) => state.setMessages);
+  const addMessageToStore = useMessageStore((state) => state.addMessage);
+  const markAsReadInStore = useMessageStore((state) => state.markAsRead);
+
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
+
+  // If we don't have a conversation ID yet, we fallback to a local array
+  // (though realistically, this should be rare in the actual chat screen)
+  const [localFallbackMessages, setLocalFallbackMessages] = useState<Message[]>([]);
+
+  const messages = conversationId && cachedMessages.length > 0 
+    ? cachedMessages 
+    : localFallbackMessages;
 
   /**
    * Load messages from database
@@ -52,7 +69,10 @@ export function useMessages({
   const loadMessages = useCallback(async () => {
     if (!userId || (!conversationId && !recipientId)) return;
 
-    setLoading(true);
+    // Only show loading if we don't have cached messages
+    if (!conversationId || cachedMessages.length === 0) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -66,14 +86,20 @@ export function useMessages({
 
       if (fetchError) throw fetchError;
 
-      setMessages(data || []);
+      const newMessages = data || [];
+
+      if (conversationId) {
+        setMessagesToStore(conversationId, newMessages);
+      } else {
+        setLocalFallbackMessages(newMessages);
+      }
     } catch (err) {
       console.error("Error loading messages.");
       setError(err as Error);
     } finally {
       setLoading(false);
     }
-  }, [userId, recipientId, conversationId]);
+  }, [userId, recipientId, conversationId, cachedMessages.length, setMessagesToStore]);
 
   /**
    * Send text message
@@ -93,7 +119,11 @@ export function useMessages({
         if (sendError) throw sendError;
 
         if (data) {
-          setMessages((prev) => [...prev, data]);
+          if (conversationId) {
+            addMessageToStore(conversationId, data);
+          } else {
+            setLocalFallbackMessages((prev) => [...prev, data]);
+          }
         }
 
         return data;
@@ -103,7 +133,7 @@ export function useMessages({
         throw err;
       }
     },
-    [userId, recipientId, conversationId],
+    [userId, recipientId, conversationId, addMessageToStore],
   );
 
   /**
@@ -128,7 +158,7 @@ export function useMessages({
         if (sendError) throw sendError;
 
         if (data) {
-          setMessages((prev) => [...prev, data]);
+          addMessageToStore(conversationId, data);
         }
 
         return data;
@@ -138,7 +168,7 @@ export function useMessages({
         throw err;
       }
     },
-    [userId, recipientId, conversationId],
+    [userId, recipientId, conversationId, addMessageToStore],
   );
 
   /**
@@ -150,18 +180,12 @@ export function useMessages({
     try {
       await markConversationAsRead(conversationId, userId);
 
-      // Update local state
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.recipient_id === userId && msg.status !== "read"
-            ? { ...msg, status: "read", read_at: new Date().toISOString() }
-            : msg,
-        ),
-      );
+      // Update local store state
+      markAsReadInStore(conversationId, userId);
     } catch {
       console.error("Error marking as read.");
     }
-  }, [conversationId, userId]);
+  }, [conversationId, userId, markAsReadInStore]);
 
   /**
    * Apply read-receipt updates received over realtime.
@@ -169,33 +193,42 @@ export function useMessages({
   const markMessageIdsAsReadLocal = useCallback((messageIds: string[]) => {
     if (messageIds.length === 0) return;
 
-    setMessages((prev) =>
-      prev.map((msg) =>
+    const applyReadStatus = (items: Message[]) =>
+      items.map((msg) =>
         messageIds.includes(msg.id)
           ? {
               ...msg,
-              status: "read",
+              status: "read" as const,
               read_at: msg.read_at || new Date().toISOString(),
             }
           : msg,
-      ),
-    );
-  }, []);
+      );
+
+    if (conversationId) {
+      const currentMessages =
+        useMessageStore.getState().messagesByConversation[conversationId] || [];
+      setMessagesToStore(conversationId, applyReadStatus(currentMessages));
+      return;
+    }
+
+    setLocalFallbackMessages((prev) => applyReadStatus(prev));
+  }, [conversationId, setMessagesToStore]);
 
   /**
    * Add message to local state (from realtime)
    */
   const addMessage = useCallback((message: Message) => {
-    setMessages((prev) => {
-      // Check if message already exists
-      if (prev.some((msg) => msg.id === message.id)) {
-        // Update existing message
-        return prev.map((msg) => (msg.id === message.id ? message : msg));
-      }
-      // Add new message
-      return [...prev, message];
-    });
-  }, []);
+    if (conversationId) {
+      addMessageToStore(conversationId, message);
+    } else {
+      setLocalFallbackMessages((prev) => {
+        if (prev.some((msg) => msg.id === message.id)) {
+          return prev.map((msg) => (msg.id === message.id ? message : msg));
+        }
+        return [...prev, message];
+      });
+    }
+  }, [conversationId, addMessageToStore]);
 
   /**
    * Refresh messages

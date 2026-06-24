@@ -1,6 +1,8 @@
 import React from "react";
-import { TouchableOpacity, View, Text, StyleSheet, Platform } from "react-native";
+import { TouchableOpacity, View, Text, Platform } from "react-native";
 import { MapPin, Navigation } from "lucide-react-native";
+import { useAppTheme } from "../../theme/ThemeContext";
+import { makeStyles } from "../../theme/makeStyles";
 
 interface Props {
   label: string;
@@ -15,8 +17,11 @@ export default function LocationItem({
   onPress,
   isCurrent = false,
 }: Props) {
-  const ACCENT_PINK = "#EF3E78";
-  const ACCENT_PURPLE = "#8D69F6";
+  const theme = useAppTheme();
+  const styles = useStyles();
+
+  const ACCENT_PINK = theme.semanticColors.primary;
+  const ACCENT_PURPLE = theme.semanticColors.secondary;
   const ICON_BG = "rgba(141,105,246,0.12)";
 
   return (
@@ -67,7 +72,7 @@ export default function LocationItem({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   row: {
     backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: 14,
@@ -94,24 +99,24 @@ const styles = StyleSheet.create({
   },
   label: {
     flex: 1,
-    color: "#FFF",
+    color: "#FFFFFF",
     fontSize: 15,
   },
   labelActive: {
     fontWeight: "600",
   },
   radio: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.6)",
+    borderColor: "rgba(255,255,255,0.24)",
     alignItems: "center",
     justifyContent: "center",
   },
   radioDot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
-});
+}));

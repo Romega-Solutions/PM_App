@@ -17,21 +17,21 @@ const requiredFiles = [
     ],
   },
   {
-    path: "docs/NATIVE_QA_SCRIPT.md",
+    path: "docs/testing/NATIVE_QA_SCRIPT.md",
     markers: [
       "Open Notification settings",
       "launch-stage preferences, not proven production delivery",
     ],
   },
   {
-    path: "docs/PRODUCT_DESIGN_QA_STANDARD.md",
+    path: "docs/testing/PRODUCT_DESIGN_QA_STANDARD.md",
     markers: [
       "notifications",
       "launch-stage preferences from proven delivery",
     ],
   },
   {
-    path: "docs/LAUNCH_EVIDENCE_PACKET.md",
+    path: "docs/release/LAUNCH_EVIDENCE_PACKET.md",
     markers: [
       "PM_App notification settings launch honesty",
       "PM_Web email and notification boundary",

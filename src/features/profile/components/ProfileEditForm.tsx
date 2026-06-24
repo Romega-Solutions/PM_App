@@ -6,7 +6,9 @@
  */
 
 import React from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { Text, TextInput, View } from "react-native";
+import { makeStyles } from "../../../theme/makeStyles";
+import { useAppTheme, AppTheme } from "../../../theme/ThemeContext";
 
 const WHITE = "#FFFFFF";
 const SURFACE_STRONG = "rgba(255, 255, 255, 0.08)";
@@ -37,6 +39,8 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
   onEducationChange,
   onLocationChange,
 }) => {
+  const styles = useStyles();
+  const theme = useAppTheme();
   return (
     <View style={styles.form}>
       <View
@@ -143,7 +147,7 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   form: {
     gap: 20,
   },
@@ -156,7 +160,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   safetyTitle: {
-    color: WHITE,
+    color: theme.semanticColors.text,
     fontSize: 14,
     fontFamily: "DMSans-SemiBold",
     lineHeight: 20,
@@ -176,12 +180,12 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-SemiBold",
   },
   input: {
-    backgroundColor: SURFACE_STRONG,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: TILE_BORDER,
+    borderColor: "rgba(168, 85, 247, 0.13)",
     padding: 16,
-    color: WHITE,
+    color: theme.semanticColors.text,
     fontSize: 16,
     fontFamily: "DMSans-Regular",
     minHeight: 52,
@@ -192,4 +196,4 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-Regular",
     lineHeight: 18,
   },
-});
+}));

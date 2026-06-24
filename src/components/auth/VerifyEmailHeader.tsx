@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
 import { Mail } from "lucide-react-native";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 
 const { width } = Dimensions.get("window");
 
@@ -10,11 +10,14 @@ interface Props {
 }
 
 export default function VerifyEmailHeader({ email }: Props) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   return (
     <View style={styles.container}>
       <View style={styles.logoWrap}>
         <Image
-          source={require("../../../assets/logo-no-bg.png")}
+          source={require("../../../assets/images/brand/logo-no-bg.webp")}
           style={styles.logo}
           resizeMode="contain"
           accessible
@@ -42,7 +45,7 @@ export default function VerifyEmailHeader({ email }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   container: { alignItems: "center", marginBottom: 36, paddingHorizontal: 20 },
   logoWrap: {
     width: 120,
@@ -83,4 +86,4 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontFamily: theme.fontFamilies.body.semiBold,
   },
-});
+}));

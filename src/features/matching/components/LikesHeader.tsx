@@ -6,9 +6,9 @@
  */
 
 import React from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
-
-const ACCENT_PINK = "#EF3E78";
+import { Platform, Text, View } from "react-native";
+import { useAppTheme } from "@/src/theme/ThemeContext";
+import { makeStyles } from "@/src/theme/makeStyles";
 
 interface LikesHeaderProps {
   matchCount: number;
@@ -19,6 +19,8 @@ export const LikesHeader: React.FC<LikesHeaderProps> = ({
   matchCount,
   filter,
 }) => {
+  const theme = useAppTheme();
+  const styles = useStyles();
   const subtitle =
     matchCount === 0
       ? filter === "mutual"
@@ -38,7 +40,7 @@ export const LikesHeader: React.FC<LikesHeaderProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   header: {
     paddingHorizontal: 24,
     paddingTop: Platform.OS === "ios" ? 12 : 16,
@@ -47,7 +49,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Platform.OS === "ios" ? 32 : 30,
     fontFamily: "Lora-Bold",
-    color: ACCENT_PINK,
+    color: theme.semanticColors.primary,
     letterSpacing: 0.6,
     marginBottom: 6,
   },
@@ -57,4 +59,4 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.75)",
     letterSpacing: 0.2,
   },
-});
+}));

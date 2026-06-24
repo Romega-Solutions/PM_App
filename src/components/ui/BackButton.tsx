@@ -1,18 +1,15 @@
-import { colors } from "@/src/theme";
+import { useAppTheme } from "@/src/theme";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
-import React from "react";
+import React, { useMemo } from "react";
 import {
-  Dimensions,
   Platform,
   StyleSheet,
   TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const { width } = Dimensions.get("window");
-const scale = (size: number) => (width / 375) * size;
-const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 const MIN_TOUCH_TARGET = 44;
 
 interface BackButtonProps {
@@ -20,8 +17,35 @@ interface BackButtonProps {
 }
 
 export default function BackButton({ onPress }: BackButtonProps) {
+  const theme = useAppTheme();
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { moderateScale } = useResponsive();
+
+  const styles = useMemo(() => StyleSheet.create({
+    button: {
+      position: "absolute",
+      zIndex: 10,
+      width: Math.max(MIN_TOUCH_TARGET, moderateScale(44)),
+      height: Math.max(MIN_TOUCH_TARGET, moderateScale(44)),
+      borderRadius: Math.max(MIN_TOUCH_TARGET, moderateScale(44)) / 2,
+      backgroundColor: `${theme.colors.neutral.white}1F`, // 12% opacity
+      justifyContent: "center",
+      alignItems: "center",
+      ...Platform.select({
+        ios: {
+          shadowColor: theme.colors.neutral.black,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 4,
+        },
+      }),
+    },
+  }), [moderateScale, theme]);
 
   const handlePress = () => {
     if (onPress) {
@@ -50,33 +74,10 @@ export default function BackButton({ onPress }: BackButtonProps) {
     >
       <ArrowLeft 
         size={moderateScale(24)} 
-        color={colors.neutral.white} 
+        color={theme.colors.neutral.white} 
         strokeWidth={2.5} 
       />
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    position: "absolute",
-    zIndex: 10,
-    width: Math.max(MIN_TOUCH_TARGET, moderateScale(44)),
-    height: Math.max(MIN_TOUCH_TARGET, moderateScale(44)),
-    borderRadius: Math.max(MIN_TOUCH_TARGET, moderateScale(44)) / 2,
-    backgroundColor: `${colors.neutral.white}1F`, // 12% opacity
-    justifyContent: "center",
-    alignItems: "center",
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.neutral.black,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-});

@@ -1,5 +1,6 @@
 import * as Linking from "expo-linking";
 import { router } from "expo-router";
+import { Session } from "@supabase/supabase-js";
 import { ensureUserProfile } from "../features/profile/api/ensureUserProfile";
 import { supabase } from "./supabase";
 
@@ -142,7 +143,7 @@ async function handleDeepLink(url: string) {
 }
 
 async function handleSessionEstablished(
-  session: any,
+  session: Session,
   options: { mode: "verification" | "password-recovery" } = {
     mode: "verification",
   },

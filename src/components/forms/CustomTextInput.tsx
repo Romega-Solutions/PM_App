@@ -1,26 +1,20 @@
-import { colors, semanticColors, theme } from "@/src/theme";
 import { LucideIcon } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
-  Dimensions,
-  KeyboardTypeOptions,
-  Platform,
-  StyleSheet,
-  Text,
   TextInput,
-  TextInputProps,
-  TextStyle,
-  TouchableOpacity,
+  Text,
   View,
+  TouchableOpacity,
+  StyleSheet,
+  TextInputProps,
+  KeyboardTypeOptions,
+  TextStyle,
   ViewStyle,
+  Platform,
 } from "react-native";
 
-const { width } = Dimensions.get("window");
-
-// Responsive scaling
-const scale = (size: number) => (width / 375) * size;
-const moderateScale = (size: number, factor = 0.5) =>
-  size + (scale(size) - size) * factor;
+import { useResponsive } from "@/src/hooks/useResponsive";
+import { useAppTheme } from "@/src/theme";
 
 interface CustomTextInputProps
   extends Omit<
@@ -109,29 +103,78 @@ export default function CustomTextInput({
   onBlur,
   ...props
 }: CustomTextInputProps) {
+  const theme = useAppTheme();
+
   const [focused, setFocused] = useState(false);
   const hasValue = !!value?.length;
   const inputAccessibilityLabel = label ?? placeholder ?? "Text input";
+  const { moderateScale } = useResponsive();
 
-  // Fixed: Remove type annotations to let TypeScript infer
-  const handleFocus = (e: any) => {
-    setFocused(true);
-    onFocus?.(e);
-  };
-
-  const handleBlur = (e: any) => {
-    setFocused(false);
-    onBlur?.(e);
-  };
-
-  // Dynamic border color using theme
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      marginBottom: theme.spacing.lg,
+    },
+    label: {
+      fontSize: moderateScale(15),
+      color: theme.colors.neutral.white,
+      marginBottom: theme.spacing.sm,
+      letterSpacing: 0,
+      fontFamily: theme.fontFamilies.body.semiBold,
+    },
+    input: {
+      backgroundColor: `${theme.colors.neutral.white}14`, // 8% opacity
+      borderRadius: moderateScale(16),
+      paddingVertical: Platform.select({
+        ios: moderateScale(18),
+        android: moderateScale(16),
+        web: moderateScale(16),
+      }),
+      fontSize: moderateScale(16),
+      color: theme.colors.neutral.white,
+      borderWidth: Platform.select({ ios: 2, android: 2, web: 1.5 }),
+      minHeight: Platform.select({
+        ios: moderateScale(56),
+        android: moderateScale(52),
+        web: moderateScale(52),
+      }),
+      fontFamily: theme.fontFamilies.body.regular,
+      letterSpacing: 0,
+    },
+    leftIconWrap: {
+      position: "absolute",
+      left: moderateScale(18),
+      top: 0,
+      bottom: 0,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    rightIconWrap: {
+      position: "absolute",
+      right: moderateScale(18),
+      top: 0,
+      bottom: 0,
+      justifyContent: "center",
+      alignItems: "center",
+      minWidth: 44,
+      minHeight: 44,
+      padding: moderateScale(4),
+    },
+    error: {
+      fontSize: moderateScale(13),
+      color: theme.semanticColors.error,
+      marginTop: theme.spacing.xs,
+      marginLeft: moderateScale(4),
+      fontFamily: theme.fontFamilies.body.regular,
+      letterSpacing: 0,
+    },
+  }), [moderateScale, theme]);
   const borderColor = error
-    ? semanticColors.error
+    ? theme.semanticColors.error
     : focused
-      ? semanticColors.primary
+      ? theme.semanticColors.primary
       : hasValue
-        ? `${semanticColors.primary}80` // 50% opacity
-        : `${semanticColors.secondary}40`; // 25% opacity
+        ? `${theme.semanticColors.primary}80` // 50% opacity
+        : `${theme.semanticColors.secondary}40`; // 25% opacity
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -153,14 +196,20 @@ export default function CustomTextInput({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={`${colors.neutral.white}66`} // 40% opacity
+          placeholderTextColor={`${theme.colors.neutral.white}66`} // 40% opacity
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           autoComplete={autoComplete}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          selectionColor={`${semanticColors.secondary}E6`} // 90% opacity
+          onFocus={(e) => {
+            setFocused(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            onBlur?.(e);
+          }}
+          selectionColor={`${theme.semanticColors.secondary}E6`} // 90% opacity
           accessibilityLabel={inputAccessibilityLabel}
           accessibilityHint={error ? `Error: ${error}` : undefined}
           accessibilityState={{ disabled: props.editable === false }}
@@ -177,7 +226,7 @@ export default function CustomTextInput({
           >
             <LeftIcon
               size={moderateScale(20)}
-              color={`${semanticColors.primary}B3`} // 70% opacity
+              color={`${theme.semanticColors.primary}B3`} // 70% opacity
               strokeWidth={2}
             />
           </View>
@@ -201,7 +250,7 @@ export default function CustomTextInput({
           >
             <RightIcon
               size={moderateScale(20)}
-              color={`${colors.neutral.white}B3`} // 70% opacity
+              color={`${theme.colors.neutral.white}B3`} // 70% opacity
               strokeWidth={2}
             />
           </TouchableOpacity>
@@ -222,66 +271,3 @@ export default function CustomTextInput({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: theme.spacing.lg,
-  },
-
-  label: {
-    fontSize: moderateScale(15),
-    color: colors.neutral.white,
-    marginBottom: theme.spacing.sm,
-    letterSpacing: 0,
-    fontFamily: theme.fontFamilies.body.semiBold,
-  },
-
-  input: {
-    backgroundColor: `${colors.neutral.white}14`, // 8% opacity
-    borderRadius: moderateScale(16),
-    paddingVertical: Platform.select({
-      ios: moderateScale(18),
-      android: moderateScale(16),
-      web: moderateScale(16),
-    }),
-    fontSize: moderateScale(16),
-    color: colors.neutral.white,
-    borderWidth: Platform.select({ ios: 2, android: 2, web: 1.5 }),
-    minHeight: Platform.select({
-      ios: moderateScale(56),
-      android: moderateScale(52),
-      web: moderateScale(52),
-    }),
-    fontFamily: theme.fontFamilies.body.regular,
-    letterSpacing: 0,
-  },
-
-  leftIconWrap: {
-    position: "absolute",
-    left: moderateScale(18),
-    top: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  rightIconWrap: {
-    position: "absolute",
-    right: moderateScale(18),
-    top: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    minWidth: 44,
-    minHeight: 44,
-    padding: moderateScale(4),
-  },
-
-  error: {
-    fontSize: moderateScale(13),
-    color: semanticColors.error,
-    marginTop: theme.spacing.xs,
-    marginLeft: moderateScale(4),
-    fontFamily: theme.fontFamilies.body.regular,
-    letterSpacing: 0,
-  },
-});

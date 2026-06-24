@@ -28,34 +28,31 @@ import {
   X,
 } from "lucide-react-native";
 import React, { useState } from "react";
-import {
+import { StyleSheet, 
   Dimensions,
   Image,
   Modal,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  GestureResponderHandlers,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { ProfileCardData } from "./ProfileCard";
+import { useAppTheme } from "@/src/theme/ThemeContext";
+import { makeStyles } from "@/src/theme/makeStyles";
 
 const { height } = Dimensions.get("window");
 
 // Brand Colors
-const BRAND_BG = "#0F0814";
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
-
 export interface ProfileDetailsModalProps {
   visible: boolean;
   profile: ProfileCardData | null;
   onClose: () => void;
   onReport?: () => void;
-  panHandlers?: any;
+  panHandlers?: GestureResponderHandlers;
 }
 
 export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
@@ -65,6 +62,8 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
   onReport,
   panHandlers,
 }) => {
+  const theme = useAppTheme();
+  const styles = useStyles();
   const insets = useSafeAreaInsets();
   const [expandedSections, setExpandedSections] = useState({
     lookingFor: false,
@@ -127,9 +126,9 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
       onRequestClose={onClose}
       accessibilityViewIsModal
     >
-      <View style={styles.modalContainer} {...panHandlers}>
+      <View style={[styles.modalContainer, { touchAction: "none" } as any]} {...panHandlers}>
         <LinearGradient
-          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+          colors={[theme.semanticColors.background, theme.semanticColors.surface, theme.colors.dalisay[900], theme.semanticColors.background]}
           locations={[0, 0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
@@ -142,7 +141,7 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
           accessibilityLabel="Close profile details"
           accessibilityHint="Returns to the discover card"
         >
-          <X size={24} color={WHITE} strokeWidth={2.5} />
+          <X size={24} color={theme.colors.neutral.white} strokeWidth={2.5} />
         </TouchableOpacity>
 
         {/* Scrollable Content */}
@@ -188,7 +187,7 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
                 accessible
                 accessibilityLabel="Verified profile"
               >
-                <Sparkles size={16} color={WHITE} strokeWidth={2.5} />
+                <Sparkles size={16} color={theme.colors.neutral.white} strokeWidth={2.5} />
               </View>
             )}
           </View>
@@ -203,7 +202,7 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
             {/* Location & Distance */}
             <View style={styles.modalLocationContainer}>
               <View style={styles.modalLocationRow}>
-                <MapPin size={18} color={ACCENT_PINK} strokeWidth={2.5} />
+                <MapPin size={18} color={theme.semanticColors.primary} strokeWidth={2.5} />
                 <Text style={styles.modalLocationText}>{profile.location}</Text>
               </View>
               <View style={styles.distanceRow}>
@@ -255,13 +254,13 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
                 {expandedSections.lookingFor ? (
                   <ChevronUp
                     size={18}
-                    color={ACCENT_PURPLE}
+                    color={theme.semanticColors.secondary}
                     strokeWidth={2.5}
                   />
                 ) : (
                   <ChevronDown
                     size={18}
-                    color={ACCENT_PURPLE}
+                    color={theme.semanticColors.secondary}
                     strokeWidth={2.5}
                   />
                 )}
@@ -300,13 +299,13 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
                 {expandedSections.moreAbout ? (
                   <ChevronUp
                     size={18}
-                    color={ACCENT_PURPLE}
+                    color={theme.semanticColors.secondary}
                     strokeWidth={2.5}
                   />
                 ) : (
                   <ChevronDown
                     size={18}
-                    color={ACCENT_PURPLE}
+                    color={theme.semanticColors.secondary}
                     strokeWidth={2.5}
                   />
                 )}
@@ -319,7 +318,7 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
                       <View key={label} style={styles.modalDetailRow}>
                         <Icon
                           size={14}
-                          color={ACCENT_PURPLE}
+                          color={theme.semanticColors.secondary}
                           strokeWidth={2}
                         />
                         <Text style={styles.modalDetailText}>{label}</Text>
@@ -356,7 +355,7 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
                     accessibilityLabel={`Report or block ${profile.name}`}
                     accessibilityHint="Opens the private report form for this profile"
                   >
-                    <Flag size={18} color={ACCENT_PINK} strokeWidth={2.4} />
+                    <Flag size={18} color={theme.semanticColors.primary} strokeWidth={2.4} />
                     <Text style={styles.reportButtonText}>Report or block</Text>
                   </TouchableOpacity>
                 </View>
@@ -369,10 +368,10 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   modalContainer: {
     flex: 1,
-    backgroundColor: BRAND_BG,
+    backgroundColor: theme.semanticColors.background,
   },
   closeBtn: {
     position: "absolute",
@@ -425,7 +424,7 @@ const styles = StyleSheet.create({
   modalVerifiedBadge: {
     position: "absolute",
     left: 20,
-    backgroundColor: "#10B981",
+    backgroundColor: theme.semanticColors.success,
     borderRadius: 20,
     width: 36,
     height: 36,
@@ -441,7 +440,7 @@ const styles = StyleSheet.create({
   modalName: {
     fontSize: Platform.OS === "ios" ? 34 : 32,
     fontFamily: "Lora-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
     letterSpacing: 0.5,
   },
 
@@ -487,7 +486,7 @@ const styles = StyleSheet.create({
   modalSectionTitle: {
     fontSize: 18,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
     letterSpacing: 0.3,
   },
   modalBioText: {
@@ -525,7 +524,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: ACCENT_PURPLE,
+    backgroundColor: theme.semanticColors.secondary,
   },
   modalInterestText: {
     fontSize: 14,
@@ -571,7 +570,7 @@ const styles = StyleSheet.create({
   safetyTitle: {
     fontSize: 16,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
   },
   safetyText: {
     fontSize: 14,
@@ -590,6 +589,6 @@ const styles = StyleSheet.create({
   reportButtonText: {
     fontSize: 15,
     fontFamily: "DMSans-Bold",
-    color: ACCENT_PINK,
+    color: theme.semanticColors.primary,
   },
-});
+}));

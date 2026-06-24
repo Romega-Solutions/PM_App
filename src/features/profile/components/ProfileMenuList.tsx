@@ -23,8 +23,11 @@ import {
   LogOut,
   SlidersHorizontal,
 } from "lucide-react-native";
+import type { Href } from "expo-router";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
+import { makeStyles } from "../../../theme/makeStyles";
+import { useAppTheme, AppTheme } from "../../../theme/ThemeContext";
 
 // Brand Colors
 const ACCENT_PURPLE = "#8D69F6";
@@ -45,7 +48,7 @@ export interface MenuItem {
   /** Menu item icon */
   icon: React.ReactNode;
   /** Route to navigate to */
-  route: string;
+  route: Href;
 }
 
 /**
@@ -55,7 +58,7 @@ export interface ProfileMenuListProps {
   /** Array of menu items */
   items: MenuItem[];
   /** Callback when menu item is pressed */
-  onItemPress: (route: string) => void;
+  onItemPress: (route: Href) => void;
   /** Callback when logout is pressed */
   onLogout: () => void;
 }
@@ -70,12 +73,14 @@ export const ProfileMenuList: React.FC<ProfileMenuListProps> = ({
   onItemPress,
   onLogout,
 }) => {
+  const styles = useStyles();
+  const theme = useAppTheme();
   return (
     <View style={styles.container}>
       {/* Menu Items */}
       {items.map((item) => (
         <TouchableOpacity
-          key={item.route}
+          key={item.title}
           style={styles.listItem}
           activeOpacity={0.75}
           onPress={() => onItemPress(item.route)}
@@ -85,7 +90,7 @@ export const ProfileMenuList: React.FC<ProfileMenuListProps> = ({
         >
           <View style={styles.iconContainer}>{item.icon}</View>
           <Text style={styles.listItemText}>{item.title}</Text>
-          <ChevronRight size={20} color={ACCENT_PURPLE} />
+          <ChevronRight size={20} color={theme.semanticColors.secondary} />
         </TouchableOpacity>
       ))}
 
@@ -98,7 +103,7 @@ export const ProfileMenuList: React.FC<ProfileMenuListProps> = ({
         accessibilityLabel="Log out"
         accessibilityHint="Signs out of this account on this device"
       >
-        <LogOut size={20} color={ACCENT_PINK} />
+        <LogOut size={20} color={theme.semanticColors.primary} />
         <Text style={styles.logoutText}>Log out</Text>
       </TouchableOpacity>
     </View>
@@ -108,51 +113,51 @@ export const ProfileMenuList: React.FC<ProfileMenuListProps> = ({
 /**
  * Helper function to create default menu items
  */
-export const getDefaultMenuItems = (): MenuItem[] => [
+export const getDefaultMenuItems = (theme: AppTheme): MenuItem[] => [
   {
     title: "Edit Profile",
     hint: "Opens your profile details for review and editing",
-    icon: <Edit size={22} color={ACCENT_PURPLE} />,
+    icon: <Edit size={22} color={theme.semanticColors.secondary} />,
     route: "/(main)/profile-settings/edit",
   },
   {
     title: "Preferences",
     hint: "Opens your match preference settings",
-    icon: <SlidersHorizontal size={22} color={ACCENT_PURPLE} />,
+    icon: <SlidersHorizontal size={22} color={theme.semanticColors.secondary} />,
     route: "/(main)/profile-settings/preferences",
   },
   {
     title: "Privacy",
     hint: "Opens privacy controls for your profile and activity",
-    icon: <Lock size={22} color={ACCENT_PURPLE} />,
+    icon: <Lock size={22} color={theme.semanticColors.secondary} />,
     route: "/(main)/profile-settings/privacy",
   },
   {
     title: "Notifications",
     hint: "Opens notification settings",
-    icon: <Bell size={22} color={ACCENT_PURPLE} />,
+    icon: <Bell size={22} color={theme.semanticColors.secondary} />,
     route: "/(main)/profile-settings/notifications",
   },
   {
     title: "Help & Safety",
     hint: "Opens help and safety information",
-    icon: <HelpCircle size={22} color={ACCENT_PURPLE} />,
+    icon: <HelpCircle size={22} color={theme.semanticColors.secondary} />,
     route: "/(main)/profile-settings/help",
   },
   {
     title: "About",
     hint: "Opens app information",
-    icon: <Info size={22} color={ACCENT_PURPLE} />,
+    icon: <Info size={22} color={theme.semanticColors.secondary} />,
     route: "/(main)/profile-settings/about",
   },
 ];
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   container: {
     paddingHorizontal: 24,
   },
   listItem: {
-    backgroundColor: SURFACE_STRONG,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
     borderRadius: 18,
     minHeight: 56,
     padding: 18,
@@ -160,20 +165,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1.5,
-    borderColor: TILE_BORDER,
+    borderColor: "rgba(168, 85, 247, 0.13)",
   },
   iconContainer: {
     marginRight: 16,
   },
   listItemText: {
-    color: WHITE,
+    color: theme.semanticColors.text,
     fontSize: 16,
     fontFamily: "DMSans-SemiBold",
     letterSpacing: 0.2,
     flex: 1,
   },
   logoutBtn: {
-    backgroundColor: DANGER_BG,
+    backgroundColor: "rgba(239, 62, 120, 0.12)",
     borderRadius: 18,
     minHeight: 56,
     padding: 18,
@@ -183,13 +188,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1.5,
-    borderColor: ACCENT_PINK,
+    borderColor: theme.semanticColors.primary,
     gap: 10,
   },
   logoutText: {
-    color: ACCENT_PINK,
+    color: theme.semanticColors.primary,
     fontSize: 16,
     fontFamily: "DMSans-Bold",
     marginLeft: 8,
   },
-});
+}));

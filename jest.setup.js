@@ -21,3 +21,8 @@ jest.mock("react-native-safe-area-context", () => ({
 jest.mock("expo-linear-gradient", () => ({
   LinearGradient: "LinearGradient",
 }));
+
+// Mock react-native
+jest.mock("react-native", () => ({
+  Platform: { OS: "ios" },
+}));

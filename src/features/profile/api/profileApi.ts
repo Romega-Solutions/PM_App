@@ -1,6 +1,7 @@
 import { supabase } from "@/src/config/supabase";
 import { decode } from "base64-arraybuffer";
 import * as FileSystem from "expo-file-system/legacy";
+import { Platform } from "react-native";
 
 export interface ProfileData {
   id: string;
@@ -106,6 +107,12 @@ async function assertProfilePhotoUpload(uri: string) {
   }
 
   const uploadType = getProfilePhotoUploadType(normalizedUri);
+  
+  if (Platform.OS === "web") {
+    // FileSystem.getInfoAsync is not reliable for blob URLs on web
+    return uploadType;
+  }
+
   const fileInfo = await FileSystem.getInfoAsync(normalizedUri);
 
   if (!fileInfo.exists) {
@@ -269,10 +276,17 @@ export async function uploadProfilePhoto(
     const normalizedUri = uri.trim();
     const { extension, contentType } = await assertProfilePhotoUpload(normalizedUri);
 
-    // Read file as base64
-    const base64 = await FileSystem.readAsStringAsync(normalizedUri, {
-      encoding: "base64",
-    });
+    // Read file payload
+    let fileBody: any;
+    if (Platform.OS === "web") {
+      const response = await fetch(normalizedUri);
+      fileBody = await response.blob();
+    } else {
+      const base64 = await FileSystem.readAsStringAsync(normalizedUri, {
+        encoding: "base64",
+      });
+      fileBody = decode(base64);
+    }
 
     // Generate unique filename
     const fileName = assertUserScopedProfilePhotoPath(userId, extension);
@@ -280,7 +294,7 @@ export async function uploadProfilePhoto(
     // Upload to Supabase Storage
     const { error } = await supabase.storage
       .from(PROFILE_PHOTOS_BUCKET)
-      .upload(fileName, decode(base64), {
+      .upload(fileName, fileBody, {
         contentType,
         upsert: true,
       });

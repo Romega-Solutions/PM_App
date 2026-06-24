@@ -48,6 +48,7 @@ import { useConversations } from "@/src/features/messaging/hooks/useConversation
 import { useChatStore } from "@/src/stores/chatStore";
 import { ActiveUserCard } from "../components/ActiveUserCard";
 import { ConversationCard } from "../components/ConversationCard";
+import type { ConversationWithUser } from "../types/messaging.types";
 
 // Brand Colors
 const BRAND_BG = "#0F0814";
@@ -189,7 +190,7 @@ export const MessagesScreen: React.FC = () => {
         : "Mutual matches appear here when a conversation starts. A specific, respectful hello is enough.";
 
   // Navigate to chat screen
-  const handleChatPress = (conv: any) => {
+  const handleChatPress = (conv: ConversationWithUser) => {
     router.push({
       pathname: "/chat",
       params: {

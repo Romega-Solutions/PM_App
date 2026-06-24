@@ -7,15 +7,14 @@
 
 import { Heart } from "lucide-react-native";
 import React from "react";
+import { useAppTheme } from "@/src/theme/ThemeContext";
+import { makeStyles } from "@/src/theme/makeStyles";
 import {
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
 const FILTER_HIT_SLOP = { top: 8, right: 8, bottom: 8, left: 8 };
 
 interface LikesFilterProps {
@@ -31,6 +30,9 @@ export const LikesFilter: React.FC<LikesFilterProps> = ({
   allCount = 0,
   mutualCount = 0,
 }) => {
+  const theme = useAppTheme();
+  const styles = useStyles();
+  const ACCENT_PINK = theme.semanticColors.primary;
   return (
     <View
       style={styles.filterContainer}
@@ -73,8 +75,8 @@ export const LikesFilter: React.FC<LikesFilterProps> = ({
       >
         <Heart
           size={14}
-          color={filter === "mutual" ? WHITE : ACCENT_PINK}
-          fill={filter === "mutual" ? WHITE : "transparent"}
+          color={filter === "mutual" ? theme.colors.neutral.white : ACCENT_PINK}
+          fill={filter === "mutual" ? theme.colors.neutral.white : "transparent"}
           strokeWidth={2}
         />
         <Text
@@ -91,40 +93,44 @@ export const LikesFilter: React.FC<LikesFilterProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  filterContainer: {
-    flexDirection: "row",
-    paddingHorizontal: 24,
-    marginBottom: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.1)",
-  },
-  filterTab: {
-    minHeight: 48,
-    marginRight: 24,
-    paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  filterTabActive: {
-    borderBottomColor: ACCENT_PINK,
-  },
-  filterText: {
-    fontSize: 14,
-    fontFamily: "DMSans-SemiBold",
-    color: "rgba(255,255,255,0.68)",
-    letterSpacing: 0.3,
-  },
-  filterTextActive: {
-    color: WHITE,
-  },
-  countText: {
-    color: "rgba(255,255,255,0.48)",
-    fontSize: 12,
-    fontFamily: "DMSans-Bold",
-    textAlign: "center",
-  },
+const useStyles = makeStyles((theme) => {
+  const ACCENT_PINK = theme.semanticColors.primary;
+  return {
+    filterContainer: {
+      flexDirection: "row",
+      paddingHorizontal: 24,
+      marginBottom: 18,
+      borderBottomWidth: 1,
+      borderBottomColor: "rgba(255, 255, 255, 0.1)",
+    },
+    filterTab: {
+      minHeight: 48,
+      marginRight: 24,
+      paddingVertical: 12,
+      borderBottomWidth: 2,
+      borderBottomColor: "transparent",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    filterTabActive: {
+      // borderBottomColor: ACCENT_PINK
+      borderBottomColor: ACCENT_PINK,
+    },
+    filterText: {
+      fontSize: 14,
+      fontFamily: "DMSans-SemiBold",
+      color: "rgba(255,255,255,0.68)",
+      letterSpacing: 0.3,
+    },
+    filterTextActive: {
+      color: theme.colors.neutral.white,
+    },
+    countText: {
+      color: "rgba(255,255,255,0.48)",
+      fontSize: 12,
+      fontFamily: "DMSans-Bold",
+      textAlign: "center",
+    },
+  };
 });

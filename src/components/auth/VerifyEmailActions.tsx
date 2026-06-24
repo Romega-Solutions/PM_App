@@ -1,5 +1,5 @@
 import SecondaryButton from "@/src/components/ui/SecondaryButton";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { Mail } from "lucide-react-native";
 import React from "react";
@@ -24,6 +24,9 @@ export default function VerifyEmailActions({
   onResend,
   onBackToSignIn,
 }: Props) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -35,12 +38,12 @@ export default function VerifyEmailActions({
         accessibilityHint="Opens your email app so you can tap the latest PinayMate verification link"
       >
         <LinearGradient
-          colors={["#EF3E78", "#8D69F6"]}
+          colors={[theme.semanticColors.primary, theme.semanticColors.secondary]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={StyleSheet.absoluteFill}
         />
-        <Mail size={18} color="#FFF" style={{ marginRight: 8 }} />
+        <Mail size={18} color={theme.colors.neutral.white} style={{ marginRight: 8 }} />
         <Text style={styles.openBtnText}>Open Email App</Text>
       </TouchableOpacity>
 
@@ -69,7 +72,7 @@ export default function VerifyEmailActions({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   container: {
     width: "100%",
     gap: 14,
@@ -84,7 +87,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   openBtnText: {
-    color: "#FFFFFF",
+    color: theme.colors.neutral.white,
     fontSize: 17,
     fontFamily: theme.fontFamilies.body.bold,
   },
@@ -105,4 +108,4 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontFamily: theme.fontFamilies.body.regular,
   },
-});
+}));

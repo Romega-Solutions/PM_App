@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 
 interface Props {
   steps: number;
@@ -19,6 +19,9 @@ export default function AccountProgress({
   gap = 8,
   showBackButton = activeIndex > 0,
 }: Props) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   const router = useRouter();
   const currentStep = Math.min(activeIndex + 1, steps);
 
@@ -81,7 +84,7 @@ export default function AccountProgress({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   container: {
     alignItems: "center",
     flexDirection: "row",
@@ -119,4 +122,4 @@ const styles = StyleSheet.create({
   dot: {
     height: 8,
   },
-});
+}));

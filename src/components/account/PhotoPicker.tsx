@@ -1,17 +1,9 @@
 import React from "react";
-import {
-  View,
-  Image,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-} from "react-native";
+import { View, Image, Text, TouchableOpacity, Dimensions } from "react-native";
 import { X, Camera, ImagePlus } from "lucide-react-native";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 
 const { width } = Dimensions.get("window");
-const ITEM_SIZE = Math.min(120, Math.floor((width - theme.spacing.lg * 2 - 12) / 3));
 
 interface Props {
   photos: string[];
@@ -32,7 +24,10 @@ export default function PhotoPicker({
   disabled = false,
   minimumPhotos = 1,
 }: Props) {
+  const theme = useAppTheme();
+  const styles = useStyles();
   const remainingRequired = Math.max(minimumPhotos - photos.length, 0);
+  const controlsDisabled = disabled || !canAdd;
 
   return (
     <View style={styles.container}>
@@ -61,7 +56,7 @@ export default function PhotoPicker({
           <Text style={styles.requirementTitle}>
             {remainingRequired === 0
               ? "Minimum photo added"
-              : "At least 1 photo required"}
+              : `At least ${minimumPhotos} photo${minimumPhotos === 1 ? "" : "s"} required`}
           </Text>
           <Text style={styles.requirementText}>
             Clear face photos help people recognize you and keep the community
@@ -72,12 +67,13 @@ export default function PhotoPicker({
 
       <View style={styles.actionsRow}>
         <TouchableOpacity
-          style={[styles.actionButton, disabled && styles.disabled]}
+          style={[styles.actionButton, controlsDisabled && styles.disabled]}
           onPress={onAdd}
           activeOpacity={0.85}
-          disabled={disabled || !canAdd}
+          disabled={controlsDisabled}
           accessibilityRole="button"
           accessibilityLabel="Choose profile photo from library"
+          accessibilityState={{ disabled: controlsDisabled }}
         >
           <ImagePlus size={18} color={theme.colors.dalisay[50]} />
           <Text style={styles.actionText}>Library</Text>
@@ -85,12 +81,13 @@ export default function PhotoPicker({
 
         {onTakePhoto ? (
           <TouchableOpacity
-            style={[styles.actionButton, disabled && styles.disabled]}
+            style={[styles.actionButton, controlsDisabled && styles.disabled]}
             onPress={onTakePhoto}
             activeOpacity={0.85}
-            disabled={disabled || !canAdd}
+            disabled={controlsDisabled}
             accessibilityRole="button"
             accessibilityLabel="Take profile photo with camera"
+            accessibilityState={{ disabled: controlsDisabled }}
           >
             <Camera size={18} color={theme.colors.dalisay[50]} />
             <Text style={styles.actionText}>Camera</Text>
@@ -101,12 +98,13 @@ export default function PhotoPicker({
       <View style={styles.grid}>
         {photos.length === 0 ? (
           <TouchableOpacity
-            style={[styles.tile, styles.emptyTile, disabled && styles.disabled]}
+            style={[styles.tile, styles.emptyTile, controlsDisabled && styles.disabled]}
             onPress={onAdd}
             activeOpacity={0.85}
-            disabled={disabled || !canAdd}
+            disabled={controlsDisabled}
             accessibilityRole="button"
             accessibilityLabel="Add your first required profile photo"
+            accessibilityState={{ disabled: controlsDisabled }}
           >
             <Camera size={28} color={theme.colors.dalisay[50]} />
             <Text style={styles.addText}>Add first photo</Text>
@@ -117,10 +115,11 @@ export default function PhotoPicker({
           <View key={uri} style={styles.tile}>
             <Image source={{ uri }} style={styles.image} resizeMode="cover" />
             <TouchableOpacity
-              style={styles.removeBtn}
+              style={[styles.removeBtn, disabled && styles.disabled]}
               onPress={() => onRemove(uri)}
               accessibilityRole="button"
               accessibilityLabel={`Remove profile photo ${index + 1}`}
+              accessibilityState={{ disabled }}
               activeOpacity={0.8}
               disabled={disabled}
             >
@@ -129,96 +128,102 @@ export default function PhotoPicker({
           </View>
         ))}
       </View>
-      <Text style={styles.hint}>Upload at least one clear photo. You can add up to 6 photos.</Text>
+      <Text style={styles.hint}>
+        Upload at least one clear photo. You can add up to 6 photos.
+      </Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { width: "100%", gap: 12 },
-  requirementCard: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: "rgba(239,62,120,0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(239,62,120,0.3)",
-  },
-  requirementCardComplete: {
-    backgroundColor: "rgba(34,197,94,0.12)",
-    borderColor: "rgba(34,197,94,0.32)",
-  },
-  requirementCopy: { flex: 1 },
-  requirementTitle: {
-    color: theme.colors.neutral.white,
-    fontSize: 14,
-    fontFamily: theme.fontFamilies.body.semiBold,
-    marginBottom: 3,
-  },
-  requirementText: {
-    color: "rgba(255,255,255,0.75)",
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  actionsRow: { flexDirection: "row", gap: 10 },
-  actionButton: {
-    flex: 1,
-    minHeight: 48,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  actionText: {
-    color: "rgba(255,255,255,0.92)",
-    fontSize: 14,
-    fontFamily: theme.fontFamilies.body.semiBold,
-  },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  tile: {
-    width: ITEM_SIZE,
-    height: ITEM_SIZE,
-    borderRadius: 12,
-    overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.04)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyTile: {
-    width: "100%",
-    minHeight: 132,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "rgba(255,255,255,0.18)",
-  },
-  addText: {
-    marginTop: 8,
-    color: "rgba(255,255,255,0.9)",
-    fontSize: 12,
-    fontFamily: theme.fontFamilies.body.semiBold,
-  },
-  image: { width: "100%", height: "100%" },
-  removeBtn: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  hint: {
-    color: "rgba(255,255,255,0.65)",
-    fontSize: 13,
-    marginTop: 6,
-  },
-  disabled: { opacity: 0.5 },
+const useStyles = makeStyles((theme) => {
+  const itemSize = Math.min(120, Math.floor((width - theme.spacing.lg * 2 - 12) / 3));
+
+  return {
+    container: { width: "100%", gap: 12 },
+    requirementCard: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 10,
+      padding: 14,
+      borderRadius: 14,
+      backgroundColor: "rgba(239,62,120,0.12)",
+      borderWidth: 1,
+      borderColor: "rgba(239,62,120,0.3)",
+    },
+    requirementCardComplete: {
+      backgroundColor: "rgba(34,197,94,0.12)",
+      borderColor: "rgba(34,197,94,0.32)",
+    },
+    requirementCopy: { flex: 1 },
+    requirementTitle: {
+      color: theme.colors.neutral.white,
+      fontSize: 14,
+      fontFamily: theme.fontFamilies.body.semiBold,
+      marginBottom: 3,
+    },
+    requirementText: {
+      color: "rgba(255,255,255,0.75)",
+      fontSize: 12,
+      lineHeight: 17,
+    },
+    actionsRow: { flexDirection: "row", gap: 10 },
+    actionButton: {
+      flex: 1,
+      minHeight: 48,
+      borderRadius: 14,
+      backgroundColor: "rgba(255,255,255,0.08)",
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.12)",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+    actionText: {
+      color: "rgba(255,255,255,0.92)",
+      fontSize: 14,
+      fontFamily: theme.fontFamilies.body.semiBold,
+    },
+    grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+    tile: {
+      width: itemSize,
+      height: itemSize,
+      borderRadius: 12,
+      overflow: "hidden",
+      backgroundColor: "rgba(255,255,255,0.04)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    emptyTile: {
+      width: "100%",
+      minHeight: 132,
+      borderWidth: 1,
+      borderStyle: "dashed",
+      borderColor: "rgba(255,255,255,0.18)",
+    },
+    addText: {
+      marginTop: 8,
+      color: "rgba(255,255,255,0.9)",
+      fontSize: 12,
+      fontFamily: theme.fontFamilies.body.semiBold,
+    },
+    image: { width: "100%", height: "100%" },
+    removeBtn: {
+      position: "absolute",
+      top: 8,
+      right: 8,
+      backgroundColor: "rgba(0,0,0,0.45)",
+      width: 28,
+      height: 28,
+      borderRadius: 8,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    hint: {
+      color: "rgba(255,255,255,0.65)",
+      fontSize: 13,
+      marginTop: 6,
+    },
+    disabled: { opacity: 0.5 },
+  };
 });

@@ -1,6 +1,6 @@
 import React from "react";
 import { TouchableOpacity, View, Text, StyleSheet, Platform } from "react-native";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 
 interface Props {
   option: string;
@@ -9,6 +9,9 @@ interface Props {
 }
 
 export default function RelationshipOption({ option, selected, onSelect }: Props) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
 
   return (
@@ -38,7 +41,7 @@ export default function RelationshipOption({ option, selected, onSelect }: Props
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   row: {
     backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: 16,
@@ -71,4 +74,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   radioDot: { width: 10, height: 10, borderRadius: 5 },
-});
+}));

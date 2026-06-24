@@ -1,6 +1,7 @@
 import VerifyEmailActions from "@/src/components/auth/VerifyEmailActions";
 import VerifyEmailHeader from "@/src/components/auth/VerifyEmailHeader";
 import { supabase } from "@/src/config/supabase";
+import { UserMetadata } from "@supabase/supabase-js";
 import { authApi } from "@/src/features/auth/api/authApi";
 import { useSignupStore } from "@/src/stores/signupStore";
 import { useFonts } from "expo-font";
@@ -34,7 +35,9 @@ export default function VerifyEmailScreen() {
 
   const didNavigate = useRef(false);
   const [isCheckingManually, setIsCheckingManually] = useState(false);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
 
   const [fontsLoaded] = useFonts({
     HelloParis: require("@/assets/fonts/hello-paris-sans/HelloParisSans-Bold.ttf"),
@@ -63,7 +66,7 @@ export default function VerifyEmailScreen() {
   }, [email, firstName, getSignupData, router, userType]);
 
   const goNext = useCallback(
-    (metadata?: any) => {
+    (metadata?: UserMetadata) => {
       if (didNavigate.current) return;
       didNavigate.current = true;
 

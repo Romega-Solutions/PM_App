@@ -4,8 +4,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   AlertCircle,
   ArrowLeft,
-  Check,
-  CheckCheck,
   Image as ImageIcon,
   MessageCircle,
   Phone,
@@ -48,18 +46,10 @@ import { DateHeader } from "@/src/features/messaging/components/DateHeader";
 import { ScrollToBottomFab } from "@/src/features/messaging/components/ScrollToBottomFab";
 import { TypingIndicator } from "@/src/features/messaging/components/TypingIndicator";
 import { blockUser, unmatchUser } from "@/src/features/safety/api/safetyApi";
+import { MessageBubble } from "../components/MessageBubble";
+import { useAppTheme, makeStyles } from "@/src/theme";
 
 // Brand Colors
-const BRAND_BG = "#0F0814";
-const ACCENT_PURPLE = "#8D69F6";
-const DANGER_RED = "#FF6B6B";
-const ONLINE_GREEN = "#10B981";
-const WHITE = "#FFFFFF";
-const SURFACE = "rgba(255,255,255,0.06)";
-const MY_MESSAGE_BG = "rgba(141, 105, 246, 0.25)";
-const THEIR_MESSAGE_BG = "rgba(255, 255, 255, 0.08)";
-const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
-const TEXT_MUTED = "rgba(255,255,255,0.5)";
 
 type ChatScreenParams = {
   userId: string;
@@ -69,14 +59,43 @@ type ChatScreenParams = {
   conversationId?: string;
 };
 
+function getDateKey(dateString: string): string {
+  return new Date(dateString).toDateString();
+}
+
+function shouldShowDateHeader(messages: MessageType[], index: number): boolean {
+  if (index === 0) return true;
+  return (
+    getDateKey(messages[index].created_at) !==
+    getDateKey(messages[index - 1].created_at)
+  );
+}
+
 export default function ChatScreen() {
+  const theme = useAppTheme();
+  const styles = useStyles();
+  const BRAND_BG = theme.colors.dalisay[950];
+  const ACCENT_PURPLE = theme.colors.dalisay[500];
+  const DANGER_RED = theme.colors.amihan[500];
+  const ONLINE_GREEN = "#10B981";
+  const WHITE = "#FFFFFF";
+  const SURFACE = "rgba(255,255,255,0.06)";
+  const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
+  const TEXT_MUTED = "rgba(255,255,255,0.5)";
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<ChatScreenParams>();
-  const flatListRef = useRef<FlatList<MessageType>>(null);
   const inputRef = useRef<TextInput>(null);
+  const [replyingTo, setReplyingTo] = useState<MessageType | null>(null);
+
+  const handleSwipeToReply = useCallback((message: MessageType) => {
+    setReplyingTo(message);
+    inputRef.current?.focus();
+  }, []);
 
   const [inputText, setInputText] = useState("");
+  const flatListRef = useRef<FlatList<MessageType>>(null);
+
   const [isTyping, setIsTyping] = useState(false);
   const [showScrollFab, setShowScrollFab] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
@@ -571,21 +590,6 @@ export default function ChatScreen() {
 
   // ==================== END HANDLER FUNCTIONS ====================
 
-  function getDateKey(dateString: string): string {
-    return new Date(dateString).toDateString();
-  }
-
-  function shouldShowDateHeader(
-    messages: MessageType[],
-    index: number,
-  ): boolean {
-    if (index === 0) return true;
-    return (
-      getDateKey(messages[index].created_at) !==
-      getDateKey(messages[index - 1].created_at)
-    );
-  }
-
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { contentOffset, contentSize, layoutMeasurement } =
@@ -601,121 +605,31 @@ export default function ChatScreen() {
     flatListRef.current?.scrollToEnd({ animated: true });
   }, []);
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? "PM" : "AM";
-    const formattedHours = hours % 12 || 12;
-    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
-    return `${formattedHours}:${formattedMinutes} ${ampm}`;
-  };
+  const keyExtractor = useCallback((item: MessageType) => item.id, []);
 
-  const renderMessageStatus = (status: MessageType["status"]) => {
-    switch (status) {
-      case "sending":
-        return <Check size={14} color={TEXT_MUTED} strokeWidth={2.5} />;
-      case "sent":
-        return <CheckCheck size={14} color={TEXT_MUTED} strokeWidth={2.5} />;
-      case "delivered":
-        return <CheckCheck size={14} color={TEXT_MUTED} strokeWidth={2.5} />;
-      case "read":
-        return <CheckCheck size={14} color={ACCENT_PURPLE} strokeWidth={2.5} />;
-      case "failed":
-        return <AlertCircle size={14} color={DANGER_RED} strokeWidth={2.5} />;
-      default:
-        return null;
-    }
-  };
-
-  const renderMessage = (message: MessageType, index: number) => {
-    const isMyMessage = message.sender_id === currentUserId;
-    const showAvatar = !isMyMessage;
-    const messageAuthor = isMyMessage ? "You" : userName;
-    const messageContent =
-      message.type === "image" ? "Photo message" : message.text;
-    const messageStatus =
-      isMyMessage && message.status ? `, ${message.status}` : "";
-
-    return (
-      <View
-        key={message.id}
-        accessible
-        accessibilityLabel={`${messageAuthor}: ${messageContent}, ${formatTime(
-          message.created_at,
-        )}${messageStatus}`}
-        style={[
-          styles.messageRow,
-          isMyMessage ? styles.myMessageRow : styles.theirMessageRow,
-        ]}
-      >
-        {showAvatar &&
-          (params.userImage && params.userImage.startsWith("http") ? (
-            <Image
-              source={{ uri: params.userImage }}
-              style={styles.messageAvatar}
-              accessibilityLabel={`${userName} profile photo`}
-            />
-          ) : (
-            <View style={styles.messageAvatarPlaceholder}>
-              <Text style={styles.messageAvatarPlaceholderText}>
-                {userName.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-          ))}
-
-        <View
-          style={[
-            styles.messageBubble,
-            isMyMessage ? styles.myMessageBubble : styles.theirMessageBubble,
-            message.type === "image" && styles.imageBubble,
-          ]}
-        >
-          {message.type === "image" && message.image_url ? (
-            <View style={styles.imageMessageContainer}>
-              <Image
-                source={{ uri: message.image_url }}
-                style={styles.messageImage}
-                resizeMode="cover"
-                accessibilityLabel={`${messageAuthor} sent a photo`}
-              />
-              <View
-                style={styles.imageSafetyStrip}
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-              >
-                <ShieldAlert size={13} color={WHITE} strokeWidth={2.2} />
-                <Text style={styles.imageSafetyText}>Private chat photo</Text>
-              </View>
-            </View>
-          ) : (
-            <Text
-              style={[
-                styles.messageText,
-                isMyMessage ? styles.myMessageText : styles.theirMessageText,
-              ]}
-            >
-              {message.text}
-            </Text>
-          )}
-
-          <View style={styles.messageFooter}>
-            <Text style={styles.messageTime}>
-              {formatTime(message.created_at)}
-            </Text>
-            {isMyMessage && (
-              <View style={styles.messageStatusContainer}>
-                {renderMessageStatus(message.status)}
-              </View>
-            )}
-          </View>
-          {message.status === "failed" && (
-            <Text style={styles.messageFailedText}>Not sent</Text>
-          )}
-        </View>
+  const renderItem = useCallback(
+    ({ item, index }: { item: MessageType; index: number }) => (
+      <View>
+        {shouldShowDateHeader(dbMessages, index) && (
+          <DateHeader date={item.created_at} />
+        )}
+        <MessageBubble
+          message={item}
+          currentUserId={currentUserId}
+          userName={userName}
+          onSwipeToReply={handleSwipeToReply}
+          userImage={params.userImage}
+        />
       </View>
-    );
-  };
+    ),
+    [
+      currentUserId,
+      dbMessages,
+      handleSwipeToReply,
+      params.userImage,
+      userName,
+    ],
+  );
 
   // Show loading state
   if (loading && dbMessages.length === 0) {
@@ -773,7 +687,7 @@ export default function ChatScreen() {
       />
 
       {/* iOS Safe Area Top */}
-      {Platform.OS === "ios" && (
+      {Platform.OS !== "web" && (
         <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
       )}
 
@@ -924,7 +838,8 @@ export default function ChatScreen() {
       <FlatList
         ref={flatListRef}
         data={dbMessages}
-        keyExtractor={(item) => item.id}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
         style={styles.messagesContainer}
         contentContainerStyle={[
           styles.messagesContent,
@@ -975,14 +890,6 @@ export default function ChatScreen() {
             </TouchableOpacity>
           </View>
         }
-        renderItem={({ item, index }) => (
-          <View>
-            {shouldShowDateHeader(dbMessages, index) && (
-              <DateHeader date={item.created_at} />
-            )}
-            {renderMessage(item, index)}
-          </View>
-        )}
         ListFooterComponent={
           isTyping ? (
             <View style={[styles.messageRow, styles.theirMessageRow]}>
@@ -1264,7 +1171,16 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => {
+  const BRAND_BG = theme.colors.dalisay[950];
+  const ACCENT_PURPLE = theme.colors.dalisay[500];
+  const DANGER_RED = theme.colors.amihan[500];
+  const ONLINE_GREEN = "#10B981";
+  const WHITE = "#FFFFFF";
+  const SURFACE = "rgba(255,255,255,0.06)";
+  const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
+  const TEXT_MUTED = "rgba(255,255,255,0.5)";
+  return {
   root: {
     flex: 1,
     backgroundColor: BRAND_BG,
@@ -1688,13 +1604,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   myMessageBubble: {
-    backgroundColor: MY_MESSAGE_BG,
+    backgroundColor: "rgba(141, 105, 246, 0.25)",
     borderBottomRightRadius: 4,
     borderWidth: 1,
     borderColor: "rgba(141, 105, 246, 0.3)",
   },
   theirMessageBubble: {
-    backgroundColor: THEIR_MESSAGE_BG,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
     borderBottomLeftRadius: 4,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.1)",
@@ -1960,4 +1876,5 @@ const styles = StyleSheet.create({
   mediaButtonDisabled: {
     opacity: 0.5,
   },
+  };
 });

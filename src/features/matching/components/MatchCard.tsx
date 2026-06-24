@@ -23,10 +23,12 @@ import {
   X,
 } from "lucide-react-native";
 import React from "react";
+import { useAppTheme } from "@/src/theme/ThemeContext";
+import { makeStyles } from "@/src/theme/makeStyles";
 import {
   Image,
+  ImageSourcePropType,
   Platform,
-  StyleSheet,
   Text,
   TouchableOpacity,
   useWindowDimensions,
@@ -34,10 +36,6 @@ import {
 } from "react-native";
 
 // Brand Colors
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const VERIFIED_GREEN = "#10B981";
-const WHITE = "#FFFFFF";
 const SURFACE = "rgba(255,255,255,0.06)";
 const SURFACE_BORDER = "rgba(141,105,246,0.18)";
 const ACTION_HIT_SLOP = { top: 6, right: 6, bottom: 6, left: 6 };
@@ -59,7 +57,7 @@ export type Match = {
   id: string | number;
   name: string;
   age: number;
-  image?: any;
+  image?: ImageSourcePropType;
   location: string;
   verified: boolean;
   mutual: boolean;
@@ -75,13 +73,15 @@ interface MatchCardProps {
   onPress?: () => void;
 }
 
-export const MatchCard: React.FC<MatchCardProps> = ({
+export const MatchCard: React.FC<MatchCardProps> = React.memo(({
   match,
   onMessage,
   onUnmatch,
   onReport,
   onPress,
 }) => {
+  const theme = useAppTheme();
+  const styles = useStyles();
   const { width } = useWindowDimensions();
   const cardWidth = Math.min((width - 48) / 2, 196);
   const cardHeight = Math.max(cardWidth * 1.9, 306);
@@ -125,7 +125,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
             accessible
             accessibilityLabel="Verification reviewed"
           >
-            <Sparkles size={10} color={WHITE} strokeWidth={2.5} />
+            <Sparkles size={10} color={theme.colors.neutral.white} strokeWidth={2.5} />
           </View>
         )}
 
@@ -138,8 +138,8 @@ export const MatchCard: React.FC<MatchCardProps> = ({
           >
             <Heart
               size={10}
-              color={ACCENT_PINK}
-              fill={ACCENT_PINK}
+              color={theme.semanticColors.primary}
+              fill={theme.semanticColors.primary}
               strokeWidth={2}
             />
           </View>
@@ -161,7 +161,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
         </View>
 
         <View style={styles.locationRow}>
-          <MapPin size={12} color={ACCENT_PURPLE} strokeWidth={2} />
+          <MapPin size={12} color={theme.semanticColors.secondary} strokeWidth={2} />
           <Text style={styles.locationText} numberOfLines={1}>
             {match.location}
           </Text>
@@ -172,8 +172,8 @@ export const MatchCard: React.FC<MatchCardProps> = ({
         <View style={styles.matchMetaRow}>
           <Heart
             size={11}
-            color={match.mutual ? ACCENT_PINK : "rgba(255,255,255,0.58)"}
-            fill={match.mutual ? ACCENT_PINK : "transparent"}
+            color={match.mutual ? theme.semanticColors.primary : "rgba(255,255,255,0.58)"}
+            fill={match.mutual ? theme.semanticColors.primary : "transparent"}
             strokeWidth={2}
           />
           <Text
@@ -205,7 +205,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
               accessibilityLabel={`Unmatch with ${match.name}`}
               accessibilityHint="Opens the unmatch action for this match"
             >
-              <X size={16} color={ACCENT_PINK} strokeWidth={2.5} />
+              <X size={16} color={theme.semanticColors.primary} strokeWidth={2.5} />
               <Text style={[styles.actionLabel, styles.unmatchActionLabel]}>
                 Unmatch
               </Text>
@@ -220,7 +220,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
               accessibilityLabel={`Report or block ${match.name}`}
               accessibilityHint="Opens a private report form for this match"
             >
-              <Flag size={16} color="#FFB4B4" strokeWidth={2.5} />
+              <Flag size={16} color={theme.semanticColors.error} strokeWidth={2.5} />
               <Text style={[styles.actionLabel, styles.reportActionLabel]}>
                 Report
               </Text>
@@ -236,7 +236,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
             accessibilityLabel={`Message ${match.name}`}
             accessibilityHint="Opens a conversation with this match"
           >
-            <MessageCircle size={16} color={WHITE} strokeWidth={2} />
+            <MessageCircle size={16} color={theme.colors.neutral.white} strokeWidth={2} />
             <Text style={[styles.actionLabel, styles.messageActionLabel]}>
               Message
             </Text>
@@ -245,9 +245,11 @@ export const MatchCard: React.FC<MatchCardProps> = ({
       </View>
     </TouchableOpacity>
   );
-};
+});
 
-const styles = StyleSheet.create({
+MatchCard.displayName = "MatchCard";
+
+const useStyles = makeStyles((theme) => ({
   // Card
   card: {
     backgroundColor: SURFACE,
@@ -258,7 +260,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
+        shadowColor: theme.colors.neutral.black,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 12,
@@ -274,7 +276,7 @@ const styles = StyleSheet.create({
   cardImage: {
     width: "100%",
     height: "100%",
-    backgroundColor: "#1A1A1A",
+    backgroundColor: theme.semanticColors.surface,
   },
   cardImageFallback: {
     width: "100%",
@@ -298,14 +300,14 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: VERIFIED_GREEN,
+    backgroundColor: theme.semanticColors.success,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1.5,
-    borderColor: WHITE,
+    borderColor: theme.colors.neutral.white,
     ...Platform.select({
       ios: {
-        shadowColor: VERIFIED_GREEN,
+        shadowColor: theme.semanticColors.success,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.4,
         shadowRadius: 4,
@@ -326,10 +328,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1.5,
-    borderColor: ACCENT_PINK,
+    borderColor: theme.semanticColors.primary,
     ...Platform.select({
       ios: {
-        shadowColor: ACCENT_PINK,
+        shadowColor: theme.semanticColors.primary,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 4,
@@ -361,7 +363,7 @@ const styles = StyleSheet.create({
   cardName: {
     fontSize: 16,
     fontFamily: "Lora-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
     letterSpacing: 0.3,
     flex: 1,
   },
@@ -374,7 +376,7 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 12,
     fontFamily: "DMSans-Medium",
-    color: ACCENT_PURPLE,
+    color: theme.semanticColors.secondary,
     letterSpacing: 0.2,
     flex: 1,
   },
@@ -396,7 +398,7 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.62)",
   },
   matchStateTextActive: {
-    color: ACCENT_PINK,
+    color: theme.semanticColors.primary,
   },
   matchSeparator: {
     fontSize: 10,
@@ -440,20 +442,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   unmatchActionLabel: {
-    color: ACCENT_PINK,
+    color: theme.semanticColors.primary,
   },
   reportActionLabel: {
-    color: "#FFB4B4",
+    color: theme.semanticColors.error,
   },
   messageActionLabel: {
-    color: WHITE,
+    color: theme.colors.neutral.white,
   },
   messageBtn: {
     width: "100%",
-    backgroundColor: ACCENT_PINK,
+    backgroundColor: theme.semanticColors.primary,
     ...Platform.select({
       ios: {
-        shadowColor: ACCENT_PINK,
+        shadowColor: theme.semanticColors.primary,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 4,
@@ -463,4 +465,4 @@ const styles = StyleSheet.create({
       },
     }),
   },
-});
+}));

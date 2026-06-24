@@ -97,7 +97,7 @@ Required operator action:
 - Prove `canthought` is Romega-controlled or transfer the Expo/EAS app to a Romega-owned account/team.
 - Log in to the correct EAS/Expo account after ownership is confirmed.
 - Attach a physical device or provide a working emulator.
-- Run authenticated native QA using `docs/NATIVE_QA_SCRIPT.md`.
+- Run authenticated native QA using `docs\testing\NATIVE_QA_SCRIPT.md`.
 - Capture evidence for auth, onboarding, location, verification, discovery, matching, messaging, report/block/unmatch, privacy, notifications, account deletion request, and accessibility.
 
 Codex can continue after access:
@@ -150,4 +150,4 @@ Required operator action:
 
 ## Go/no-go rule
 
-Do not launch until every blocked row in `docs/LAUNCH_EVIDENCE_PACKET.md` is changed by real evidence to either `Pass` or explicit `Deferred with risk acceptance` by the correct owner.
+Do not launch until every blocked row in `docs\release\LAUNCH_EVIDENCE_PACKET.md` is changed by real evidence to either `Pass` or explicit `Deferred with risk acceptance` by the correct owner.

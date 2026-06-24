@@ -1,12 +1,13 @@
 import { ShieldCheck } from "lucide-react-native";
 import React from "react";
 import {
-  StyleSheet,
   Text,
   View,
   type StyleProp,
   type ViewStyle,
 } from "react-native";
+import { useAppTheme } from "../../theme/ThemeContext";
+import { makeStyles } from "../../theme/makeStyles";
 
 type LaunchStateNoticeProps = {
   title: string;
@@ -27,6 +28,9 @@ export function LaunchStateNotice({
   testID,
   style,
 }: LaunchStateNoticeProps) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   return (
     <View
       testID={testID ?? "launch-state-notice"}
@@ -48,7 +52,7 @@ export function LaunchStateNotice({
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
       >
-        <ShieldCheck size={20} color="#EF3E78" strokeWidth={2.4} />
+        <ShieldCheck size={20} color={theme.semanticColors.primary} strokeWidth={2.4} />
       </View>
       <View style={styles.noticeCopy}>
         <Text style={styles.noticeTitle}>{title}</Text>
@@ -59,7 +63,7 @@ export function LaunchStateNotice({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   noticeCard: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -94,9 +98,10 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   noticeMeta: {
-    color: "#EF3E78",
+    color: theme.semanticColors.primary,
     fontSize: 12,
     fontWeight: "700",
     marginTop: 10,
+    textTransform: "uppercase",
   },
-});
+}));

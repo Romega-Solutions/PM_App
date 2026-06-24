@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Slider from "@react-native-community/slider";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 
 interface Props {
   value: number;
@@ -12,6 +12,9 @@ interface Props {
 }
 
 export default function DistanceSlider({ value, onChange, min = 10, max = 200, step = 10 }: Props) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
 
   return (
@@ -38,7 +41,7 @@ export default function DistanceSlider({ value, onChange, min = 10, max = 200, s
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   container: {
     backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 16,
@@ -59,4 +62,4 @@ const styles = StyleSheet.create({
   slider: { width: "100%", height: 40 },
   labels: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
   labelText: { fontSize: 13, color: "rgba(255,255,255,0.6)" },
-});
+}));

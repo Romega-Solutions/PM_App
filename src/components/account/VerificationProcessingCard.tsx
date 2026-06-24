@@ -1,4 +1,4 @@
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 import {
   Camera,
   CheckCircle,
@@ -30,6 +30,9 @@ export default function VerificationProcessingCard({
   title,
   description,
 }: Props) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   const statusMeta = (() => {
     switch (status) {
       case "verified":
@@ -164,7 +167,7 @@ export default function VerificationProcessingCard({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   container: {
     backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: theme.borderRadius.xl,
@@ -238,4 +241,4 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-});
+}));

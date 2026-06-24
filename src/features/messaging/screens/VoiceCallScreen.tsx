@@ -20,16 +20,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const BRAND_BG = "#0F0814";
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
-const SURFACE = "rgba(255,255,255,0.08)";
-const SURFACE_STRONG = "rgba(255,255,255,0.14)";
-const TEXT_SECONDARY = "rgba(255,255,255,0.78)";
-const TEXT_MUTED = "rgba(255,255,255,0.62)";
+import { makeStyles, useAppTheme } from "@/src/theme";
 
 export default function VoiceCallScreen() {
+  const theme = useAppTheme();
+  const styles = useStyles();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { userName, userAvatar, userId } = useLocalSearchParams<{
@@ -62,7 +57,7 @@ export default function VoiceCallScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       <LinearGradient
-        colors={["#1D1033", BRAND_BG, "#160913"]}
+        colors={[theme.colors.dalisay[900], theme.semanticColors.background, theme.colors.dalisay[900]]}
         style={StyleSheet.absoluteFillObject}
       />
 
@@ -84,7 +79,7 @@ export default function VoiceCallScreen() {
           accessibilityHint="Returns to the chat"
           hitSlop={8}
         >
-          <X size={24} color={WHITE} />
+          <X size={24} color={theme.colors.neutral.white} />
         </Pressable>
       </View>
 
@@ -100,18 +95,18 @@ export default function VoiceCallScreen() {
             <Image source={{ uri: userAvatar }} style={styles.avatar} />
           ) : (
             <View style={styles.avatarFallback}>
-              <UserRound size={56} color={TEXT_SECONDARY} strokeWidth={1.8} />
+              <UserRound size={56} color="rgba(255,255,255,0.78)" strokeWidth={1.8} />
               <Text style={styles.avatarFallbackText}>No photo</Text>
             </View>
           )}
           <View style={styles.unavailableBadge}>
-            <MicOff size={26} color={WHITE} />
+            <MicOff size={26} color={theme.colors.neutral.white} />
           </View>
         </View>
 
         <View style={styles.statusCard}>
           <View style={styles.statusPill}>
-            <ShieldCheck size={16} color={WHITE} />
+            <ShieldCheck size={16} color={theme.colors.neutral.white} />
             <Text style={styles.statusPillText}>Safety first</Text>
           </View>
 
@@ -123,7 +118,7 @@ export default function VoiceCallScreen() {
           <View style={styles.divider} />
 
           <View style={styles.noteRow}>
-            <MicOff size={20} color={TEXT_SECONDARY} />
+            <MicOff size={20} color="rgba(255,255,255,0.78)" />
             <Text style={styles.noteText}>
               You are still in chat with {displayName}. Keep the conversation in
               messages, and use report, block, or unmatch if anything feels
@@ -172,12 +167,12 @@ export default function VoiceCallScreen() {
           accessibilityHint="Closes this voice call screen"
         >
           <LinearGradient
-            colors={[ACCENT_PINK, ACCENT_PURPLE]}
+            colors={[theme.semanticColors.primary, theme.semanticColors.secondary]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.primaryButtonGradient}
           >
-            <PhoneOff size={22} color={WHITE} />
+            <PhoneOff size={22} color={theme.colors.neutral.white} />
             <Text style={styles.primaryButtonText}>Back to chat</Text>
           </LinearGradient>
         </Pressable>
@@ -186,10 +181,10 @@ export default function VoiceCallScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   container: {
     flex: 1,
-    backgroundColor: BRAND_BG,
+    backgroundColor: theme.semanticColors.background,
   },
   header: {
     position: "absolute",
@@ -208,13 +203,13 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
   eyebrow: {
-    color: TEXT_MUTED,
+    color: "rgba(255,255,255,0.62)",
     fontSize: 13,
     fontWeight: "700",
     textTransform: "uppercase",
   },
   headerTitle: {
-    color: WHITE,
+    color: theme.colors.neutral.white,
     fontSize: 20,
     fontWeight: "800",
     marginTop: 2,
@@ -225,9 +220,9 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: SURFACE,
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderWidth: 1,
-    borderColor: SURFACE_STRONG,
+    borderColor: "rgba(255,255,255,0.14)",
   },
   buttonPressed: {
     opacity: 0.72,
@@ -243,7 +238,7 @@ const styles = StyleSheet.create({
     height: 176,
     borderRadius: 88,
     padding: 4,
-    backgroundColor: SURFACE_STRONG,
+    backgroundColor: "rgba(255,255,255,0.14)",
     marginBottom: 28,
   },
   avatar: {
@@ -262,7 +257,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0.1)",
   },
   avatarFallbackText: {
-    color: TEXT_MUTED,
+    color: "rgba(255,255,255,0.62)",
     fontSize: 13,
     fontWeight: "700",
     marginTop: 8,
@@ -278,14 +273,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(239, 62, 120, 0.94)",
     borderWidth: 3,
-    borderColor: BRAND_BG,
+    borderColor: theme.semanticColors.background,
   },
   statusCard: {
     borderRadius: 28,
     padding: 22,
-    backgroundColor: SURFACE,
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderWidth: 1,
-    borderColor: SURFACE_STRONG,
+    borderColor: "rgba(255,255,255,0.14)",
   },
   statusPill: {
     alignSelf: "flex-start",
@@ -299,25 +294,25 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   statusPillText: {
-    color: WHITE,
+    color: theme.colors.neutral.white,
     fontSize: 13,
     fontWeight: "700",
   },
   title: {
-    color: WHITE,
+    color: theme.colors.neutral.white,
     fontSize: 28,
     lineHeight: 34,
     fontWeight: "800",
     marginBottom: 12,
   },
   description: {
-    color: TEXT_SECONDARY,
+    color: "rgba(255,255,255,0.78)",
     fontSize: 16,
     lineHeight: 24,
   },
   divider: {
     height: 1,
-    backgroundColor: SURFACE_STRONG,
+    backgroundColor: "rgba(255,255,255,0.14)",
     marginVertical: 20,
   },
   noteRow: {
@@ -327,7 +322,7 @@ const styles = StyleSheet.create({
   },
   noteText: {
     flex: 1,
-    color: TEXT_MUTED,
+    color: "rgba(255,255,255,0.62)",
     fontSize: 14,
     lineHeight: 21,
   },
@@ -348,7 +343,7 @@ const styles = StyleSheet.create({
     opacity: 0.58,
   },
   safetyButtonText: {
-    color: WHITE,
+    color: theme.colors.neutral.white,
     fontSize: 16,
     fontWeight: "800",
   },
@@ -370,8 +365,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   primaryButtonText: {
-    color: WHITE,
+    color: theme.colors.neutral.white,
     fontSize: 17,
     fontWeight: "800",
   },
-});
+}));

@@ -31,7 +31,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "check:client-copy": "node scripts/check-client-facing-copy.mjs"
+    "check:client-copy": "node scripts/check-client-facing-copy.mjs",
+    "analyze:web": "set EXPO_UNSTABLE_ATLAS=true&& expo export -p web",
+    "analyze:atlas": "npx expo-atlas"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -63,8 +65,6 @@
     "expo-updates": "~29.0.11",
     "expo-web-browser": "~15.0.11",
     "lucide-react-native": "^0.562.0",
-    "nativewind": "^4.2.1",
-    "prettier-plugin-tailwindcss": "^0.5.14",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
@@ -77,7 +77,6 @@
     "react-native-vector-icons": "^10.3.0",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.5.1",
-    "tailwindcss": "^3.4.17",
     "zod": "^4.3.5",
     "zustand": "^5.0.8"
   },
@@ -86,16 +85,20 @@
     "@testing-library/react-native": "^12.9.0",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.1.0",
+    "babel-plugin-import": "^1.13.8",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "expo-atlas": "^0.4.3",
     "jest": "^29.7.0",
     "jest-expo": "~54.0.13",
+    "sharp": "^0.35.2",
     "typescript": "~5.9.2"
   },
   "private": true,
   "overrides": {
     "brace-expansion": "1.1.13",
     "postcss": "8.5.10",
-    "uuid": "11.1.1"
+    "uuid": "11.1.1",
+    "js-yaml": "^4.1.2"
   }
 }

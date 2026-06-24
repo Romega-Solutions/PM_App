@@ -41,7 +41,10 @@ const LIKES_LOAD_ERROR =
  * Calculate match score between current user and potential match
  * Returns score from 0-100
  */
-const calculateMatchScore = (currentUser: any, candidate: any): number => {
+export const calculateMatchScore = (
+  currentUser: Partial<Profile>,
+  candidate: Partial<Profile>,
+): number => {
   let score = 0;
 
   // 1. RELATIONSHIP GOAL MATCH (25 points max)
@@ -70,8 +73,9 @@ const calculateMatchScore = (currentUser: any, candidate: any): number => {
     currentUser.interests.length > 0 &&
     candidate.interests.length > 0
   ) {
+    const candidateInterests = candidate.interests;
     const sharedInterests = currentUser.interests.filter((interest: string) =>
-      candidate.interests.includes(interest),
+      candidateInterests.includes(interest),
     );
     const interestScore = Math.min(
       20,
@@ -87,8 +91,9 @@ const calculateMatchScore = (currentUser: any, candidate: any): number => {
     currentUser.languages.length > 0 &&
     candidate.languages.length > 0
   ) {
+    const candidateLanguages = candidate.languages;
     const sharedLanguages = currentUser.languages.filter((lang: string) =>
-      candidate.languages.includes(lang),
+      candidateLanguages.includes(lang),
     );
     const languageScore = Math.min(
       15,
@@ -212,16 +217,23 @@ type LikeProfileRpcResult = {
 
 type MatchingAction = "like" | "pass" | "undo";
 
+export const MATCHING_ERRORS = {
+  LIKE: "Like did not send. Check your connection and try again.",
+  PASS: "Pass did not save. Check your connection and try again.",
+  UNDO: "Undo did not complete. Check your connection and try again.",
+  SUPERLIKE: "Super like did not send. Check your connection and try again.",
+} as const;
+
 const getSafeMatchingActionError = (action: MatchingAction): string => {
   if (action === "pass") {
-    return "Pass did not save. Check your connection and try again.";
+    return MATCHING_ERRORS.PASS;
   }
 
   if (action === "undo") {
-    return "Undo did not complete. Check your connection and try again.";
+    return MATCHING_ERRORS.UNDO;
   }
 
-  return "Like did not send. Check your connection and try again.";
+  return MATCHING_ERRORS.LIKE;
 };
 
 const isReviewedLaunchDiscoveryProfile = (profile: {
@@ -241,7 +253,7 @@ const isReviewedLaunchDiscoveryProfile = (profile: {
 export const fetchDiscoverProfiles = async (
   userId: string,
   limit: number = 20,
-): Promise<{ data: Profile[] | null; error: any }> => {
+): Promise<{ data: Profile[] | null; error: string | null }> => {
   try {
     // Get current user's profile to determine preferences
     const { data: currentUser, error: userError } = await supabase
@@ -323,7 +335,7 @@ export const fetchDiscoverProfiles = async (
     const topMatches = scoredProfiles.slice(0, limit);
 
     return { data: topMatches, error: null };
-  } catch (error) {
+  } catch {
     console.error("Error fetching discover profiles.");
     return { data: null, error: DISCOVERY_LOAD_ERROR };
   }
@@ -414,7 +426,7 @@ export const passProfile = async (
  */
 export const getMatches = async (
   userId: string,
-): Promise<{ data: Match[] | null; error: any }> => {
+): Promise<{ data: Match[] | null; error: string | null }> => {
   try {
     // Get all likes where this user is involved and is_match = true
     const { data: likes, error: likesError } = await supabase
@@ -470,7 +482,7 @@ export const getMatches = async (
     });
 
     return { data: matches, error: null };
-  } catch (error) {
+  } catch {
     console.error("Error fetching matches.");
     return { data: null, error: MATCHES_LOAD_ERROR };
   }
@@ -483,7 +495,7 @@ export const getMatches = async (
  */
 export const getLikesReceived = async (
   userId: string,
-): Promise<{ data: Profile[] | null; error: any }> => {
+): Promise<{ data: Profile[] | null; error: string | null }> => {
   try {
     const { data: likes, error: likesError } = await supabase
       .from("likes")
@@ -511,7 +523,7 @@ export const getLikesReceived = async (
     }
 
     return { data: profiles, error: null };
-  } catch (error) {
+  } catch {
     console.error("Error fetching received likes.");
     return { data: null, error: LIKES_LOAD_ERROR };
   }

@@ -2,7 +2,7 @@ import AccountProgress from "@/src/components/account/AccountProgress";
 import PhotoPicker from "@/src/components/account/PhotoPicker";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import type { UserType } from "@/src/features/auth/api/authApi";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { CheckCircle2, ShieldAlert } from "lucide-react-native";
@@ -27,6 +27,9 @@ const photoGuidelines = [
 ];
 
 export default function AccountProfilePhotosScreen() {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ userType?: string }>();
@@ -90,19 +93,19 @@ export default function AccountProfilePhotosScreen() {
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={theme.colors.dalisay[950] ?? "#0F0814"}
+        backgroundColor={theme.semanticColors.background}
       />
-      {Platform.OS === "ios" && (
+      {Platform.OS !== "web" && (
         <View
           style={{
             height: insets.top,
-            backgroundColor: theme.colors.dalisay[950] ?? "#0F0814",
+            backgroundColor: theme.semanticColors.background,
           }}
         />
       )}
 
       <LinearGradient
-        colors={[theme.colors.dalisay[950] ?? "#0F0814", "#1A0F1F"]}
+        colors={[theme.semanticColors.background, theme.colors.dalisay[900]]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -125,12 +128,12 @@ export default function AccountProfilePhotosScreen() {
 
         <View style={styles.guidelinesCard}>
           <View style={styles.guidelinesHeader}>
-            <ShieldAlert size={20} color="#F59E0B" strokeWidth={2.4} />
+            <ShieldAlert size={20} color={theme.semanticColors.warning} strokeWidth={2.4} />
             <Text style={styles.guidelinesTitle}>Photo safety checklist</Text>
           </View>
           {photoGuidelines.map((guideline) => (
             <View key={guideline} style={styles.guidelineRow}>
-              <CheckCircle2 size={16} color="#22C55E" strokeWidth={2.4} />
+              <CheckCircle2 size={16} color={theme.semanticColors.success} strokeWidth={2.4} />
               <Text style={styles.guidelineText}>{guideline}</Text>
             </View>
           ))}
@@ -208,8 +211,8 @@ export default function AccountProfilePhotosScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.dalisay[950] ?? "#0F0814" },
+const useStyles = makeStyles((theme) => ({
+  root: { flex: 1, backgroundColor: theme.semanticColors.background },
   content: {
     paddingHorizontal: theme.spacing.lg ?? 24,
     paddingTop:
@@ -314,4 +317,4 @@ const styles = StyleSheet.create({
     paddingTop: theme.spacing.md ?? 16,
     backgroundColor: "rgba(15,8,20,0.95)",
   },
-});
+}));

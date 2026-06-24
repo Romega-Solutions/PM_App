@@ -30,7 +30,6 @@ import {
   Platform,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -40,10 +39,8 @@ import { EmptyMatchesState } from "../components/EmptyMatchesState";
 import { LikesFilter } from "../components/LikesFilter";
 import { LikesHeader } from "../components/LikesHeader";
 import { Match, MatchCard } from "../components/MatchCard";
-
-const BRAND_BG = "#0F0814";
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
+import { useAppTheme } from "@/src/theme/ThemeContext";
+import { makeStyles } from "@/src/theme/makeStyles";
 
 function isMissingAuthSession(error: unknown) {
   return (
@@ -55,6 +52,8 @@ function isMissingAuthSession(error: unknown) {
 }
 
 export default function LikesScreen() {
+  const theme = useAppTheme();
+  const styles = useStyles();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [filter, setFilter] = useState<"all" | "mutual">("all");
@@ -226,16 +225,16 @@ export default function LikesScreen() {
       >
         <StatusBar
           barStyle="light-content"
-          backgroundColor={BRAND_BG}
+          backgroundColor={theme.semanticColors.background}
           translucent={false}
         />
-        {Platform.OS === "ios" && (
-          <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+        {Platform.OS !== "web" && (
+          <View style={{ height: insets.top, backgroundColor: theme.semanticColors.background }} />
         )}
         <View style={styles.loadingPanel}>
           <ActivityIndicator
             size="large"
-            color={ACCENT_PINK}
+            color={theme.semanticColors.primary}
             accessibilityLabel="Loading matches"
           />
           <Text style={styles.loadingText}>Checking your matches...</Text>
@@ -252,11 +251,11 @@ export default function LikesScreen() {
     <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={BRAND_BG}
+        backgroundColor={theme.semanticColors.background}
         translucent={false}
       />
-      {Platform.OS === "ios" && (
-        <View style={{ height: insets.top, backgroundColor: BRAND_BG }} />
+      {Platform.OS !== "web" && (
+        <View style={{ height: insets.top, backgroundColor: theme.semanticColors.background }} />
       )}
 
       <LikesHeader matchCount={filteredMatches.length} filter={filter} />
@@ -276,7 +275,7 @@ export default function LikesScreen() {
         <View style={styles.matchSafetyBody}>
           <View style={styles.matchSafetyHeadingRow}>
             <View style={styles.matchSafetyIcon}>
-              <ShieldCheck size={15} color={WHITE} strokeWidth={2.4} />
+              <ShieldCheck size={15} color={theme.colors.neutral.white} strokeWidth={2.4} />
             </View>
             <Text style={styles.matchSafetyHeading}>Before you message</Text>
           </View>
@@ -341,10 +340,10 @@ export default function LikesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   root: {
     flex: 1,
-    backgroundColor: BRAND_BG,
+    backgroundColor: theme.semanticColors.background,
   },
   centerContent: {
     justifyContent: "center",
@@ -432,7 +431,7 @@ const styles = StyleSheet.create({
   matchSafetyHeading: {
     fontSize: 12,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
     letterSpacing: 0.2,
   },
   matchSafetyText: {
@@ -442,4 +441,5 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-Medium",
     color: "rgba(255, 255, 255, 0.72)",
   },
-});
+}));
+// touch

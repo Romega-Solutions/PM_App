@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Heart, MapPin, Calendar } from "lucide-react-native";
-import { theme } from "@/src/theme";
+import { useAppTheme, makeStyles } from "@/src/theme";
 
 interface Props {
   interestedIn: string;
@@ -11,6 +11,9 @@ interface Props {
 }
 
 export default function UserPreferences({ interestedIn, ageRange, distance, relationshipGoal }: Props) {
+  const theme = useAppTheme();
+  const styles = useStyles();
+
   const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
 
   return (
@@ -48,7 +51,7 @@ export default function UserPreferences({ interestedIn, ageRange, distance, rela
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   container: {
     backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 16,
@@ -82,4 +85,4 @@ const styles = StyleSheet.create({
     fontFamily: theme.fontFamilies.body.regular,
     color: "rgba(255,255,255,0.85)",
   },
-});
+}));

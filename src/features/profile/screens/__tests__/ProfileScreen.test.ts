@@ -12,10 +12,7 @@ jest.mock("react-native", () => ({
   View: "View",
 }));
 
-jest.mock("react-native-css-interop/jsx-runtime", () =>
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  require("react/jsx-runtime"),
-);
+// NativeWind mock removed
 
 jest.mock("lucide-react-native", () => ({
   Settings: "Settings",

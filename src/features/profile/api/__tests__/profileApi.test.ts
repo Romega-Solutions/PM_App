@@ -55,7 +55,7 @@ describe("profileApi", () => {
         is_verified: true,
         verification_status: "approved",
         verified_at: "2026-06-10T00:00:00.000Z",
-      } as any);
+      } as unknown as Parameters<typeof updateUserProfile>[0]);
 
       expect(result).toEqual({ success: true });
       expect(supabase.from).toHaveBeenCalledWith("profiles");

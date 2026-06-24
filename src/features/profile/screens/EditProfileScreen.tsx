@@ -31,6 +31,8 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import { makeStyles } from "../../../theme/makeStyles";
+import { useAppTheme, AppTheme } from "../../../theme/ThemeContext";
 import { EditProfileHeader } from "../components/EditProfileHeader";
 import { ProfileEditForm } from "../components/ProfileEditForm";
 import { ProfilePhotoSection } from "../components/ProfilePhotoSection";
@@ -39,6 +41,8 @@ const BRAND_BG = "#0F0814";
 const ACCENT_PINK = "#EF3E78";
 
 export default function EditProfileScreen() {
+  const styles = useStyles();
+  const theme = useAppTheme();
   const router = useRouter();
 
   // Use custom hooks
@@ -112,11 +116,16 @@ export default function EditProfileScreen() {
       <View style={[styles.root, styles.centered]}>
         <StatusBar barStyle="light-content" backgroundColor={BRAND_BG} />
         <LinearGradient
-          colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+          colors={[
+          theme.semanticColors.background,
+          theme.colors.dalisay[900],
+          theme.colors.dalisay[900],
+          theme.semanticColors.background,
+        ]}
           locations={[0, 0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
-        <ActivityIndicator size="large" color={ACCENT_PINK} />
+        <ActivityIndicator size="large" color={theme.semanticColors.primary} />
       </View>
     );
   }
@@ -126,7 +135,12 @@ export default function EditProfileScreen() {
       <StatusBar barStyle="light-content" backgroundColor={BRAND_BG} />
 
       <LinearGradient
-        colors={[BRAND_BG, "#1A0F1F", "#2D1B35", BRAND_BG]}
+        colors={[
+          theme.semanticColors.background,
+          theme.colors.dalisay[900],
+          theme.colors.dalisay[900],
+          theme.semanticColors.background,
+        ]}
         locations={[0, 0.3, 0.7, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -164,10 +178,10 @@ export default function EditProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   root: {
     flex: 1,
-    backgroundColor: BRAND_BG,
+    backgroundColor: theme.semanticColors.background,
   },
   centered: {
     justifyContent: "center",
@@ -177,4 +191,4 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
   },
-});
+}));

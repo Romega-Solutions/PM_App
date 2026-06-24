@@ -166,7 +166,7 @@ export default function ReportUserModal() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      className="flex-1 bg-[#0F0814]"
+      
     >
       <ScrollView
         keyboardShouldPersistTaps="handled"
@@ -177,43 +177,43 @@ export default function ReportUserModal() {
           paddingHorizontal: 24,
         }}
       >
-        <View className="mb-7">
-          <View className="mb-5 h-20 justify-end overflow-hidden rounded-[28px] border border-[#EF3E78]/20 bg-[#EF3E78]/10 px-5 py-4">
-            <View className="absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[#8D69F6]/30" />
-            <View className="absolute -left-8 bottom-[-44px] h-28 w-28 rounded-full bg-[#EF3E78]/25" />
-            <Text className="text-white/70 text-xs font-semibold uppercase tracking-[2px]">
+        <View >
+          <View >
+            <View  />
+            <View  />
+            <Text >
               Private safety report
             </Text>
           </View>
           <Text
-            className="text-white text-3xl font-bold"
+            
             accessibilityRole="header"
           >
             Report member
           </Text>
-          <Text className="text-white/75 mt-3 text-base leading-6">
+          <Text >
             Tell support what happened with {reportedName}. Reports are private
             to moderation and help us act on unsafe behavior.
           </Text>
         </View>
 
-        <View className="mb-6 border-l-2 border-[#EF3E78] pl-4">
-          <Text className="text-white text-sm font-semibold">
+        <View >
+          <Text >
             What happens next
           </Text>
-          <Text className="text-white/70 mt-1 text-sm leading-5">
+          <Text >
             Support reviews the report, available conversation context may be
             checked, and the other member is not told who reported them. This is
             not an emergency channel and does not promise an instant moderation action.
           </Text>
-          <Text className="text-white text-sm font-semibold mt-4">
+          <Text >
             What support receives
           </Text>
-          <Text className="text-white/70 mt-1 text-sm leading-5">
+          <Text >
             We send your selected reason, optional details, where the report came
             from, and chat context only when available. This form does not ask for passwords, payment details, or ID documents.
           </Text>
-          <Text className="text-[#FFD58A] mt-4 text-sm leading-5">
+          <Text >
             If someone asks for money, codes, passwords, documents, or threatens
             you, stop replying. If you are in immediate danger, contact local
             emergency services.
@@ -221,11 +221,11 @@ export default function ReportUserModal() {
         </View>
 
         <View
-          className="space-y-3"
+          
           accessibilityRole="radiogroup"
           accessibilityLabel="Report reason"
         >
-          <Text className="text-white mb-1 text-base font-semibold">
+          <Text >
             Reason
           </Text>
           {REASONS.map((item) => {
@@ -240,16 +240,12 @@ export default function ReportUserModal() {
                 accessibilityLabel={item.label}
                 accessibilityHint="Selects this as the reason for the report"
                 activeOpacity={0.82}
-                className={`min-h-[52px] rounded-2xl border px-4 py-3 ${
-                  selected
-                    ? "border-[#EF3E78] bg-[#EF3E78]/25"
-                    : "border-white/10 bg-white/5"
-                }`}
+                
               >
-                <Text className="text-white text-base font-semibold">
+                <Text >
                   {item.label}
                 </Text>
-                <Text className="text-white/62 mt-1 text-sm leading-5">
+                <Text >
                   {item.helper}
                 </Text>
               </TouchableOpacity>
@@ -257,12 +253,12 @@ export default function ReportUserModal() {
           })}
         </View>
 
-        <View className="mt-6">
-          <View className="mb-2 flex-row items-center justify-between gap-3">
-            <Text className="text-white text-base font-semibold">Details</Text>
-            <Text className="text-white/55 text-xs">{details.length}/800</Text>
+        <View >
+          <View >
+            <Text >Details</Text>
+            <Text >{details.length}/800</Text>
           </View>
-          <Text className="text-white/65 mb-3 text-sm leading-5">
+          <Text >
             Optional, but helpful. Include what happened, when it happened, and
             any message context support should review. Do not include passwords,
             payment details, or ID numbers.
@@ -274,7 +270,7 @@ export default function ReportUserModal() {
             textAlignVertical="top"
             placeholder="Example: They asked me to send money after a few messages."
             placeholderTextColor="rgba(255,255,255,0.38)"
-            className="min-h-[156px] rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white text-base leading-6"
+            
             accessibilityLabel="Report details"
             accessibilityHint="Optional. Add details that help support review the safety concern."
           />
@@ -283,18 +279,18 @@ export default function ReportUserModal() {
         <TouchableOpacity
           onPress={toggleShouldBlock}
           activeOpacity={0.86}
-          className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-4"
+          
           accessibilityRole="switch"
           accessibilityLabel="Block this member too"
           accessibilityHint="Recommended. When enabled, the app reports and blocks this member"
           accessibilityState={{ checked: shouldBlock }}
         >
-          <View className="flex-row items-center justify-between gap-4">
-            <View className="flex-1">
-              <Text className="text-white text-base font-semibold">
+          <View >
+            <View >
+              <Text >
                 Block this member too
               </Text>
-              <Text className="text-white/65 mt-1 text-sm leading-5">
+              <Text >
                 Recommended for safety reports. Blocking helps prevent future
                 discovery, chat, and media access between you.
               </Text>
@@ -308,8 +304,8 @@ export default function ReportUserModal() {
             />
           </View>
           {!shouldBlock && (
-            <View className="mt-3 rounded-xl border border-[#FFB020]/30 bg-[#FFB020]/10 px-3 py-2">
-              <Text className="text-white/78 text-sm leading-5">
+            <View >
+              <Text >
                 Report-only mode sends the report, but this member may still be
                 able to contact you until you block them or moderation acts.
               </Text>
@@ -319,11 +315,11 @@ export default function ReportUserModal() {
 
         {formError && (
           <View
-            className="mt-4 rounded-2xl border border-[#FF6B6B]/35 bg-[#FF6B6B]/12 px-4 py-3"
+            
             accessibilityRole="alert"
             accessibilityLiveRegion="polite"
           >
-            <Text className="text-[#FFB4B4] text-sm leading-5">
+            <Text >
               {formError}
             </Text>
             {reportSentWithoutBlock && (
@@ -331,7 +327,7 @@ export default function ReportUserModal() {
                 onPress={handleRetryBlock}
                 disabled={blockRetrying}
                 activeOpacity={0.84}
-                className="mt-3 min-h-[48px] items-center justify-center rounded-xl bg-[#FFB4B4]/18"
+                
                 accessibilityRole="button"
                 accessibilityLabel={
                   blockRetrying
@@ -347,25 +343,25 @@ export default function ReportUserModal() {
                 {blockRetrying ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text className="text-white font-semibold">Retry block</Text>
+                  <Text >Retry block</Text>
                 )}
               </TouchableOpacity>
             )}
           </View>
         )}
 
-        <View className="mt-auto flex-row gap-3 pt-8">
+        <View >
           <TouchableOpacity
             onPress={() => router.back()}
             disabled={submitting || blockRetrying}
             activeOpacity={0.82}
-            className="min-h-[52px] flex-1 items-center justify-center rounded-2xl border border-white/15"
+            
             accessibilityRole="button"
             accessibilityLabel="Cancel report"
             accessibilityHint="Closes the report form without sending"
             accessibilityState={{ disabled: submitting || blockRetrying }}
           >
-            <Text className="text-white font-semibold">Cancel</Text>
+            <Text >Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={
@@ -373,9 +369,7 @@ export default function ReportUserModal() {
             }
             disabled={submitting || blockRetrying}
             activeOpacity={0.86}
-            className={`min-h-[52px] flex-1 items-center justify-center rounded-2xl ${
-              submitting || blockRetrying ? "bg-[#EF3E78]/55" : "bg-[#EF3E78]"
-            }`}
+            
             accessibilityRole="button"
             accessibilityLabel={
               reportSentWithoutBlock
@@ -399,14 +393,14 @@ export default function ReportUserModal() {
             {submitting ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text className="text-white font-bold">
+              <Text >
                 {reportSentWithoutBlock ? "Close" : "Send private report"}
               </Text>
             )}
           </TouchableOpacity>
         </View>
 
-        <Text className="text-white/50 mt-4 text-center text-xs leading-5">
+        <Text >
           Reports help moderation review patterns. They do not guarantee that an
           account will be removed, do not replace local emergency services, and
           should not include passwords, payment details, or ID numbers.

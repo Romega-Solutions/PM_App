@@ -21,24 +21,22 @@ import {
   X,
 } from "lucide-react-native";
 import React from "react";
+import { useAppTheme } from "@/src/theme/ThemeContext";
+import { makeStyles } from "@/src/theme/makeStyles";
 import {
   Animated,
   Image,
   Platform,
-  StyleSheet,
   Text,
   useWindowDimensions,
   View,
+  ImageSourcePropType,
+  StyleProp,
+  ViewStyle,
+  GestureResponderHandlers,
 } from "react-native";
 
 // Brand Colors
-const BRAND_BG = "#0F0814";
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const VERIFIED_GREEN = "#10B981";
-const SUPER_LIKE_GOLD = "#F59E0B";
-const WHITE = "#FFFFFF";
-
 function formatProfileDetail(value?: string) {
   if (!value) return null;
 
@@ -55,7 +53,7 @@ export interface ProfileCardData {
   age: number;
   location: string;
   distance: string;
-  image: any | null;
+  image: ImageSourcePropType | null;
   verified: boolean;
   interests: string[];
   bio: string;
@@ -66,18 +64,20 @@ export interface ProfileCardData {
   relationshipGoal?: string;
   languages?: string[];
   bodyType?: string;
+  /** True when this is a demo/seed profile, not a real user */
+  isSeedProfile?: boolean;
 }
 
 export interface ProfileCardProps {
   profile: ProfileCardData;
   pan: Animated.ValueXY;
   rotate: Animated.AnimatedInterpolation<number>;
-  panHandlers: any;
-  style?: any;
+  panHandlers: GestureResponderHandlers;
+  style?: StyleProp<ViewStyle>;
   isPreview?: boolean;
 }
 
-export const ProfileCard: React.FC<ProfileCardProps> = ({
+export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({
   profile,
   pan,
   rotate,
@@ -85,6 +85,8 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   style,
   isPreview = false,
 }) => {
+  const theme = useAppTheme();
+  const styles = useStyles();
   const { width, height } = useWindowDimensions();
   const cardWidth = Math.min(width - 40, 430);
   const cardHeight = Math.min(Math.max(height * 0.68, 520), height - 210);
@@ -125,7 +127,8 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
           width: cardWidth,
           height: cardHeight,
           transform: [{ translateX: pan.x }, { translateY: pan.y }, { rotate }],
-        },
+          touchAction: "none",
+        } as any,
         style,
       ]}
       {...panHandlers}
@@ -177,8 +180,8 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         <View style={styles.likeBox}>
           <Heart
             size={32}
-            color={ACCENT_PINK}
-            fill={ACCENT_PINK}
+            color={theme.semanticColors.primary}
+            fill={theme.semanticColors.primary}
             strokeWidth={3}
           />
           <Text style={styles.likeText}>LIKE</Text>
@@ -188,7 +191,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
       {/* Pass Indicator */}
       <Animated.View style={[styles.passIndicator, { opacity: passOpacity }]}>
         <View style={styles.passBox}>
-          <X size={32} color={ACCENT_PINK} strokeWidth={3} />
+          <X size={32} color={theme.semanticColors.primary} strokeWidth={3} />
           <Text style={styles.passText}>PASS</Text>
         </View>
       </Animated.View>
@@ -200,8 +203,8 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         <View style={styles.superLikeBox}>
           <Star
             size={30}
-            color={SUPER_LIKE_GOLD}
-            fill={SUPER_LIKE_GOLD}
+            color={theme.semanticColors.warning}
+            fill={theme.semanticColors.warning}
             strokeWidth={2.4}
           />
           <Text style={styles.superLikeText}>SUPER LIKE</Text>
@@ -225,7 +228,18 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
           accessible
           accessibilityLabel="Verified profile"
         >
-          <ShieldCheck size={14} color={WHITE} strokeWidth={2.5} />
+          <ShieldCheck size={14} color={theme.colors.neutral.white} strokeWidth={2.5} />
+        </View>
+      )}
+
+      {/* Demo Badge for seed profiles */}
+      {profile.isSeedProfile && (
+        <View
+          style={styles.demoBadge}
+          accessible
+          accessibilityLabel="Demo profile — not a real member"
+        >
+          <Text style={styles.demoBadgeText}>Demo</Text>
         </View>
       )}
 
@@ -234,8 +248,8 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         <View style={styles.matchScoreBadge}>
           <Star
             size={12}
-            color={SUPER_LIKE_GOLD}
-            fill={SUPER_LIKE_GOLD}
+            color={theme.semanticColors.warning}
+            fill={theme.semanticColors.warning}
             strokeWidth={2}
           />
           <Text style={styles.matchScoreText}>Preference fit</Text>
@@ -253,18 +267,18 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         <View style={styles.trustRow}>
           {profile.verified ? (
             <View style={styles.trustPill}>
-              <ShieldCheck size={13} color={WHITE} strokeWidth={2.4} />
+              <ShieldCheck size={13} color={theme.colors.neutral.white} strokeWidth={2.4} />
               <Text style={styles.trustPillText}>Verified</Text>
             </View>
           ) : (
             <View style={styles.infoPill}>
-              <Info size={13} color={WHITE} strokeWidth={2.4} />
+              <Info size={13} color={theme.colors.neutral.white} strokeWidth={2.4} />
               <Text style={styles.trustPillText}>View details first</Text>
             </View>
           )}
           {showCompatibility ? (
             <View style={styles.scorePill}>
-              <Star size={13} color={WHITE} fill={WHITE} strokeWidth={2} />
+              <Star size={13} color={theme.colors.neutral.white} fill={theme.colors.neutral.white} strokeWidth={2} />
               <Text style={styles.trustPillText}>Preference fit</Text>
             </View>
           ) : null}
@@ -277,7 +291,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         </View>
 
         <View style={styles.locationRow}>
-          <MapPin size={16} color={ACCENT_PINK} strokeWidth={2.5} />
+          <MapPin size={16} color={theme.semanticColors.primary} strokeWidth={2.5} />
           <Text style={styles.location} numberOfLines={1}>
             {profile.location}
           </Text>
@@ -331,17 +345,19 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
       </View>
     </Animated.View>
   );
-};
+});
 
-const styles = StyleSheet.create({
+ProfileCard.displayName = "ProfileCard";
+
+const useStyles = makeStyles((theme) => ({
   card: {
     position: "absolute",
     borderRadius: 24,
     overflow: "hidden",
-    backgroundColor: BRAND_BG,
+    backgroundColor: theme.semanticColors.background,
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
+        shadowColor: theme.colors.neutral.black,
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.4,
         shadowRadius: 16,
@@ -373,7 +389,7 @@ const styles = StyleSheet.create({
   },
   cardImagePlaceholderText: {
     marginTop: 16,
-    color: WHITE,
+    color: theme.colors.neutral.white,
     fontSize: 19,
     fontFamily: "DMSans-Bold",
     textAlign: "center",
@@ -416,7 +432,7 @@ const styles = StyleSheet.create({
   likeBox: {
     backgroundColor: "rgba(239, 62, 120, 0.15)",
     borderWidth: 3,
-    borderColor: ACCENT_PINK,
+    borderColor: theme.semanticColors.primary,
     borderRadius: 16,
     padding: 16,
     alignItems: "center",
@@ -425,7 +441,7 @@ const styles = StyleSheet.create({
   passBox: {
     backgroundColor: "rgba(239, 62, 120, 0.15)",
     borderWidth: 3,
-    borderColor: ACCENT_PINK,
+    borderColor: theme.semanticColors.primary,
     borderRadius: 16,
     padding: 16,
     alignItems: "center",
@@ -434,7 +450,7 @@ const styles = StyleSheet.create({
   superLikeBox: {
     backgroundColor: "rgba(245, 158, 11, 0.16)",
     borderWidth: 3,
-    borderColor: SUPER_LIKE_GOLD,
+    borderColor: theme.semanticColors.warning,
     borderRadius: 16,
     padding: 16,
     alignItems: "center",
@@ -443,19 +459,19 @@ const styles = StyleSheet.create({
   likeText: {
     fontSize: 18,
     fontFamily: "DMSans-Bold",
-    color: ACCENT_PINK,
+    color: theme.semanticColors.primary,
     letterSpacing: 1.5,
   },
   passText: {
     fontSize: 18,
     fontFamily: "DMSans-Bold",
-    color: ACCENT_PINK,
+    color: theme.semanticColors.primary,
     letterSpacing: 1.5,
   },
   superLikeText: {
     fontSize: 16,
     fontFamily: "DMSans-Bold",
-    color: SUPER_LIKE_GOLD,
+    color: theme.semanticColors.warning,
     letterSpacing: 1.2,
   },
   swipeHint: {
@@ -490,13 +506,29 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 20,
     right: 20,
-    backgroundColor: VERIFIED_GREEN,
+    backgroundColor: theme.semanticColors.success,
     borderRadius: 20,
     width: 32,
     height: 32,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 10,
+  },
+  demoBadge: {
+    position: "absolute",
+    top: 60,
+    right: 20,
+    backgroundColor: "rgba(141, 105, 246, 0.92)",
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    zIndex: 10,
+  },
+  demoBadgeText: {
+    fontSize: 11,
+    fontFamily: "DMSans-Bold",
+    color: theme.colors.neutral.white,
+    letterSpacing: 0.5,
   },
   matchScoreBadge: {
     position: "absolute",
@@ -514,7 +546,7 @@ const styles = StyleSheet.create({
   matchScoreText: {
     fontSize: 13,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
   },
 
   // Profile Info
@@ -567,7 +599,7 @@ const styles = StyleSheet.create({
   trustPillText: {
     fontSize: 12,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
   },
   nameRow: {
     flexDirection: "row",
@@ -576,7 +608,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: Platform.OS === "ios" ? 30 : 28,
     fontFamily: "Lora-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
     letterSpacing: 0.5,
     flexShrink: 1,
   },
@@ -631,7 +663,7 @@ const styles = StyleSheet.create({
   metadataLabel: {
     fontSize: 12,
     fontFamily: "DMSans-Bold",
-    color: WHITE,
+    color: theme.colors.neutral.white,
   },
   metadataText: {
     fontSize: 12,
@@ -656,7 +688,7 @@ const styles = StyleSheet.create({
   interestText: {
     fontSize: 13,
     fontFamily: "DMSans-Medium",
-    color: ACCENT_PURPLE,
+    color: theme.semanticColors.secondary,
   },
   interestTagMuted: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",
@@ -678,4 +710,4 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.76)",
     lineHeight: 17,
   },
-});
+}));
