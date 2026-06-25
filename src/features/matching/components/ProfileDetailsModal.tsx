@@ -72,6 +72,7 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
 
   if (!profile) return null;
 
+  const galleryImages = profile.galleryImages?.filter(Boolean) ?? [];
   const detailPills = [
     profile.heightCm
       ? {
@@ -193,6 +194,29 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
               )}
             </View>
 
+            {profile.isSeedProfile && galleryImages.length > 1 ? (
+              <View style={styles.gallerySection}>
+                <Text style={styles.modalSectionTitle}>Photo Set</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.galleryList}
+                  accessibilityLabel={`${profile.name}'s demo photo poses`}
+                >
+                  {galleryImages.map((image, index) => (
+                    <Image
+                      key={`${profile.id}-pose-${index}`}
+                      source={image}
+                      style={styles.galleryImage}
+                      resizeMode="cover"
+                      accessible
+                      accessibilityLabel={`${profile.name} demo pose ${index + 1}`}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            ) : null}
+
             {/* Profile Info */}
             <View style={styles.modalContent}>
             {/* Name & Age */}
@@ -230,6 +254,23 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
               <Text style={styles.modalSectionTitle}>About</Text>
               <Text style={styles.modalBioText}>{profile.bio}</Text>
             </View>
+
+            {profile.isSeedProfile &&
+            (profile.modelBiography || profile.modelPersonality) ? (
+              <View style={styles.modalSection}>
+                <Text style={styles.modalSectionTitle}>Demo Persona</Text>
+                {profile.modelBiography ? (
+                  <Text style={styles.modalBioText}>
+                    {profile.modelBiography}
+                  </Text>
+                ) : null}
+                {profile.modelPersonality ? (
+                  <Text style={styles.modalSubText}>
+                    {profile.modelPersonality}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
 
             {/* Looking For Section */}
             <TouchableOpacity
@@ -444,6 +485,24 @@ const useStyles = makeStyles((theme) => ({
     left: 0,
     right: 0,
     height: "30%",
+  },
+  gallerySection: {
+    paddingTop: 14,
+    paddingHorizontal: 20,
+    paddingBottom: 4,
+  },
+  galleryList: {
+    gap: 10,
+    paddingTop: 10,
+    paddingRight: 8,
+  },
+  galleryImage: {
+    width: 82,
+    height: 106,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.14)",
+    backgroundColor: theme.semanticColors.surface,
   },
   modalVerifiedBadge: {
     position: "absolute",

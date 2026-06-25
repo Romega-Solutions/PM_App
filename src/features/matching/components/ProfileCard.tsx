@@ -54,6 +54,7 @@ export interface ProfileCardData {
   location: string;
   distance: string;
   image: ImageSourcePropType | null;
+  galleryImages?: ImageSourcePropType[];
   verified: boolean;
   interests: string[];
   bio: string;
@@ -64,6 +65,10 @@ export interface ProfileCardData {
   relationshipGoal?: string;
   languages?: string[];
   bodyType?: string;
+  modelId?: string;
+  modelFolder?: string;
+  modelBiography?: string;
+  modelPersonality?: string;
   /** True when this is a demo/seed profile, not a real user */
   isSeedProfile?: boolean;
 }
