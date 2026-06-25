@@ -52,6 +52,7 @@ import { TypingIndicator } from "@/src/features/messaging/components/TypingIndic
 import { blockUser, unmatchUser } from "@/src/features/safety/api/safetyApi";
 import { MessageBubble } from "../components/MessageBubble";
 import { useAppTheme, makeStyles } from "@/src/theme";
+import { useMessageStore } from "@/src/stores/messageStore";
 
 // Brand Colors
 
@@ -118,6 +119,11 @@ export default function ChatScreen() {
     action?: "block" | "unmatch";
   } | null>(null);
   const [safetyMenuOpen, setSafetyMenuOpen] = useState(false);
+  const [isDemoConversationClosed, setIsDemoConversationClosed] =
+    useState(false);
+  const hideDemoConversation = useMessageStore(
+    (state) => state.hideDemoConversation,
+  );
 
   const userName = params.userName || "User";
   const isOnline = params.isOnline === "true";
@@ -150,6 +156,7 @@ export default function ChatScreen() {
   useEffect(() => {
     if (params.conversationId) {
       setCreatedConversationId(params.conversationId);
+      setIsDemoConversationClosed(false);
     }
   }, [params.conversationId]);
 
@@ -386,11 +393,16 @@ export default function ChatScreen() {
 
     if (isDemoChat) {
       const message = `${userName} would be blocked in a live conversation. No backend safety action was sent for this seeded chat.`;
+      if (activeConversationId) {
+        hideDemoConversation(activeConversationId);
+      }
+      setIsDemoConversationClosed(true);
       setSafetyFeedback({
         title: "Demo block recorded",
         message,
       });
       AccessibilityInfo.announceForAccessibility(message);
+      setTimeout(() => router.replace("/messages"), 650);
       return;
     }
 
@@ -447,18 +459,30 @@ export default function ChatScreen() {
         },
       ],
     );
-  }, [isDemoChat, recipientId, router, userName]);
+  }, [
+    activeConversationId,
+    hideDemoConversation,
+    isDemoChat,
+    recipientId,
+    router,
+    userName,
+  ]);
 
   const handleUnmatchUser = useCallback(() => {
     setSafetyMenuOpen(false);
 
     if (isDemoChat) {
       const message = `${userName} would be removed from your matches in a live conversation. No backend safety action was sent for this seeded chat.`;
+      if (activeConversationId) {
+        hideDemoConversation(activeConversationId);
+      }
+      setIsDemoConversationClosed(true);
       setSafetyFeedback({
         title: "Demo unmatch recorded",
         message,
       });
       AccessibilityInfo.announceForAccessibility(message);
+      setTimeout(() => router.replace("/messages"), 650);
       return;
     }
 
@@ -515,7 +539,14 @@ export default function ChatScreen() {
         },
       ],
     );
-  }, [isDemoChat, recipientId, router, userName]);
+  }, [
+    activeConversationId,
+    hideDemoConversation,
+    isDemoChat,
+    recipientId,
+    router,
+    userName,
+  ]);
 
   const handleReportUser = useCallback(() => {
     setSafetyMenuOpen(false);
@@ -763,6 +794,30 @@ export default function ChatScreen() {
     );
   }
 
+  if (isDemoChat && isDemoConversationClosed) {
+    return (
+      <View style={[styles.root, styles.centerContent]}>
+        <View style={styles.errorIconWrap}>
+          <ShieldAlert size={30} color={ACCENT_PURPLE} strokeWidth={1.8} />
+        </View>
+        <Text style={styles.errorText}>Demo conversation removed</Text>
+        <Text style={styles.errorSubtext}>
+          This seeded chat is hidden from the inbox on this device. Live
+          conversations keep the backend block, unmatch, and report flows ready.
+        </Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => router.replace("/messages")}
+          activeOpacity={0.86}
+          accessibilityRole="button"
+          accessibilityLabel="Return to messages"
+        >
+          <Text style={styles.retryButtonText}>Back to messages</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.root}>
       <StatusBar
@@ -940,7 +995,7 @@ export default function ChatScreen() {
             style={styles.safetyOptionButton}
             onPress={handleReportUser}
             activeOpacity={0.84}
-            accessibilityRole="menuitem"
+            accessibilityRole="button"
             accessibilityLabel={`Report safety concern about ${userName}`}
             accessibilityHint="Opens the private safety report form"
           >
@@ -958,7 +1013,7 @@ export default function ChatScreen() {
               style={[styles.safetyOptionButton, styles.safetyOptionDanger]}
               onPress={handleBlockUser}
               activeOpacity={0.84}
-              accessibilityRole="menuitem"
+              accessibilityRole="button"
               accessibilityLabel={
                 isDemoChat ? `Record demo block for ${userName}` : `Block ${userName}`
               }
@@ -973,7 +1028,7 @@ export default function ChatScreen() {
               style={[styles.safetyOptionButton, styles.safetyOptionSecondary]}
               onPress={handleUnmatchUser}
               activeOpacity={0.84}
-              accessibilityRole="menuitem"
+              accessibilityRole="button"
               accessibilityLabel={
                 isDemoChat
                   ? `Record demo unmatch with ${userName}`

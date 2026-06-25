@@ -23,11 +23,14 @@ const MAX_MESSAGES_PER_CONVERSATION = 100;
 type MessageState = {
   // State: Maps conversationId to an array of messages
   messagesByConversation: Record<string, Message[]>;
+  hiddenDemoConversationIds: string[];
 
   // Actions
   setMessages: (conversationId: string, messages: Message[]) => void;
   addMessage: (conversationId: string, message: Message) => void;
   markAsRead: (conversationId: string, userId: string) => void;
+  hideDemoConversation: (conversationId: string) => void;
+  restoreDemoConversation: (conversationId: string) => void;
   clearCache: () => void;
 };
 
@@ -38,6 +41,7 @@ export const useMessageStore = create<MessageState>()(
     (set) => ({
       // Initial State
       messagesByConversation: {},
+      hiddenDemoConversationIds: [],
 
       // Set all messages for a conversation (from fetch)
       setMessages: (conversationId, messages) =>
@@ -108,10 +112,31 @@ export const useMessageStore = create<MessageState>()(
           };
         }),
 
+      hideDemoConversation: (conversationId) =>
+        set((state) => {
+          const hiddenDemoConversationIds =
+            state.hiddenDemoConversationIds || [];
+
+          return {
+            hiddenDemoConversationIds:
+              hiddenDemoConversationIds.includes(conversationId)
+                ? hiddenDemoConversationIds
+                : [...hiddenDemoConversationIds, conversationId],
+          };
+        }),
+
+      restoreDemoConversation: (conversationId) =>
+        set((state) => ({
+          hiddenDemoConversationIds: (
+            state.hiddenDemoConversationIds || []
+          ).filter((id) => id !== conversationId),
+        })),
+
       // Clear all cached messages (e.g. on sign out)
       clearCache: () =>
         set({
           messagesByConversation: {},
+          hiddenDemoConversationIds: [],
         }),
     }),
     {

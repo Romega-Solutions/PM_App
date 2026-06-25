@@ -118,6 +118,7 @@ export default function VoiceCallScreen() {
       params: {
         userId,
         userName: displayName,
+        ...(conversationId ? { conversationId } : {}),
         source: "chat",
         ...(isDemo === "true" ? { isDemo: "true" } : {}),
       },

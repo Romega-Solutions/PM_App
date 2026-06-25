@@ -53,6 +53,8 @@ import { getSeedProfiles, isSeedProfileId } from "../data/seedProfiles";
 import { getSeedConversationForProfileId } from "@/src/features/messaging/data/seedConversations";
 import { useAppTheme } from "@/src/theme/ThemeContext";
 import { makeStyles } from "@/src/theme/makeStyles";
+import { useDemoMatchingStore } from "@/src/stores/demoMatchingStore";
+import { getDemoMatchPreferences } from "@/src/features/profile/data/demoSettingsStore";
 
 // Brand Colors
 const TEXT_SECONDARY = "rgba(255, 255, 255, 0.74)";
@@ -108,6 +110,17 @@ function convertSeedProfileToMatch(profile: ProfileCardData): MatchedProfile {
   };
 }
 
+function normalizeRelationshipGoal(goal?: string): string {
+  const normalized = (goal || "").toLowerCase().replace(/_/g, "-").trim();
+  if (!normalized || normalized === "any") return "";
+  if (normalized.includes("marriage")) return "marriage";
+  if (normalized.includes("serious") || normalized.includes("long")) {
+    return "long-term";
+  }
+  if (normalized.includes("dating")) return "dating";
+  return normalized;
+}
+
 export const DiscoverScreen: React.FC = () => {
   const theme = useAppTheme();
   const styles = useStyles();
@@ -131,6 +144,17 @@ export const DiscoverScreen: React.FC = () => {
     null,
   );
   const [showMatchModal, setShowMatchModal] = useState(false);
+  const passedSeedProfileIds = useDemoMatchingStore(
+    (state) => state.passedProfileIds || [],
+  );
+  const matchedSeedProfileIds = useDemoMatchingStore(
+    (state) => state.matchedProfileIds || [],
+  );
+  const hiddenSeedProfileIds = useDemoMatchingStore(
+    (state) => state.hiddenProfileIds || [],
+  );
+  const recordSeedPass = useDemoMatchingStore((state) => state.recordPass);
+  const recordSeedMatch = useDemoMatchingStore((state) => state.recordMatch);
 
   const currentProfile = profiles[currentIndex] || null;
 
@@ -144,6 +168,35 @@ export const DiscoverScreen: React.FC = () => {
     outputRange: ["0deg", "0deg", "0deg"],
     extrapolate: "clamp",
   });
+
+  const getVisibleSeedProfiles = useCallback(() => {
+    const demoPreferences = getDemoMatchPreferences();
+    const minAge = Number.parseInt(demoPreferences.ageMin, 10);
+    const maxAge = Number.parseInt(demoPreferences.ageMax, 10);
+    const relationshipGoal = normalizeRelationshipGoal(
+      demoPreferences.relationshipGoal,
+    );
+
+    return getSeedProfiles().filter(
+      (profile) =>
+        !passedSeedProfileIds.includes(profile.id) &&
+        !matchedSeedProfileIds.includes(profile.id) &&
+        !hiddenSeedProfileIds.includes(profile.id) &&
+        (!Number.isFinite(minAge) || profile.age >= minAge) &&
+        (!Number.isFinite(maxAge) || profile.age <= maxAge) &&
+        (!relationshipGoal ||
+          normalizeRelationshipGoal(profile.relationshipGoal) ===
+            relationshipGoal),
+    );
+  }, [hiddenSeedProfileIds, matchedSeedProfileIds, passedSeedProfileIds]);
+
+  const removeSeedProfileFromStack = useCallback((profileId: string) => {
+    setProfiles((current) => current.filter((profile) => profile.id !== profileId));
+    setShowInfo(false);
+    setActionError(null);
+    setLastFailedAction(null);
+    resetPositionRef.current?.();
+  }, []);
 
   /**
    * Load user data and profiles on mount
@@ -200,7 +253,7 @@ export const DiscoverScreen: React.FC = () => {
           console.error("Failed to fetch user.");
         }
         setUserId(null);
-        setProfiles(getSeedProfiles());
+        setProfiles(getVisibleSeedProfiles());
         setUsingSeedProfiles(true);
         setLoading(false);
         return;
@@ -214,7 +267,7 @@ export const DiscoverScreen: React.FC = () => {
 
       if (profilesError) {
         console.error("Failed to fetch profiles.");
-        setProfiles(getSeedProfiles());
+        setProfiles(getVisibleSeedProfiles());
         setUsingSeedProfiles(true);
       } else if (dbProfiles && dbProfiles.length > 0) {
         // Convert database profiles to display format
@@ -225,12 +278,12 @@ export const DiscoverScreen: React.FC = () => {
         setUsingSeedProfiles(false);
       } else {
         // No real profiles — show seed demo profiles
-        setProfiles(getSeedProfiles());
+        setProfiles(getVisibleSeedProfiles());
         setUsingSeedProfiles(true);
       }
     } catch {
       console.error("Failed to fetch user data.");
-      setProfiles(getSeedProfiles());
+      setProfiles(getVisibleSeedProfiles());
       setUsingSeedProfiles(true);
     } finally {
       setLoading(false);
@@ -250,11 +303,12 @@ export const DiscoverScreen: React.FC = () => {
 
   const showSeedMatch = useCallback(
     (profile: ProfileCardData) => {
+      recordSeedMatch(profile.id);
       setMatchedProfile(convertSeedProfileToMatch(profile));
       setShowMatchModal(true);
-      moveToNextProfile();
+      removeSeedProfileFromStack(profile.id);
     },
-    [moveToNextProfile],
+    [recordSeedMatch, removeSeedProfileFromStack],
   );
 
   /**
@@ -314,7 +368,8 @@ export const DiscoverScreen: React.FC = () => {
 
     // Seed profiles: just move to next card, no backend call
     if (isSeedDisplayProfile(currentProfile)) {
-      moveToNextProfile();
+      recordSeedPass(currentProfile.id);
+      removeSeedProfileFromStack(currentProfile.id);
       return;
     }
 
@@ -347,7 +402,14 @@ export const DiscoverScreen: React.FC = () => {
     } finally {
       setActionPending(false);
     }
-  }, [currentProfile, actionPending, userId, moveToNextProfile]);
+  }, [
+    currentProfile,
+    actionPending,
+    userId,
+    moveToNextProfile,
+    recordSeedPass,
+    removeSeedProfileFromStack,
+  ]);
 
   /**
    * Handle super like action
@@ -473,6 +535,7 @@ export const DiscoverScreen: React.FC = () => {
         userId: currentProfile.id,
         userName: currentProfile.name,
         source: "discovery",
+        ...(isSeedDisplayProfile(currentProfile) ? { isDemo: "true" } : {}),
       },
     });
   }, [currentProfile, router]);

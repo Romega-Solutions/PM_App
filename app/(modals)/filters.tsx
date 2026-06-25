@@ -1,4 +1,8 @@
 import { accountApi } from "@/src/features/account/api/accountApi";
+import {
+  getDemoMatchPreferences,
+  saveDemoMatchPreferences,
+} from "@/src/features/profile/data/demoSettingsStore";
 import { useAuthStore } from "@/src/stores/authStore";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -55,10 +59,11 @@ export default function Filters() {
       setLoadError(null);
 
       if (isDemoMode) {
-        setAgeMin("18");
-        setAgeMax("38");
-        setMaxDistance("75");
-        setRelationshipGoal("serious relationship");
+        const demoPreferences = getDemoMatchPreferences();
+        setAgeMin(demoPreferences.ageMin);
+        setAgeMax(demoPreferences.ageMax);
+        setMaxDistance(demoPreferences.maxDistance);
+        setRelationshipGoal(demoPreferences.relationshipGoal);
         setLoading(false);
         return;
       }
@@ -131,11 +136,18 @@ export default function Filters() {
     }
 
     if (isDemoMode) {
+      saveDemoMatchPreferences({
+        ageMin: parsedAgeMin.toString(),
+        ageMax: parsedAgeMax.toString(),
+        maxDistance: parsedMaxDistance.toString(),
+        relationshipGoal: trimmedGoal,
+      });
+
       Alert.alert(
         "Demo filters saved",
         "These filters update the beta preview only. Live discovery filters will save to your account when demo mode is off.",
       );
-      router.back();
+      router.replace("/");
       return;
     }
 
@@ -175,10 +187,11 @@ export default function Filters() {
     setSaveError(null);
 
     if (isDemoMode) {
-      setAgeMin("18");
-      setAgeMax("38");
-      setMaxDistance("75");
-      setRelationshipGoal("serious relationship");
+      const demoPreferences = getDemoMatchPreferences();
+      setAgeMin(demoPreferences.ageMin);
+      setAgeMax(demoPreferences.ageMax);
+      setMaxDistance(demoPreferences.maxDistance);
+      setRelationshipGoal(demoPreferences.relationshipGoal);
       setLoading(false);
       return;
     }

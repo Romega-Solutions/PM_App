@@ -47,6 +47,7 @@ import {
 } from "../data/seedProfiles";
 import { useAppTheme } from "@/src/theme/ThemeContext";
 import { makeStyles } from "@/src/theme/makeStyles";
+import { useDemoMatchingStore } from "@/src/stores/demoMatchingStore";
 
 function isMissingAuthSession(error: unknown) {
   return (
@@ -57,19 +58,27 @@ function isMissingAuthSession(error: unknown) {
   );
 }
 
-function getSeedMatches(): Match[] {
-  return getSeedProfilesInOrder().map((profile, index) => ({
-    id: profile.id,
-    name: profile.name,
-    age: profile.age,
-    location: profile.location,
-    image: profile.image || undefined,
-    verified: false,
-    mutual: index % 3 !== 1,
-    gender: "female",
-    matchedAt: new Date(Date.now() - (index + 1) * 36 * 60 * 60 * 1000).toISOString(),
-    demo: true,
-  }));
+function getSeedMatches(hiddenProfileIds: string[], passedProfileIds: string[]): Match[] {
+  return getSeedProfilesInOrder()
+    .filter(
+      (profile) =>
+        !hiddenProfileIds.includes(profile.id) &&
+        !passedProfileIds.includes(profile.id),
+    )
+    .map((profile, index) => ({
+      id: profile.id,
+      name: profile.name,
+      age: profile.age,
+      location: profile.location,
+      image: profile.image || undefined,
+      verified: false,
+      mutual: index % 3 !== 1,
+      gender: "female",
+      matchedAt: new Date(
+        Date.now() - (index + 1) * 36 * 60 * 60 * 1000,
+      ).toISOString(),
+      demo: true,
+    }));
 }
 
 export default function LikesScreen() {
@@ -84,6 +93,13 @@ export default function LikesScreen() {
   const [usingSeedMatches, setUsingSeedMatches] = useState(false);
   const [demoActionNotice, setDemoActionNotice] = useState<string | null>(null);
   const demoActionOpacity = React.useRef(new Animated.Value(0)).current;
+  const hiddenSeedProfileIds = useDemoMatchingStore(
+    (state) => state.hiddenProfileIds || [],
+  );
+  const passedSeedProfileIds = useDemoMatchingStore(
+    (state) => state.passedProfileIds || [],
+  );
+  const hideSeedProfile = useDemoMatchingStore((state) => state.hideProfile);
 
   const fetchMatches = useCallback(async () => {
     setLoading(true);
@@ -100,7 +116,7 @@ export default function LikesScreen() {
         if (userError && !isMissingAuthSession(userError)) {
           console.error("Failed to fetch user.");
         }
-        setMatches(getSeedMatches());
+        setMatches(getSeedMatches(hiddenSeedProfileIds, passedSeedProfileIds));
         setUsingSeedMatches(true);
         AccessibilityInfo.announceForAccessibility(
           "Showing demo matches for beta preview.",
@@ -114,7 +130,7 @@ export default function LikesScreen() {
 
       if (matchesError) {
         console.error("Failed to fetch matches.");
-        setMatches(getSeedMatches());
+        setMatches(getSeedMatches(hiddenSeedProfileIds, passedSeedProfileIds));
         setUsingSeedMatches(true);
         AccessibilityInfo.announceForAccessibility(
           "Showing demo matches while live matches refresh.",
@@ -137,12 +153,12 @@ export default function LikesScreen() {
         setMatches(displayMatches);
         setUsingSeedMatches(false);
       } else {
-        setMatches(getSeedMatches());
+        setMatches(getSeedMatches(hiddenSeedProfileIds, passedSeedProfileIds));
         setUsingSeedMatches(true);
       }
     } catch {
       console.error("Failed to fetch data.");
-      setMatches(getSeedMatches());
+      setMatches(getSeedMatches(hiddenSeedProfileIds, passedSeedProfileIds));
       setUsingSeedMatches(true);
       AccessibilityInfo.announceForAccessibility(
         "Showing demo matches while live matches refresh.",
@@ -150,11 +166,17 @@ export default function LikesScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [hiddenSeedProfileIds, passedSeedProfileIds]);
 
   useEffect(() => {
     fetchMatches();
   }, [fetchMatches]);
+
+  useEffect(() => {
+    if (!usingSeedMatches) return;
+
+    setMatches(getSeedMatches(hiddenSeedProfileIds, passedSeedProfileIds));
+  }, [hiddenSeedProfileIds, passedSeedProfileIds, usingSeedMatches]);
 
   useEffect(() => {
     if (!demoActionNotice) {
@@ -258,6 +280,7 @@ export default function LikesScreen() {
     const matchName = match?.name || "this member";
 
     if (isSeedProfileId(String(id))) {
+      hideSeedProfile(String(id));
       setMatches((current) => current.filter((item) => item.id !== id));
       setDemoActionNotice(
         `${matchName} was hidden from this beta preview. No real unmatch was sent.`,

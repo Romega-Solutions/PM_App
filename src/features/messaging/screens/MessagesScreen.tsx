@@ -46,15 +46,17 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { supabase } from "@/src/config/supabase";
 import {
+  DEMO_CURRENT_USER_ID,
   getSeedConversations,
   isSeedConversationId,
 } from "@/src/features/messaging/data/seedConversations";
 import { useConversations } from "@/src/features/messaging/hooks/useConversations";
 import { useAuthStore } from "@/src/stores/authStore";
 import { useChatStore } from "@/src/stores/chatStore";
+import { useMessageStore } from "@/src/stores/messageStore";
 import { ActiveUserCard } from "../components/ActiveUserCard";
 import { ConversationCard } from "../components/ConversationCard";
-import type { ConversationWithUser } from "../types/messaging.types";
+import type { ConversationWithUser, Message } from "../types/messaging.types";
 
 // Brand Colors
 const BRAND_BG = "#0F0814";
@@ -117,6 +119,11 @@ function getConversationErrorMessage(error: Error): string {
   return message;
 }
 
+function getMessagePreview(message: Message): string {
+  if (message.type === "image") return "Photo";
+  return message.text?.trim() || "Message";
+}
+
 /**
  * MessagesScreen Component
  *
@@ -136,6 +143,12 @@ export const MessagesScreen: React.FC = () => {
   // Get global unread count from Zustand store
   const isDemoMode = useAuthStore((state) => state.isDemoMode);
   const realTotalUnreadCount = useChatStore((state) => state.totalUnreadCount);
+  const demoMessagesByConversation = useMessageStore(
+    (state) => state.messagesByConversation,
+  );
+  const hiddenDemoConversationIds = useMessageStore(
+    (state) => state.hiddenDemoConversationIds || [],
+  );
 
   // Get current user ID
   useEffect(() => {
@@ -152,10 +165,40 @@ export const MessagesScreen: React.FC = () => {
     autoLoad: true,
   });
 
-  const seedConversations = React.useMemo(
-    () => getSeedConversations(currentUserId),
-    [currentUserId],
-  );
+  const seedConversations = React.useMemo(() => {
+    return getSeedConversations(currentUserId)
+      .filter((conv) => !hiddenDemoConversationIds.includes(conv.id))
+      .map((conv) => {
+        const cachedMessages = demoMessagesByConversation[conv.id] || [];
+        if (cachedMessages.length === 0) return conv;
+
+        const visibleMessages = cachedMessages.filter(
+          (message) => !message.is_deleted,
+        );
+        const lastMessage = visibleMessages[visibleMessages.length - 1];
+        const demoCurrentUserId = currentUserId || DEMO_CURRENT_USER_ID;
+        const unreadCount = visibleMessages.filter(
+          (message) =>
+            message.recipient_id === demoCurrentUserId &&
+            message.status !== "read",
+        ).length;
+
+        if (!lastMessage) {
+          return { ...conv, unread_count: unreadCount };
+        }
+
+        return {
+          ...conv,
+          last_message_id: lastMessage.id,
+          last_message_text: getMessagePreview(lastMessage),
+          last_message_sender_id: lastMessage.sender_id,
+          last_message_at: lastMessage.created_at,
+          participant_1_unread_count: unreadCount,
+          unread_count: unreadCount,
+          updated_at: lastMessage.updated_at || lastMessage.created_at,
+        };
+      });
+  }, [currentUserId, demoMessagesByConversation, hiddenDemoConversationIds]);
   const usingSeedConversations =
     isDemoMode && !loading && (Boolean(error) || conversations.length === 0);
   const displayConversations = usingSeedConversations

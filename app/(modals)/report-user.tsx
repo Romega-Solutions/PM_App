@@ -22,6 +22,8 @@ import {
   type SubmitUserReportInput,
 } from "@/src/features/safety/api/safetyApi";
 import { useAuthStore } from "@/src/stores/authStore";
+import { useDemoMatchingStore } from "@/src/stores/demoMatchingStore";
+import { useMessageStore } from "@/src/stores/messageStore";
 
 type ReportSource = NonNullable<SubmitUserReportInput["source"]>;
 
@@ -69,6 +71,10 @@ export default function ReportUserModal() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDemoMode = useAuthStore((state) => state.isDemoMode);
+  const hideDemoProfile = useDemoMatchingStore((state) => state.hideProfile);
+  const hideDemoConversation = useMessageStore(
+    (state) => state.hideDemoConversation,
+  );
   const { userId, userName, conversationId, source, isDemo } = useLocalSearchParams<{
     userId?: string;
     userName?: string;
@@ -114,6 +120,12 @@ export default function ReportUserModal() {
     setSubmitting(true);
 
     if (isSeedReport) {
+      if (userId && isSeedProfileId(userId)) {
+        hideDemoProfile(userId);
+      }
+      if (shouldBlock && conversationId && isSeedConversationId(conversationId)) {
+        hideDemoConversation(conversationId);
+      }
       setSubmitting(false);
       setDemoReceipt({
         title: shouldBlock ? "Demo report and block recorded" : "Demo report recorded",
@@ -171,6 +183,12 @@ export default function ReportUserModal() {
     }
 
     if (isSeedReport) {
+      if (userId && isSeedProfileId(userId)) {
+        hideDemoProfile(userId);
+      }
+      if (conversationId && isSeedConversationId(conversationId)) {
+        hideDemoConversation(conversationId);
+      }
       setDemoReceipt({
         title: "Demo block recorded",
         message:
