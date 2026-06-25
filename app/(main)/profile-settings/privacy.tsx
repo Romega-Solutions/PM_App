@@ -262,6 +262,19 @@ export default function PrivacyScreen() {
   };
 
   const confirmDeletionRequest = () => {
+    if (Platform.OS === "web") {
+      const shouldSubmit =
+        typeof window !== "undefined" &&
+        window.confirm(
+          "Request account deletion? This sends a secure deletion request to PinayMate support. It does not instantly delete your account, matches, messages, or verification records.",
+        );
+
+      if (shouldSubmit) {
+        void submitDeletionRequest();
+      }
+      return;
+    }
+
     Alert.alert(
       "Request account deletion?",
       "This sends a secure deletion request to PinayMate support. It does not instantly delete your account, matches, messages, or verification records, and support may contact you before closing the request.",
