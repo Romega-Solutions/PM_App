@@ -73,7 +73,8 @@ BEGIN
     NOW(),
     NOW()
   )
-  ON CONFLICT (user_id) WHERE status IN ('pending', 'reviewing')
+  ON CONFLICT (user_id)
+    WHERE public.account_deletion_requests.status IN ('pending', 'reviewing')
   DO UPDATE SET
     reason = COALESCE(EXCLUDED.reason, public.account_deletion_requests.reason),
     source = EXCLUDED.source,

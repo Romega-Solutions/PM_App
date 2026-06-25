@@ -139,6 +139,7 @@ DECLARE
   v_display_name TEXT := LEFT(BTRIM(COALESCE(p_display_name, '')), 120);
   v_reviewer_role TEXT := LOWER(BTRIM(COALESCE(p_reviewer_role, 'safety')));
   v_change_reason TEXT := LEFT(BTRIM(COALESCE(p_change_reason, '')), 500);
+  v_reviewer public.moderation_reviewers%ROWTYPE;
 BEGIN
   IF p_reviewer_id IS NULL THEN
     RAISE EXCEPTION 'Reviewer ID is required' USING ERRCODE = '22023';
@@ -175,26 +176,22 @@ BEGIN
     v_reviewer_role,
     COALESCE(p_active, TRUE)
   )
-  ON CONFLICT (id) DO UPDATE
+  ON CONFLICT ON CONSTRAINT moderation_reviewers_pkey DO UPDATE
   SET
     display_name = EXCLUDED.display_name,
     reviewer_role = EXCLUDED.reviewer_role,
     active = EXCLUDED.active,
     updated_at = NOW()
-  RETURNING
-    public.moderation_reviewers.id,
-    public.moderation_reviewers.display_name,
-    public.moderation_reviewers.reviewer_role,
-    public.moderation_reviewers.active,
-    public.moderation_reviewers.updated_at
-  INTO
-    id,
-    display_name,
-    reviewer_role,
-    active,
-    updated_at;
+  RETURNING *
+  INTO v_reviewer;
 
-  RETURN NEXT;
+  RETURN QUERY
+  SELECT
+    v_reviewer.id,
+    v_reviewer.display_name,
+    v_reviewer.reviewer_role,
+    v_reviewer.active,
+    v_reviewer.updated_at;
 END;
 $$;
 
@@ -221,6 +218,7 @@ SET search_path = ''
 AS $$
 DECLARE
   v_change_reason TEXT := LEFT(BTRIM(COALESCE(p_change_reason, '')), 500);
+  v_reviewer public.moderation_reviewers%ROWTYPE;
 BEGIN
   IF p_reviewer_id IS NULL THEN
     RAISE EXCEPTION 'Reviewer ID is required' USING ERRCODE = '22023';
@@ -242,24 +240,20 @@ BEGIN
     active = FALSE,
     updated_at = NOW()
   WHERE mr.id = p_reviewer_id
-  RETURNING
-    mr.id,
-    mr.display_name,
-    mr.reviewer_role,
-    mr.active,
-    mr.updated_at
-  INTO
-    id,
-    display_name,
-    reviewer_role,
-    active,
-    updated_at;
+  RETURNING mr.*
+  INTO v_reviewer;
 
-  IF id IS NULL THEN
+  IF v_reviewer.id IS NULL THEN
     RAISE EXCEPTION 'Reviewer not found' USING ERRCODE = '22023';
   END IF;
 
-  RETURN NEXT;
+  RETURN QUERY
+  SELECT
+    v_reviewer.id,
+    v_reviewer.display_name,
+    v_reviewer.reviewer_role,
+    v_reviewer.active,
+    v_reviewer.updated_at;
 END;
 $$;
 
@@ -293,6 +287,7 @@ DECLARE
   v_action_taken TEXT := LOWER(BTRIM(COALESCE(p_action_taken, 'none')));
   v_reviewer_note TEXT := LEFT(BTRIM(COALESCE(p_reviewer_note, '')), 1000);
   v_existing_report public.user_reports%ROWTYPE;
+  v_reviewed_report public.user_reports%ROWTYPE;
 BEGIN
   IF p_report_id IS NULL THEN
     RAISE EXCEPTION 'Report ID is required' USING ERRCODE = '22023';
@@ -357,24 +352,20 @@ BEGIN
     reviewed_at = NOW(),
     updated_at = NOW()
   WHERE r.id = p_report_id
-  RETURNING
-    r.id,
-    r.status,
-    r.severity,
-    r.action_taken,
-    r.reviewed_at
-  INTO
-    id,
-    status,
-    severity,
-    action_taken,
-    reviewed_at;
+  RETURNING r.*
+  INTO v_reviewed_report;
 
-  IF id IS NULL THEN
+  IF v_reviewed_report.id IS NULL THEN
     RAISE EXCEPTION 'Report not found' USING ERRCODE = '22023';
   END IF;
 
-  RETURN NEXT;
+  RETURN QUERY
+  SELECT
+    v_reviewed_report.id,
+    v_reviewed_report.status,
+    v_reviewed_report.severity,
+    v_reviewed_report.action_taken,
+    v_reviewed_report.reviewed_at;
 END;
 $$;
 
