@@ -5,6 +5,7 @@ import GhostButton from "@/src/components/ui/GhostButton";
 import { LaunchStateNotice } from "@/src/components/ui/LaunchStateNotice";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import type { UserType } from "@/src/features/auth/api/authApi";
+import { useIsDemoSession } from "@/src/features/auth/demoMode";
 import { useAppTheme, makeStyles } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -35,9 +36,12 @@ export default function VerificationUploadScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ userType?: string }>();
+  const isDemoMode = useIsDemoSession();
 
   // Get userType from params
   const userType = params.userType as UserType;
+  const hasValidUserType = userType === "filipina" || userType === "foreigner";
+  const setupUserType: UserType = hasValidUserType ? userType : "foreigner";
 
   const {
     selfieUri,
@@ -103,17 +107,17 @@ export default function VerificationUploadScreen() {
 
   // Redirect if no userType
   useEffect(() => {
-    if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
+    if (!hasValidUserType && !isDemoMode) {
       router.replace("/(auth)/signin");
     }
-  }, [userType, router]);
+  }, [hasValidUserType, isDemoMode, router]);
 
   const continueToWelcomeComplete = useCallback(() => {
     router.push({
       pathname: "/(auth)/account-setup/welcome-complete",
-      params: { userType },
+      params: { userType: setupUserType },
     });
-  }, [router, userType]);
+  }, [router, setupUserType]);
 
   const handleNext = () => {
     if (isSubmittedForReview) {
@@ -141,7 +145,7 @@ export default function VerificationUploadScreen() {
   };
 
   // Don't render if userType is invalid
-  if (!userType || (userType !== "filipina" && userType !== "foreigner")) {
+  if (!hasValidUserType && !isDemoMode) {
     return null;
   }
 
