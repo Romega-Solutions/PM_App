@@ -1,5 +1,5 @@
 import { accountApi } from "@/src/features/account/api/accountApi";
-import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
+import { useIsDemoSession } from "@/src/features/auth/demoMode";
 import type { UserType } from "@/src/features/auth/api/authApi";
 import { useState } from "react";
 
@@ -27,7 +27,7 @@ type TouchedFields = {
  * Gender is no longer part of the form - it's auto-assigned based on userType
  */
 export function useAccountBasicInfo(initialUserType: UserType) {
-  const isDemoMode = isBetaDemoModeEnabled();
+  const isDemoMode = useIsDemoSession();
   const [form, setForm] = useState<FormState>({
     firstName: "",
     lastName: "",

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAuthStore } from "@/src/stores/authStore";
-import { BETA_DEMO_PROFILE } from "../../auth/demoMode";
+import { BETA_DEMO_PROFILE, useIsDemoSession } from "../../auth/demoMode";
 import type { UserType } from "../../auth/api/authApi";
 import {
   accountApi,
@@ -31,7 +30,7 @@ type WelcomeData = {
 export const useWelcomeData = () => {
   const [data, setData] = useState<WelcomeData | null>(null);
   const [loading, setLoading] = useState(true);
-  const isDemoMode = useAuthStore((state) => state.isDemoMode);
+  const isDemoMode = useIsDemoSession();
 
   useEffect(() => {
     const fetchData = async () => {

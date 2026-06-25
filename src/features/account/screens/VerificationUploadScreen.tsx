@@ -15,7 +15,7 @@ import {
   FileText,
   Shield,
 } from "lucide-react-native";
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import {
   Alert,
   Platform,
@@ -108,27 +108,32 @@ export default function VerificationUploadScreen() {
     }
   }, [userType, router]);
 
+  const continueToWelcomeComplete = useCallback(() => {
+    router.push({
+      pathname: "/(auth)/account-setup/welcome-complete",
+      params: { userType },
+    });
+  }, [router, userType]);
+
   const handleNext = () => {
     if (isSubmittedForReview) {
-      router.push({
-        pathname: "/(auth)/account-setup/welcome-complete",
-        params: { userType },
-      });
+      continueToWelcomeComplete();
     }
   };
 
   const handleSkip = () => {
+    if (Platform.OS === "web") {
+      continueToWelcomeComplete();
+      return;
+    }
+
     Alert.alert(
       "Skip verification",
       "You can submit verification later in Settings. Skipping does not block account setup, and the verified badge appears only after an approved review.",
       [
         {
           text: "Skip for now",
-          onPress: () =>
-            router.push({
-              pathname: "/(auth)/account-setup/welcome-complete",
-              params: { userType },
-            }),
+          onPress: continueToWelcomeComplete,
         },
         { text: "Continue setup", style: "cancel" },
       ],

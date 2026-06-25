@@ -1,5 +1,5 @@
 import { calculateAge, extractTextFromImage } from "@/src/services/ocrService";
-import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
+import { useIsDemoSession } from "@/src/features/auth/demoMode";
 import * as ImagePicker from "expo-image-picker";
 import { useCallback, useState } from "react";
 import { accountApi, VerificationData } from "../api/accountApi";
@@ -22,6 +22,8 @@ const OCR_FALLBACK_REVIEW_REASON =
   "Document OCR unavailable during beta test; manual review required";
 const OCR_FALLBACK_REVIEW_MESSAGE =
   "Document scan did not complete, so we submitted your selfie and ID for manual review.";
+const DEMO_SELFIE_URI = "pinaymate-demo://verification-selfie";
+const DEMO_DOCUMENT_URI = "pinaymate-demo://verification-document";
 
 export const getOcrFallbackVerificationPayload = (
   selfieUri: string,
@@ -45,7 +47,7 @@ export const getVerificationFailureState = (
 });
 
 export const useVerificationUpload = () => {
-  const isDemoMode = isBetaDemoModeEnabled();
+  const isDemoMode = useIsDemoSession();
   const [selfieUri, setSelfieUri] = useState<string>("");
   const [documentUri, setDocumentUri] = useState<string>("");
   const [selfieStatus, setSelfieStatus] =
@@ -56,6 +58,13 @@ export const useVerificationUpload = () => {
   const [error, setError] = useState<string>("");
 
   const takeSelfie = useCallback(async () => {
+    if (isDemoMode) {
+      setSelfieUri(DEMO_SELFIE_URI);
+      setSelfieStatus("captured");
+      setError("");
+      return;
+    }
+
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
       setError("Camera permission required");
@@ -70,11 +79,20 @@ export const useVerificationUpload = () => {
     setSelfieUri(res.assets[0].uri);
     setSelfieStatus("captured");
     setError("");
-  }, []);
+  }, [isDemoMode]);
 
   const uploadDocument = useCallback(async () => {
     if (!selfieUri) {
       setError("Take a verification selfie before uploading an ID document.");
+      return;
+    }
+
+    if (isDemoMode) {
+      setDocumentUri(DEMO_DOCUMENT_URI);
+      setDocumentStatus("submitted");
+      setError(
+        "Demo verification submitted for manual review. No OCR or private document upload was sent.",
+      );
       return;
     }
 
@@ -93,15 +111,6 @@ export const useVerificationUpload = () => {
     setDocumentUri(res.assets[0].uri);
     setDocumentStatus("processing");
     setLoading(true);
-
-    if (isDemoMode) {
-      setDocumentStatus("submitted");
-      setError(
-        "Demo verification submitted for manual review. No OCR or private document upload was sent.",
-      );
-      setLoading(false);
-      return;
-    }
 
     try {
       // 1) Extract text via OCR

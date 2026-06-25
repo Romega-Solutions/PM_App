@@ -9,6 +9,53 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Platform, StatusBar, View } from "react-native";
 
+type SetupRoute = {
+  pathname: string;
+  params?: Record<string, string>;
+};
+
+function getNextSetupRoute(
+  profile: EnsuredProfile,
+  userType?: string,
+  firstName?: string,
+): SetupRoute {
+  const finalUserType = userType || profile.user_type || "foreigner";
+  const finalFirstName = firstName || profile.first_name || "";
+
+  if (!profile.basic_info_completed) {
+    return {
+      pathname: "/(auth)/account-setup/basic-info",
+      params: { userType: finalUserType, firstName: finalFirstName },
+    };
+  }
+
+  if (!profile.photos_completed) {
+    return {
+      pathname: "/(auth)/account-setup/profile-photos",
+      params: { userType: finalUserType },
+    };
+  }
+
+  if (!profile.location_completed) {
+    return {
+      pathname: "/(auth)/account-setup/location",
+      params: { userType: finalUserType },
+    };
+  }
+
+  if (!profile.preferences_completed) {
+    return {
+      pathname: "/(auth)/account-setup/preferences",
+      params: { userType: finalUserType },
+    };
+  }
+
+  return {
+    pathname: "/(auth)/account-setup/welcome-complete",
+    params: { userType: finalUserType },
+  };
+}
+
 export default function VerificationSuccessScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
@@ -21,6 +68,7 @@ export default function VerificationSuccessScreen() {
   const [, setUserType] = useState(params.userType);
   const [, setFirstName] = useState(params.firstName);
   const [isChecking, setIsChecking] = useState(true);
+  const [nextRoute, setNextRoute] = useState<SetupRoute | null>(null);
 
   const [fontsLoaded] = useFonts({
     HelloParis: require("@/assets/fonts/hello-paris-sans/HelloParisSans-Bold.ttf"),
@@ -104,46 +152,12 @@ export default function VerificationSuccessScreen() {
       userType?: string,
       firstName?: string,
     ) => {
-      const finalUserType = userType || profile.user_type || "foreigner";
-      const finalFirstName = firstName || profile.first_name || "";
+      const route = getNextSetupRoute(profile, userType, firstName);
 
-      // Determine which step is incomplete and redirect
-      if (!profile.basic_info_completed) {
-        setTimeout(() => {
-          router.replace({
-            pathname: "/(auth)/account-setup/basic-info",
-            params: { userType: finalUserType, firstName: finalFirstName },
-          });
-        }, 2000);
-      } else if (!profile.photos_completed) {
-        setTimeout(() => {
-          router.replace({
-            pathname: "/(auth)/account-setup/profile-photos",
-            params: { userType: finalUserType },
-          });
-        }, 2000);
-      } else if (!profile.location_completed) {
-        setTimeout(() => {
-          router.replace({
-            pathname: "/(auth)/account-setup/location",
-            params: { userType: finalUserType },
-          });
-        }, 2000);
-      } else if (!profile.preferences_completed) {
-        setTimeout(() => {
-          router.replace({
-            pathname: "/(auth)/account-setup/preferences",
-            params: { userType: finalUserType },
-          });
-        }, 2000);
-      } else {
-        setTimeout(() => {
-          router.replace({
-            pathname: "/(auth)/account-setup/welcome-complete",
-            params: { userType: finalUserType },
-          });
-        }, 2000);
-      }
+      setNextRoute(route);
+      setTimeout(() => {
+        router.replace(route as never);
+      }, 2000);
 
       setIsChecking(false);
     };
@@ -152,8 +166,13 @@ export default function VerificationSuccessScreen() {
   }, [getSignupData, params.firstName, params.userType, router]);
 
   const goNext = useCallback(() => {
-    // This will be triggered by redirectToIncompleteStep automatically
-  }, []);
+    if (nextRoute) {
+      router.replace(nextRoute as never);
+      return;
+    }
+
+    router.replace("/(main)");
+  }, [nextRoute, router]);
 
   // Remove the old auto-advance useEffect since redirectToIncompleteStep handles it now
 

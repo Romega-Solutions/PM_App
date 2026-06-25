@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import * as ExpoLocation from "expo-location";
-import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
+import { useIsDemoSession } from "@/src/features/auth/demoMode";
 import { accountApi, type SavedLocation } from "../api/accountApi";
 
 // ✅ Changed: Added city and country properties
@@ -139,7 +139,7 @@ export function getManualLocationFromQuery(value: string): Location | null {
 }
 
 export const useLocationSearch = () => {
-  const isDemoMode = isBetaDemoModeEnabled();
+  const isDemoMode = useIsDemoSession();
   const [query, setQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(
     null
@@ -180,6 +180,12 @@ export const useLocationSearch = () => {
   }, [isDemoMode]);
 
   const getCurrentLocation = useCallback(async (): Promise<Location | null> => {
+    if (isDemoMode) {
+      const currentLocation = sampleLocations[0];
+      setSelectedLocation(currentLocation);
+      return currentLocation;
+    }
+
     const permission = await ExpoLocation.requestForegroundPermissionsAsync();
 
     if (permission.status !== "granted") {

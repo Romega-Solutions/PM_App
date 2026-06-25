@@ -1,4 +1,5 @@
 import type { UserType } from "./api/authApi";
+import { useEffect, useState } from "react";
 
 function getWebHostname(): string {
   if (typeof window === "undefined") return "";
@@ -29,6 +30,33 @@ export const isBetaDemoModeEnabled = () => {
     hostname.includes("beta.pinaymate.com")
   );
 };
+
+function getPersistedDemoSession(): boolean {
+  if (!isBetaDemoModeEnabled() || typeof window === "undefined") return false;
+
+  try {
+    const stored = window.localStorage?.getItem("auth-storage");
+    if (!stored) return false;
+
+    const parsed = JSON.parse(stored) as {
+      state?: { isDemoMode?: boolean };
+    };
+
+    return parsed.state?.isDemoMode === true;
+  } catch {
+    return false;
+  }
+}
+
+export function useIsDemoSession(): boolean {
+  const [isDemoSession, setIsDemoSession] = useState(getPersistedDemoSession);
+
+  useEffect(() => {
+    setIsDemoSession(getPersistedDemoSession());
+  }, []);
+
+  return isDemoSession;
+}
 
 export const BETA_DEMO_COPY = {
   title: "Beta preview",

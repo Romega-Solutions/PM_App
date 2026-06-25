@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
+import { useIsDemoSession } from "@/src/features/auth/demoMode";
 import { accountApi } from "../api/accountApi";
 
 export type PreferencesForm = {
@@ -10,7 +10,7 @@ export type PreferencesForm = {
 };
 
 export const usePreferences = () => {
-  const isDemoMode = isBetaDemoModeEnabled();
+  const isDemoMode = useIsDemoSession();
   const [form, setForm] = useState<PreferencesForm>({
     ageMin: 22,
     ageMax: 35,

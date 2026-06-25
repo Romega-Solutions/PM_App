@@ -1,10 +1,13 @@
 import * as ImagePicker from "expo-image-picker";
 import { useCallback, useEffect, useState } from "react";
-import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
+import { useIsDemoSession } from "@/src/features/auth/demoMode";
 import { accountApi } from "../api/accountApi";
 
+const DEMO_PROFILE_PHOTO_URI =
+  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=720&q=80";
+
 export const useProfilePhotos = () => {
-  const isDemoMode = isBetaDemoModeEnabled();
+  const isDemoMode = useIsDemoSession();
   const [photos, setPhotos] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(false);
@@ -38,6 +41,10 @@ export const useProfilePhotos = () => {
 
   const pickFromGallery = useCallback(async (): Promise<string | null> => {
     setError("");
+    if (isDemoMode) {
+      return DEMO_PROFILE_PHOTO_URI;
+    }
+
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
       setError("Photo library permission is required to add a profile photo.");
@@ -51,10 +58,14 @@ export const useProfilePhotos = () => {
     });
     if (res.canceled) return null;
     return res.assets[0].uri;
-  }, []);
+  }, [isDemoMode]);
 
   const takePhoto = useCallback(async (): Promise<string | null> => {
     setError("");
+    if (isDemoMode) {
+      return DEMO_PROFILE_PHOTO_URI;
+    }
+
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
       setError("Camera permission is required to take a profile photo.");
@@ -67,7 +78,7 @@ export const useProfilePhotos = () => {
     });
     if (res.canceled) return null;
     return res.assets[0].uri;
-  }, []);
+  }, [isDemoMode]);
 
   const uploadPhoto = useCallback(async (uri: string) => {
     setLoading(true);
