@@ -2,9 +2,11 @@ import { createClient } from "@supabase/supabase-js";
 import * as Linking from "expo-linking";
 import "react-native-url-polyfill/auto";
 import { authStorage } from "./authStorage";
+import { getPublicEnvValue } from "./publicEnv";
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabaseUrl = getPublicEnvValue("EXPO_PUBLIC_SUPABASE_URL") || "";
+const supabaseAnonKey =
+  getPublicEnvValue("EXPO_PUBLIC_SUPABASE_ANON_KEY") || "";
 
 const verificationRedirectUrl = Linking.createURL("/(auth)/verification-success");
 const passwordResetRedirectUrl = Linking.createURL("/(auth)/reset-password");

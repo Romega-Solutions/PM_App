@@ -1,17 +1,10 @@
 import type { UserType } from "./api/authApi";
 import { useEffect, useState } from "react";
+import { getPublicEnvValue } from "@/src/config/publicEnv";
 
 function getWebHostname(): string {
   if (typeof window === "undefined") return "";
   return window.location.hostname.toLowerCase();
-}
-
-function getPublicEnvValue(key: string): string | undefined {
-  const processRef = globalThis.process as
-    | { env?: Record<string, string | undefined> }
-    | undefined;
-
-  return processRef?.env?.[key];
 }
 
 export const isBetaDemoModeEnabled = () => {

@@ -1,4 +1,5 @@
 import { supabase } from "@/src/config/supabase";
+import { getPublicEnvValue } from "@/src/config/publicEnv";
 import * as FileSystem from "expo-file-system/legacy";
 import { Platform } from "react-native";
 
@@ -62,11 +63,12 @@ async function assertReadableOcrDocument(uri: string): Promise<void> {
 }
 
 function getOcrEndpoint(): string | undefined {
-  if (process.env.EXPO_PUBLIC_OCR_ENDPOINT) {
-    return process.env.EXPO_PUBLIC_OCR_ENDPOINT;
+  const configuredEndpoint = getPublicEnvValue("EXPO_PUBLIC_OCR_ENDPOINT");
+  if (configuredEndpoint) {
+    return configuredEndpoint;
   }
 
-  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  const supabaseUrl = getPublicEnvValue("EXPO_PUBLIC_SUPABASE_URL");
   if (!supabaseUrl) return undefined;
 
   try {
@@ -175,8 +177,9 @@ export async function extractTextFromImage(uri: string): Promise<OCRResult> {
   headers.Authorization = `Bearer ${session.access_token}`;
 
   if (isSupabaseFunctionsEndpoint(ocrEndpoint)) {
-    if (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY) {
-      headers.apikey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseAnonKey = getPublicEnvValue("EXPO_PUBLIC_SUPABASE_ANON_KEY");
+    if (supabaseAnonKey) {
+      headers.apikey = supabaseAnonKey;
     }
   }
 
