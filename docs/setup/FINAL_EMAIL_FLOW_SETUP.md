@@ -65,7 +65,7 @@ Launch setup must apply the ordered migration set, not just the old baseline SQL
 
 Required launch migrations include:
 
-- `04_production_security_hardening.sql`
+- `20260610090000_restore_legacy_security_primitives.sql`
 - `20260611144000_final_release_security_hardening.sql`
 - `20260610094806_add_pinaymate_storage_buckets.sql`
 - `20260610100323_add_ocr_rate_limit.sql`

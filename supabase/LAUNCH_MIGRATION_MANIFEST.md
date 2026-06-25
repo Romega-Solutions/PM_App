@@ -8,36 +8,38 @@ Apply these migrations in filename-runner order for the launch security, privacy
 1. `00_complete_database_setup.sql`
 2. `02_chat_schema_updates.sql`
 3. `03_add_conversations_table.sql`
-4. `04_production_security_hardening.sql`
-5. `20260610094806_add_pinaymate_storage_buckets.sql`
-6. `20260610100323_add_ocr_rate_limit.sql`
-7. `20260610100523_add_basic_info_rpc.sql`
-8. `20260610112000_add_account_deletion_requests.sql`
-9. `20260610113000_add_privacy_settings.sql`
-10. `20260610114000_respect_read_receipts_privacy.sql`
-11. `20260610115000_respect_online_status_privacy.sql`
-12. `20260611040010_pass_profile_rpc.sql`
-13. `20260611120000_secure_send_message_rpc.sql`
-14. `20260611121000_harden_user_report_payload.sql`
-15. `20260611122000_fix_discovery_privacy_read_model.sql`
-16. `20260611123000_add_notification_preferences.sql`
-17. `20260611124000_repair_profile_creation_trigger.sql`
-18. `20260611125000_add_waitlist_interest_capture.sql`
-19. `20260611130000_add_report_review_workflow.sql`
-20. `20260611131000_add_verification_review_workflow.sql`
-21. `20260611132000_harden_report_abuse_and_discovery_read_model.sql`
-22. `20260611133000_require_report_reviewer_and_waitlist_burst_control.sql`
-23. `20260611134000_harden_moderation_audit_privileges.sql`
-24. `20260611135000_harden_verification_review_and_evidence_retention.sql`
-25. `20260611140000_add_waitlist_edge_abuse_control.sql`
-26. `20260611141000_restrict_conversation_creation_rpc.sql`
-27. `20260611142000_hide_empty_conversations_from_inbox.sql`
-28. `20260611143000_restrict_public_function_execute_defaults.sql`
-29. `999_restore_profile_visibility_filter.sql`
-30. `20260611144000_final_release_security_hardening.sql`
+4. `04_production_core_hardening.sql`
+5. `20260610090000_restore_legacy_security_primitives.sql`
+6. `20260610094806_add_pinaymate_storage_buckets.sql`
+7. `20260610100323_add_ocr_rate_limit.sql`
+8. `20260610100523_add_basic_info_rpc.sql`
+9. `20260610112000_add_account_deletion_requests.sql`
+10. `20260610113000_add_privacy_settings.sql`
+11. `20260610114000_respect_read_receipts_privacy.sql`
+12. `20260610115000_respect_online_status_privacy.sql`
+13. `20260611040010_pass_profile_rpc.sql`
+14. `20260611120000_secure_send_message_rpc.sql`
+15. `20260611121000_harden_user_report_payload.sql`
+16. `20260611122000_fix_discovery_privacy_read_model.sql`
+17. `20260611123000_add_notification_preferences.sql`
+18. `20260611124000_repair_profile_creation_trigger.sql`
+19. `20260611125000_add_waitlist_interest_capture.sql`
+20. `20260611130000_add_report_review_workflow.sql`
+21. `20260611131000_add_verification_review_workflow.sql`
+22. `20260611132000_harden_report_abuse_and_discovery_read_model.sql`
+23. `20260611133000_require_report_reviewer_and_waitlist_burst_control.sql`
+24. `20260611134000_harden_moderation_audit_privileges.sql`
+25. `20260611135000_harden_verification_review_and_evidence_retention.sql`
+26. `20260611140000_add_waitlist_edge_abuse_control.sql`
+27. `20260611141000_restrict_conversation_creation_rpc.sql`
+28. `20260611142000_hide_empty_conversations_from_inbox.sql`
+29. `20260611143000_restrict_public_function_execute_defaults.sql`
+30. `999_restore_profile_visibility_filter.sql`
+31. `20260611144000_final_release_security_hardening.sql`
 
 ## Migration purposes
 
+- `20260610090000_restore_legacy_security_primitives.sql` promotes the still-needed report, block, unmatch, and helper-function hardening from the archived duplicate `04_production_security_hardening.sql` file into a real timestamped migration. The archived duplicate remains under `supabase/archived_migrations/` for history only and must not live in `supabase/migrations/`, because it shares migration version `04` with `04_production_core_hardening.sql` and causes `supabase db push --include-all --linked` to see a stale pending migration.
 - `20260611040010_pass_profile_rpc.sql` adds the `pass_profile` RPC so pass actions can be validated against the discovery read model before writing to `passes`, and it includes `REVOKE INSERT ON public.passes FROM authenticated` so direct app-client pass writes stay denied.
 - `20260611143000_restrict_public_function_execute_defaults.sql` removes inherited `PUBLIC` and `anon` function execution from the public schema and changes future public function defaults so launch RPC access stays explicit through authenticated or service-role grants.
 - `20260611123000_add_notification_preferences.sql` creates the RPC-backed `user_notification_preferences` table contract for saved notification intent while keeping direct client writes denied. It also repairs partially existing tables with idempotent column/default/not-null hardening and enforces `user_notification_preferences_push_children_check` so push-dependent child flags cannot remain enabled when `push_enabled` is false.

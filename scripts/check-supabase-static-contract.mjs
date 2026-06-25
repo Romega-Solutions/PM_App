@@ -18,7 +18,8 @@ const checks = [
     name: "Launch migration manifest",
     markers: [
       ["supabase/LAUNCH_MIGRATION_MANIFEST.md", "00_complete_database_setup.sql"],
-      ["supabase/LAUNCH_MIGRATION_MANIFEST.md", "04_production_security_hardening.sql"],
+      ["supabase/LAUNCH_MIGRATION_MANIFEST.md", "04_production_core_hardening.sql"],
+      ["supabase/LAUNCH_MIGRATION_MANIFEST.md", "20260610090000_restore_legacy_security_primitives.sql"],
       ["supabase/LAUNCH_MIGRATION_MANIFEST.md", "20260611120000_secure_send_message_rpc.sql"],
       ["supabase/LAUNCH_MIGRATION_MANIFEST.md", "20260611121000_harden_user_report_payload.sql"],
       ["supabase/LAUNCH_MIGRATION_MANIFEST.md", "20260611122000_fix_discovery_privacy_read_model.sql"],
@@ -221,10 +222,10 @@ const checks = [
   {
     name: "Security-definer search path hardening",
     markers: [
-      ["supabase/migrations/04_production_security_hardening.sql", "ALTER FUNCTION public.handle_new_user() SET search_path = ''"],
-      ["supabase/migrations/04_production_security_hardening.sql", "REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated"],
-      ["supabase/migrations/04_production_security_hardening.sql", "ALTER FUNCTION public.manual_verify_user(TEXT) SET search_path = ''"],
-      ["supabase/migrations/04_production_security_hardening.sql", "REVOKE EXECUTE ON FUNCTION public.manual_verify_user(TEXT) FROM PUBLIC, anon, authenticated"],
+      ["supabase/migrations/20260610090000_restore_legacy_security_primitives.sql", "ALTER FUNCTION public.handle_new_user() SET search_path = ''"],
+      ["supabase/migrations/20260610090000_restore_legacy_security_primitives.sql", "REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated"],
+      ["supabase/migrations/20260610090000_restore_legacy_security_primitives.sql", "ALTER FUNCTION public.manual_verify_user(TEXT) SET search_path = ''"],
+      ["supabase/migrations/20260610090000_restore_legacy_security_primitives.sql", "REVOKE EXECUTE ON FUNCTION public.manual_verify_user(TEXT) FROM PUBLIC, anon, authenticated"],
       ["supabase/tests/04_safety_smoke_test.sql", "FROM unnest(COALESCE(p.proconfig, ARRAY[]::text[])) setting(value)"],
       ["supabase/tests/04_safety_smoke_test.sql", "SECURITY DEFINER functions must use an empty fixed search_path"],
     ],
@@ -247,7 +248,7 @@ const checks = [
   {
     name: "Safety reports",
     markers: [
-      ["supabase/migrations/04_production_security_hardening.sql", "CREATE TABLE IF NOT EXISTS public.user_reports"],
+      ["supabase/migrations/20260610090000_restore_legacy_security_primitives.sql", "CREATE TABLE IF NOT EXISTS public.user_reports"],
       ["supabase/migrations/20260611144000_final_release_security_hardening.sql", "CREATE OR REPLACE FUNCTION public.submit_user_report"],
       ["supabase/migrations/20260611121000_harden_user_report_payload.sql", "LEFT(BTRIM(COALESCE(p_reason, '')), 120)"],
       ["supabase/migrations/20260611121000_harden_user_report_payload.sql", "LEFT(BTRIM(COALESCE(p_details, '')), 800)"],
@@ -322,9 +323,9 @@ const checks = [
   {
     name: "Block and unmatch",
     markers: [
-      ["supabase/migrations/04_production_security_hardening.sql", "CREATE TABLE IF NOT EXISTS public.user_blocks"],
-      ["supabase/migrations/04_production_security_hardening.sql", "CREATE OR REPLACE FUNCTION public.block_user"],
-      ["supabase/migrations/04_production_security_hardening.sql", "CREATE OR REPLACE FUNCTION public.unmatch_user"],
+      ["supabase/migrations/20260610090000_restore_legacy_security_primitives.sql", "CREATE TABLE IF NOT EXISTS public.user_blocks"],
+      ["supabase/migrations/20260610090000_restore_legacy_security_primitives.sql", "CREATE OR REPLACE FUNCTION public.block_user"],
+      ["supabase/migrations/20260610090000_restore_legacy_security_primitives.sql", "CREATE OR REPLACE FUNCTION public.unmatch_user"],
       ["supabase/tests/04_safety_smoke_test.sql", "Blocked member is still visible in discoverable_profiles"],
       ["supabase/tests/04_safety_smoke_test.sql", "unmatch_user did not clear mutual match state"],
     ],
@@ -370,7 +371,7 @@ const checks = [
     markers: [
       ["supabase/migrations/20260610094806_add_pinaymate_storage_buckets.sql", "('profile-photos', 'profile-photos', TRUE)"],
       ["supabase/migrations/20260610094806_add_pinaymate_storage_buckets.sql", "('verification-docs', 'verification-docs', FALSE)"],
-      ["supabase/migrations/04_production_security_hardening.sql", "WHERE id = 'chat-images'"],
+      ["supabase/migrations/04_production_core_hardening.sql", "('chat-images', 'chat-images', false)"],
       ["supabase/tests/04_safety_smoke_test.sql", "profile-photos bucket must exist as a public bucket"],
       ["supabase/tests/04_safety_smoke_test.sql", "verification-docs bucket must exist as a private bucket"],
       ["supabase/tests/04_safety_smoke_test.sql", "chat image policies must deny blocked conversations"],
@@ -550,9 +551,9 @@ const checks = [
     name: "Conversations and messages",
     markers: [
       ["supabase/migrations/03_add_conversations_table.sql", "CREATE TABLE IF NOT EXISTS public.conversations"],
-      ["supabase/migrations/04_production_security_hardening.sql", "CREATE OR REPLACE FUNCTION public.get_or_create_conversation"],
-      ["supabase/migrations/04_production_security_hardening.sql", "CREATE OR REPLACE FUNCTION public.get_user_conversations"],
-      ["supabase/migrations/04_production_security_hardening.sql", "CREATE POLICY \"Users can send messages\""],
+      ["supabase/migrations/20260611144000_final_release_security_hardening.sql", "CREATE OR REPLACE FUNCTION public.get_or_create_conversation"],
+      ["supabase/migrations/20260611144000_final_release_security_hardening.sql", "CREATE OR REPLACE FUNCTION public.get_user_conversations"],
+      ["supabase/migrations/20260611144000_final_release_security_hardening.sql", "CREATE POLICY \"Users can send messages\""],
       ["supabase/migrations/20260611120000_secure_send_message_rpc.sql", "CREATE OR REPLACE FUNCTION public.send_message"],
       ["supabase/migrations/20260611120000_secure_send_message_rpc.sql", "bucket_id = 'chat-images'"],
       ["supabase/migrations/20260611120000_secure_send_message_rpc.sql", "Image storage object was not found"],

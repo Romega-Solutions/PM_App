@@ -732,6 +732,7 @@ FROM (
   SELECT id, created_at
   FROM public.profiles
   WHERE COALESCE(is_active, TRUE) = TRUE
+    AND COALESCE(is_verified, FALSE) = TRUE
   ORDER BY created_at NULLS LAST, id
   LIMIT 2
 ) picked_profiles;

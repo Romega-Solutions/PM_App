@@ -102,3 +102,9 @@ jobs:
 
       - name: Migration dry run
         run: npx -y supabase@latest db push --dry-run --include-all --linked --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Release preflight audit SQL
+        run: npx -y supabase@latest db query --linked --file supabase/tests/05_release_preflight_audit.sql --output table
+
+      - name: Safety smoke SQL
+        run: npx -y supabase@latest db query --linked --file supabase/tests/04_safety_smoke_test.sql --output table

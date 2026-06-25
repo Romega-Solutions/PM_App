@@ -453,7 +453,8 @@ const requiredFiles = [
   {
     path: "supabase/LAUNCH_MIGRATION_MANIFEST.md",
     markers: [
-      "04_production_security_hardening.sql",
+      "04_production_core_hardening.sql",
+      "20260610090000_restore_legacy_security_primitives.sql",
       "20260611120000_secure_send_message_rpc.sql",
       "20260611141000_restrict_conversation_creation_rpc.sql",
       "20260611142000_hide_empty_conversations_from_inbox.sql",

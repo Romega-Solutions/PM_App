@@ -82,7 +82,7 @@ Minimum unblock commands:
   - `claim_ocr_attempt` records a per-user quota claim before the function spends an OCR provider call
   - selfie capture no longer auto-verifies locally; successful OCR comparison submits verification for review instead of setting profile `is_verified`
 - Security hardening migration files are available:
-  - `supabase/migrations/04_production_security_hardening.sql` and `supabase/migrations/20260611144000_final_release_security_hardening.sql`
+  - `supabase/migrations/20260610090000_restore_legacy_security_primitives.sql` and `supabase/migrations/20260611144000_final_release_security_hardening.sql`
   - `supabase/migrations/20260610094806_add_pinaymate_storage_buckets.sql` defines `profile-photos` and private `verification-docs` storage buckets plus user-folder storage policies
   - `supabase/migrations/20260610100323_add_ocr_rate_limit.sql` defines OCR quota tracking and `claim_ocr_attempt`
   - `supabase/migrations/20260610100523_add_basic_info_rpc.sql` defines `save_basic_info` and removes direct client mutation of `gender`/`user_type`
@@ -137,7 +137,7 @@ Minimum unblock commands:
   - `app/(auth)/account-setup/location.tsx` and `src/features/account/hooks/useLocationSearch.ts` location path
   - `src/services/ocrService.ts`, `src/features/account/hooks/useVerificationUpload.ts` OCR path
   - `src/services/__tests__/ocrService.test.ts`, `src/features/account/api/__tests__/verificationApi.test.ts`
-  - `supabase/migrations/04_production_security_hardening.sql`, `supabase/migrations/20260611144000_final_release_security_hardening.sql`, `supabase/migrations/20260610094806_add_pinaymate_storage_buckets.sql`, `supabase/migrations/20260610100323_add_ocr_rate_limit.sql`, and `supabase/migrations/20260610100523_add_basic_info_rpc.sql`
+  - `supabase/migrations/20260610090000_restore_legacy_security_primitives.sql`, `supabase/migrations/20260611144000_final_release_security_hardening.sql`, `supabase/migrations/20260610094806_add_pinaymate_storage_buckets.sql`, `supabase/migrations/20260610100323_add_ocr_rate_limit.sql`, and `supabase/migrations/20260610100523_add_basic_info_rpc.sql`
   - `app/(modals)/report-user.tsx`, `src/features/safety/api/safetyApi.ts`
   - `src/features/safety/api/__tests__/safetyApi.test.ts`
   - `src/features/messaging/api/messages.api.ts`, `src/features/messaging/api/conversations.api.ts`, `src/features/matching/screens/LikesScreen.tsx`
@@ -212,8 +212,8 @@ Minimum unblock commands:
 
 ### Offline-safe repository evidence checks
 
-- `rg -n "EXPO_PUBLIC_OCR_ENDPOINT|Use Current Location|extractTextFromImage|04_production_security_hardening|discoverable_profiles" PM_App`
-- `rg -n "app/index.tsx|app/\\(main\\)/_layout.tsx|ocrService.ts|useVerificationUpload|useLocationSearch|04_production_security_hardening.sql|safetyApi.ts|messages.api.ts" PM_App`
+- `rg -n "EXPO_PUBLIC_OCR_ENDPOINT|Use Current Location|extractTextFromImage|20260610090000_restore_legacy_security_primitives|discoverable_profiles" PM_App`
+- `rg -n "app/index.tsx|app/\\(main\\)/_layout.tsx|ocrService.ts|useVerificationUpload|useLocationSearch|20260610090000_restore_legacy_security_primitives.sql|safetyApi.ts|messages.api.ts" PM_App`
 - `npm test -- src/services/__tests__/ocrService.test.ts src/features/account/api/__tests__/verificationApi.test.ts --runInBand` from `PM_App`
 - `npm test -- src/features/matching/api/__tests__/matchingApi.test.ts --runInBand` from `PM_App`
 - `npm test -- src/features/safety/api/__tests__/safetyApi.test.ts --runInBand` from `PM_App`
