@@ -89,7 +89,16 @@ export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({
   const styles = useStyles();
   const { width, height } = useWindowDimensions();
   const cardWidth = Math.min(width - 40, 430);
-  const cardHeight = Math.min(Math.max(height * 0.68, 520), height - 210);
+  const webCardMinHeight = height >= 820 ? 430 : 360;
+  const webCardReservedHeight = height >= 820 ? 380 : 300;
+  const webCardMaxHeight = Math.max(
+    webCardMinHeight,
+    height - webCardReservedHeight,
+  );
+  const cardHeight =
+    Platform.OS === "web"
+      ? Math.min(Math.max(height * 0.56, webCardMinHeight), webCardMaxHeight)
+      : Math.min(Math.max(height * 0.68, 520), height - 210);
   const showCompatibility = Boolean(
     profile.matchScore && profile.matchScore > 70,
   );
