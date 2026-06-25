@@ -2,6 +2,8 @@ import type { UserType } from "./api/authApi";
 import { useEffect, useState } from "react";
 import { getPublicEnvValue } from "@/src/config/publicEnv";
 
+export type DemoPreviewUserType = Extract<UserType, "filipina" | "foreigner">;
+
 function getWebHostname(): string {
   if (typeof window === "undefined") return "";
   return window.location.hostname.toLowerCase();
@@ -41,6 +43,27 @@ function getPersistedDemoSession(): boolean {
   }
 }
 
+export function getPersistedDemoUserType(): DemoPreviewUserType {
+  if (!isBetaDemoModeEnabled() || typeof window === "undefined") {
+    return "foreigner";
+  }
+
+  try {
+    const stored = window.localStorage?.getItem("auth-storage");
+    if (!stored) return "foreigner";
+
+    const parsed = JSON.parse(stored) as {
+      state?: { demoUserType?: string };
+    };
+
+    return parsed.state?.demoUserType === "filipina"
+      ? "filipina"
+      : "foreigner";
+  } catch {
+    return "foreigner";
+  }
+}
+
 export function useIsDemoSession(): boolean {
   const [isDemoSession, setIsDemoSession] = useState(getPersistedDemoSession);
 
@@ -51,19 +74,56 @@ export function useIsDemoSession(): boolean {
   return isDemoSession;
 }
 
+export function useDemoPreviewUserType(): DemoPreviewUserType {
+  const [demoUserType, setDemoUserType] = useState(getPersistedDemoUserType);
+
+  useEffect(() => {
+    setDemoUserType(getPersistedDemoUserType());
+  }, []);
+
+  return demoUserType;
+}
+
 export const BETA_DEMO_COPY = {
   title: "Beta preview",
   message:
     "You are viewing seeded demo data. Real signup, sign in, profile setup, and verification still use Supabase when you choose those paths.",
 };
 
-export const BETA_DEMO_PROFILE = {
-  id: "beta-demo-profile",
-  firstName: "Beta",
-  lastName: "Preview",
-  age: 28,
-  userType: "foreigner" as UserType,
-  location: "Metro Manila, Philippines",
-  photoUri: null,
-  isVerified: false,
+export const BETA_DEMO_PROFILES: Record<DemoPreviewUserType, {
+  id: string;
+  firstName: string;
+  lastName: string;
+  age: number;
+  userType: DemoPreviewUserType;
+  location: string;
+  photoUri: string | null;
+  isVerified: boolean;
+}> = {
+  foreigner: {
+    id: "beta-demo-foreigner-profile",
+    firstName: "Daniel",
+    lastName: "Preview",
+    age: 34,
+    userType: "foreigner",
+    location: "Austin, United States",
+    photoUri: null,
+    isVerified: false,
+  },
+  filipina: {
+    id: "beta-demo-filipina-profile",
+    firstName: "Ana",
+    lastName: "Preview",
+    age: 27,
+    userType: "filipina",
+    location: "Metro Manila, Philippines",
+    photoUri: null,
+    isVerified: false,
+  },
 };
+
+export function getBetaDemoProfile(userType = getPersistedDemoUserType()) {
+  return BETA_DEMO_PROFILES[userType];
+}
+
+export const BETA_DEMO_PROFILE = BETA_DEMO_PROFILES.foreigner;

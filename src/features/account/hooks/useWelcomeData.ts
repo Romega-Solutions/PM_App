@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BETA_DEMO_PROFILE, useIsDemoSession } from "../../auth/demoMode";
+import { getBetaDemoProfile, useIsDemoSession } from "../../auth/demoMode";
 import type { UserType } from "../../auth/api/authApi";
 import {
   accountApi,
@@ -38,20 +38,22 @@ export const useWelcomeData = () => {
         setLoading(true);
 
         if (isDemoMode) {
+          const demoProfile = getBetaDemoProfile();
+          const isFilipina = demoProfile.userType === "filipina";
           setData({
-            firstName: BETA_DEMO_PROFILE.firstName,
-            userType: BETA_DEMO_PROFILE.userType,
+            firstName: demoProfile.firstName,
+            userType: demoProfile.userType,
             basicInfo: {
-              firstName: BETA_DEMO_PROFILE.firstName,
-              lastName: BETA_DEMO_PROFILE.lastName,
-              age: BETA_DEMO_PROFILE.age,
-              gender: "male",
-              userType: BETA_DEMO_PROFILE.userType,
+              firstName: demoProfile.firstName,
+              lastName: demoProfile.lastName,
+              age: demoProfile.age,
+              gender: isFilipina ? "female" : "male",
+              userType: demoProfile.userType,
             },
             photos: [],
             location: {
               locationType: "manual",
-              locationName: BETA_DEMO_PROFILE.location,
+              locationName: demoProfile.location,
               coordinates: null,
               timestamp: new Date(0).toISOString(),
             },
@@ -64,12 +66,12 @@ export const useWelcomeData = () => {
               ],
             },
             preferences: {
-              interestedIn: "Women",
+              interestedIn: isFilipina ? "Men" : "Women",
               ageMin: 22,
               ageMax: 35,
               maxDistanceKm: 50,
               relationshipGoal: "long-term",
-              userType: BETA_DEMO_PROFILE.userType,
+              userType: demoProfile.userType,
             },
             completionStats: {
               basicInfo: true,

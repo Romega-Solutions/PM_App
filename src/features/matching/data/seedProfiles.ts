@@ -10,6 +10,7 @@
  */
 
 import { ProfileCardData } from "../components/ProfileCard";
+import type { DemoPreviewUserType } from "@/src/features/auth/demoMode";
 import {
   getSeedAiModel,
   getSeedAiModelGallery,
@@ -60,6 +61,7 @@ function shuffleArray<T>(array: T[]): T[] {
 const SEED_PROFILES: ProfileCardData[] = [
   buildSeedProfile({
     id: "seed-01",
+    userType: "filipina",
     modelId: "model-01-corporate",
     primaryPoseId: "pose-01-office-window",
     name: "Maria",
@@ -78,6 +80,7 @@ const SEED_PROFILES: ProfileCardData[] = [
   }),
   buildSeedProfile({
     id: "seed-02",
+    userType: "filipina",
     modelId: "model-02-beach",
     primaryPoseId: "pose-01-sunlit-shore",
     name: "Angela",
@@ -96,6 +99,7 @@ const SEED_PROFILES: ProfileCardData[] = [
   }),
   buildSeedProfile({
     id: "seed-03",
+    userType: "filipina",
     modelId: "model-03-evening",
     primaryPoseId: "pose-01-gray-gown",
     name: "Grace",
@@ -114,6 +118,7 @@ const SEED_PROFILES: ProfileCardData[] = [
   }),
   buildSeedProfile({
     id: "seed-04",
+    userType: "filipina",
     modelId: "model-04-business",
     primaryPoseId: "pose-01-blue-suit-interior",
     name: "Samantha",
@@ -132,6 +137,7 @@ const SEED_PROFILES: ProfileCardData[] = [
   }),
   buildSeedProfile({
     id: "seed-05",
+    userType: "filipina",
     modelId: "model-05-creative",
     primaryPoseId: "pose-01-office-tablet",
     name: "Kyla",
@@ -150,6 +156,7 @@ const SEED_PROFILES: ProfileCardData[] = [
   }),
   buildSeedProfile({
     id: "seed-06",
+    userType: "filipina",
     modelId: "model-06-garden",
     primaryPoseId: "pose-01-garden-dress",
     name: "Francesca",
@@ -168,6 +175,7 @@ const SEED_PROFILES: ProfileCardData[] = [
   }),
   buildSeedProfile({
     id: "seed-07",
+    userType: "filipina",
     modelId: "model-07-urban",
     primaryPoseId: "pose-01-street-casual",
     name: "Leah",
@@ -186,6 +194,7 @@ const SEED_PROFILES: ProfileCardData[] = [
   }),
   buildSeedProfile({
     id: "seed-08",
+    userType: "filipina",
     modelId: "model-08-red-hair",
     primaryPoseId: "pose-04-pink-studio",
     name: "Trisha",
@@ -202,21 +211,121 @@ const SEED_PROFILES: ProfileCardData[] = [
     heightCm: 163,
     bodyType: "Average",
   }),
+  {
+    id: "seed-foreigner-01",
+    name: "Daniel",
+    age: 34,
+    userType: "foreigner",
+    location: "Austin, United States",
+    distance: "Demo profile",
+    image: {
+      uri: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=900&q=80",
+    },
+    galleryImages: [],
+    verified: false,
+    interests: ["Coffee", "Travel", "Family"],
+    bio: "Product manager who likes direct communication, slow travel, and plans that leave room for real life. Looking for a steady connection built on respect.",
+    occupation: "Product Manager",
+    relationshipGoal: "long-term",
+    languages: ["English"],
+    education: "Information Systems",
+    heightCm: 180,
+    bodyType: "Average",
+    isSeedProfile: true,
+  },
+  {
+    id: "seed-foreigner-02",
+    name: "James",
+    age: 39,
+    userType: "foreigner",
+    location: "Vancouver, Canada",
+    distance: "Demo profile",
+    image: {
+      uri: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=900&q=80",
+    },
+    galleryImages: [],
+    verified: false,
+    interests: ["Cooking", "Hiking", "Books"],
+    bio: "Quiet weekends, good food, and thoughtful conversations matter to me. I value patience, consistency, and someone who enjoys building trust slowly.",
+    occupation: "Civil Engineer",
+    relationshipGoal: "marriage",
+    languages: ["English", "French"],
+    education: "Civil Engineering",
+    heightCm: 183,
+    bodyType: "Athletic",
+    isSeedProfile: true,
+  },
+  {
+    id: "seed-foreigner-03",
+    name: "Michael",
+    age: 31,
+    userType: "foreigner",
+    location: "Sydney, Australia",
+    distance: "Demo profile",
+    image: {
+      uri: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=900&q=80",
+    },
+    galleryImages: [],
+    verified: false,
+    interests: ["Fitness", "Music", "Beach"],
+    bio: "Active, family-oriented, and usually planning the next meal after a beach walk. I appreciate kindness, humor, and clear expectations.",
+    occupation: "Physiotherapist",
+    relationshipGoal: "dating",
+    languages: ["English"],
+    education: "Health Sciences",
+    heightCm: 178,
+    bodyType: "Athletic",
+    isSeedProfile: true,
+  },
+  {
+    id: "seed-foreigner-04",
+    name: "Thomas",
+    age: 42,
+    userType: "foreigner",
+    location: "London, United Kingdom",
+    distance: "Demo profile",
+    image: {
+      uri: "https://images.unsplash.com/photo-1530268729831-4b0b9e170218?auto=format&fit=crop&w=900&q=80",
+    },
+    galleryImages: [],
+    verified: false,
+    interests: ["History", "Dinner", "Gardens"],
+    bio: "I like calm routines, curious people, and honest conversations about what both sides want. Serious intentions, but no pressure games.",
+    occupation: "University Lecturer",
+    relationshipGoal: "long-term",
+    languages: ["English"],
+    education: "History",
+    heightCm: 181,
+    bodyType: "Average",
+    isSeedProfile: true,
+  },
 ];
+
+function getVisibleSeedUserType(demoUserType: DemoPreviewUserType) {
+  return demoUserType === "filipina" ? "foreigner" : "filipina";
+}
 
 /**
  * Returns a shuffled copy of the seed profiles for variety on each load.
  */
-export function getSeedProfiles(): ProfileCardData[] {
-  return shuffleArray(SEED_PROFILES);
+export function getSeedProfiles(
+  demoUserType: DemoPreviewUserType = "foreigner",
+): ProfileCardData[] {
+  const visibleUserType = getVisibleSeedUserType(demoUserType);
+  return shuffleArray(
+    SEED_PROFILES.filter((profile) => profile.userType === visibleUserType),
+  );
 }
 
 /**
  * Returns the seed profiles in a stable order for beta scaffold surfaces
  * that need consistent matches, mutuals, and messages.
  */
-export function getSeedProfilesInOrder(): ProfileCardData[] {
-  return [...SEED_PROFILES];
+export function getSeedProfilesInOrder(
+  demoUserType: DemoPreviewUserType = "foreigner",
+): ProfileCardData[] {
+  const visibleUserType = getVisibleSeedUserType(demoUserType);
+  return SEED_PROFILES.filter((profile) => profile.userType === visibleUserType);
 }
 
 /**

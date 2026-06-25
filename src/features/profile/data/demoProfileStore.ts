@@ -1,4 +1,4 @@
-import { BETA_DEMO_PROFILE } from "@/src/features/auth/demoMode";
+import { getBetaDemoProfile } from "@/src/features/auth/demoMode";
 import type { UserType } from "@/src/features/auth/api/authApi";
 import type {
   ProfileData as ApiProfileData,
@@ -64,22 +64,23 @@ export function saveDemoProfilePhotos(photos: string[]) {
 
 export function getDemoProfileApiData(): ApiProfileData {
   const override = readOverride();
+  const demoProfile = getBetaDemoProfile();
   const now = new Date().toISOString();
 
   return {
-    id: BETA_DEMO_PROFILE.id,
+    id: demoProfile.id,
     email: "beta.preview@pinaymate.demo",
-    first_name: override.first_name ?? BETA_DEMO_PROFILE.firstName,
-    last_name: override.last_name ?? BETA_DEMO_PROFILE.lastName,
-    age: override.age ?? BETA_DEMO_PROFILE.age,
-    user_type: BETA_DEMO_PROFILE.userType,
+    first_name: override.first_name ?? demoProfile.firstName,
+    last_name: override.last_name ?? demoProfile.lastName,
+    age: override.age ?? demoProfile.age,
+    user_type: demoProfile.userType,
     occupation: override.occupation ?? "Product demo reviewer",
     education: override.education ?? "Demo University",
-    location_name: override.location_name ?? BETA_DEMO_PROFILE.location,
+    location_name: override.location_name ?? demoProfile.location,
     photos:
       override.photos ??
-      (BETA_DEMO_PROFILE.photoUri ? [BETA_DEMO_PROFILE.photoUri] : []),
-    is_verified: BETA_DEMO_PROFILE.isVerified,
+      (demoProfile.photoUri ? [demoProfile.photoUri] : []),
+    is_verified: demoProfile.isVerified,
     created_at: now,
     updated_at: now,
   };
@@ -92,7 +93,7 @@ export function getDemoProfileScreenData() {
     firstName: profile.first_name,
     lastName: profile.last_name,
     age: profile.age ?? null,
-    userType: (profile.user_type ?? BETA_DEMO_PROFILE.userType) as UserType,
+    userType: (profile.user_type ?? getBetaDemoProfile().userType) as UserType,
     location: profile.location_name ?? null,
     photoUri: profile.photos?.[0] ?? null,
     isVerified: profile.is_verified ?? false,

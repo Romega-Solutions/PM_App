@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { useIsDemoSession } from "@/src/features/auth/demoMode";
+import {
+  useDemoPreviewUserType,
+  useIsDemoSession,
+} from "@/src/features/auth/demoMode";
 import { accountApi } from "../api/accountApi";
 
 export type PreferencesForm = {
@@ -11,6 +14,7 @@ export type PreferencesForm = {
 
 export const usePreferences = () => {
   const isDemoMode = useIsDemoSession();
+  const demoUserType = useDemoPreviewUserType();
   const [form, setForm] = useState<PreferencesForm>({
     ageMin: 22,
     ageMax: 35,
@@ -43,8 +47,8 @@ export const usePreferences = () => {
             relationshipGoal: form.relationshipGoal
               .toLowerCase()
               .replace(/\s+/g, "_"),
-            interestedIn: "Women",
-            userType: "foreigner",
+            interestedIn: demoUserType === "filipina" ? "Men" : "Women",
+            userType: demoUserType,
             createdAt: new Date().toISOString(),
           },
         } as const;
@@ -73,7 +77,7 @@ export const usePreferences = () => {
     } finally {
       setLoading(false);
     }
-  }, [form, isDemoMode]);
+  }, [demoUserType, form, isDemoMode]);
 
   const load = useCallback(async () => {
     setLoadingInitial(true);

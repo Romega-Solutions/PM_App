@@ -18,7 +18,11 @@
 
 import { supabase } from "@/src/config/supabase";
 import { authStorage } from "@/src/config/authStorage";
-import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
+import {
+  getPersistedDemoUserType,
+  isBetaDemoModeEnabled,
+  type DemoPreviewUserType,
+} from "@/src/features/auth/demoMode";
 import type { Session } from "@supabase/supabase-js";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "./persistStorage";
@@ -37,6 +41,7 @@ type AuthState = {
   session: Session | null;
   isAuthenticated: boolean;
   isDemoMode: boolean;
+  demoUserType: DemoPreviewUserType;
   isLoading: boolean;
   isInitialized: boolean;
 
@@ -45,7 +50,7 @@ type AuthState = {
   setSession: (session: Session | null) => void;
   clearUser: () => void;
   updateUser: (updates: Partial<User>) => void;
-  startDemoSession: () => void;
+  startDemoSession: (userType?: DemoPreviewUserType) => void;
   endDemoSession: () => void;
   initialize: () => Promise<void>;
   refreshSession: () => Promise<void>;
@@ -60,6 +65,7 @@ export const useAuthStore = create<AuthState>()(
       session: null,
       isAuthenticated: false,
       isDemoMode: false,
+      demoUserType: getPersistedDemoUserType(),
       isLoading: false,
       isInitialized: false,
 
@@ -94,7 +100,7 @@ export const useAuthStore = create<AuthState>()(
           user: state.user ? { ...state.user, ...updates } : null,
         })),
 
-      startDemoSession: () => {
+      startDemoSession: (userType = "foreigner") => {
         if (!isBetaDemoModeEnabled()) return;
 
         set({
@@ -102,6 +108,7 @@ export const useAuthStore = create<AuthState>()(
           session: null,
           isAuthenticated: false,
           isDemoMode: true,
+          demoUserType: userType,
           isInitialized: true,
           isLoading: false,
         });
@@ -113,6 +120,7 @@ export const useAuthStore = create<AuthState>()(
           session: null,
           isAuthenticated: false,
           isDemoMode: false,
+          demoUserType: "foreigner",
         }),
 
       // Initialize auth (restore session on app start)
@@ -120,6 +128,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true });
           const keepDemoMode = get().isDemoMode && isBetaDemoModeEnabled();
+          const demoUserType = get().demoUserType || getPersistedDemoUserType();
 
           const {
             data: { session },
@@ -133,6 +142,7 @@ export const useAuthStore = create<AuthState>()(
               user: null,
               isAuthenticated: false,
               isDemoMode: keepDemoMode,
+              demoUserType,
               isInitialized: true,
               isLoading: false,
             });
@@ -144,6 +154,7 @@ export const useAuthStore = create<AuthState>()(
               session,
               isAuthenticated: true,
               isDemoMode: false,
+              demoUserType,
               isInitialized: true,
               isLoading: false,
             });
@@ -153,6 +164,7 @@ export const useAuthStore = create<AuthState>()(
               user: null,
               isAuthenticated: false,
               isDemoMode: keepDemoMode,
+              demoUserType,
               isInitialized: true,
               isLoading: false,
             });
@@ -164,6 +176,7 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             isAuthenticated: false,
             isDemoMode: get().isDemoMode && isBetaDemoModeEnabled(),
+            demoUserType: get().demoUserType || getPersistedDemoUserType(),
             isInitialized: true,
             isLoading: false,
           });
@@ -187,6 +200,7 @@ export const useAuthStore = create<AuthState>()(
               user: null,
               isAuthenticated: false,
               isDemoMode: false,
+              demoUserType: "foreigner",
             });
             return;
           }
@@ -212,6 +226,7 @@ export const useAuthStore = create<AuthState>()(
             session: null,
             isAuthenticated: false,
             isDemoMode: false,
+            demoUserType: "foreigner",
             isLoading: false,
           });
         } catch {
@@ -230,6 +245,7 @@ export const useAuthStore = create<AuthState>()(
         session: state.session,
         isAuthenticated: state.isAuthenticated,
         isDemoMode: state.isDemoMode,
+        demoUserType: state.demoUserType,
       }),
 
       // Restore state from the configured auth storage on app start

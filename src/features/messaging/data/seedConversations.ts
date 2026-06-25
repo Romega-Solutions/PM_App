@@ -1,4 +1,8 @@
 import { getSeedProfilesInOrder } from "@/src/features/matching/data/seedProfiles";
+import {
+  getPersistedDemoUserType,
+  type DemoPreviewUserType,
+} from "@/src/features/auth/demoMode";
 import type { ImageSourcePropType } from "react-native";
 import type { ConversationWithUser, Message } from "../types/messaging.types";
 
@@ -152,11 +156,12 @@ function getSeedConversationIndex(id: string): number | null {
 
 export function getSeedConversations(
   currentUserId = DEMO_CURRENT_USER_ID,
+  demoUserType: DemoPreviewUserType = getPersistedDemoUserType(),
 ): ConversationWithUser[] {
-  const profiles = getSeedProfilesInOrder();
+  const profiles = getSeedProfilesInOrder(demoUserType);
 
-  return SEED_MESSAGE_FIXTURES.map((fixture, index) => {
-    const profile = profiles[fixture.profileIndex];
+  return SEED_MESSAGE_FIXTURES.slice(0, profiles.length).map((fixture, index) => {
+    const profile = profiles[index] ?? profiles[fixture.profileIndex];
     const otherUserId = DEMO_USER_IDS[index];
     const timestamp = minutesAgoIso(fixture.minutesAgo);
 
@@ -188,8 +193,9 @@ export function getSeedConversations(
 export function getSeedConversationForProfileId(
   profileId: string,
   currentUserId = DEMO_CURRENT_USER_ID,
+  demoUserType: DemoPreviewUserType = getPersistedDemoUserType(),
 ): ConversationWithUser | null {
-  const profileIndex = getSeedProfilesInOrder().findIndex(
+  const profileIndex = getSeedProfilesInOrder(demoUserType).findIndex(
     (profile) => profile.id === profileId,
   );
 
@@ -205,11 +211,12 @@ export function getSeedConversationForProfileId(
     return null;
   }
 
-  return getSeedConversations(currentUserId)[fixtureIndex] ?? null;
+  return getSeedConversations(currentUserId, demoUserType)[fixtureIndex] ?? null;
 }
 
 export function getSeedConversationPhotoSource(
   conversationId: string,
+  demoUserType: DemoPreviewUserType = getPersistedDemoUserType(),
 ): ImageSourcePropType | null {
   const fixtureIndex = getSeedConversationIndex(conversationId);
 
@@ -218,7 +225,8 @@ export function getSeedConversationPhotoSource(
   }
 
   const fixture = SEED_MESSAGE_FIXTURES[fixtureIndex];
-  const profile = getSeedProfilesInOrder()[fixture.profileIndex];
+  const profiles = getSeedProfilesInOrder(demoUserType);
+  const profile = profiles[fixtureIndex] ?? profiles[fixture.profileIndex];
 
   return profile?.image ?? null;
 }

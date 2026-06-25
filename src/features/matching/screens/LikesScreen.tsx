@@ -48,6 +48,8 @@ import {
 import { useAppTheme } from "@/src/theme/ThemeContext";
 import { makeStyles } from "@/src/theme/makeStyles";
 import { useDemoMatchingStore } from "@/src/stores/demoMatchingStore";
+import { useAuthStore } from "@/src/stores/authStore";
+import type { DemoPreviewUserType } from "@/src/features/auth/demoMode";
 
 function isMissingAuthSession(error: unknown) {
   return (
@@ -58,8 +60,12 @@ function isMissingAuthSession(error: unknown) {
   );
 }
 
-function getSeedMatches(hiddenProfileIds: string[], passedProfileIds: string[]): Match[] {
-  return getSeedProfilesInOrder()
+function getSeedMatches(
+  hiddenProfileIds: string[],
+  passedProfileIds: string[],
+  demoUserType: DemoPreviewUserType,
+): Match[] {
+  return getSeedProfilesInOrder(demoUserType)
     .filter(
       (profile) =>
         !hiddenProfileIds.includes(profile.id) &&
@@ -73,7 +79,7 @@ function getSeedMatches(hiddenProfileIds: string[], passedProfileIds: string[]):
       image: profile.image || undefined,
       verified: false,
       mutual: index % 3 !== 1,
-      gender: "female",
+      gender: profile.userType === "foreigner" ? "male" : "female",
       matchedAt: new Date(
         Date.now() - (index + 1) * 36 * 60 * 60 * 1000,
       ).toISOString(),
@@ -93,6 +99,7 @@ export default function LikesScreen() {
   const [usingSeedMatches, setUsingSeedMatches] = useState(false);
   const [demoActionNotice, setDemoActionNotice] = useState<string | null>(null);
   const demoActionOpacity = React.useRef(new Animated.Value(0)).current;
+  const demoUserType = useAuthStore((state) => state.demoUserType);
   const hiddenSeedProfileIds = useDemoMatchingStore(
     (state) => state.hiddenProfileIds || [],
   );
@@ -116,7 +123,13 @@ export default function LikesScreen() {
         if (userError && !isMissingAuthSession(userError)) {
           console.error("Failed to fetch user.");
         }
-        setMatches(getSeedMatches(hiddenSeedProfileIds, passedSeedProfileIds));
+        setMatches(
+          getSeedMatches(
+            hiddenSeedProfileIds,
+            passedSeedProfileIds,
+            demoUserType,
+          ),
+        );
         setUsingSeedMatches(true);
         AccessibilityInfo.announceForAccessibility(
           "Showing demo matches for beta preview.",
@@ -130,7 +143,13 @@ export default function LikesScreen() {
 
       if (matchesError) {
         console.error("Failed to fetch matches.");
-        setMatches(getSeedMatches(hiddenSeedProfileIds, passedSeedProfileIds));
+        setMatches(
+          getSeedMatches(
+            hiddenSeedProfileIds,
+            passedSeedProfileIds,
+            demoUserType,
+          ),
+        );
         setUsingSeedMatches(true);
         AccessibilityInfo.announceForAccessibility(
           "Showing demo matches while live matches refresh.",
@@ -153,12 +172,24 @@ export default function LikesScreen() {
         setMatches(displayMatches);
         setUsingSeedMatches(false);
       } else {
-        setMatches(getSeedMatches(hiddenSeedProfileIds, passedSeedProfileIds));
+        setMatches(
+          getSeedMatches(
+            hiddenSeedProfileIds,
+            passedSeedProfileIds,
+            demoUserType,
+          ),
+        );
         setUsingSeedMatches(true);
       }
     } catch {
       console.error("Failed to fetch data.");
-      setMatches(getSeedMatches(hiddenSeedProfileIds, passedSeedProfileIds));
+      setMatches(
+        getSeedMatches(
+          hiddenSeedProfileIds,
+          passedSeedProfileIds,
+          demoUserType,
+        ),
+      );
       setUsingSeedMatches(true);
       AccessibilityInfo.announceForAccessibility(
         "Showing demo matches while live matches refresh.",
@@ -166,7 +197,7 @@ export default function LikesScreen() {
     } finally {
       setLoading(false);
     }
-  }, [hiddenSeedProfileIds, passedSeedProfileIds]);
+  }, [demoUserType, hiddenSeedProfileIds, passedSeedProfileIds]);
 
   useEffect(() => {
     fetchMatches();
@@ -175,8 +206,15 @@ export default function LikesScreen() {
   useEffect(() => {
     if (!usingSeedMatches) return;
 
-    setMatches(getSeedMatches(hiddenSeedProfileIds, passedSeedProfileIds));
-  }, [hiddenSeedProfileIds, passedSeedProfileIds, usingSeedMatches]);
+    setMatches(
+      getSeedMatches(hiddenSeedProfileIds, passedSeedProfileIds, demoUserType),
+    );
+  }, [
+    demoUserType,
+    hiddenSeedProfileIds,
+    passedSeedProfileIds,
+    usingSeedMatches,
+  ]);
 
   useEffect(() => {
     if (!demoActionNotice) {

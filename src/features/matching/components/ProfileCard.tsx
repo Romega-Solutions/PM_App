@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react-native";
 import React from "react";
+import type { UserType } from "@/src/features/auth/api/authApi";
 import { useAppTheme } from "@/src/theme/ThemeContext";
 import { makeStyles } from "@/src/theme/makeStyles";
 import {
@@ -51,6 +52,7 @@ export interface ProfileCardData {
   id: string;
   name: string;
   age: number;
+  userType?: UserType;
   location: string;
   distance: string;
   image: ImageSourcePropType | null;

@@ -55,6 +55,7 @@ import { useAppTheme } from "@/src/theme/ThemeContext";
 import { makeStyles } from "@/src/theme/makeStyles";
 import { useDemoMatchingStore } from "@/src/stores/demoMatchingStore";
 import { getDemoMatchPreferences } from "@/src/features/profile/data/demoSettingsStore";
+import { useAuthStore } from "@/src/stores/authStore";
 
 // Brand Colors
 const TEXT_SECONDARY = "rgba(255, 255, 255, 0.74)";
@@ -81,6 +82,7 @@ function convertDBProfileToDisplay(dbProfile: DBProfile): ProfileCardData {
     id: dbProfile.id,
     name: dbProfile.first_name,
     age: dbProfile.age,
+    userType: dbProfile.user_type,
     location: location || "Location not shown",
     distance: "Approximate area",
     image: dbProfile.photos?.[0] ? { uri: dbProfile.photos[0] } : null,
@@ -155,6 +157,7 @@ export const DiscoverScreen: React.FC = () => {
   );
   const recordSeedPass = useDemoMatchingStore((state) => state.recordPass);
   const recordSeedMatch = useDemoMatchingStore((state) => state.recordMatch);
+  const demoUserType = useAuthStore((state) => state.demoUserType);
 
   const currentProfile = profiles[currentIndex] || null;
 
@@ -177,7 +180,7 @@ export const DiscoverScreen: React.FC = () => {
       demoPreferences.relationshipGoal,
     );
 
-    return getSeedProfiles().filter(
+    return getSeedProfiles(demoUserType).filter(
       (profile) =>
         !passedSeedProfileIds.includes(profile.id) &&
         !matchedSeedProfileIds.includes(profile.id) &&
@@ -188,7 +191,12 @@ export const DiscoverScreen: React.FC = () => {
           normalizeRelationshipGoal(profile.relationshipGoal) ===
             relationshipGoal),
     );
-  }, [hiddenSeedProfileIds, matchedSeedProfileIds, passedSeedProfileIds]);
+  }, [
+    demoUserType,
+    hiddenSeedProfileIds,
+    matchedSeedProfileIds,
+    passedSeedProfileIds,
+  ]);
 
   const removeSeedProfileFromStack = useCallback((profileId: string) => {
     setProfiles((current) => current.filter((profile) => profile.id !== profileId));

@@ -142,6 +142,7 @@ export const MessagesScreen: React.FC = () => {
 
   // Get global unread count from Zustand store
   const isDemoMode = useAuthStore((state) => state.isDemoMode);
+  const demoUserType = useAuthStore((state) => state.demoUserType);
   const realTotalUnreadCount = useChatStore((state) => state.totalUnreadCount);
   const demoMessagesByConversation = useMessageStore(
     (state) => state.messagesByConversation,
@@ -166,7 +167,7 @@ export const MessagesScreen: React.FC = () => {
   });
 
   const seedConversations = React.useMemo(() => {
-    return getSeedConversations(currentUserId)
+    return getSeedConversations(currentUserId, demoUserType)
       .filter((conv) => !hiddenDemoConversationIds.includes(conv.id))
       .map((conv) => {
         const cachedMessages = demoMessagesByConversation[conv.id] || [];
@@ -198,7 +199,12 @@ export const MessagesScreen: React.FC = () => {
           updated_at: lastMessage.updated_at || lastMessage.created_at,
         };
       });
-  }, [currentUserId, demoMessagesByConversation, hiddenDemoConversationIds]);
+  }, [
+    currentUserId,
+    demoMessagesByConversation,
+    demoUserType,
+    hiddenDemoConversationIds,
+  ]);
   const usingSeedConversations =
     isDemoMode && !loading && (Boolean(error) || conversations.length === 0);
   const displayConversations = usingSeedConversations

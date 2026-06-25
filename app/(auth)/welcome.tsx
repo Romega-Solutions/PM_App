@@ -1,7 +1,7 @@
 // app/(auth)/welcome.tsx
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { BadgeCheck, ShieldCheck, Users } from "lucide-react-native";
+import { BadgeCheck, HeartHandshake, ShieldCheck, UserRound, Users } from "lucide-react-native";
 import React from "react";
 import {
   Dimensions,
@@ -19,6 +19,7 @@ import PrimaryButton from "../../src/components/ui/PrimaryButton";
 import SecondaryButton from "../../src/components/ui/SecondaryButton";
 import {
   BETA_DEMO_COPY,
+  type DemoPreviewUserType,
   isBetaDemoModeEnabled,
 } from "../../src/features/auth/demoMode";
 import { useAuthStore } from "../../src/stores/authStore";
@@ -41,8 +42,8 @@ export default function Welcome() {
   const insets = useSafeAreaInsets();
   const startDemoSession = useAuthStore((state) => state.startDemoSession);
 
-  const handleBetaPreview = () => {
-    startDemoSession();
+  const handleBetaPreview = (userType: DemoPreviewUserType) => {
+    startDemoSession(userType);
     router.replace("/(main)");
   };
 
@@ -151,20 +152,52 @@ export default function Welcome() {
             accessibilityHint="Log in to your existing account"
           />
           {isBetaDemoModeEnabled() ? (
-            <Pressable
-              style={styles.demoPreview}
-              onPress={handleBetaPreview}
-              accessibilityRole="button"
-              accessibilityLabel="Open beta preview with seeded demo data"
-              accessibilityHint="Opens the main app without creating an account or writing profile data"
-            >
-              <Text style={styles.demoPreviewTitle}>
-                {BETA_DEMO_COPY.title}
-              </Text>
-              <Text style={styles.demoPreviewText}>
-                Preview the main tabs with seeded data. No account is created.
-              </Text>
-            </Pressable>
+            <View style={styles.demoPreviewGroup}>
+              <View style={styles.demoPreviewHeader}>
+                <Text style={styles.demoPreviewTitle}>
+                  {BETA_DEMO_COPY.title}
+                </Text>
+                <Text style={styles.demoPreviewText}>
+                  Explore the main tabs with seeded data. No account is created.
+                </Text>
+              </View>
+              <View style={styles.demoPreviewOptions}>
+                <Pressable
+                  style={styles.demoPreviewOption}
+                  onPress={() => handleBetaPreview("foreigner")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Preview as a foreigner account"
+                  accessibilityHint="Opens seeded Filipina discovery, likes, messages, and profile screens without login"
+                >
+                  <UserRound size={19} color={WHITE} strokeWidth={2.4} />
+                  <View style={styles.demoPreviewOptionCopy}>
+                    <Text style={styles.demoPreviewOptionTitle}>
+                      Foreigner preview
+                    </Text>
+                    <Text style={styles.demoPreviewOptionText}>
+                      Browse Filipina demo profiles
+                    </Text>
+                  </View>
+                </Pressable>
+                <Pressable
+                  style={styles.demoPreviewOption}
+                  onPress={() => handleBetaPreview("filipina")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Preview as a Pinay account"
+                  accessibilityHint="Opens seeded foreigner discovery, likes, messages, and profile screens without login"
+                >
+                  <HeartHandshake size={19} color={WHITE} strokeWidth={2.4} />
+                  <View style={styles.demoPreviewOptionCopy}>
+                    <Text style={styles.demoPreviewOptionTitle}>
+                      Pinay preview
+                    </Text>
+                    <Text style={styles.demoPreviewOptionText}>
+                      Browse foreigner demo profiles
+                    </Text>
+                  </View>
+                </Pressable>
+              </View>
+            </View>
           ) : null}
           <View style={styles.legalWrap}>
             <Text style={[styles.legal, { fontFamily: "DMSans-Regular" }]}>
@@ -285,8 +318,7 @@ const styles = StyleSheet.create({
   actions: {
     gap: 14,
   },
-  demoPreview: {
-    minHeight: 68,
+  demoPreviewGroup: {
     width: "100%",
     maxWidth: Platform.OS === "web" ? 420 : undefined,
     alignSelf: "center",
@@ -294,8 +326,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.24)",
     backgroundColor: "rgba(255, 255, 255, 0.10)",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    padding: 14,
+    gap: 12,
+  },
+  demoPreviewHeader: {
+    alignItems: "center",
   },
   demoPreviewTitle: {
     color: WHITE,
@@ -310,6 +345,35 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     textAlign: "center",
+  },
+  demoPreviewOptions: {
+    gap: 10,
+  },
+  demoPreviewOption: {
+    minHeight: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(239, 62, 120, 0.36)",
+    backgroundColor: "rgba(15, 8, 20, 0.58)",
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  demoPreviewOptionCopy: {
+    flex: 1,
+  },
+  demoPreviewOptionTitle: {
+    color: WHITE,
+    fontFamily: "DMSans-Bold",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  demoPreviewOptionText: {
+    color: "rgba(255, 255, 255, 0.7)",
+    fontFamily: "DMSans-Regular",
+    fontSize: 12,
+    lineHeight: 17,
   },
   legal: {
     fontSize: 12,
