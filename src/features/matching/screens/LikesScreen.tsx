@@ -28,6 +28,7 @@ import {
   AccessibilityInfo,
   ActivityIndicator,
   Alert,
+  Animated,
   Platform,
   ScrollView,
   StatusBar,
@@ -81,6 +82,8 @@ export default function LikesScreen() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [usingSeedMatches, setUsingSeedMatches] = useState(false);
+  const [demoActionNotice, setDemoActionNotice] = useState<string | null>(null);
+  const demoActionOpacity = React.useRef(new Animated.Value(0)).current;
 
   const fetchMatches = useCallback(async () => {
     setLoading(true);
@@ -153,6 +156,40 @@ export default function LikesScreen() {
     fetchMatches();
   }, [fetchMatches]);
 
+  useEffect(() => {
+    if (!demoActionNotice) {
+      demoActionOpacity.stopAnimation();
+      demoActionOpacity.setValue(0);
+      return;
+    }
+
+    demoActionOpacity.setValue(0);
+
+    const animation = Animated.sequence([
+      Animated.timing(demoActionOpacity, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+      Animated.delay(3000),
+      Animated.timing(demoActionOpacity, {
+        toValue: 0,
+        duration: 360,
+        useNativeDriver: true,
+      }),
+    ]);
+
+    animation.start(({ finished }) => {
+      if (finished) {
+        setDemoActionNotice(null);
+      }
+    });
+
+    return () => {
+      animation.stop();
+    };
+  }, [demoActionNotice, demoActionOpacity]);
+
   const filteredMatches =
     filter === "mutual" ? matches.filter((m) => m.mutual) : matches;
 
@@ -222,6 +259,9 @@ export default function LikesScreen() {
 
     if (isSeedProfileId(String(id))) {
       setMatches((current) => current.filter((item) => item.id !== id));
+      setDemoActionNotice(
+        `${matchName} was hidden from this beta preview. No real unmatch was sent.`,
+      );
       AccessibilityInfo.announceForAccessibility(
         `${matchName} was hidden from the beta preview. No real member action was sent.`,
       );
@@ -405,6 +445,33 @@ export default function LikesScreen() {
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      {demoActionNotice && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.demoActionSnackbar,
+            {
+              bottom: Math.max(insets.bottom + 86, 92),
+              opacity: demoActionOpacity,
+              transform: [
+                {
+                  translateY: demoActionOpacity.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [10, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+          accessible
+          accessibilityLiveRegion="polite"
+          accessibilityLabel={demoActionNotice}
+        >
+          <Text style={styles.demoActionSnackbarTitle}>Beta preview action</Text>
+          <Text style={styles.demoActionSnackbarText}>{demoActionNotice}</Text>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -532,6 +599,46 @@ const useStyles = makeStyles((theme) => ({
     lineHeight: 17,
     fontFamily: "DMSans-Medium",
     color: "rgba(255, 255, 255, 0.74)",
+  },
+  demoActionSnackbar: {
+    position: "absolute",
+    left: 20,
+    right: 20,
+    zIndex: 20,
+    maxWidth: 520,
+    alignSelf: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: "rgba(15, 23, 42, 0.94)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.16)",
+    ...Platform.select({
+      web: {
+        boxShadow: "0 18px 42px rgba(0, 0, 0, 0.28)",
+      },
+      ios: {
+        shadowColor: theme.colors.neutral.black,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.24,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+  demoActionSnackbarTitle: {
+    fontSize: 12,
+    fontFamily: "DMSans-Bold",
+    color: theme.colors.neutral.white,
+    marginBottom: 3,
+  },
+  demoActionSnackbarText: {
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: "DMSans-Medium",
+    color: "rgba(255, 255, 255, 0.76)",
   },
 }));
 // touch

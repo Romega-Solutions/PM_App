@@ -1,5 +1,5 @@
 import { supabase } from "@/src/config/supabase";
-import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
+import { useIsDemoSession } from "@/src/features/auth/demoMode";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import {
@@ -24,6 +24,7 @@ export function useUploadPhoto() {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const isDemoMode = useIsDemoSession();
 
   /**
    * Pick image from gallery and upload
@@ -32,7 +33,7 @@ export function useUploadPhoto() {
     existingPhotos: string[] = [],
   ): Promise<{ success: boolean; url?: string }> => {
     try {
-      if (isBetaDemoModeEnabled()) {
+      if (isDemoMode) {
         const updatedPhotos = [
           DEMO_PROFILE_PHOTO_URI,
           ...existingPhotos.filter((photo) => photo !== DEMO_PROFILE_PHOTO_URI),
@@ -127,7 +128,7 @@ export function useUploadPhoto() {
     try {
       setError(null);
 
-      if (isBetaDemoModeEnabled()) {
+      if (isDemoMode) {
         const updatedPhotos = existingPhotos.filter((url) => url !== photoUrl);
         saveDemoProfilePhotos(updatedPhotos);
         return existingPhotos.includes(photoUrl);

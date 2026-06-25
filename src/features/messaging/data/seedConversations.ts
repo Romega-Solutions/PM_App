@@ -2,6 +2,7 @@ import { getSeedProfilesInOrder } from "@/src/features/matching/data/seedProfile
 import type { ConversationWithUser, Message } from "../types/messaging.types";
 
 export const DEMO_CURRENT_USER_ID = "00000000-0000-4000-8000-000000000001";
+const DEMO_CLOCK_START_MS = Math.floor(Date.now() / 60000) * 60000;
 
 const DEMO_USER_IDS = [
   "00000000-0000-4000-8000-000000000101",
@@ -170,7 +171,11 @@ const SEED_MESSAGE_FIXTURES = [
 ] as const;
 
 function minutesAgoIso(minutesAgo: number): string {
-  return new Date(Date.now() - minutesAgo * 60 * 1000).toISOString();
+  return new Date(DEMO_CLOCK_START_MS - minutesAgo * 60 * 1000).toISOString();
+}
+
+function demoSequenceIso(sequence: number): string {
+  return new Date(DEMO_CLOCK_START_MS + sequence * 1000).toISOString();
 }
 
 export function isSeedConversationId(id: string): boolean {
@@ -331,16 +336,19 @@ export function createSeedOutgoingMessage({
   currentUserId = DEMO_CURRENT_USER_ID,
   recipientId,
   text,
+  sequence = 1,
 }: {
   conversationId: string;
   currentUserId?: string;
   recipientId: string;
   text: string;
+  sequence?: number;
 }): Message {
-  const timestamp = new Date().toISOString();
+  const timestamp = demoSequenceIso(sequence);
+  const sequenceId = String(sequence).padStart(2, "0");
 
   return {
-    id: `${conversationId}-local-${Date.now()}`,
+    id: `${conversationId}-local-${sequenceId}`,
     conversation_id: conversationId,
     sender_id: currentUserId || DEMO_CURRENT_USER_ID,
     recipient_id: recipientId,
@@ -359,16 +367,19 @@ export function createSeedOutgoingImageMessage({
   currentUserId = DEMO_CURRENT_USER_ID,
   recipientId,
   imageUrl,
+  sequence = 1,
 }: {
   conversationId: string;
   currentUserId?: string;
   recipientId: string;
   imageUrl: string;
+  sequence?: number;
 }): Message {
-  const timestamp = new Date().toISOString();
+  const timestamp = demoSequenceIso(sequence);
+  const sequenceId = String(sequence).padStart(2, "0");
 
   return {
-    id: `${conversationId}-local-image-${Date.now()}`,
+    id: `${conversationId}-local-image-${sequenceId}`,
     conversation_id: conversationId,
     sender_id: currentUserId || DEMO_CURRENT_USER_ID,
     recipient_id: recipientId,

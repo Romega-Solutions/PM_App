@@ -73,6 +73,19 @@ export function useMessages({
     ? cachedMessages 
     : localFallbackMessages;
 
+  const getNextDemoMessageSequence = useCallback(() => {
+    if (!conversationId) return 1;
+
+    const currentMessages =
+      useMessageStore.getState().messagesByConversation[conversationId] || [];
+
+    return (
+      currentMessages.filter(
+        (message) => message.delivery_method === "demo-local",
+      ).length + 1
+    );
+  }, [conversationId]);
+
   /**
    * Load messages from database
    */
@@ -81,16 +94,20 @@ export function useMessages({
       setError(null);
       setLoading(false);
 
-      if (cachedMessages.length === 0) {
-        setMessagesToStore(
+      const currentMessages =
+        useMessageStore.getState().messagesByConversation[conversationId] || [];
+      const localDemoMessages = currentMessages.filter(
+        (message) => message.delivery_method === "demo-local",
+      );
+
+      setMessagesToStore(conversationId, [
+        ...getSeedMessages(
           conversationId,
-          getSeedMessages(
-            conversationId,
-            userId || DEMO_CURRENT_USER_ID,
-            recipientId,
-          ),
-        );
-      }
+          userId || DEMO_CURRENT_USER_ID,
+          recipientId,
+        ),
+        ...localDemoMessages,
+      ]);
 
       return;
     }
@@ -150,6 +167,7 @@ export function useMessages({
             currentUserId: userId || DEMO_CURRENT_USER_ID,
             recipientId,
             text: text.trim(),
+            sequence: getNextDemoMessageSequence(),
           });
 
           addMessageToStore(conversationId, data);
@@ -183,6 +201,7 @@ export function useMessages({
     [
       addMessageToStore,
       conversationId,
+      getNextDemoMessageSequence,
       isSeedConversation,
       recipientId,
       userId,
@@ -201,6 +220,7 @@ export function useMessages({
             currentUserId: userId || DEMO_CURRENT_USER_ID,
             recipientId,
             imageUrl,
+            sequence: getNextDemoMessageSequence(),
           });
 
           addMessageToStore(conversationId, data);
@@ -236,6 +256,7 @@ export function useMessages({
     [
       addMessageToStore,
       conversationId,
+      getNextDemoMessageSequence,
       isSeedConversation,
       recipientId,
       userId,

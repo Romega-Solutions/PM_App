@@ -20,7 +20,7 @@
 import { useProfile } from "@/src/features/profile/hooks/userProfile";
 import { useUpdateProfile } from "@/src/features/profile/hooks/useUpdateProfile";
 import { useUploadPhoto } from "@/src/features/profile/hooks/useUploadPhoto";
-import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
+import { useIsDemoSession } from "@/src/features/auth/demoMode";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -33,19 +33,18 @@ import {
   View,
 } from "react-native";
 import { makeStyles } from "../../../theme/makeStyles";
-import { useAppTheme, AppTheme } from "../../../theme/ThemeContext";
+import { useAppTheme } from "../../../theme/ThemeContext";
 import { EditProfileHeader } from "../components/EditProfileHeader";
 import { ProfileEditForm } from "../components/ProfileEditForm";
 import { ProfilePhotoSection } from "../components/ProfilePhotoSection";
 
 const BRAND_BG = "#0F0814";
-const ACCENT_PINK = "#EF3E78";
 
 export default function EditProfileScreen() {
   const styles = useStyles();
   const theme = useAppTheme();
   const router = useRouter();
-  const isDemoMode = isBetaDemoModeEnabled();
+  const isDemoMode = useIsDemoSession();
 
   // Use custom hooks
   const { profile, loading, refresh } = useProfile();

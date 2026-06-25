@@ -90,9 +90,7 @@ export const useVerificationUpload = () => {
     if (isDemoMode) {
       setDocumentUri(DEMO_DOCUMENT_URI);
       setDocumentStatus("submitted");
-      setError(
-        "Demo verification submitted for manual review. No OCR or private document upload was sent.",
-      );
+      setError("");
       return;
     }
 

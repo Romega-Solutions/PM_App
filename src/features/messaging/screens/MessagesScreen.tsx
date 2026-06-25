@@ -50,6 +50,7 @@ import {
   isSeedConversationId,
 } from "@/src/features/messaging/data/seedConversations";
 import { useConversations } from "@/src/features/messaging/hooks/useConversations";
+import { useAuthStore } from "@/src/stores/authStore";
 import { useChatStore } from "@/src/stores/chatStore";
 import { ActiveUserCard } from "../components/ActiveUserCard";
 import { ConversationCard } from "../components/ConversationCard";
@@ -130,8 +131,10 @@ export const MessagesScreen: React.FC = () => {
   const [filterType, setFilterType] = useState<ConversationFilter>("all");
   const [showSeedSnackbar, setShowSeedSnackbar] = useState(false);
   const seedSnackbarOpacity = React.useRef(new Animated.Value(0)).current;
+  const seedSnackbarRunKey = React.useRef<string | null>(null);
 
   // Get global unread count from Zustand store
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
   const realTotalUnreadCount = useChatStore((state) => state.totalUnreadCount);
 
   // Get current user ID
@@ -154,7 +157,7 @@ export const MessagesScreen: React.FC = () => {
     [currentUserId],
   );
   const usingSeedConversations =
-    !loading && (Boolean(error) || conversations.length === 0);
+    isDemoMode && !loading && (Boolean(error) || conversations.length === 0);
   const displayConversations = usingSeedConversations
     ? seedConversations
     : conversations;
@@ -167,15 +170,23 @@ export const MessagesScreen: React.FC = () => {
   const seedSnackbarText = error
     ? `Live messages did not refresh: ${getConversationErrorMessage(error)} Sample unread and active chats are shown for testing.`
     : "Sample unread and active chats are shown until real conversations are available.";
+  const seedSnackbarKey = error ? "fallback-error" : "fallback-empty";
+  const liveConversationError = usingSeedConversations ? null : error;
 
   useEffect(() => {
     if (!usingSeedConversations) {
       seedSnackbarOpacity.stopAnimation();
       seedSnackbarOpacity.setValue(0);
       setShowSeedSnackbar(false);
+      seedSnackbarRunKey.current = null;
       return;
     }
 
+    if (seedSnackbarRunKey.current === seedSnackbarKey) {
+      return;
+    }
+
+    seedSnackbarRunKey.current = seedSnackbarKey;
     setShowSeedSnackbar(true);
     seedSnackbarOpacity.setValue(0);
 
@@ -202,7 +213,7 @@ export const MessagesScreen: React.FC = () => {
     return () => {
       animation.stop();
     };
-  }, [seedSnackbarOpacity, usingSeedConversations, seedSnackbarText]);
+  }, [seedSnackbarKey, seedSnackbarOpacity, usingSeedConversations]);
 
   // Extract active users from online conversations
   const activeUsers = displayConversations
@@ -237,14 +248,18 @@ export const MessagesScreen: React.FC = () => {
     const firstName = conv.other_user.first_name || "";
     return firstName.toLowerCase().includes(searchQuery.toLowerCase());
   });
-  const emptyTitle = searchQuery
+  const emptyTitle = liveConversationError
+    ? "Messages did not refresh"
+    : searchQuery
     ? "No conversations found"
     : filterType === "unread"
       ? "No unread messages"
       : filterType === "online"
         ? "No one active right now"
         : "No conversations yet";
-  const emptyMessage = searchQuery
+  const emptyMessage = liveConversationError
+    ? getConversationErrorMessage(liveConversationError)
+    : searchQuery
     ? "Try a first name, or clear the search to see all chats."
     : filterType === "unread"
       ? "You are caught up. New replies will appear here when they arrive."
@@ -503,7 +518,18 @@ export const MessagesScreen: React.FC = () => {
                   report, block, or unmatch.
                 </Text>
               </View>
-              {searchQuery || filterType !== "all" ? (
+              {liveConversationError ? (
+                <TouchableOpacity
+                  style={styles.emptyActionButton}
+                  onPress={refresh}
+                  activeOpacity={0.84}
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry loading conversations"
+                >
+                  <RefreshCw size={18} color={WHITE} strokeWidth={2.4} />
+                  <Text style={styles.emptyActionButtonText}>Retry</Text>
+                </TouchableOpacity>
+              ) : searchQuery || filterType !== "all" ? (
                 <TouchableOpacity
                   style={styles.emptyActionButton}
                   onPress={() => {
