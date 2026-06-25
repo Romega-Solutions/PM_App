@@ -1,14 +1,19 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
+  Camera,
+  CameraOff,
   Flag,
+  Mic,
+  MicOff,
   PhoneOff,
   ShieldCheck,
   UserRound,
+  Video,
   VideoOff,
   X,
 } from "lucide-react-native";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Image,
   Pressable,
@@ -28,6 +33,15 @@ const SURFACE = "rgba(255,255,255,0.08)";
 const SURFACE_STRONG = "rgba(255,255,255,0.14)";
 const TEXT_SECONDARY = "rgba(255,255,255,0.78)";
 const TEXT_MUTED = "rgba(255,255,255,0.62)";
+const DEMO_CONNECT_DELAY_MS = 1400;
+const DEMO_TICK_MS = 1000;
+
+function formatCallDuration(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
 
 export default function VideoCallScreen() {
   const router = useRouter();
@@ -45,6 +59,43 @@ export default function VideoCallScreen() {
   const displayName = userName || "this match";
   const canOpenSafetyReport = Boolean(userId);
   const isDemoCall = isDemo === "true";
+  const [isConnected, setIsConnected] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isCameraOn, setIsCameraOn] = useState(true);
+  const [isMicOn, setIsMicOn] = useState(true);
+
+  useEffect(() => {
+    if (!isDemoCall) return;
+
+    let durationTimer: ReturnType<typeof setInterval> | undefined;
+
+    setIsConnected(false);
+    setElapsedSeconds(0);
+
+    const connectTimer = setTimeout(() => {
+      setIsConnected(true);
+      setElapsedSeconds(1);
+      durationTimer = setInterval(() => {
+        setElapsedSeconds((current) => current + 1);
+      }, DEMO_TICK_MS);
+    }, DEMO_CONNECT_DELAY_MS);
+
+    return () => {
+      clearTimeout(connectTimer);
+      if (durationTimer) clearInterval(durationTimer);
+    };
+  }, [isDemoCall]);
+
+  const callStatusText = isDemoCall
+    ? isConnected
+      ? "Connected"
+      : "Ringing"
+    : "Safety first";
+  const callTimeText = isDemoCall
+    ? isConnected
+      ? formatCallDuration(elapsedSeconds)
+      : "Connecting..."
+    : "No call started";
 
   const handleClose = () => {
     if (isDemoCall && userId) {
@@ -128,7 +179,11 @@ export default function VideoCallScreen() {
             </View>
           )}
           <View style={styles.unavailableBadge}>
-            <VideoOff size={26} color={WHITE} />
+            {isDemoCall && isCameraOn ? (
+              <Video size={26} color={WHITE} />
+            ) : (
+              <VideoOff size={26} color={WHITE} />
+            )}
           </View>
         </View>
 
@@ -136,18 +191,66 @@ export default function VideoCallScreen() {
           <View style={styles.statusPill}>
             <ShieldCheck size={16} color={WHITE} />
             <Text style={styles.statusPillText}>
-              {isDemoCall ? "Local preview" : "Safety first"}
+              {callStatusText} - {callTimeText}
             </Text>
           </View>
 
           <Text style={styles.title}>
-            {isDemoCall ? "Simulated video screen" : "Keep this chat in messages"}
+            {isDemoCall ? "Video preview" : "Keep this chat in messages"}
           </Text>
           <Text style={styles.description}>
             {isDemoCall
-              ? "This beta preview opens like a video call without requesting camera or microphone permission or contacting a real member."
+              ? `Local video preview with ${displayName}.`
               : "This screen does not start video calls. No call was started and no camera or microphone permission was requested."}
           </Text>
+
+          {isDemoCall ? (
+            <View style={styles.controlRow}>
+              <Pressable
+                onPress={() => setIsCameraOn((current) => !current)}
+                style={({ pressed }) => [
+                  styles.controlButton,
+                  isCameraOn && styles.controlButtonActive,
+                  pressed && styles.buttonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isCameraOn ? "Turn demo camera off" : "Turn demo camera on"
+                }
+                accessibilityState={{ checked: isCameraOn }}
+              >
+                {isCameraOn ? (
+                  <Camera size={20} color={WHITE} />
+                ) : (
+                  <CameraOff size={20} color={WHITE} />
+                )}
+                <Text style={styles.controlButtonText}>
+                  {isCameraOn ? "Camera" : "Camera off"}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setIsMicOn((current) => !current)}
+                style={({ pressed }) => [
+                  styles.controlButton,
+                  isMicOn && styles.controlButtonActive,
+                  pressed && styles.buttonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={isMicOn ? "Mute demo call" : "Unmute demo call"}
+                accessibilityState={{ checked: isMicOn }}
+              >
+                {isMicOn ? (
+                  <Mic size={20} color={WHITE} />
+                ) : (
+                  <MicOff size={20} color={WHITE} />
+                )}
+                <Text style={styles.controlButtonText}>
+                  {isMicOn ? "Mic on" : "Muted"}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
 
           <View style={styles.divider} />
 
@@ -343,6 +446,33 @@ const styles = StyleSheet.create({
     color: TEXT_SECONDARY,
     fontSize: 16,
     lineHeight: 24,
+  },
+  controlRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 20,
+  },
+  controlButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: SURFACE_STRONG,
+    backgroundColor: SURFACE,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+  },
+  controlButtonActive: {
+    backgroundColor: "rgba(141, 105, 246, 0.24)",
+    borderColor: "rgba(141, 105, 246, 0.44)",
+  },
+  controlButtonText: {
+    color: WHITE,
+    fontSize: 14,
+    fontWeight: "800",
   },
   divider: {
     height: 1,

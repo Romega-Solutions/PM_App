@@ -20,7 +20,7 @@
 import { useProfile } from "@/src/features/profile/hooks/userProfile";
 import { useUpdateProfile } from "@/src/features/profile/hooks/useUpdateProfile";
 import { useUploadPhoto } from "@/src/features/profile/hooks/useUploadPhoto";
-import { useIsDemoSession } from "@/src/features/auth/demoMode";
+import { useAuthStore } from "@/src/stores/authStore";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -37,6 +37,12 @@ import { useAppTheme } from "../../../theme/ThemeContext";
 import { EditProfileHeader } from "../components/EditProfileHeader";
 import { ProfileEditForm } from "../components/ProfileEditForm";
 import { ProfilePhotoSection } from "../components/ProfilePhotoSection";
+import {
+  DEMO_PROFILE_PHOTO_URI,
+  getDemoProfileApiData,
+  saveDemoProfilePhotos,
+  saveDemoProfileUpdates,
+} from "../data/demoProfileStore";
 
 const BRAND_BG = "#0F0814";
 
@@ -44,10 +50,10 @@ export default function EditProfileScreen() {
   const styles = useStyles();
   const theme = useAppTheme();
   const router = useRouter();
-  const isDemoMode = useIsDemoSession();
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
 
   // Use custom hooks
-  const { profile, loading, refresh } = useProfile();
+  const { profile, loading, refresh } = useProfile(!isDemoMode);
   const { updateProfile, updating } = useUpdateProfile();
   const {
     pickAndUploadPhoto,
@@ -66,6 +72,21 @@ export default function EditProfileScreen() {
 
   // Load profile data into form
   useEffect(() => {
+    if (isDemoMode) {
+      const demoProfile = getDemoProfileApiData();
+
+      setFirstName(demoProfile.first_name || "");
+      setLastName(demoProfile.last_name || "");
+      setOccupation(demoProfile.occupation || "");
+      setEducation(demoProfile.education || "");
+      setLocation(demoProfile.location_name || "");
+
+      const photosArray = demoProfile.photos || [];
+      setAllPhotos(photosArray);
+      setProfileImage(photosArray.length > 0 ? photosArray[0] : null);
+      return;
+    }
+
     if (profile) {
       setFirstName(profile.first_name || "");
       setLastName(profile.last_name || "");
@@ -77,9 +98,25 @@ export default function EditProfileScreen() {
       setAllPhotos(photosArray);
       setProfileImage(photosArray.length > 0 ? photosArray[0] : null);
     }
-  }, [profile]);
+  }, [isDemoMode, profile]);
 
   const handleChangePhoto = async () => {
+    if (isDemoMode) {
+      const updatedPhotos = [
+        DEMO_PROFILE_PHOTO_URI,
+        ...allPhotos.filter((photo) => photo !== DEMO_PROFILE_PHOTO_URI),
+      ].slice(0, 6);
+
+      saveDemoProfilePhotos(updatedPhotos);
+      setProfileImage(DEMO_PROFILE_PHOTO_URI);
+      setAllPhotos(updatedPhotos);
+      Alert.alert(
+        "Success",
+        "Demo photo added locally. Live uploads still save to storage when demo mode is off.",
+      );
+      return;
+    }
+
     const result = await pickAndUploadPhoto(allPhotos);
 
     if (result.success && result.url) {
@@ -100,6 +137,23 @@ export default function EditProfileScreen() {
   };
 
   const handleSave = async () => {
+    if (isDemoMode) {
+      saveDemoProfileUpdates({
+        first_name: firstName,
+        last_name: lastName,
+        occupation,
+        education,
+        location_name: location,
+      });
+
+      Alert.alert(
+        "Success",
+        "Demo profile changes saved locally for this preview.",
+      );
+      router.replace("/profile");
+      return;
+    }
+
     const success = await updateProfile({
       first_name: firstName,
       last_name: lastName,

@@ -39,6 +39,7 @@ const NOTIFICATION_LOAD_ERROR =
   "Notification preferences could not be loaded. Check your connection and try again.";
 const NOTIFICATION_SAVE_ERROR =
   "Notification preference was not saved. Check your connection and try again.";
+const DEMO_NOTIFICATION_UPDATED_AT = "2026-01-01T00:00:00.000Z";
 
 type NotificationPreferenceKey =
   | "pushEnabled"
@@ -46,6 +47,19 @@ type NotificationPreferenceKey =
   | "newMessages"
   | "newLikes"
   | "emailUpdates";
+
+const createDefaultDemoNotificationPreferences =
+  (): NotificationPreferences => ({
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+    pushEnabled: true,
+    newMatches: true,
+    newMessages: true,
+    newLikes: true,
+    emailUpdates: false,
+    updatedAt: DEMO_NOTIFICATION_UPDATED_AT,
+  });
+
+let demoNotificationPreferences = createDefaultDemoNotificationPreferences();
 
 function formatNotificationUpdatedAt(value?: string) {
   if (!value) {
@@ -101,15 +115,7 @@ export default function NotificationsScreen() {
 
       if (isDemoMode) {
         if (isMounted) {
-          setPreferences({
-            ...DEFAULT_NOTIFICATION_PREFERENCES,
-            pushEnabled: true,
-            newMatches: true,
-            newMessages: true,
-            newLikes: true,
-            emailUpdates: false,
-            updatedAt: new Date().toISOString(),
-          });
+          setPreferences(demoNotificationPreferences);
           setIsLoadingPreferences(false);
         }
         return;
@@ -165,10 +171,11 @@ export default function NotificationsScreen() {
     setSaveError(null);
 
     if (isDemoMode) {
-      setPreferences({
+      demoNotificationPreferences = {
         ...nextPreferences,
-        updatedAt: new Date().toISOString(),
-      });
+        updatedAt: DEMO_NOTIFICATION_UPDATED_AT,
+      };
+      setPreferences(demoNotificationPreferences);
       setSavingPreference(null);
       return;
     }

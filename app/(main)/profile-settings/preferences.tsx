@@ -30,6 +30,20 @@ const COMPLETE_BASIC_INFO_MESSAGE =
 const SAVE_PREFERENCES_ERROR =
   "Failed to update preferences. Check your connection and try again.";
 
+type DemoPreferencesFormState = {
+  ageMin: string;
+  ageMax: string;
+  maxDistance: string;
+  relationshipGoal: string;
+};
+
+let demoPreferences: DemoPreferencesFormState = {
+  ageMin: "18",
+  ageMax: "38",
+  maxDistance: "75",
+  relationshipGoal: "serious relationship",
+};
+
 export default function PreferencesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -50,10 +64,10 @@ export default function PreferencesScreen() {
     setSaveError(null);
 
     if (isDemoMode) {
-      setAgeMin("18");
-      setAgeMax("38");
-      setMaxDistance("75");
-      setRelationshipGoal("serious relationship");
+      setAgeMin(demoPreferences.ageMin);
+      setAgeMax(demoPreferences.ageMax);
+      setMaxDistance(demoPreferences.maxDistance);
+      setRelationshipGoal(demoPreferences.relationshipGoal);
       setLoading(false);
       return;
     }
@@ -123,6 +137,13 @@ export default function PreferencesScreen() {
     }
 
     if (isDemoMode) {
+      demoPreferences = {
+        ageMin: parsedAgeMin.toString(),
+        ageMax: parsedAgeMax.toString(),
+        maxDistance: parsedMaxDistance.toString(),
+        relationshipGoal: trimmedGoal,
+      };
+
       Alert.alert(
         "Demo preferences saved",
         "These match settings update this beta preview only. Live preferences will save to your account when demo mode is off.",
