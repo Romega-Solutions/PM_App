@@ -40,10 +40,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "@/src/config/supabase";
 import { accountApi } from "@/src/features/account/api/accountApi";
 import { UserType } from "@/src/features/auth/api/authApi";
-import {
-  BETA_DEMO_COPY,
-  BETA_DEMO_PROFILE,
-} from "@/src/features/auth/demoMode";
+import { BETA_DEMO_COPY } from "@/src/features/auth/demoMode";
 import { useAuthStore } from "@/src/stores/authStore";
 import { useProfileStore } from "@/src/stores/profileStore";
 import { ProfileHeader } from "../components/ProfileHeader";
@@ -51,6 +48,7 @@ import {
   ProfileMenuList,
   getDefaultMenuItems,
 } from "../components/ProfileMenuList";
+import { getDemoProfileScreenData } from "../data/demoProfileStore";
 
 /**
  * Profile data interface
@@ -138,15 +136,7 @@ export const ProfileScreen: React.FC = () => {
     const fetchProfileData = async () => {
       try {
         if (isDemoMode) {
-          setProfileData({
-            firstName: BETA_DEMO_PROFILE.firstName,
-            lastName: BETA_DEMO_PROFILE.lastName,
-            age: BETA_DEMO_PROFILE.age,
-            userType: BETA_DEMO_PROFILE.userType,
-            location: BETA_DEMO_PROFILE.location,
-            photoUri: BETA_DEMO_PROFILE.photoUri,
-            isVerified: BETA_DEMO_PROFILE.isVerified,
-          });
+          setProfileData(getDemoProfileScreenData());
           setLoading(false);
           return;
         }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
 import { UpdateProfileData, updateUserProfile } from "../api/profileApi";
+import { saveDemoProfileUpdates } from "../data/demoProfileStore";
 
 const PROFILE_UPDATE_ERROR =
   "Profile changes did not save. Check your connection and try again.";
@@ -15,6 +16,7 @@ export function useUpdateProfile() {
       setError(null);
 
       if (isBetaDemoModeEnabled()) {
+        saveDemoProfileUpdates(data);
         return true;
       }
 

@@ -7,6 +7,10 @@ import {
     updateProfilePhotos,
     uploadProfilePhoto,
 } from "../api/profileApi";
+import {
+  DEMO_PROFILE_PHOTO_URI,
+  saveDemoProfilePhotos,
+} from "../data/demoProfileStore";
 
 const PHOTO_PERMISSION_ERROR =
   "Photo library permission is required to choose a profile photo.";
@@ -28,6 +32,19 @@ export function useUploadPhoto() {
     existingPhotos: string[] = [],
   ): Promise<{ success: boolean; url?: string }> => {
     try {
+      if (isBetaDemoModeEnabled()) {
+        const updatedPhotos = [
+          DEMO_PROFILE_PHOTO_URI,
+          ...existingPhotos.filter((photo) => photo !== DEMO_PROFILE_PHOTO_URI),
+        ].slice(0, 6);
+
+        setUploading(true);
+        setError(null);
+        setProgress(100);
+        saveDemoProfilePhotos(updatedPhotos);
+        return { success: true, url: DEMO_PROFILE_PHOTO_URI };
+      }
+
       // Request permissions
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -55,11 +72,6 @@ export function useUploadPhoto() {
       setUploading(true);
       setError(null);
       setProgress(0);
-
-      if (isBetaDemoModeEnabled()) {
-        setProgress(100);
-        return { success: true, url: imageUri };
-      }
 
       const {
         data: { user },
@@ -116,6 +128,8 @@ export function useUploadPhoto() {
       setError(null);
 
       if (isBetaDemoModeEnabled()) {
+        const updatedPhotos = existingPhotos.filter((url) => url !== photoUrl);
+        saveDemoProfilePhotos(updatedPhotos);
         return existingPhotos.includes(photoUrl);
       }
 
