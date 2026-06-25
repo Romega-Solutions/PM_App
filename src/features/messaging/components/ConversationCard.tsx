@@ -15,7 +15,15 @@
  */
 
 import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  type ImageSourcePropType,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import type { ConversationPhotoSource } from "../types/messaging.types";
 
 // Brand Colors
 const ACCENT_PURPLE = "#8D69F6";
@@ -37,8 +45,8 @@ export interface ConversationCardProps {
   userId: string;
   /** Other user's name */
   userName: string;
-  /** Other user's profile photo URL */
-  userPhoto: string | null;
+  /** Other user's profile photo URL or bundled demo image */
+  userPhoto: ConversationPhotoSource | null;
   /** Whether other user is online */
   isOnline: boolean;
   /** Last message text */
@@ -67,6 +75,7 @@ export const ConversationCard: React.FC<ConversationCardProps> = ({
   onPress,
 }) => {
   const formattedTime = formatTimestamp(lastMessageTime);
+  const userPhotoSource = normalizeImageSource(userPhoto);
   const displayLastMessage = lastMessage?.trim() || "No messages yet";
   const displayUnreadCount = unreadCount > 99 ? "99+" : `${unreadCount}`;
   const unreadLabel =
@@ -88,9 +97,9 @@ export const ConversationCard: React.FC<ConversationCardProps> = ({
       {/* Profile Image */}
       <View style={styles.imageContainer}>
         <View style={styles.imageWrap}>
-          {userPhoto ? (
+          {userPhotoSource ? (
             <Image
-              source={{ uri: userPhoto }}
+              source={userPhotoSource}
               style={styles.image}
               resizeMode="cover"
               accessibilityLabel={`${userName} profile photo`}
@@ -169,6 +178,17 @@ function formatTimestamp(timestamp: string): string {
   if (diffDays < 7) return `${diffDays}d ago`;
 
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function normalizeImageSource(
+  source: ConversationPhotoSource | null,
+): ImageSourcePropType | null {
+  if (!source) return null;
+  if (typeof source === "string") {
+    const uri = source.trim();
+    return uri ? { uri } : null;
+  }
+  return source;
 }
 
 const styles = StyleSheet.create({

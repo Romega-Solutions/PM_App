@@ -72,7 +72,8 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
 
   if (!profile) return null;
 
-  const galleryImages = profile.galleryImages?.filter(Boolean) ?? [];
+  const galleryImages =
+    profile.galleryImages?.filter((image) => image != null) ?? [];
   const detailPills = [
     profile.heightCm
       ? {

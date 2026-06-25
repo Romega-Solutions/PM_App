@@ -15,7 +15,15 @@
  */
 
 import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  type ImageSourcePropType,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import type { ConversationPhotoSource } from "../types/messaging.types";
 
 // Brand Colors
 const ACCENT_PURPLE = "#8D69F6";
@@ -30,8 +38,8 @@ export interface ActiveUserCardProps {
   id: string;
   /** User display name */
   name: string;
-  /** User profile image URL */
-  image: string | null;
+  /** User profile image URL or bundled demo image */
+  image: ConversationPhotoSource | null;
   /** Whether user is currently online */
   isOnline: boolean;
   /** Callback when card is pressed */
@@ -51,6 +59,8 @@ export const ActiveUserCard: React.FC<ActiveUserCardProps> = ({
   isOnline,
   onPress,
 }) => {
+  const imageSource = normalizeImageSource(image);
+
   return (
     <TouchableOpacity
       style={styles.container}
@@ -62,9 +72,9 @@ export const ActiveUserCard: React.FC<ActiveUserCardProps> = ({
     >
       <View style={styles.imageContainer}>
         <View style={styles.imageWrap}>
-          {image ? (
+          {imageSource ? (
             <Image
-              source={{ uri: image }}
+              source={imageSource}
               style={styles.image}
               resizeMode="cover"
               accessibilityLabel={`${name} profile photo`}
@@ -91,6 +101,17 @@ export const ActiveUserCard: React.FC<ActiveUserCardProps> = ({
     </TouchableOpacity>
   );
 };
+
+function normalizeImageSource(
+  source: ConversationPhotoSource | null,
+): ImageSourcePropType | null {
+  if (!source) return null;
+  if (typeof source === "string") {
+    const uri = source.trim();
+    return uri ? { uri } : null;
+  }
+  return source;
+}
 
 const styles = StyleSheet.create({
   container: {

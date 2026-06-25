@@ -23,6 +23,7 @@ import {
   Alert,
   FlatList,
   Image,
+  type ImageSourcePropType,
   KeyboardAvoidingView,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -40,6 +41,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "@/src/config/supabase";
 import {
   DEMO_CURRENT_USER_ID,
+  getSeedConversationPhotoSource,
   isSeedConversationId,
 } from "@/src/features/messaging/data/seedConversations";
 import { useChatRealtime } from "@/src/features/messaging/hooks/useChatRealtime";
@@ -75,6 +77,17 @@ function shouldShowDateHeader(messages: MessageType[], index: number): boolean {
     getDateKey(messages[index].created_at) !==
     getDateKey(messages[index - 1].created_at)
   );
+}
+
+function normalizeImageSource(
+  source?: string | ImageSourcePropType | null,
+): ImageSourcePropType | null {
+  if (!source) return null;
+  if (typeof source === "string") {
+    const uri = source.trim();
+    return uri ? { uri } : null;
+  }
+  return source;
 }
 
 export default function ChatScreen() {
@@ -134,6 +147,12 @@ export default function ChatScreen() {
   const isDemoChat =
     params.isDemo === "true" ||
     Boolean(activeConversationId && isSeedConversationId(activeConversationId));
+  const demoUserImage = activeConversationId
+    ? getSeedConversationPhotoSource(activeConversationId)
+    : null;
+  const chatUserImage = normalizeImageSource(
+    isDemoChat ? demoUserImage ?? params.userImage : params.userImage,
+  );
   const defaultEmoji = String.fromCodePoint(0x1f60a);
   const messagingUserId = isDemoChat
     ? currentUserId || DEMO_CURRENT_USER_ID
@@ -734,15 +753,15 @@ export default function ChatScreen() {
           currentUserId={messagingUserId}
           userName={userName}
           onSwipeToReply={handleSwipeToReply}
-          userImage={params.userImage}
+          userImage={chatUserImage}
         />
       </View>
     ),
     [
+      chatUserImage,
       dbMessages,
       handleSwipeToReply,
       messagingUserId,
-      params.userImage,
       userName,
     ],
   );
@@ -865,9 +884,9 @@ export default function ChatScreen() {
             accessibilityLabel={`${userName}, ${isDemoChat ? "demo chat" : isOnline ? "active now" : "offline"}`}
           >
             <View style={styles.headerAvatarContainer}>
-              {params.userImage && params.userImage.startsWith("http") ? (
+              {chatUserImage ? (
                 <Image
-                  source={{ uri: params.userImage }}
+                  source={chatUserImage}
                   style={styles.headerAvatar}
                   accessibilityLabel={`${userName} profile photo`}
                 />
@@ -1111,9 +1130,9 @@ export default function ChatScreen() {
         ListFooterComponent={
           isTyping ? (
             <View style={[styles.messageRow, styles.theirMessageRow]}>
-              {params.userImage && params.userImage.startsWith("http") ? (
+              {chatUserImage ? (
                 <Image
-                  source={{ uri: params.userImage }}
+                  source={chatUserImage}
                   style={styles.messageAvatar}
                 />
               ) : (

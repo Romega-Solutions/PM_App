@@ -266,7 +266,8 @@ export const MessagesScreen: React.FC = () => {
       id: conv.other_user.id,
       conversationId: conv.id,
       name: conv.other_user.first_name,
-      image: conv.other_user.photos?.[0] || null,
+      image:
+        conv.other_user.demoPhotoSource ?? conv.other_user.photos?.[0] ?? null,
       isOnline: true,
     }));
   const unreadConversationCount = displayConversations.filter(
@@ -338,7 +339,7 @@ export const MessagesScreen: React.FC = () => {
       params: {
         userId: user.id,
         userName: user.name,
-        userImage: user.image || undefined,
+        userImage: typeof user.image === "string" ? user.image : undefined,
         isOnline: "true",
         ...(isSeedConversation
           ? { conversationId: user.conversationId, isDemo: "true" }
@@ -597,7 +598,11 @@ export const MessagesScreen: React.FC = () => {
                   conversationId={conv.id}
                   userId={conv.other_user.id}
                   userName={conv.other_user.first_name}
-                  userPhoto={conv.other_user.photos?.[0] || null}
+                  userPhoto={
+                    conv.other_user.demoPhotoSource ??
+                    conv.other_user.photos?.[0] ??
+                    null
+                  }
                   isOnline={conv.other_user.is_active}
                   lastMessage={conv.last_message_text || "No messages yet"}
                   lastMessageTime={

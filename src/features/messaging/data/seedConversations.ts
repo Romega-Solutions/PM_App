@@ -1,4 +1,5 @@
 import { getSeedProfilesInOrder } from "@/src/features/matching/data/seedProfiles";
+import type { ImageSourcePropType } from "react-native";
 import type { ConversationWithUser, Message } from "../types/messaging.types";
 
 export const DEMO_CURRENT_USER_ID = "00000000-0000-4000-8000-000000000001";
@@ -175,6 +176,7 @@ export function getSeedConversations(
         id: otherUserId,
         first_name: profile.name,
         photos: [],
+        demoPhotoSource: profile.image ?? undefined,
         is_active: fixture.active,
         last_active_at: timestamp,
       },
@@ -204,6 +206,21 @@ export function getSeedConversationForProfileId(
   }
 
   return getSeedConversations(currentUserId)[fixtureIndex] ?? null;
+}
+
+export function getSeedConversationPhotoSource(
+  conversationId: string,
+): ImageSourcePropType | null {
+  const fixtureIndex = getSeedConversationIndex(conversationId);
+
+  if (fixtureIndex === null) {
+    return null;
+  }
+
+  const fixture = SEED_MESSAGE_FIXTURES[fixtureIndex];
+  const profile = getSeedProfilesInOrder()[fixture.profileIndex];
+
+  return profile?.image ?? null;
 }
 
 export function getSeedMessages(
