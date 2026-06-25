@@ -561,7 +561,7 @@ const useStyles = makeStyles((theme) => ({
   // Profile Info
   cardInfo: {
     position: "absolute",
-    bottom: 0,
+    bottom: Platform.OS === "web" ? 92 : 0,
     left: 0,
     right: 0,
     padding: 24,
