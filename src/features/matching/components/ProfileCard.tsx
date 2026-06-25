@@ -532,10 +532,12 @@ const useStyles = makeStyles((theme) => ({
     position: "absolute",
     top: 60,
     right: 20,
-    backgroundColor: "rgba(141, 105, 246, 0.92)",
+    backgroundColor: "rgba(84, 49, 164, 0.94)",
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.28)",
     zIndex: 10,
   },
   demoBadgeText: {
@@ -595,9 +597,9 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "rgba(255, 255, 255, 0.14)",
+    backgroundColor: "rgba(15, 8, 20, 0.74)",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.22)",
+    borderColor: "rgba(255, 255, 255, 0.34)",
   },
   scorePill: {
     minHeight: 30,
@@ -660,9 +662,9 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: 14,
     paddingHorizontal: 10,
     justifyContent: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.14)",
+    backgroundColor: "rgba(15, 8, 20, 0.72)",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.18)",
+    borderColor: "rgba(255, 255, 255, 0.3)",
   },
   metadataPillSecondary: {
     flexShrink: 1,
@@ -670,9 +672,9 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: 14,
     paddingHorizontal: 10,
     justifyContent: "center",
-    backgroundColor: "rgba(15, 8, 20, 0.46)",
+    backgroundColor: "rgba(15, 8, 20, 0.72)",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.14)",
+    borderColor: "rgba(255, 255, 255, 0.3)",
   },
   metadataLabel: {
     fontSize: 12,
@@ -682,7 +684,7 @@ const useStyles = makeStyles((theme) => ({
   metadataText: {
     fontSize: 12,
     fontFamily: "DMSans-Medium",
-    color: "rgba(255, 255, 255, 0.82)",
+    color: "rgba(255, 255, 255, 0.9)",
   },
 
   // Interests
@@ -692,17 +694,17 @@ const useStyles = makeStyles((theme) => ({
     gap: 8,
   },
   interestTag: {
-    backgroundColor: "rgba(141, 105, 246, 0.25)",
+    backgroundColor: "rgba(15, 8, 20, 0.74)",
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: "rgba(141, 105, 246, 0.4)",
+    borderColor: "rgba(179, 157, 255, 0.48)",
   },
   interestText: {
     fontSize: 13,
-    fontFamily: "DMSans-Medium",
-    color: theme.semanticColors.secondary,
+    fontFamily: "DMSans-Bold",
+    color: theme.colors.neutral.white,
   },
   interestTagMuted: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",
