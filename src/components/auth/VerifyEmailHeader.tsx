@@ -1,7 +1,7 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
+import { View, Text, Image, Dimensions } from "react-native";
 import { Mail } from "lucide-react-native";
-import { useAppTheme, makeStyles } from "@/src/theme";
+import { makeStyles } from "@/src/theme";
 
 const { width } = Dimensions.get("window");
 
@@ -10,7 +10,6 @@ interface Props {
 }
 
 export default function VerifyEmailHeader({ email }: Props) {
-  const theme = useAppTheme();
   const styles = useStyles();
 
   return (

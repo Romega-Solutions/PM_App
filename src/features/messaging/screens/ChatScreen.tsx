@@ -96,19 +96,15 @@ export default function ChatScreen() {
   const BRAND_BG = theme.colors.dalisay[950];
   const ACCENT_PURPLE = theme.colors.dalisay[500];
   const DANGER_RED = theme.colors.amihan[500];
-  const ONLINE_GREEN = "#10B981";
   const WHITE = "#FFFFFF";
-  const SURFACE = "rgba(255,255,255,0.06)";
   const TEXT_SECONDARY = "rgba(255,255,255,0.75)";
   const TEXT_MUTED = "rgba(255,255,255,0.5)";
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<ChatScreenParams>();
   const inputRef = useRef<TextInput>(null);
-  const [replyingTo, setReplyingTo] = useState<MessageType | null>(null);
 
-  const handleSwipeToReply = useCallback((message: MessageType) => {
-    setReplyingTo(message);
+  const handleSwipeToReply = useCallback(() => {
     inputRef.current?.focus();
   }, []);
 

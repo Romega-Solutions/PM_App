@@ -199,13 +199,6 @@ export const DiscoverScreen: React.FC = () => {
   }, []);
 
   /**
-   * Load user data and profiles on mount
-   */
-  useEffect(() => {
-    loadUserDataAndProfiles();
-  }, []);
-
-  /**
    * Load more profiles when running low
    */
   const loadMoreProfiles = useCallback(async () => {
@@ -235,7 +228,7 @@ export const DiscoverScreen: React.FC = () => {
   /**
    * Fetch user data and initial profiles
    */
-  async function loadUserDataAndProfiles() {
+  const loadUserDataAndProfiles = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     setActionError(null);
@@ -288,7 +281,14 @@ export const DiscoverScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }
+  }, [getVisibleSeedProfiles]);
+
+  /**
+   * Load user data and profiles on mount
+   */
+  useEffect(() => {
+    loadUserDataAndProfiles();
+  }, [loadUserDataAndProfiles]);
 
   /**
    * Move to next profile in stack

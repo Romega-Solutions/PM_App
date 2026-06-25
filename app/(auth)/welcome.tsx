@@ -6,6 +6,7 @@ import React from "react";
 import {
   Dimensions,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StatusBar,
@@ -286,6 +287,9 @@ const styles = StyleSheet.create({
   },
   demoPreview: {
     minHeight: 68,
+    width: "100%",
+    maxWidth: Platform.OS === "web" ? 420 : undefined,
+    alignSelf: "center",
     borderRadius: 18,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.24)",

@@ -1,8 +1,8 @@
 import React from "react";
-import { View, Text, StyleSheet, Platform } from "react-native";
+import { View, Text, Platform } from "react-native";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
 import SecondaryButton from "@/src/components/ui/SecondaryButton";
-import { useAppTheme, makeStyles } from "@/src/theme";
+import { makeStyles } from "@/src/theme";
 
 interface Props {
   countdown: number;
@@ -11,7 +11,6 @@ interface Props {
 }
 
 export default function VerificationSuccessActions({ countdown, onContinue, onCancel }: Props) {
-  const theme = useAppTheme();
   const styles = useStyles();
 
   return (

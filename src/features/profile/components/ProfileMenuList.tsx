@@ -29,14 +29,6 @@ import { Text, TouchableOpacity, View } from "react-native";
 import { makeStyles } from "../../../theme/makeStyles";
 import { useAppTheme, AppTheme } from "../../../theme/ThemeContext";
 
-// Brand Colors
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
-const SURFACE_STRONG = "rgba(255, 255, 255, 0.08)";
-const TILE_BORDER = "rgba(168, 85, 247, 0.13)";
-const DANGER_BG = "rgba(239, 62, 120, 0.12)";
-
 /**
  * Menu item interface
  */

@@ -81,7 +81,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
   React.useEffect(() => {
     opacityAnim.value = withTiming(1, { duration: 200 });
     slideAnim.value = withSpring(0, { damping: 15, stiffness: 150 });
-  }, []);
+  }, [opacityAnim, slideAnim]);
 
   // Gesture state
   const translateX = useSharedValue(0);
