@@ -5,6 +5,10 @@ import {
   DEFAULT_PRIVACY_SETTINGS,
   type PrivacySettings,
 } from "@/src/features/account/api/accountApi";
+import {
+  getDemoPrivacySettings,
+  saveDemoPrivacySettings,
+} from "@/src/features/profile/data/demoSettingsStore";
 import { LaunchStateNotice } from "@/src/components/ui/LaunchStateNotice";
 import { useAuthStore } from "@/src/stores/authStore";
 import {
@@ -44,7 +48,6 @@ const PRIVACY_SAVE_ERROR =
   "This setting could not be saved. Check your connection and try again.";
 const DELETION_REQUEST_ERROR =
   "Your deletion request was not sent. Check your connection and try again.";
-const DEMO_PRIVACY_UPDATED_AT = "2026-01-01T00:00:00.000Z";
 
 type PrivacySettingKey =
   | "showOnlineStatus"
@@ -57,17 +60,6 @@ type DeletionRequestFeedback = {
   title: string;
   message: string;
 };
-
-const createDefaultDemoPrivacySettings = (): PrivacySettings => ({
-  ...DEFAULT_PRIVACY_SETTINGS,
-  showOnlineStatus: true,
-  showDistance: true,
-  readReceipts: true,
-  profileVisible: true,
-  updatedAt: DEMO_PRIVACY_UPDATED_AT,
-});
-
-let demoPrivacySettings = createDefaultDemoPrivacySettings();
 
 function formatPrivacyUpdatedAt(value?: string) {
   if (!value) {
@@ -120,7 +112,7 @@ export default function PrivacyScreen() {
 
       if (isDemoMode) {
         if (isMounted) {
-          setSettings(demoPrivacySettings);
+          setSettings(getDemoPrivacySettings());
           setIsLoadingSettings(false);
         }
         return;
@@ -166,11 +158,7 @@ export default function PrivacyScreen() {
     setSavingSetting(key);
 
     if (isDemoMode) {
-      demoPrivacySettings = {
-        ...nextSettings,
-        updatedAt: DEMO_PRIVACY_UPDATED_AT,
-      };
-      setSettings(demoPrivacySettings);
+      setSettings(saveDemoPrivacySettings(nextSettings));
       setSavingSetting(null);
       return;
     }

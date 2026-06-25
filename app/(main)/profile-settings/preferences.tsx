@@ -1,4 +1,8 @@
 import { accountApi } from "@/src/features/account/api/accountApi";
+import {
+  getDemoMatchPreferences,
+  saveDemoMatchPreferences,
+} from "@/src/features/profile/data/demoSettingsStore";
 import { useAuthStore } from "@/src/stores/authStore";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -30,20 +34,6 @@ const COMPLETE_BASIC_INFO_MESSAGE =
 const SAVE_PREFERENCES_ERROR =
   "Failed to update preferences. Check your connection and try again.";
 
-type DemoPreferencesFormState = {
-  ageMin: string;
-  ageMax: string;
-  maxDistance: string;
-  relationshipGoal: string;
-};
-
-let demoPreferences: DemoPreferencesFormState = {
-  ageMin: "18",
-  ageMax: "38",
-  maxDistance: "75",
-  relationshipGoal: "serious relationship",
-};
-
 export default function PreferencesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -64,6 +54,7 @@ export default function PreferencesScreen() {
     setSaveError(null);
 
     if (isDemoMode) {
+      const demoPreferences = getDemoMatchPreferences();
       setAgeMin(demoPreferences.ageMin);
       setAgeMax(demoPreferences.ageMax);
       setMaxDistance(demoPreferences.maxDistance);
@@ -137,12 +128,12 @@ export default function PreferencesScreen() {
     }
 
     if (isDemoMode) {
-      demoPreferences = {
+      saveDemoMatchPreferences({
         ageMin: parsedAgeMin.toString(),
         ageMax: parsedAgeMax.toString(),
         maxDistance: parsedMaxDistance.toString(),
         relationshipGoal: trimmedGoal,
-      };
+      });
 
       Alert.alert(
         "Demo preferences saved",
