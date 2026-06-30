@@ -1,7 +1,7 @@
 # PM_App beta live proof
 
 Date: 2026-07-01
-Branch/source: `dev` after `71e891a`
+Branch/source: `dev` after `5e19fd6`
 Environment: `https://beta.pinaymate.com`
 Owner: Codex / Romega engineering
 
@@ -22,6 +22,7 @@ Owner: Codex / Romega engineering
 | Profile photo upload/storage | Pass | Live proof signed in as the disposable beta user, uploaded a generated image to the user-scoped `profile-photos` storage path, updated the profile photo list, verified public image readability, and cleaned up profile/storage state. |
 | Demo safety report/block | Pass | No-login Foreigner preview opened seeded profile details, submitted a private safety report with block enabled, showed the beta-safe demo receipt, and sent no real moderation report for seeded data. |
 | Demo chat send path | Pass | No-login Foreigner preview opened a seeded conversation, rendered the demo chat, sent a local-only reply, confirmed the outgoing message bubble, and opened chat safety options without backend failures. |
+| Demo discovery filters | Pass | No-login Foreigner preview opened Discovery filters, confirmed age range, distance radius, and relationship-goal controls, saved the Marriage capsule in demo mode, and verified the seeded feed updated to marriage-intent demo profiles without backend writes. |
 
 Command:
 
@@ -41,12 +42,12 @@ gh workflow run "PM_App CI" --ref dev -f run_ocr_live_proof=true
 
 | Check | Result | Evidence note |
 | --- | --- | --- |
-| Latest dev CI | Pass | `PM_App CI` passed for `71e891a`; protected settings route coverage is also covered by manual authenticated web MVP CI run `28481935045`. |
-| Manual beta preview CI | Pass | GitHub Actions run `28481295002` completed `Beta preview smoke` successfully against `https://beta.pinaymate.com`, covering no-login preview, role switch, seeded messages, seeded chat local send, demo safety report/block, and responsive bottom navigation. |
+| Latest dev CI | Pass | `PM_App CI` passed for `5e19fd6`; protected settings route coverage is also covered by manual authenticated web MVP CI run `28481935045`. |
+| Manual beta preview CI | Pass | GitHub Actions run `28483228615` completed `Beta preview smoke` successfully against `https://beta.pinaymate.com`, covering no-login preview, role switch, seeded messages, seeded chat local send, demo safety report/block, demo discovery filter save/update, and responsive bottom navigation. |
 | Manual authenticated web MVP CI | Pass | GitHub Actions run `28481935045` completed `Web MVP live smoke` successfully using repo secrets `PM_WEB_MVP_EMAIL` and `PM_WEB_MVP_PASSWORD`; no credential values were logged. The run covered sign-in, core tabs, setup screens, and protected privacy/preferences/notifications routes. |
 | Manual photo upload/storage CI | Pass | GitHub Actions run `28479924029` completed `Photo upload live proof` successfully using repo secrets; no credential values, tokens, raw URLs, or uploaded image content were logged. |
 | Manual OCR live CI | Pass | GitHub Actions run `28482324309` completed `OCR live proof` successfully using repo secrets; no credential values, tokens, raw OCR text, or document images were logged. The run covered authenticated OCR success and invalid-document safe failure. |
-| Beta deployment | Pass | GitHub deployment `Production - pm-app-beta` completed for `71e891a`; Vercel status was successful. |
+| Beta deployment | Pass | GitHub deployment `Production - pm-app-beta` completed for `5e19fd6`; Vercel status was successful. |
 | Beta domain | Pass | `beta.pinaymate.com` aliases to `pm-app-beta`. |
 | Production domain separation | Pass | `dev` also created a `Preview - pm-app` deployment, but production beta deployment was separate under `pm-app-beta`; `app.pinaymate.com` and `beta.pinaymate.com` both returned HTTP `200` from distinct custom domains. |
 | Live HTTP smoke | Pass | `https://beta.pinaymate.com` returned HTTP `200`. |
