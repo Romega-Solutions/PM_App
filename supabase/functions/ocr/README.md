@@ -43,6 +43,24 @@ npx supabase functions deploy ocr
 
 Do not deploy with `--no-verify-jwt`.
 
+## Live proof
+
+After deploying to beta or production, prove the live path with a disposable signed-in account:
+
+```powershell
+$env:OCR_PROOF_EMAIL = "<existing-disposable-proof-user>"
+$env:OCR_PROOF_PASSWORD = "<proof-user-password>"
+npm run proof:ocr:live
+```
+
+The proof command generates synthetic document images locally under ignored `codex-tmp/`, confirms `OCR_SPACE_API_KEY` exists by name in Supabase secrets, checks unauthenticated `401`, checks authenticated valid-document extraction, and checks invalid-document safe failure. It never prints tokens, provider keys, raw OCR text, or document images.
+
+Use the optional rate-limit proof only when provider-call spend is acceptable:
+
+```powershell
+npm run proof:ocr:live -- --include-rate-limit
+```
+
 Set the mobile app endpoint explicitly:
 
 ```env

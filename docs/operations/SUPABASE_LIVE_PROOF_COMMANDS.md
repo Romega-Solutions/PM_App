@@ -73,15 +73,33 @@ npx supabase functions deploy ocr
 npx supabase secrets list
 ```
 
+Preferred proof command after deploy:
+
+```powershell
+$env:OCR_PROOF_EMAIL = "<existing-disposable-beta-user-email>"
+$env:OCR_PROOF_PASSWORD = "<existing-disposable-beta-user-password>"
+npm run proof:ocr:live
+```
+
+The proof command reads `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, and optional `EXPO_PUBLIC_OCR_ENDPOINT` from local env / `.env.local`. It checks the target function, confirms `OCR_SPACE_API_KEY` is present by name, generates synthetic proof images under ignored `codex-tmp/`, signs in as the disposable proof user, and posts the same `multipart/form-data` `document` field used by the app.
+
+To include the live rate-limit sample, run:
+
+```powershell
+npm run proof:ocr:live -- --include-rate-limit
+```
+
+Only run the rate-limit sample when provider-call spend is acceptable for the target environment.
+
 Capture:
 
 - function deployment success
-- `OCR_SPACE_API_KEY` presence only, never the value
-- unauthenticated request rejection
-- authenticated valid document behavior
-- invalid or oversized document behavior
-- OCR rate-limit behavior
-- confirmation that sensitive payloads are not logged
+- `OCR_SPACE_API_KEY` presence only, never the value or hash
+- unauthenticated request rejection: expected HTTP `401`
+- authenticated synthetic valid-document behavior: expected HTTP `200` with `result.fullText` present
+- invalid document behavior: expected non-`200` client-safe error
+- OCR rate-limit behavior when `--include-rate-limit` is used: expected HTTP `429`
+- confirmation that no keys, tokens, raw OCR text, provider internals, or document images were recorded
 
 ## 4b. Prove waitlist Edge Function behavior
 

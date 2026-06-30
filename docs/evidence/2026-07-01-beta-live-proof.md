@@ -43,6 +43,7 @@ npm run smoke:beta-preview
 | Release preflight SQL | Pass | `05_release_preflight_audit.sql` returned the expected PASS marker. |
 | Safety smoke SQL | Pass | `04_safety_smoke_test.sql` returned the expected PASS marker. |
 | OCR Edge Function deployment | Partial | `ocr` is ACTIVE and `verify_jwt=true`; unauthenticated POST returns HTTP `401`. Provider-secret and valid-document behavior were not re-proven in this pass. |
+| OCR live proof tooling | Pass | `npm run proof:ocr:live -- --include-rate-limit` confirmed `ocr` is present, `OCR_SPACE_API_KEY` is present by name, unauthenticated OCR returns HTTP `401`, authenticated synthetic valid document returns `result.fullText`, invalid document fails safely with HTTP `422`, and repeated attempts return HTTP `429`. No secret values, hashes, tokens, raw OCR text, or documents were recorded. |
 | Waitlist Edge Function deployment | Partial | `waitlist-signup` is ACTIVE and `verify_jwt=false`; tested origin returned safe email-path fallback `403`. Approved-origin, rate-limit, and provider/challenge proof remain separate release proof items. |
 
 Commands:
