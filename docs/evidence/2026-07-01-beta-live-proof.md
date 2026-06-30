@@ -1,7 +1,7 @@
 # PM_App beta live proof
 
 Date: 2026-07-01
-Branch/source: `dev` at `157d829`
+Branch/source: `dev` at `1f40227`
 Environment: `https://beta.pinaymate.com`
 Owner: Codex / Romega engineering
 
@@ -26,14 +26,16 @@ npm run smoke:beta-preview
 $env:PM_WEB_MVP_EMAIL="<disposable-beta-user>"
 $env:PM_WEB_MVP_PASSWORD="<local-only-password>"
 npm run smoke:web-mvp
+gh workflow run "PM_App CI" --ref dev -f run_live_supabase_proof=false -f run_web_mvp_smoke=true
 ```
 
 ## GitHub and Vercel
 
 | Check | Result | Evidence note |
 | --- | --- | --- |
-| Latest dev CI | Pass | `PM_App CI` passed for `157d829`. |
-| Beta deployment | Pass | GitHub deployment `Production - pm-app-beta` completed for `157d829`; target deployment URL was `pm-app-beta-fn194wzz5-romega-solutions.vercel.app`. |
+| Latest dev CI | Pass | `PM_App CI` passed for `1f40227`. |
+| Manual authenticated web MVP CI | Pass | GitHub Actions run `28479274228` completed `Web MVP live smoke` successfully using repo secrets `PM_WEB_MVP_EMAIL` and `PM_WEB_MVP_PASSWORD`; no credential values were logged. |
+| Beta deployment | Pass | GitHub deployment `Production - pm-app-beta` completed for `1f40227`; Vercel status `pm-app-beta/9eNjknd6zXtkGnT3tSEmBKK9BQG7` was successful. |
 | Beta domain | Pass | `beta.pinaymate.com` aliases to `pm-app-beta`. |
 | Production domain separation | Pass | `dev` also created a `Preview - pm-app` deployment, but production beta deployment was separate under `pm-app-beta`; `app.pinaymate.com` and `beta.pinaymate.com` both returned HTTP `200` from distinct custom domains. |
 | Live HTTP smoke | Pass | `https://beta.pinaymate.com` returned HTTP `200`. |
