@@ -1,0 +1,186 @@
+const { test, expect } = require("@playwright/test");
+
+const BASE_URL = process.env.PM_APP_BETA_URL || "https://beta.pinaymate.com";
+const EMAIL = process.env.PM_WEB_MVP_EMAIL || process.env.OCR_PROOF_EMAIL;
+const PASSWORD =
+  process.env.PM_WEB_MVP_PASSWORD || process.env.OCR_PROOF_PASSWORD;
+
+function collectPageNoise(page) {
+  const consoleErrors = [];
+  const pageErrors = [];
+  const failedRequests = [];
+  const badResponses = [];
+
+  page.on("console", (message) => {
+    if (message.type() === "error") {
+      consoleErrors.push(message.text());
+    }
+  });
+
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+
+  page.on("requestfailed", (request) => {
+    const url = request.url();
+    const failureText = request.failure()?.errorText || "";
+    const isNavigationAbort = failureText.includes("ERR_ABORTED");
+
+    if (
+      !isNavigationAbort &&
+      !url.includes("favicon") &&
+      !url.includes("analytics")
+    ) {
+      failedRequests.push(`${request.method()} ${url} ${failureText}`);
+    }
+  });
+
+  page.on("response", (response) => {
+    const status = response.status();
+    const url = response.url();
+
+    if (
+      status >= 400 &&
+      !url.includes("favicon") &&
+      !url.includes("analytics")
+    ) {
+      badResponses.push(`${status} ${url}`);
+    }
+  });
+
+  return { consoleErrors, pageErrors, failedRequests, badResponses };
+}
+
+async function assertNoCriticalNoise(noise) {
+  expect(noise.pageErrors, "page errors").toEqual([]);
+  expect(noise.failedRequests, "failed requests").toEqual([]);
+  expect(noise.badResponses, "bad responses").toEqual([]);
+  expect(
+    noise.consoleErrors.filter(
+      (item) =>
+        !item.includes("AdUnit") &&
+        !(
+          item.includes("TypeError: Failed to fetch") &&
+          item.includes("_getUser")
+        ),
+    ),
+    "console errors",
+  ).toEqual([]);
+}
+
+async function clearBrowserSession(page) {
+  await page.goto(`${BASE_URL}/welcome`, { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => {
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+  });
+}
+
+async function signIn(page) {
+  await clearBrowserSession(page);
+  await page.goto(`${BASE_URL}/signin`, { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByText("Welcome back", { exact: true })).toBeVisible({
+    timeout: 20000,
+  });
+
+  const inputs = page.locator("input");
+  await expect(inputs.first(), "email input").toBeVisible({ timeout: 15000 });
+  await inputs.first().fill(EMAIL);
+  await inputs.nth(1).fill(PASSWORD);
+
+  await page.getByText("Sign In", { exact: true }).last().click();
+
+  await expect(page.getByText("Discover", { exact: true }).last()).toBeVisible({
+    timeout: 30000,
+  });
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+}
+
+async function assertBottomNav(page) {
+  for (const label of ["Discover", "Liked You", "Messages", "You"]) {
+    const locator = page.getByText(label, { exact: true }).last();
+    await expect(locator, `${label} tab`).toBeVisible({ timeout: 15000 });
+
+    const box = await locator.boundingBox();
+    expect(box, `${label} tab box`).not.toBeNull();
+    expect(box.y + box.height, `${label} tab not clipped`).toBeLessThanOrEqual(
+      page.viewportSize().height,
+    );
+  }
+}
+
+async function openTab(page, label) {
+  await page.getByText(label, { exact: true }).last().click();
+  await expect(page.getByText(label, { exact: true }).last()).toBeVisible({
+    timeout: 15000,
+  });
+}
+
+test.describe("PinayMate authenticated web MVP smoke", () => {
+  test.skip(
+    !EMAIL || !PASSWORD,
+    "Set PM_WEB_MVP_EMAIL and PM_WEB_MVP_PASSWORD for authenticated MVP smoke.",
+  );
+
+  const viewports = [
+    { name: "mobile", width: 390, height: 844 },
+    { name: "laptop", width: 1366, height: 900 },
+  ];
+
+  for (const viewport of viewports) {
+    test(`${viewport.name}: sign in and core app shell`, async ({ page }) => {
+      test.setTimeout(90000);
+      await page.setViewportSize(viewport);
+      const noise = collectPageNoise(page);
+
+      await signIn(page);
+      await assertBottomNav(page);
+
+      await openTab(page, "Liked You");
+      await openTab(page, "Messages");
+      await openTab(page, "You");
+      await openTab(page, "Discover");
+
+      await assertBottomNav(page);
+      await assertNoCriticalNoise(noise);
+    });
+  }
+
+  test("laptop: account setup and upload screens render", async ({ page }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 1366, height: 900 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await page.goto(
+      `${BASE_URL}/account-setup/basic-info?userType=foreigner&firstName=Smoke`,
+      { waitUntil: "domcontentloaded" },
+    );
+    await expect(page.getByText("Profile basics", { exact: true })).toBeVisible({
+      timeout: 20000,
+    });
+
+    await page.goto(`${BASE_URL}/account-setup/profile-photos?userType=foreigner`, {
+      waitUntil: "domcontentloaded",
+    });
+    await expect(page.getByText("Add your photos", { exact: true })).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(
+      page.getByText("Photo safety checklist", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+
+    await page.goto(
+      `${BASE_URL}/account-setup/verification-upload?userType=foreigner`,
+      { waitUntil: "domcontentloaded" },
+    );
+    await expect(
+      page.getByText("Verify your identity", { exact: true }),
+    ).toBeVisible({ timeout: 20000 });
+    await expect(
+      page.getByText("Review-based verification", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+
+    await assertNoCriticalNoise(noise);
+  });
+});

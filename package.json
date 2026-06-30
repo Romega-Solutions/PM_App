@@ -34,6 +34,7 @@
     "test:coverage": "jest --coverage",
     "check:client-copy": "node scripts/check-client-facing-copy.mjs",
     "smoke:beta-preview": "playwright test \"scripts/smoke-beta-preview.spec.js\" --reporter=line",
+    "smoke:web-mvp": "playwright test \"scripts/smoke-web-mvp.spec.js\" --reporter=line",
     "analyze:web": "set EXPO_UNSTABLE_ATLAS=true&& expo export -p web",
     "analyze:atlas": "npx expo-atlas"
   },
