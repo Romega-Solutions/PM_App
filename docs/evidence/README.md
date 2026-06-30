@@ -7,6 +7,7 @@ This folder keeps only evidence that is useful for current release decisions.
 - `release-2026-06-11-manager-readiness-pmapp-pmweb.md` - manager-facing release posture summary.
 - `2026-06-11-current-local-quality-release-blockers.md` - current local quality and release blocker snapshot.
 - `2026-06-11-release-blockers-only.md` - operator blocker checklist.
+- `2026-07-01-beta-live-proof.md` - current beta web, Vercel, CI, and linked Supabase smoke proof.
 - `backend-2026-06-11-supabase-static-contract.md` - backend static-contract proof snapshot.
 - `TEMPLATE-native-qa-proof.md` - native QA proof template.
 - `TEMPLATE-supabase-live-proof.md` - Supabase live proof template.

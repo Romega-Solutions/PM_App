@@ -145,7 +145,7 @@ Minimum unblock commands:
 - Expo SDK 54 dependency compatibility is aligned:
   - `npx expo install --check` passes after updating the SDK-compatible native module versions.
   - PM_App lint, typecheck, and web export still pass after dependency alignment.
-  - Safe transitive overrides for `brace-expansion@1.1.13` and `postcss@8.5.10` reduced PM_App audit findings without forcing an Expo SDK jump.
+  - `npm run check:dependency-audit` passed with 0 vulnerabilities on 2026-07-01, so there is no current Expo-chain dependency-audit blocker.
 
 ### Blocked
 
@@ -156,7 +156,6 @@ Minimum unblock commands:
 - Backend-backed report/block/unmatch and match-forging protections remain pending live Supabase migration execution and QA.
 - Backend-backed privacy settings and read-receipt behavior remain pending live Supabase migration execution and native QA.
 - Backend-backed account deletion requests remain pending live Supabase migration execution and native QA.
-- PM_App dependency audit remains blocked by Expo-chain moderate advisories rooted in `uuid -> xcode -> @expo/config-plugins`; clearing the remaining 16 moderate findings requires a dedicated Expo upgrade path rather than release-branch `npm audit fix --force`.
 - Local Docker/Supabase boundary remains a blocker: OCR behavior that depends on Edge Function secrets cannot be treated as green from local-only runs.
 
 ### Next
@@ -245,7 +244,7 @@ Minimum unblock commands:
 - Dependency/security checks:
   - `npm audit --audit-level=moderate` from `PM_App`
   - `npm audit --audit-level=moderate` from `PM_Web`
-  - If PM_App still reports the `uuid -> xcode -> @expo/config-plugins` Expo-chain advisories, open a dedicated Expo upgrade task instead of using `npm audit fix --force` directly on the release branch.
+  - If PM_App reports future Expo-chain advisories, open a dedicated Expo upgrade task instead of using `npm audit fix --force` directly on the release branch.
 
 ### Blocked item evidence table
 
@@ -254,6 +253,6 @@ Minimum unblock commands:
 | PM_App        | Location runtime permissions and coordinate persistence                      | emulator/device logs + pass scenario + denial scenario                           | Blocked |
 | PM_App        | OCR Edge Function deployment and document extraction resilience              | function deploy logs + provider-secret check + valid/invalid document assertions | Blocked |
 | PM_App        | Supabase migrations 04, 99, storage, OCR quota, and basic-info RPC execution | migration plan + SQL checks + smoke test outputs                                 | Blocked |
-| PM_App        | Expo-chain dependency audit advisories                                       | dedicated Expo upgrade branch + lint/typecheck/build/native smoke evidence       | Blocked |
+| PM_App        | Dependency audit current-head check                                          | `npm audit --audit-level=moderate` output plus local release gate output          | Pass locally |
 | PM_App/PM_Web | Launch comms correctness (CTAs and deep links)                               | post-build verification notes                                                    | Blocked |
 | PM_App/PM_Web | Production ownership and launch evidence packet                              | completed ownership checklist + filled launch evidence packet                    | Blocked |

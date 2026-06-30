@@ -32,6 +32,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "check:client-copy": "node scripts/check-client-facing-copy.mjs",
+    "smoke:beta-preview": "npx -y playwright@1.57.0 test \"scripts/smoke-beta-preview.spec.js\" --reporter=line",
     "analyze:web": "set EXPO_UNSTABLE_ATLAS=true&& expo export -p web",
     "analyze:atlas": "npx expo-atlas"
   },

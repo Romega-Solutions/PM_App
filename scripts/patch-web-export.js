@@ -3,12 +3,49 @@ const path = require("node:path");
 
 const indexPath = path.join(__dirname, "..", "dist", "index.html");
 const jsDir = path.join(__dirname, "..", "dist", "_expo", "static", "js", "web");
+const localEnvPath = path.join(__dirname, "..", ".env.local");
 const publicEnvKeys = [
   "EXPO_PUBLIC_SUPABASE_URL",
   "EXPO_PUBLIC_SUPABASE_ANON_KEY",
   "EXPO_PUBLIC_BETA_DEMO_MODE",
   "EXPO_PUBLIC_OCR_ENDPOINT",
 ];
+
+function parseEnvValue(rawValue) {
+  const value = rawValue.trim();
+  const quote = value[0];
+
+  if ((quote === "\"" || quote === "'") && value.endsWith(quote)) {
+    return value.slice(1, -1);
+  }
+
+  const commentIndex = value.indexOf(" #");
+  return commentIndex === -1 ? value : value.slice(0, commentIndex).trim();
+}
+
+function loadLocalPublicEnv() {
+  if (!fs.existsSync(localEnvPath)) return {};
+
+  const entries = {};
+  const envFile = fs.readFileSync(localEnvPath, "utf8");
+
+  for (const line of envFile.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+
+    const match = /^(?:export\s+)?([^=\s]+)\s*=\s*(.*)$/.exec(trimmed);
+    if (!match) continue;
+
+    const [, key, rawValue] = match;
+    if (!publicEnvKeys.includes(key)) continue;
+
+    entries[key] = parseEnvValue(rawValue);
+  }
+
+  return entries;
+}
+
+const localPublicEnv = loadLocalPublicEnv();
 
 for (const filename of fs.readdirSync(jsDir)) {
   if (!filename.endsWith(".js")) continue;
@@ -32,7 +69,7 @@ if (!html.includes('defer></script>')) {
 
 const publicEnv = Object.fromEntries(
   publicEnvKeys
-    .map((key) => [key, process.env[key]])
+    .map((key) => [key, process.env[key] || localPublicEnv[key]])
     .filter(([, value]) => typeof value === "string" && value.length > 0),
 );
 
