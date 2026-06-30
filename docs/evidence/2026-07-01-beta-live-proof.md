@@ -1,7 +1,7 @@
 # PM_App beta live proof
 
 Date: 2026-07-01
-Branch/source: `dev` after `23d135c`
+Branch/source: `dev` after `a182410`
 Environment: `https://beta.pinaymate.com`
 Owner: Codex / Romega engineering
 
@@ -32,16 +32,18 @@ npm run smoke:web-mvp
 gh workflow run "PM_App CI" --ref dev -f run_live_supabase_proof=false -f run_web_mvp_smoke=true
 npm run proof:photo-upload:live
 gh workflow run "PM_App CI" --ref dev -f run_live_supabase_proof=false -f run_web_mvp_smoke=false -f run_photo_upload_proof=true
+gh workflow run "PM_App CI" --ref dev -f run_beta_preview_smoke=true
 ```
 
 ## GitHub and Vercel
 
 | Check | Result | Evidence note |
 | --- | --- | --- |
-| Latest dev CI | Pass | `PM_App CI` passed for `23d135c`; the expanded seeded chat smoke was then run locally against beta before this evidence update. |
+| Latest dev CI | Pass | `PM_App CI` passed for `a182410`; the expanded seeded chat smoke is also covered by manual beta preview CI run `28481295002`. |
+| Manual beta preview CI | Pass | GitHub Actions run `28481295002` completed `Beta preview smoke` successfully against `https://beta.pinaymate.com`, covering no-login preview, role switch, seeded messages, seeded chat local send, demo safety report/block, and responsive bottom navigation. |
 | Manual authenticated web MVP CI | Pass | GitHub Actions run `28479274228` completed `Web MVP live smoke` successfully using repo secrets `PM_WEB_MVP_EMAIL` and `PM_WEB_MVP_PASSWORD`; no credential values were logged. |
 | Manual photo upload/storage CI | Pass | GitHub Actions run `28479924029` completed `Photo upload live proof` successfully using repo secrets; no credential values, tokens, raw URLs, or uploaded image content were logged. |
-| Beta deployment | Pass | GitHub deployment `Production - pm-app-beta` completed for `23d135c`; Vercel status was successful. |
+| Beta deployment | Pass | GitHub deployment `Production - pm-app-beta` completed for `a182410`; Vercel status was successful. |
 | Beta domain | Pass | `beta.pinaymate.com` aliases to `pm-app-beta`. |
 | Production domain separation | Pass | `dev` also created a `Preview - pm-app` deployment, but production beta deployment was separate under `pm-app-beta`; `app.pinaymate.com` and `beta.pinaymate.com` both returned HTTP `200` from distinct custom domains. |
 | Live HTTP smoke | Pass | `https://beta.pinaymate.com` returned HTTP `200`. |
