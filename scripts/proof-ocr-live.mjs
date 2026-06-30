@@ -77,6 +77,16 @@ function redactKnownValues(value) {
   return redacted;
 }
 
+function isValidProjectRef(value) {
+  return typeof value === "string" && /^[a-z0-9]{20}$/.test(value);
+}
+
+function assertValidProjectRef(projectRef) {
+  if (!isValidProjectRef(projectRef)) {
+    fail("Supabase project ref must be exactly 20 lowercase alphanumeric characters");
+  }
+}
+
 function redactedProjectRef(projectRef) {
   if (!projectRef) return "unknown";
   return `...${projectRef.slice(-4)}`;
@@ -84,7 +94,7 @@ function redactedProjectRef(projectRef) {
 
 function getProjectRef(supabaseUrl) {
   const configured = getEnv("SUPABASE_PROJECT_REF");
-  if (configured) return configured;
+  if (configured) return configured.trim();
 
   try {
     return new URL(supabaseUrl).hostname.split(".")[0];
@@ -95,7 +105,7 @@ function getProjectRef(supabaseUrl) {
 
 function getFunctionUrl(projectRef) {
   const configured = getEnv("EXPO_PUBLIC_OCR_ENDPOINT");
-  if (configured) return configured;
+  if (configured) return configured.trim();
 
   return `https://${projectRef}.functions.supabase.co/ocr`;
 }
@@ -111,6 +121,12 @@ function quoteCmdArg(value) {
 }
 
 function runSupabaseCli(cliArgs) {
+  for (const arg of cliArgs) {
+    if (!/^[A-Za-z0-9._:@/=-]+$/.test(String(arg))) {
+      throw new Error("refusing to run Supabase CLI with unsafe argument characters");
+    }
+  }
+
   const command = commandForNpx();
   const args =
     process.platform === "win32"
@@ -154,6 +170,86 @@ function assertSafeText(text, sensitiveValues, label) {
     if (value && text.includes(value)) {
       fail(`${label} exposed a sensitive value`);
     }
+  }
+}
+
+function getSecretLikeEnvValues() {
+  const publicNames = new Set([
+    "EXPO_PUBLIC_SUPABASE_URL",
+    "EXPO_PUBLIC_SUPABASE_ANON_KEY",
+    "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+    "EXPO_PUBLIC_OCR_ENDPOINT",
+    "EXPO_PUBLIC_BETA_DEMO_MODE",
+  ]);
+  const secretNamePattern =
+    /(?:SECRET|TOKEN|PASSWORD|PASS|DATABASE_URL|DB_URL|SERVICE_ROLE|PRIVATE|API_KEY|ACCESS_KEY|CONNECTION_STRING|OCR_SPACE_API_KEY)/i;
+
+  return Object.entries({ ...fileEnv, ...process.env })
+    .filter(([name, value]) => {
+      if (publicNames.has(name)) return false;
+      return (
+        secretNamePattern.test(name) &&
+        typeof value === "string" &&
+        value.length >= 8
+      );
+    })
+    .map(([, value]) => value);
+}
+
+function getTomlSection(content, sectionName) {
+  const lines = content.split(/\r?\n/);
+  const targetHeader = `[${sectionName}]`;
+  const sectionLines = [];
+  let inTargetSection = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (/^\[[^\]]+\]$/.test(trimmed)) {
+      if (inTargetSection) break;
+      inTargetSection = trimmed === targetHeader;
+      continue;
+    }
+
+    if (inTargetSection) {
+      sectionLines.push(line);
+    }
+  }
+
+  return sectionLines.join("\n");
+}
+
+function hasBooleanSetting(section, key, expected) {
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const settingPattern = new RegExp(
+    `^\\s*${escapedKey}\\s*=\\s*${expected}\\s*(?:#.*)?$`,
+    "m",
+  );
+  return settingPattern.test(section);
+}
+
+function assertValidOcrEndpoint(endpoint, projectRef) {
+  let parsed;
+  try {
+    parsed = new URL(endpoint);
+  } catch {
+    fail("OCR function endpoint is not a valid URL");
+  }
+
+  if (parsed.protocol !== "https:") {
+    fail("OCR function endpoint must use https");
+  }
+
+  const expectedFunctionsHost = `${projectRef}.functions.supabase.co`;
+  const expectedRestPath = `/functions/v1/ocr`;
+  const isSupabaseFunctionsEndpoint =
+    parsed.hostname === expectedFunctionsHost && parsed.pathname === "/ocr";
+  const isSupabaseRestFunctionEndpoint =
+    parsed.hostname === `${projectRef}.supabase.co` &&
+    parsed.pathname === expectedRestPath;
+
+  if (!isSupabaseFunctionsEndpoint && !isSupabaseRestFunctionEndpoint) {
+    fail("OCR proof only supports the target project's Supabase OCR endpoint");
   }
 }
 
@@ -293,13 +389,19 @@ async function main() {
   if (!supabaseUrl) fail("missing EXPO_PUBLIC_SUPABASE_URL or SUPABASE_URL");
   if (!anonKey) fail("missing EXPO_PUBLIC_SUPABASE_ANON_KEY or publishable key");
   if (!projectRef) fail("could not derive Supabase project ref");
+  assertValidProjectRef(projectRef);
   if (!endpoint) fail("could not determine OCR function endpoint");
+  assertValidOcrEndpoint(endpoint, projectRef);
 
   info(`OCR live proof target: ${redactedProjectRef(projectRef)}`);
   info("OCR live proof output is redacted: no keys, tokens, raw OCR text, or documents are printed.");
 
   const config = readFileSync(join(ROOT, "supabase", "config.toml"), "utf8");
-  if (!/\[functions\.ocr\][\s\S]*?verify_jwt\s*=\s*true/.test(config)) {
+  const ocrConfigSection = getTomlSection(config, "functions.ocr");
+  if (
+    !ocrConfigSection ||
+    !hasBooleanSetting(ocrConfigSection, "verify_jwt", true)
+  ) {
     fail("supabase/config.toml does not keep [functions.ocr] verify_jwt = true");
   }
   info("PASS config: [functions.ocr] verify_jwt = true");
@@ -337,7 +439,13 @@ async function main() {
   if (!existsSync(validDoc)) fail("valid OCR proof image does not exist");
   if (!existsSync(invalidDoc)) fail("invalid OCR proof image does not exist");
 
-  const sensitiveValues = [anonKey, email, password, getEnv("SUPABASE_ACCESS_TOKEN")];
+  const sensitiveValues = [
+    anonKey,
+    email,
+    password,
+    getEnv("SUPABASE_ACCESS_TOKEN"),
+    ...getSecretLikeEnvValues(),
+  ];
 
   const unauth = await postDocument(endpoint, validDoc, undefined, undefined);
   assertSafeText(unauth.text, sensitiveValues, "Unauthenticated OCR response");
