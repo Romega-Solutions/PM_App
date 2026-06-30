@@ -27,6 +27,14 @@ on:
         options:
           - "false"
           - "true"
+      run_beta_preview_smoke:
+        description: "Run no-login beta preview browser smoke against beta.pinaymate.com"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
       run_photo_upload_proof:
         description: "Run live Supabase profile photo upload/storage proof using configured repo secrets"
         required: false
@@ -163,6 +171,31 @@ jobs:
 
       - name: Authenticated beta browser smoke
         run: npm run smoke:web-mvp
+
+  beta-preview-smoke:
+    name: Beta preview smoke
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_beta_preview_smoke == 'true' }}
+    env:
+      PM_APP_BETA_URL: https://beta.pinaymate.com
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: No-login beta preview smoke
+        run: npm run smoke:beta-preview
 
   live-photo-upload-proof:
     name: Photo upload live proof
