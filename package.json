@@ -28,6 +28,7 @@
     "check:supabase-static-contract": "node scripts/check-supabase-static-contract.mjs",
     "check:supabase-static-contract:report": "node scripts/check-supabase-static-contract.mjs --write-report",
     "proof:ocr:live": "node scripts/proof-ocr-live.mjs",
+    "proof:photo-upload:live": "node scripts/proof-photo-upload-live.mjs",
     "lint": "expo lint",
     "test": "jest",
     "test:watch": "jest --watch",
