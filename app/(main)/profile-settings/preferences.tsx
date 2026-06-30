@@ -1,4 +1,6 @@
 import * as Haptics from "expo-haptics";
+import Slider from "@react-native-community/slider";
+import MultiSlider from "@ptomasroos/react-native-multi-slider";
 import { accountApi } from "@/src/features/account/api/accountApi";
 import {
   getDemoMatchPreferences,
@@ -7,7 +9,13 @@ import {
 import { useAuthStore } from "@/src/stores/authStore";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { AlertCircle, ArrowLeft, RefreshCw, Save } from "lucide-react-native";
+import {
+  AlertCircle,
+  ArrowLeft,
+  HeartHandshake,
+  RefreshCw,
+  Save,
+} from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -17,8 +25,8 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -28,16 +36,24 @@ const ACCENT_PINK = "#EF3E78";
 const WHITE = "#FFFFFF";
 const TEXT_SECONDARY = "rgba(255, 255, 255, 0.74)";
 const TEXT_MUTED = "rgba(255, 255, 255, 0.56)";
-const SURFACE_STRONG = "rgba(255, 255, 255, 0.08)";
 const TILE_BORDER = "rgba(168, 85, 247, 0.13)";
 const COMPLETE_BASIC_INFO_MESSAGE =
   "Complete basic info before saving preferences.";
 const SAVE_PREFERENCES_ERROR =
   "Failed to update preferences. Check your connection and try again.";
+const RELATIONSHIP_GOALS = [
+  "serious relationship",
+  "marriage",
+  "long term",
+  "friendship first",
+  "casual dating",
+  "still deciding",
+];
 
 export default function PreferencesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const isDemoMode = useAuthStore((state) => state.isDemoMode);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -48,6 +64,15 @@ export default function PreferencesScreen() {
   const [ageMax, setAgeMax] = useState("35");
   const [maxDistance, setMaxDistance] = useState("50");
   const [relationshipGoal, setRelationshipGoal] = useState("");
+  const controlWidth = Math.max(236, Math.min(width - 82, 416));
+  const ageRangeValue = [
+    Number.parseInt(ageMin, 10) || 18,
+    Number.parseInt(ageMax, 10) || 35,
+  ];
+  const distanceValue = Number.parseInt(maxDistance, 10) || 50;
+  const visibleRelationshipGoals = relationshipGoal.trim()
+    ? Array.from(new Set([relationshipGoal.trim(), ...RELATIONSHIP_GOALS]))
+    : RELATIONSHIP_GOALS;
 
   const fetchPreferences = useCallback(async () => {
     setLoading(true);
@@ -291,70 +316,124 @@ export default function PreferencesScreen() {
         ) : null}
 
         <View style={styles.form}>
-          <View style={styles.fieldWrap}>
-            <Text style={styles.label}>Minimum Age</Text>
-            <TextInput
-              style={styles.input}
-              value={ageMin}
-              onChangeText={setAgeMin}
-              placeholder="18"
-              placeholderTextColor="rgba(255,255,255,0.4)"
-              keyboardType="numeric"
-              accessibilityLabel="Minimum match age"
-              accessibilityHint="Enter the youngest age you want to see in matches"
-              maxLength={3}
-            />
+          <View style={styles.controlGroup}>
+            <View style={styles.controlHeader}>
+              <View>
+                <Text style={styles.label}>Age range</Text>
+                <Text style={styles.helper}>Drag both handles to tune who appears.</Text>
+              </View>
+              <View style={styles.valuePill}>
+                <Text style={styles.valuePillText}>
+                  {ageMin}-{ageMax}
+                </Text>
+              </View>
+            </View>
+            <View
+              style={styles.sliderCard}
+              accessible
+              accessibilityLabel={`Age range from ${ageMin} to ${ageMax}`}
+            >
+              <MultiSlider
+                values={ageRangeValue}
+                min={18}
+                max={70}
+                step={1}
+                sliderLength={controlWidth}
+                onValuesChange={(values) => {
+                  setAgeMin(String(values[0]));
+                  setAgeMax(String(values[1]));
+                }}
+                selectedStyle={styles.selectedTrack}
+                unselectedStyle={styles.unselectedTrack}
+                markerStyle={styles.sliderMarker}
+                pressedMarkerStyle={styles.sliderMarkerPressed}
+                containerStyle={styles.multiSlider}
+              />
+              <View style={styles.rangeLabels}>
+                <Text style={styles.rangeLabel}>18</Text>
+                <Text style={styles.rangeLabel}>70+</Text>
+              </View>
+            </View>
           </View>
 
-          <View style={styles.fieldWrap}>
-            <Text style={styles.label}>Maximum Age</Text>
-            <TextInput
-              style={styles.input}
-              value={ageMax}
-              onChangeText={setAgeMax}
-              placeholder="35"
-              placeholderTextColor="rgba(255,255,255,0.4)"
-              keyboardType="numeric"
-              accessibilityLabel="Maximum match age"
-              accessibilityHint="Enter the oldest age you want to see in matches"
-              maxLength={3}
-            />
-          </View>
-
-          <View style={styles.fieldWrap}>
-            <Text style={styles.label}>Maximum Distance (km)</Text>
-            <TextInput
-              style={styles.input}
-              value={maxDistance}
-              onChangeText={setMaxDistance}
-              placeholder="50"
-              placeholderTextColor="rgba(255,255,255,0.4)"
-              keyboardType="numeric"
-              accessibilityLabel="Maximum match distance"
-              accessibilityHint="Enter the farthest distance in kilometers for suggested matches"
-              maxLength={3}
-            />
+          <View style={styles.controlGroup}>
+            <View style={styles.controlHeader}>
+              <View>
+                <Text style={styles.label}>Distance radius</Text>
+                <Text style={styles.helper}>Wider radius can show more people.</Text>
+              </View>
+              <View style={styles.valuePill}>
+                <Text style={styles.valuePillText}>{maxDistance} km</Text>
+              </View>
+            </View>
+            <View style={styles.sliderCard}>
+              <Slider
+                style={styles.distanceSlider}
+                minimumValue={10}
+                maximumValue={500}
+                step={5}
+                value={distanceValue}
+                onValueChange={(value) =>
+                  setMaxDistance(String(Math.round(value)))
+                }
+                minimumTrackTintColor={ACCENT_PINK}
+                maximumTrackTintColor="rgba(255, 255, 255, 0.18)"
+                thumbTintColor={ACCENT_PINK}
+                accessibilityLabel="Maximum match distance radius"
+                accessibilityValue={{ text: `${maxDistance} kilometers` }}
+              />
+              <View style={styles.rangeLabels}>
+                <Text style={styles.rangeLabel}>10 km</Text>
+                <Text style={styles.rangeLabel}>500 km</Text>
+              </View>
+            </View>
             <Text style={styles.helper}>
               Distance is saved in kilometers. Wider distance can show more
               people.
             </Text>
           </View>
 
-          <View style={styles.fieldWrap}>
-            <Text style={styles.label}>Relationship Goal</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={relationshipGoal}
-              onChangeText={setRelationshipGoal}
-              placeholder="E.g. Serious relationship, friendship, casual dating..."
-              placeholderTextColor="rgba(255,255,255,0.4)"
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-              accessibilityLabel="Relationship goal"
-              accessibilityHint="Describe the type of relationship or connection you want"
-              maxLength={80}
-            />
+          <View style={styles.controlGroup}>
+            <View style={styles.controlHeader}>
+              <View>
+                <Text style={styles.label}>Relationship goal</Text>
+                <Text style={styles.helper}>Pick the closest intention.</Text>
+              </View>
+            </View>
+            <View
+              style={styles.goalGrid}
+              accessibilityRole="radiogroup"
+              accessibilityLabel="Relationship goal suggestions"
+            >
+              {visibleRelationshipGoals.map((goal) => {
+                const selected =
+                  relationshipGoal.trim().toLowerCase() === goal.toLowerCase();
+
+                return (
+                  <TouchableOpacity
+                    key={goal}
+                    style={[styles.goalChip, selected && styles.goalChipSelected]}
+                    onPress={() => setRelationshipGoal(goal)}
+                    activeOpacity={0.86}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={`${goal}${selected ? ", selected" : ""}`}
+                  >
+                    {selected ? (
+                      <HeartHandshake size={14} color={WHITE} strokeWidth={2.4} />
+                    ) : null}
+                    <Text
+                      style={[
+                        styles.goalChipText,
+                        selected && styles.goalChipTextSelected,
+                      ]}
+                    >
+                      {goal}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
             <Text style={styles.helper}>
               Be specific and honest. This helps avoid mismatched expectations.
             </Text>
@@ -533,13 +612,19 @@ const styles = StyleSheet.create({
   form: {
     gap: 20,
   },
-  fieldWrap: {
+  controlGroup: {
     gap: 8,
+  },
+  controlHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
   },
   label: {
     color: "rgba(255,255,255,0.9)",
     fontSize: 14,
-    fontFamily: "DMSans-SemiBold",
+    fontFamily: "DMSans-Bold",
   },
   helper: {
     color: TEXT_MUTED,
@@ -547,19 +632,104 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  input: {
-    backgroundColor: SURFACE_STRONG,
-    borderRadius: 12,
+  valuePill: {
+    minHeight: 34,
+    borderRadius: 17,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(239, 62, 120, 0.16)",
+    borderWidth: 1,
+    borderColor: "rgba(239, 62, 120, 0.38)",
+  },
+  valuePillText: {
+    color: WHITE,
+    fontFamily: "DMSans-Bold",
+    fontSize: 13,
+  },
+  sliderCard: {
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: TILE_BORDER,
-    padding: 16,
-    color: WHITE,
-    fontSize: 16,
-    fontFamily: "DMSans-Regular",
+    backgroundColor: "rgba(15, 8, 20, 0.5)",
+    paddingHorizontal: 14,
+    paddingTop: 8,
+    paddingBottom: 12,
+    overflow: "hidden",
   },
-  textArea: {
-    minHeight: 92,
-    paddingTop: 16,
+  multiSlider: {
+    alignSelf: "center",
+    marginBottom: -4,
+  },
+  selectedTrack: {
+    backgroundColor: ACCENT_PINK,
+    height: 4,
+    borderRadius: 999,
+  },
+  unselectedTrack: {
+    backgroundColor: "rgba(255, 255, 255, 0.18)",
+    height: 4,
+    borderRadius: 999,
+  },
+  sliderMarker: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: ACCENT_PINK,
+    borderWidth: 3,
+    borderColor: WHITE,
+  },
+  sliderMarkerPressed: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: ACCENT_PINK,
+    borderWidth: 3,
+    borderColor: WHITE,
+  },
+  distanceSlider: {
+    width: "100%",
+    height: 44,
+  },
+  rangeLabels: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  rangeLabel: {
+    color: TEXT_MUTED,
+    fontFamily: "DMSans-Bold",
+    fontSize: 12,
+  },
+  goalGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  goalChip: {
+    minHeight: 40,
+    borderRadius: 20,
+    paddingHorizontal: 13,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "rgba(15, 8, 20, 0.58)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.16)",
+  },
+  goalChipSelected: {
+    backgroundColor: ACCENT_PINK,
+    borderColor: "rgba(255, 255, 255, 0.34)",
+  },
+  goalChipText: {
+    color: TEXT_SECONDARY,
+    fontFamily: "DMSans-Bold",
+    fontSize: 13,
+    textTransform: "capitalize",
+  },
+  goalChipTextSelected: {
+    color: WHITE,
   },
   errorStrip: {
     marginTop: 18,
