@@ -181,4 +181,52 @@ test.describe("PinayMate beta preview smoke", () => {
 
     await assertNoCriticalNoise(noise);
   });
+
+  test("laptop: seeded chat opens and sends a local demo reply", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 1366, height: 900 });
+    const noise = collectPageNoise(page);
+    const demoReply =
+      "Demo smoke reply: staying respectful and inside the app.";
+
+    await startPreview(
+      page,
+      "Foreigner preview",
+      FILIPINA_CARD,
+      FOREIGNER_CARD,
+    );
+    await page.getByText("Messages", { exact: true }).last().click();
+    await expect(page.getByText("Beta seeded inbox", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+
+    await page.getByRole("button", { name: /Open chat with/ }).first().click();
+    await expect(page.getByText(/Demo chat/).first()).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText("Demo chat replies and photos stay local on this device."),
+    ).toBeVisible({ timeout: 15000 });
+
+    await page.getByLabel("Message input").fill(demoReply);
+    await page.getByRole("button", { name: "Send demo reply" }).click();
+    await expect(page.getByLabel(new RegExp(`^You: ${demoReply}`))).toBeVisible({
+      timeout: 15000,
+    });
+
+    await page
+      .getByRole("button", { name: /Open safety options for/ })
+      .first()
+      .click();
+    await expect(page.getByText("Report safety concern", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByText("Demo block", { exact: true })).toBeVisible();
+    await expect(page.getByText("Unmatch only", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Close safety options" }).click();
+
+    await assertNoCriticalNoise(noise);
+  });
 });
