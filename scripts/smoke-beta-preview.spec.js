@@ -4,6 +4,7 @@ const BASE_URL = process.env.PM_APP_BETA_URL || "https://beta.pinaymate.com";
 const FILIPINA_CARD =
   /(?:Maria, 28|Angela, 25|Grace, 30|Samantha, 31|Kyla, 24|Francesca, 27|Leah, 32|Trisha, 28)/;
 const FOREIGNER_CARD = /(?:Daniel, 34|James, 39|Michael, 31|Thomas, 42)/;
+const MARRIAGE_FILIPINA_CARD = /(?:Samantha, 31|Leah, 32)/;
 
 function collectPageNoise(page) {
   const consoleErrors = [];
@@ -226,6 +227,47 @@ test.describe("PinayMate beta preview smoke", () => {
     await expect(page.getByText("Demo block", { exact: true })).toBeVisible();
     await expect(page.getByText("Unmatch only", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Close safety options" }).click();
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("laptop: demo discovery filters save and update the seeded feed", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 1366, height: 900 });
+    const noise = collectPageNoise(page);
+
+    await startPreview(
+      page,
+      "Foreigner preview",
+      FILIPINA_CARD,
+      FOREIGNER_CARD,
+    );
+
+    page.once("dialog", async (dialog) => {
+      expect(dialog.message()).toContain("Demo filters saved");
+      await dialog.accept();
+    });
+
+    await page
+      .getByRole("button", { name: "Adjust discovery filters" })
+      .first()
+      .click();
+    await expect(page.getByText("Discovery filters", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByText("Age range", { exact: true })).toBeVisible();
+    await expect(page.getByText("Distance radius", { exact: true })).toBeVisible();
+    await expect(page.getByText("Relationship goal", { exact: true })).toBeVisible();
+
+    await page.getByRole("radio", { name: /marriage/i }).click();
+    await page.getByRole("button", { name: "Save discovery filters" }).click();
+
+    await expect(page.getByText(MARRIAGE_FILIPINA_CARD).first()).toBeVisible({
+      timeout: 30000,
+    });
+    await assertBottomNav(page);
 
     await assertNoCriticalNoise(noise);
   });

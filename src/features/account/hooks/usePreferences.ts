@@ -44,9 +44,7 @@ export const usePreferences = () => {
             ageMin: form.ageMin,
             ageMax: form.ageMax,
             maxDistanceKm: form.maxDistanceKm,
-            relationshipGoal: form.relationshipGoal
-              .toLowerCase()
-              .replace(/\s+/g, "_"),
+            relationshipGoal: form.relationshipGoal,
             interestedIn: demoUserType === "filipina" ? "Men" : "Women",
             userType: demoUserType,
             createdAt: new Date().toISOString(),
@@ -66,9 +64,7 @@ export const usePreferences = () => {
         ageMin: form.ageMin,
         ageMax: form.ageMax,
         maxDistanceKm: form.maxDistanceKm,
-        relationshipGoal: form.relationshipGoal
-          .toLowerCase()
-          .replace(/\s+/g, "_"),
+        relationshipGoal: form.relationshipGoal,
         userType: basicInfo.userType,
       };
 
@@ -87,7 +83,7 @@ export const usePreferences = () => {
           ageMin: 22,
           ageMax: 38,
           maxDistanceKm: 75,
-          relationshipGoal: "serious relationship",
+          relationshipGoal: "long-term",
         });
         return;
       }

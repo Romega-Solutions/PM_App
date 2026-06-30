@@ -113,13 +113,25 @@ function convertSeedProfileToMatch(profile: ProfileCardData): MatchedProfile {
 }
 
 function normalizeRelationshipGoal(goal?: string): string {
-  const normalized = (goal || "").toLowerCase().replace(/_/g, "-").trim();
+  const normalized = (goal || "")
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!normalized || normalized === "any") return "";
+  if (normalized.includes("friend")) return "friendship";
   if (normalized.includes("marriage")) return "marriage";
   if (normalized.includes("serious") || normalized.includes("long")) {
     return "long-term";
   }
-  if (normalized.includes("dating")) return "dating";
+  if (
+    normalized.includes("dating") ||
+    normalized.includes("casual") ||
+    normalized.includes("not sure") ||
+    normalized.includes("still deciding")
+  ) {
+    return "dating";
+  }
   return normalized;
 }
 
