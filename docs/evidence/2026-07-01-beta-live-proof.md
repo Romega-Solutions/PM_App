@@ -1,7 +1,7 @@
 # PM_App beta live proof
 
 Date: 2026-07-01
-Branch/source: `dev` at `1f40227`
+Branch/source: `dev` at `9706741`
 Environment: `https://beta.pinaymate.com`
 Owner: Codex / Romega engineering
 
@@ -18,6 +18,7 @@ Owner: Codex / Romega engineering
 | Browser errors | Pass | No critical page errors, console errors, or non-aborted failed requests. |
 | Authenticated sign-in shell | Pass | Disposable beta account signed in on mobile `390x844` and laptop `1366x900`; Discover, Liked You, Messages, and You tabs loaded and were not clipped. |
 | Authenticated setup screens | Pass | After sign-in, basic info, profile photo upload, and review-based verification setup screens rendered on laptop without HTTP/page failures. |
+| Profile photo upload/storage | Pass | Live proof signed in as the disposable beta user, uploaded a generated image to the user-scoped `profile-photos` storage path, updated the profile photo list, verified public image readability, and cleaned up profile/storage state. |
 
 Command:
 
@@ -27,15 +28,18 @@ $env:PM_WEB_MVP_EMAIL="<disposable-beta-user>"
 $env:PM_WEB_MVP_PASSWORD="<local-only-password>"
 npm run smoke:web-mvp
 gh workflow run "PM_App CI" --ref dev -f run_live_supabase_proof=false -f run_web_mvp_smoke=true
+npm run proof:photo-upload:live
+gh workflow run "PM_App CI" --ref dev -f run_live_supabase_proof=false -f run_web_mvp_smoke=false -f run_photo_upload_proof=true
 ```
 
 ## GitHub and Vercel
 
 | Check | Result | Evidence note |
 | --- | --- | --- |
-| Latest dev CI | Pass | `PM_App CI` passed for `1f40227`. |
+| Latest dev CI | Pass | `PM_App CI` passed for `9706741`. |
 | Manual authenticated web MVP CI | Pass | GitHub Actions run `28479274228` completed `Web MVP live smoke` successfully using repo secrets `PM_WEB_MVP_EMAIL` and `PM_WEB_MVP_PASSWORD`; no credential values were logged. |
-| Beta deployment | Pass | GitHub deployment `Production - pm-app-beta` completed for `1f40227`; Vercel status `pm-app-beta/9eNjknd6zXtkGnT3tSEmBKK9BQG7` was successful. |
+| Manual photo upload/storage CI | Pass | GitHub Actions run `28479924029` completed `Photo upload live proof` successfully using repo secrets; no credential values, tokens, raw URLs, or uploaded image content were logged. |
+| Beta deployment | Pass | GitHub deployment `Production - pm-app-beta` completed for `9706741`; Vercel status `pm-app-beta/824Y8a4iePkRTFUZpAXV8BG2CRRQ` was successful. |
 | Beta domain | Pass | `beta.pinaymate.com` aliases to `pm-app-beta`. |
 | Production domain separation | Pass | `dev` also created a `Preview - pm-app` deployment, but production beta deployment was separate under `pm-app-beta`; `app.pinaymate.com` and `beta.pinaymate.com` both returned HTTP `200` from distinct custom domains. |
 | Live HTTP smoke | Pass | `https://beta.pinaymate.com` returned HTTP `200`. |
