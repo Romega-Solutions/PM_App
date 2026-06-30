@@ -54,6 +54,7 @@ import { TypingIndicator } from "@/src/features/messaging/components/TypingIndic
 import { blockUser, unmatchUser } from "@/src/features/safety/api/safetyApi";
 import { MessageBubble } from "../components/MessageBubble";
 import { useAppTheme, makeStyles } from "@/src/theme";
+import { useAuthStore } from "@/src/stores/authStore";
 import { useMessageStore } from "@/src/stores/messageStore";
 
 // Brand Colors
@@ -102,6 +103,7 @@ export default function ChatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<ChatScreenParams>();
+  const demoUserType = useAuthStore((state) => state.demoUserType);
   const inputRef = useRef<TextInput>(null);
 
   const handleSwipeToReply = useCallback(() => {
@@ -144,7 +146,7 @@ export default function ChatScreen() {
     params.isDemo === "true" ||
     Boolean(activeConversationId && isSeedConversationId(activeConversationId));
   const demoUserImage = activeConversationId
-    ? getSeedConversationPhotoSource(activeConversationId)
+    ? getSeedConversationPhotoSource(activeConversationId, demoUserType)
     : null;
   const chatUserImage = normalizeImageSource(
     isDemoChat ? demoUserImage ?? params.userImage : params.userImage,
@@ -190,6 +192,7 @@ export default function ChatScreen() {
     userId: messagingUserId,
     recipientId: recipientId || "",
     autoLoad: true,
+    demoUserType,
   });
   const isFirstMessageSetup = !activeConversationId && dbMessages.length === 0;
   const messageInputPlaceholder = isSafetyActionPending

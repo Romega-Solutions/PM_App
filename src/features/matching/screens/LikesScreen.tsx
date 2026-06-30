@@ -262,7 +262,11 @@ export default function LikesScreen() {
     }
 
     if (isSeedProfileId(String(id))) {
-      const seedConversation = getSeedConversationForProfileId(String(id));
+      const seedConversation = getSeedConversationForProfileId(
+        String(id),
+        undefined,
+        demoUserType,
+      );
 
       if (!seedConversation) {
         router.push("/(main)/messages");

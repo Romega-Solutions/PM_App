@@ -40,15 +40,24 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "@/src/config/supabase";
 import { accountApi } from "@/src/features/account/api/accountApi";
 import { UserType } from "@/src/features/auth/api/authApi";
-import { BETA_DEMO_COPY } from "@/src/features/auth/demoMode";
+import {
+  BETA_DEMO_COPY,
+  type DemoPreviewUserType,
+} from "@/src/features/auth/demoMode";
+import { useDemoMatchingStore } from "@/src/stores/demoMatchingStore";
 import { useAuthStore } from "@/src/stores/authStore";
+import { useChatStore } from "@/src/stores/chatStore";
+import { useMessageStore } from "@/src/stores/messageStore";
 import { useProfileStore } from "@/src/stores/profileStore";
 import { ProfileHeader } from "../components/ProfileHeader";
 import {
   ProfileMenuList,
   getDefaultMenuItems,
 } from "../components/ProfileMenuList";
-import { getDemoProfileScreenData } from "../data/demoProfileStore";
+import {
+  clearDemoProfileOverrides,
+  getDemoProfileScreenData,
+} from "../data/demoProfileStore";
 
 /**
  * Profile data interface
@@ -126,7 +135,14 @@ export const ProfileScreen: React.FC = () => {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const isDemoMode = useAuthStore((state) => state.isDemoMode);
+  const demoUserType = useAuthStore((state) => state.demoUserType);
+  const startDemoSession = useAuthStore((state) => state.startDemoSession);
   const endDemoSession = useAuthStore((state) => state.endDemoSession);
+  const resetDemoMatching = useDemoMatchingStore(
+    (state) => state.resetDemoMatching,
+  );
+  const clearChat = useChatStore((state) => state.clearChat);
+  const clearMessageCache = useMessageStore((state) => state.clearCache);
 
   // Zustand store
   const { setProfile, clearProfile } = useProfileStore();
@@ -136,7 +152,7 @@ export const ProfileScreen: React.FC = () => {
     const fetchProfileData = async () => {
       try {
         if (isDemoMode) {
-          setProfileData(getDemoProfileScreenData());
+          setProfileData(getDemoProfileScreenData(demoUserType));
           setLoading(false);
           return;
         }
@@ -198,7 +214,7 @@ export const ProfileScreen: React.FC = () => {
     };
 
     fetchProfileData();
-  }, [isDemoMode, router, setProfile]);
+  }, [demoUserType, isDemoMode, router, setProfile]);
 
   // Handle menu item press
   const handleMenuItemPress = (route: Href) => {
@@ -232,6 +248,17 @@ export const ProfileScreen: React.FC = () => {
       console.error("Error during logout.");
       router.replace("/(auth)/welcome");
     }
+  };
+
+  const handleSwitchDemoPreview = (nextUserType: DemoPreviewUserType) => {
+    if (nextUserType === demoUserType) return;
+
+    resetDemoMatching();
+    clearMessageCache();
+    clearChat();
+    clearDemoProfileOverrides();
+    startDemoSession(nextUserType);
+    setProfileData(getDemoProfileScreenData(nextUserType));
   };
 
   // Loading state
@@ -384,13 +411,66 @@ export const ProfileScreen: React.FC = () => {
         </View>
 
         {isDemoMode ? (
-          <View
-            style={styles.demoStatusStrip}
-            accessible
-            accessibilityLabel={`${BETA_DEMO_COPY.title}. ${BETA_DEMO_COPY.message}`}
-          >
-            <Text style={styles.demoStatusTitle}>{BETA_DEMO_COPY.title}</Text>
-            <Text style={styles.demoStatusText}>{BETA_DEMO_COPY.message}</Text>
+          <View style={styles.demoStatusStrip}>
+            <View style={styles.demoStatusHeader}>
+              <View style={styles.demoStatusCopy}>
+                <Text style={styles.demoStatusTitle}>
+                  {BETA_DEMO_COPY.title}
+                </Text>
+                <Text style={styles.demoStatusText}>
+                  {BETA_DEMO_COPY.message}
+                </Text>
+              </View>
+              <View style={styles.demoStatusBadge}>
+                <Text style={styles.demoStatusBadgeText}>
+                  {demoUserType === "filipina" ? "Pinay" : "Foreigner"}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.demoSwitchGroup}>
+              <TouchableOpacity
+                style={[
+                  styles.demoSwitchButton,
+                  demoUserType === "foreigner" && styles.demoSwitchButtonActive,
+                ]}
+                onPress={() => handleSwitchDemoPreview("foreigner")}
+                activeOpacity={0.84}
+                accessibilityRole="button"
+                accessibilityLabel="Switch to foreigner preview"
+                accessibilityState={{ selected: demoUserType === "foreigner" }}
+              >
+                <Text
+                  style={[
+                    styles.demoSwitchButtonText,
+                    demoUserType === "foreigner" &&
+                      styles.demoSwitchButtonTextActive,
+                  ]}
+                >
+                  Foreigner
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.demoSwitchButton,
+                  demoUserType === "filipina" && styles.demoSwitchButtonActive,
+                ]}
+                onPress={() => handleSwitchDemoPreview("filipina")}
+                activeOpacity={0.84}
+                accessibilityRole="button"
+                accessibilityLabel="Switch to Pinay preview"
+                accessibilityState={{ selected: demoUserType === "filipina" }}
+              >
+                <Text
+                  style={[
+                    styles.demoSwitchButtonText,
+                    demoUserType === "filipina" &&
+                      styles.demoSwitchButtonTextActive,
+                  ]}
+                >
+                  Pinay
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ) : null}
 
@@ -469,11 +549,19 @@ const useStyles = makeStyles((theme) => ({
   demoStatusStrip: {
     marginHorizontal: 24,
     marginBottom: 8,
-    paddingLeft: 16,
-    paddingVertical: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: theme.semanticColors.primary,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "rgba(239, 62, 120, 0.3)",
+    borderRadius: 18,
     backgroundColor: "rgba(239, 62, 120, 0.1)",
+  },
+  demoStatusHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  demoStatusCopy: {
+    flex: 1,
   },
   demoStatusTitle: {
     fontSize: 15,
@@ -486,6 +574,49 @@ const useStyles = makeStyles((theme) => ({
     fontFamily: "DMSans-Regular",
     color: "rgba(255, 255, 255, 0.72)",
     lineHeight: 20,
+  },
+  demoStatusBadge: {
+    minHeight: 30,
+    borderRadius: 15,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.18)",
+  },
+  demoStatusBadgeText: {
+    fontSize: 12,
+    fontFamily: "DMSans-Bold",
+    color: theme.colors.neutral.white,
+  },
+  demoSwitchGroup: {
+    marginTop: 12,
+    padding: 4,
+    borderRadius: 16,
+    backgroundColor: "rgba(15, 8, 20, 0.62)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.12)",
+    flexDirection: "row",
+    gap: 4,
+  },
+  demoSwitchButton: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  demoSwitchButtonActive: {
+    backgroundColor: theme.semanticColors.primary,
+  },
+  demoSwitchButtonText: {
+    fontSize: 13,
+    fontFamily: "DMSans-Bold",
+    color: "rgba(255, 255, 255, 0.72)",
+  },
+  demoSwitchButtonTextActive: {
+    color: theme.colors.neutral.white,
   },
   loadingText: {
     fontSize: 16,

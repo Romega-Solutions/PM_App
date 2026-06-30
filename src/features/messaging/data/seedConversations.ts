@@ -32,7 +32,16 @@ const DEMO_USER_IDS = [
   "00000000-0000-4000-8000-000000000120",
 ];
 
-const SEED_MESSAGE_FIXTURES = [
+type SeedMessageFixture = {
+  profileIndex: number;
+  text: string;
+  unread: number;
+  minutesAgo: number;
+  active: boolean;
+  replies: readonly [string, string, string];
+};
+
+const FILIPINA_VISIBLE_MESSAGE_FIXTURES: readonly SeedMessageFixture[] = [
   {
     profileIndex: 0,
     text: "Your note about honest plans stood out. What kind of weekend feels balanced to you?",
@@ -131,6 +140,65 @@ const SEED_MESSAGE_FIXTURES = [
   },
 ] as const;
 
+const FOREIGNER_VISIBLE_MESSAGE_FIXTURES: readonly SeedMessageFixture[] = [
+  {
+    profileIndex: 0,
+    text: "Your note about family and clear plans stood out. What kind of first call feels comfortable to you?",
+    unread: 3,
+    minutesAgo: 5,
+    active: true,
+    replies: [
+      "Hi Daniel, your profile felt respectful and steady.",
+      "Thank you. I prefer a simple video call before making any big plans.",
+      "That feels right to me too. It is easier to trust a calm conversation.",
+    ],
+  },
+  {
+    profileIndex: 1,
+    text: "I like that you mentioned patience. What do you usually do after a busy work week?",
+    unread: 2,
+    minutesAgo: 18,
+    active: true,
+    replies: [
+      "Hi James, your travel photos looked warm but not showy.",
+      "I am glad it came across that way. I like meaningful trips, not pressure.",
+      "That sounds good. I prefer plans that leave room for real conversation.",
+    ],
+  },
+  {
+    profileIndex: 2,
+    text: "Sydney coffee is good, but I am curious what place in the Philippines you would show first.",
+    unread: 1,
+    minutesAgo: 36,
+    active: true,
+    replies: [
+      "Hi Michael, your profile made me smile.",
+      "Thanks. I wanted it to feel honest, not too polished.",
+      "Honest is better. I would probably start with food and a quiet walk.",
+    ],
+  },
+  {
+    profileIndex: 3,
+    text: "Your profile says intentional, and I respect that. What matters most before meeting in person?",
+    unread: 0,
+    minutesAgo: 78,
+    active: true,
+    replies: [
+      "Hi Thomas, I noticed you wrote clearly about commitment.",
+      "I think clarity saves everyone time and protects feelings.",
+      "I agree. Respect and consistency matter more than a perfect message.",
+    ],
+  },
+] as const;
+
+function getSeedMessageFixtures(
+  demoUserType: DemoPreviewUserType,
+): readonly SeedMessageFixture[] {
+  return demoUserType === "filipina"
+    ? FOREIGNER_VISIBLE_MESSAGE_FIXTURES
+    : FILIPINA_VISIBLE_MESSAGE_FIXTURES;
+}
+
 function minutesAgoIso(minutesAgo: number): string {
   return new Date(DEMO_CLOCK_START_MS - minutesAgo * 60 * 1000).toISOString();
 }
@@ -147,9 +215,14 @@ function getSeedConversationIndex(id: string): number | null {
   if (!isSeedConversationId(id)) return null;
 
   const index = Number.parseInt(id.replace("seed-conv-", ""), 10) - 1;
+  const maxFixtureCount = Math.max(
+    FILIPINA_VISIBLE_MESSAGE_FIXTURES.length,
+    FOREIGNER_VISIBLE_MESSAGE_FIXTURES.length,
+  );
+
   return Number.isInteger(index) &&
     index >= 0 &&
-    index < SEED_MESSAGE_FIXTURES.length
+    index < maxFixtureCount
     ? index
     : null;
 }
@@ -159,8 +232,9 @@ export function getSeedConversations(
   demoUserType: DemoPreviewUserType = getPersistedDemoUserType(),
 ): ConversationWithUser[] {
   const profiles = getSeedProfilesInOrder(demoUserType);
+  const fixtures = getSeedMessageFixtures(demoUserType);
 
-  return SEED_MESSAGE_FIXTURES.slice(0, profiles.length).map((fixture, index) => {
+  return fixtures.slice(0, profiles.length).map((fixture, index) => {
     const profile = profiles[index] ?? profiles[fixture.profileIndex];
     const otherUserId = DEMO_USER_IDS[index];
     const timestamp = minutesAgoIso(fixture.minutesAgo);
@@ -203,7 +277,8 @@ export function getSeedConversationForProfileId(
     return null;
   }
 
-  const fixtureIndex = SEED_MESSAGE_FIXTURES.findIndex(
+  const fixtures = getSeedMessageFixtures(demoUserType);
+  const fixtureIndex = fixtures.findIndex(
     (fixture) => fixture.profileIndex === profileIndex,
   );
 
@@ -224,7 +299,12 @@ export function getSeedConversationPhotoSource(
     return null;
   }
 
-  const fixture = SEED_MESSAGE_FIXTURES[fixtureIndex];
+  const fixtures = getSeedMessageFixtures(demoUserType);
+  const fixture = fixtures[fixtureIndex];
+  if (!fixture) {
+    return null;
+  }
+
   const profiles = getSeedProfilesInOrder(demoUserType);
   const profile = profiles[fixtureIndex] ?? profiles[fixture.profileIndex];
 
@@ -235,6 +315,7 @@ export function getSeedMessages(
   conversationId: string,
   currentUserId = DEMO_CURRENT_USER_ID,
   recipientId?: string,
+  demoUserType: DemoPreviewUserType = getPersistedDemoUserType(),
 ): Message[] {
   const index = getSeedConversationIndex(conversationId);
 
@@ -242,7 +323,11 @@ export function getSeedMessages(
     return [];
   }
 
-  const fixture = SEED_MESSAGE_FIXTURES[index];
+  const fixtures = getSeedMessageFixtures(demoUserType);
+  const fixture = fixtures[index];
+  if (!fixture) {
+    return [];
+  }
   const otherUserId = recipientId || DEMO_USER_IDS[index];
   const senderId = currentUserId || DEMO_CURRENT_USER_ID;
   const messageTimes = [

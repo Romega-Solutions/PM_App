@@ -1,5 +1,6 @@
 import { getBetaDemoProfile } from "@/src/features/auth/demoMode";
 import type { UserType } from "@/src/features/auth/api/authApi";
+import type { DemoPreviewUserType } from "@/src/features/auth/demoMode";
 import type {
   ProfileData as ApiProfileData,
   UpdateProfileData,
@@ -62,9 +63,15 @@ export function saveDemoProfilePhotos(photos: string[]) {
   });
 }
 
-export function getDemoProfileApiData(): ApiProfileData {
+export function clearDemoProfileOverrides() {
+  writeOverride({});
+}
+
+export function getDemoProfileApiData(
+  userType?: DemoPreviewUserType,
+): ApiProfileData {
   const override = readOverride();
-  const demoProfile = getBetaDemoProfile();
+  const demoProfile = getBetaDemoProfile(userType);
   const now = new Date().toISOString();
 
   return {
@@ -86,14 +93,15 @@ export function getDemoProfileApiData(): ApiProfileData {
   };
 }
 
-export function getDemoProfileScreenData() {
-  const profile = getDemoProfileApiData();
+export function getDemoProfileScreenData(userType?: DemoPreviewUserType) {
+  const profile = getDemoProfileApiData(userType);
 
   return {
     firstName: profile.first_name,
     lastName: profile.last_name,
     age: profile.age ?? null,
-    userType: (profile.user_type ?? getBetaDemoProfile().userType) as UserType,
+    userType: (profile.user_type ??
+      getBetaDemoProfile(userType).userType) as UserType,
     location: profile.location_name ?? null,
     photoUri: profile.photos?.[0] ?? null,
     isVerified: profile.is_verified ?? false,

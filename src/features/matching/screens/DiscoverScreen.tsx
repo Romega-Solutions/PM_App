@@ -513,7 +513,11 @@ export const DiscoverScreen: React.FC = () => {
     setMatchedProfile(null);
 
     if (profile?.demo || (profile?.id && isSeedProfileId(profile.id))) {
-      const seedConversation = getSeedConversationForProfileId(profile.id);
+      const seedConversation = getSeedConversationForProfileId(
+        profile.id,
+        undefined,
+        demoUserType,
+      );
 
       if (seedConversation) {
         router.push({
@@ -531,7 +535,7 @@ export const DiscoverScreen: React.FC = () => {
     }
 
     router.push("/(main)/likes");
-  }, [matchedProfile, router]);
+  }, [demoUserType, matchedProfile, router]);
 
   const handleReportCurrentProfile = useCallback(() => {
     if (!currentProfile) return;

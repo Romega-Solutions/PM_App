@@ -15,6 +15,7 @@ import {
   getSeedMessages,
   isSeedConversationId,
 } from "@/src/features/messaging/data/seedConversations";
+import type { DemoPreviewUserType } from "@/src/features/auth/demoMode";
 import {
     getMessages,
     getMessagesByConversationId,
@@ -30,6 +31,7 @@ interface UseMessagesOptions {
   userId: string;
   recipientId: string;
   autoLoad?: boolean;
+  demoUserType?: DemoPreviewUserType;
 }
 
 interface UseMessagesReturn {
@@ -49,6 +51,7 @@ export function useMessages({
   userId,
   recipientId,
   autoLoad = true,
+  demoUserType,
 }: UseMessagesOptions): UseMessagesReturn {
   const isSeedConversation = conversationId
     ? isSeedConversationId(conversationId)
@@ -105,6 +108,7 @@ export function useMessages({
           conversationId,
           userId || DEMO_CURRENT_USER_ID,
           recipientId,
+          demoUserType,
         ),
         ...localDemoMessages,
       ]);
@@ -151,6 +155,7 @@ export function useMessages({
     recipientId,
     setMessagesToStore,
     userId,
+    demoUserType,
   ]);
 
   /**
