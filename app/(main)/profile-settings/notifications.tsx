@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
@@ -146,6 +147,8 @@ export default function NotificationsScreen() {
     if (preferences[key] === value) {
       return;
     }
+
+    Haptics.selectionAsync();
 
     const previousPreferences = preferences;
     const nextPreferences = { ...preferences, [key]: value };

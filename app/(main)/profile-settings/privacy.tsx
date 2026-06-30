@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
@@ -150,6 +151,8 @@ export default function PrivacyScreen() {
     if (settings[key] === value) {
       return;
     }
+
+    Haptics.selectionAsync();
 
     const previousSettings = settings;
     const nextSettings = { ...settings, [key]: value };

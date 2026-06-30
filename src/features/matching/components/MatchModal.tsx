@@ -6,6 +6,7 @@
  * KISS: Simple match display with action
  */
 
+import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { Heart, MessageCircle, ShieldCheck } from "lucide-react-native";
 import React from "react";
@@ -20,6 +21,13 @@ import { StyleSheet,
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppTheme } from "@/src/theme/ThemeContext";
 import { makeStyles } from "@/src/theme/makeStyles";
@@ -52,6 +60,27 @@ export const MatchModal: React.FC<MatchModalProps> = ({
   const theme = useAppTheme();
   const styles = useStyles();
   const insets = useSafeAreaInsets();
+  const scale = useSharedValue(0.5);
+  const opacity = useSharedValue(0);
+
+  React.useEffect(() => {
+    if (visible && matchedProfile) {
+      scale.value = withSequence(
+        withTiming(1.1, { duration: 250 }),
+        withSpring(1, { damping: 10, stiffness: 100 }),
+      );
+      opacity.value = withTiming(1, { duration: 300 });
+      return;
+    }
+
+    scale.value = 0.5;
+    opacity.value = 0;
+  }, [matchedProfile, opacity, scale, visible]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value }],
+  }));
 
   if (!matchedProfile) return null;
 
@@ -77,8 +106,9 @@ export const MatchModal: React.FC<MatchModalProps> = ({
           },
         ]}
       >
+        <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
         <LinearGradient
-          colors={["rgba(15, 8, 20, 0.95)", "rgba(45, 27, 53, 0.95)"]}
+          colors={["rgba(15, 8, 20, 0.6)", "rgba(45, 27, 53, 0.7)"]}
           style={StyleSheet.absoluteFill}
         />
 
@@ -87,7 +117,7 @@ export const MatchModal: React.FC<MatchModalProps> = ({
           showsVerticalScrollIndicator={false}
         >
           {/* Match Content */}
-          <View style={styles.matchContent}>
+          <Animated.View style={[styles.matchContent, animatedStyle]}>
             {/* Hearts Animation */}
             <View
               style={styles.heartsContainer}
@@ -121,6 +151,11 @@ export const MatchModal: React.FC<MatchModalProps> = ({
                   : "Safety note. Keep chats in PinayMate until you feel comfortable, and do not rush into sharing private details."
               }
             >
+              <BlurView
+                intensity={30}
+                tint="dark"
+                style={styles.safetyNoteBlur}
+              />
               <ShieldCheck size={16} color={theme.semanticColors.secondary} strokeWidth={2.4} />
               <Text style={styles.safetyNoteText}>
                 {isDemoMatch
@@ -174,7 +209,7 @@ export const MatchModal: React.FC<MatchModalProps> = ({
                 <Text style={styles.keepSwipingBtnText}>Keep Swiping</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </Animated.View>
         </ScrollView>
       </View>
     </Modal>
@@ -225,9 +260,14 @@ const useStyles = makeStyles((theme) => ({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 14,
-    backgroundColor: "rgba(141, 105, 246, 0.12)",
+    overflow: "hidden",
+    backgroundColor: "rgba(141, 105, 246, 0.08)",
     borderWidth: 1,
     borderColor: "rgba(141, 105, 246, 0.24)",
+  },
+  safetyNoteBlur: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 14,
   },
   safetyNoteText: {
     flex: 1,

@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import { accountApi } from "@/src/features/account/api/accountApi";
 import {
   getDemoMatchPreferences,
@@ -89,6 +90,8 @@ export default function PreferencesScreen() {
   }, [fetchPreferences]);
 
   const handleSave = async () => {
+    Haptics.selectionAsync();
+
     const parsedAgeMin = Number.parseInt(ageMin, 10);
     const parsedAgeMax = Number.parseInt(ageMax, 10);
     const parsedMaxDistance = Number.parseInt(maxDistance, 10);
@@ -159,6 +162,7 @@ export default function PreferencesScreen() {
         userType: basicInfo.userType,
       });
 
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert("Success", "Preferences updated successfully!");
       router.replace("/profile");
     } catch {
