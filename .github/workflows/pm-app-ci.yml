@@ -19,6 +19,14 @@ on:
         options:
           - "false"
           - "true"
+      run_web_mvp_smoke:
+        description: "Run authenticated browser smoke against beta.pinaymate.com using configured repo secrets"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 permissions:
   contents: read
@@ -108,3 +116,42 @@ jobs:
 
       - name: Safety smoke SQL
         run: npx -y supabase@latest db query --linked --file supabase/tests/04_safety_smoke_test.sql --output table
+
+  live-web-mvp-smoke:
+    name: Web MVP live smoke
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_web_mvp_smoke == 'true' }}
+    env:
+      PM_APP_BETA_URL: https://beta.pinaymate.com
+      PM_WEB_MVP_EMAIL: ${{ secrets.PM_WEB_MVP_EMAIL }}
+      PM_WEB_MVP_PASSWORD: ${{ secrets.PM_WEB_MVP_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify web MVP smoke configuration
+        shell: bash
+        run: |
+          if [ -z "${PM_WEB_MVP_EMAIL}" ]; then
+            echo "PM_WEB_MVP_EMAIL secret is required for authenticated web MVP smoke." >&2
+            exit 1
+          fi
+          if [ -z "${PM_WEB_MVP_PASSWORD}" ]; then
+            echo "PM_WEB_MVP_PASSWORD secret is required for authenticated web MVP smoke." >&2
+            exit 1
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Authenticated beta browser smoke
+        run: npm run smoke:web-mvp
