@@ -1,7 +1,7 @@
 # PM_App beta live proof
 
 Date: 2026-07-01
-Branch/source: `dev` at `ff77de4`
+Branch/source: `dev` at `157d829`
 Environment: `https://beta.pinaymate.com`
 Owner: Codex / Romega engineering
 
@@ -16,21 +16,26 @@ Owner: Codex / Romega engineering
 | Bottom navigation | Pass | Discover, Liked You, Messages, and You tabs are visible and not clipped. |
 | Viewports | Pass | Checked mobile `390x844`, laptop `1366x900`, and desktop `1512x982`. |
 | Browser errors | Pass | No critical page errors, console errors, or non-aborted failed requests. |
+| Authenticated sign-in shell | Pass | Disposable beta account signed in on mobile `390x844` and laptop `1366x900`; Discover, Liked You, Messages, and You tabs loaded and were not clipped. |
+| Authenticated setup screens | Pass | After sign-in, basic info, profile photo upload, and review-based verification setup screens rendered on laptop without HTTP/page failures. |
 
 Command:
 
 ```powershell
 npm run smoke:beta-preview
+$env:PM_WEB_MVP_EMAIL="<disposable-beta-user>"
+$env:PM_WEB_MVP_PASSWORD="<local-only-password>"
+npm run smoke:web-mvp
 ```
 
 ## GitHub and Vercel
 
 | Check | Result | Evidence note |
 | --- | --- | --- |
-| Latest dev CI | Pass | `PM_App CI` passed for `ff77de4`. |
-| Beta deployment | Pass | `pm-app-beta-bugv5u1ye-romega-solutions.vercel.app` is Ready. |
+| Latest dev CI | Pass | `PM_App CI` passed for `157d829`. |
+| Beta deployment | Pass | GitHub deployment `Production - pm-app-beta` completed for `157d829`; target deployment URL was `pm-app-beta-fn194wzz5-romega-solutions.vercel.app`. |
 | Beta domain | Pass | `beta.pinaymate.com` aliases to `pm-app-beta`. |
-| Production domain separation | Pass | `app.pinaymate.com` remains aliased to `pm-app`, not `pm-app-beta`. |
+| Production domain separation | Pass | `dev` also created a `Preview - pm-app` deployment, but production beta deployment was separate under `pm-app-beta`; `app.pinaymate.com` and `beta.pinaymate.com` both returned HTTP `200` from distinct custom domains. |
 | Live HTTP smoke | Pass | `https://beta.pinaymate.com` returned HTTP `200`. |
 
 ## Supabase linked project proof
@@ -58,5 +63,5 @@ npx -y supabase@latest db query --linked --file supabase/tests/04_safety_smoke_t
 ## Current limits
 
 - This is beta/live-web proof, not native App Store or Play Store release proof.
-- OCR valid-document extraction and waitlist approved-origin/rate-limit behavior still require dedicated provider/secret proof before stronger launch claims.
+- Waitlist approved-origin, challenge, and rate-limit behavior still require dedicated provider proof before stronger launch claims.
 - Native QA should be rerun on release builds before promoting beta behavior to production-ready status.
