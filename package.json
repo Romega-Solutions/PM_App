@@ -33,7 +33,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "check:client-copy": "node scripts/check-client-facing-copy.mjs",
-    "smoke:beta-preview": "npx -y playwright@1.57.0 test \"scripts/smoke-beta-preview.spec.js\" --reporter=line",
+    "smoke:beta-preview": "playwright test \"scripts/smoke-beta-preview.spec.js\" --reporter=line",
     "analyze:web": "set EXPO_UNSTABLE_ATLAS=true&& expo export -p web",
     "analyze:atlas": "npx expo-atlas"
   },
@@ -83,6 +83,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^12.9.0",
     "@types/jest": "^29.5.14",
