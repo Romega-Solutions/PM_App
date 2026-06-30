@@ -43,6 +43,14 @@ on:
         options:
           - "false"
           - "true"
+      run_ocr_live_proof:
+        description: "Run live OCR Edge Function proof using configured repo secrets"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 permissions:
   contents: read
@@ -196,6 +204,56 @@ jobs:
 
       - name: No-login beta preview smoke
         run: npm run smoke:beta-preview
+
+  live-ocr-proof:
+    name: OCR live proof
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_ocr_live_proof == 'true' }}
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+      OCR_PROOF_EMAIL: ${{ secrets.OCR_PROOF_EMAIL || secrets.PM_WEB_MVP_EMAIL }}
+      OCR_PROOF_PASSWORD: ${{ secrets.OCR_PROOF_PASSWORD || secrets.PM_WEB_MVP_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify OCR proof configuration
+        shell: bash
+        run: |
+          if [ -z "${SUPABASE_ACCESS_TOKEN}" ]; then
+            echo "SUPABASE_ACCESS_TOKEN secret is required for OCR live proof." >&2
+            exit 1
+          fi
+          if [ -z "${EXPO_PUBLIC_SUPABASE_URL}" ]; then
+            echo "EXPO_PUBLIC_SUPABASE_URL secret is required for OCR live proof." >&2
+            exit 1
+          fi
+          if [ -z "${EXPO_PUBLIC_SUPABASE_ANON_KEY}" ]; then
+            echo "EXPO_PUBLIC_SUPABASE_ANON_KEY secret is required for OCR live proof." >&2
+            exit 1
+          fi
+          if [ -z "${OCR_PROOF_EMAIL}" ]; then
+            echo "OCR_PROOF_EMAIL or PM_WEB_MVP_EMAIL secret is required for OCR live proof." >&2
+            exit 1
+          fi
+          if [ -z "${OCR_PROOF_PASSWORD}" ]; then
+            echo "OCR_PROOF_PASSWORD or PM_WEB_MVP_PASSWORD secret is required for OCR live proof." >&2
+            exit 1
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Live OCR proof
+        run: npm run proof:ocr:live
 
   live-photo-upload-proof:
     name: Photo upload live proof

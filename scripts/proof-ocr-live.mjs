@@ -383,8 +383,8 @@ async function main() {
     getEnv("SUPABASE_PUBLISHABLE_KEY");
   const projectRef = getProjectRef(supabaseUrl);
   const endpoint = projectRef ? getFunctionUrl(projectRef) : undefined;
-  const email = getEnv("OCR_PROOF_EMAIL");
-  const password = getEnv("OCR_PROOF_PASSWORD");
+  const email = getEnv("OCR_PROOF_EMAIL") || getEnv("PM_WEB_MVP_EMAIL");
+  const password = getEnv("OCR_PROOF_PASSWORD") || getEnv("PM_WEB_MVP_PASSWORD");
 
   if (!supabaseUrl) fail("missing EXPO_PUBLIC_SUPABASE_URL or SUPABASE_URL");
   if (!anonKey) fail("missing EXPO_PUBLIC_SUPABASE_ANON_KEY or publishable key");
@@ -455,7 +455,7 @@ async function main() {
   info("PASS behavior: unauthenticated OCR request returned HTTP 401");
 
   if (!email || !password) {
-    fail("set OCR_PROOF_EMAIL and OCR_PROOF_PASSWORD to run authenticated OCR proof");
+    fail("set OCR_PROOF_EMAIL/OCR_PROOF_PASSWORD or PM_WEB_MVP_EMAIL/PM_WEB_MVP_PASSWORD to run authenticated OCR proof");
   }
 
   const token = await signIn(supabaseUrl, anonKey, email, password);
