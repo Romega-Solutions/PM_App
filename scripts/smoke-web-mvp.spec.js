@@ -220,6 +220,15 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
     await expect(page.getByText("Distance radius", { exact: true })).toBeVisible();
     await expect(page.getByText("Relationship goal", { exact: true })).toBeVisible();
     await expect(page.getByText("Preference signals, not promises")).toBeVisible();
+    await page.getByRole("radio", { name: /marriage/i }).click();
+    page.once("dialog", async (dialog) => {
+      expect(dialog.message()).toMatch(/Preferences updated successfully/i);
+      await dialog.accept();
+    });
+    await page.getByRole("button", { name: "Save preferences" }).last().click();
+    await expect(page.getByText("Settings", { exact: true }).first()).toBeVisible({
+      timeout: 20000,
+    });
 
     await openProtectedRoute(page, "/profile-settings/notifications");
     await expect(page.getByText("Notifications", { exact: true })).toBeVisible({
