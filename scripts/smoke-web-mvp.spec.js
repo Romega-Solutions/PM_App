@@ -115,6 +115,11 @@ async function openTab(page, label) {
   });
 }
 
+async function openProtectedRoute(page, path) {
+  await page.goto(`${BASE_URL}${path}`, { waitUntil: "domcontentloaded" });
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+}
+
 test.describe("PinayMate authenticated web MVP smoke", () => {
   test.skip(
     !EMAIL || !PASSWORD,
@@ -180,6 +185,53 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
     await expect(
       page.getByText("Review-based verification", { exact: true }),
     ).toBeVisible({ timeout: 15000 });
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("laptop: privacy and preference settings render", async ({ page }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 1366, height: 900 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await openProtectedRoute(page, "/profile-settings/privacy");
+    await expect(page.getByText("Privacy Settings", { exact: true })).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.getByText("Privacy controls", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByRole("button", {
+        name: "Request account deletion for support review",
+      }),
+    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Settings need to reload")).toHaveCount(0);
+
+    await openProtectedRoute(page, "/profile-settings/preferences");
+    await expect(page.getByText("Match Preferences", { exact: true }).first()).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.getByText("Age range", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByText("Distance radius", { exact: true })).toBeVisible();
+    await expect(page.getByText("Relationship goal", { exact: true })).toBeVisible();
+    await expect(page.getByText("Preference signals, not promises")).toBeVisible();
+
+    await openProtectedRoute(page, "/profile-settings/notifications");
+    await expect(page.getByText("Notifications", { exact: true })).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.getByText("Notification controls", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByRole("switch", { name: /Enable push notifications:/ }),
+    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Preferences need to reload")).toHaveCount(0);
 
     await assertNoCriticalNoise(noise);
   });
