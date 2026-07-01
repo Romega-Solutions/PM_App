@@ -1,9 +1,23 @@
 const { test, expect } = require("@playwright/test");
+const path = require("node:path");
+const { createClient } = require("@supabase/supabase-js");
 
 const BASE_URL = process.env.PM_APP_BETA_URL || "https://beta.pinaymate.com";
 const EMAIL = process.env.PM_WEB_MVP_EMAIL || process.env.OCR_PROOF_EMAIL;
 const PASSWORD =
   process.env.PM_WEB_MVP_PASSWORD || process.env.OCR_PROOF_PASSWORD;
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY =
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.SUPABASE_PUBLISHABLE_KEY;
+const PROFILE_PHOTO_FIXTURE = path.join(
+  __dirname,
+  "..",
+  "assets",
+  "images",
+  "icon.png",
+);
 
 function collectPageNoise(page) {
   const consoleErrors = [];
@@ -167,6 +181,140 @@ async function saveProfileAndWait(page) {
   });
 }
 
+function getProfilePhotoStoragePath(photoUrl) {
+  const marker = "/profile-photos/";
+  const markerIndex = photoUrl.indexOf(marker);
+
+  if (markerIndex === -1) {
+    return null;
+  }
+
+  return decodeURIComponent(photoUrl.slice(markerIndex + marker.length).split("?")[0])
+    .replace(/^\/+/, "");
+}
+
+async function createSignedInProofClient() {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error(
+      "Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY for profile photo cleanup.",
+    );
+  }
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.signInWithPassword({
+    email: EMAIL,
+    password: PASSWORD,
+  });
+
+  if (error || !user) {
+    throw new Error("Profile photo cleanup sign-in failed.");
+  }
+
+  return { supabase, user };
+}
+
+async function snapshotProfilePhotos() {
+  const { supabase, user } = await createSignedInProofClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("photos, photos_completed")
+    .eq("id", user.id)
+    .single();
+
+  if (error) {
+    throw new Error("Could not snapshot profile photos before upload smoke.");
+  }
+
+  return {
+    photos: Array.isArray(data?.photos) ? data.photos : [],
+    photosCompleted: Boolean(data?.photos_completed),
+  };
+}
+
+async function restoreProfilePhotos(snapshot) {
+  const { supabase, user } = await createSignedInProofClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("photos")
+    .eq("id", user.id)
+    .single();
+
+  if (error) {
+    throw new Error("Could not read uploaded profile photos for cleanup.");
+  }
+
+  const originalPhotoSet = new Set(snapshot.photos);
+  const latestPhotos = Array.isArray(data?.photos) ? data.photos : [];
+  const uploadedPaths = latestPhotos
+    .filter((photo) => !originalPhotoSet.has(photo))
+    .map(getProfilePhotoStoragePath)
+    .filter(Boolean)
+    .filter((photoPath) => photoPath.startsWith(`${user.id}/`));
+
+  if (uploadedPaths.length > 0) {
+    const { error: removeError } = await supabase.storage
+      .from("profile-photos")
+      .remove(uploadedPaths);
+
+    if (removeError) {
+      throw new Error("Could not delete uploaded profile photo during cleanup.");
+    }
+  }
+
+  const { error: updateError } = await supabase
+    .from("profiles")
+    .update({
+      photos: snapshot.photos,
+      photos_completed: snapshot.photosCompleted,
+    })
+    .eq("id", user.id);
+
+  if (updateError) {
+    throw new Error("Could not restore profile photos after upload smoke.");
+  }
+}
+
+async function uploadProfilePhotoThroughPicker(page) {
+  const uploadResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/storage/v1/object/profile-photos/") &&
+      response.request().method() === "POST",
+    { timeout: 30000 },
+  );
+  const profileUpdatePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/rest/v1/profiles") &&
+      response.request().method() === "PATCH",
+    { timeout: 30000 },
+  );
+  const fileChooserPromise = page.waitForEvent("filechooser", {
+    timeout: 15000,
+  });
+
+  await page
+    .getByRole("button", { name: "Choose profile photo from library" })
+    .click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles(PROFILE_PHOTO_FIXTURE);
+
+  const uploadResponse = await uploadResponsePromise;
+  expect(uploadResponse.status(), "profile photo storage upload").toBeLessThan(
+    400,
+  );
+
+  const profileUpdate = await profileUpdatePromise;
+  expect(profileUpdate.status(), "profile photos profile update").toBeLessThan(
+    400,
+  );
+
+  await expect(page.getByText("Minimum photo added", { exact: true })).toBeVisible({
+    timeout: 20000,
+  });
+}
+
 test.describe("PinayMate authenticated web MVP smoke", () => {
   test.skip(
     !EMAIL || !PASSWORD,
@@ -221,6 +369,12 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
     await expect(
       page.getByText("Photo safety checklist", { exact: true }),
     ).toBeVisible({ timeout: 15000 });
+    const photoSnapshot = await snapshotProfilePhotos();
+    try {
+      await uploadProfilePhotoThroughPicker(page);
+    } finally {
+      await restoreProfilePhotos(photoSnapshot);
+    }
 
     await page.goto(
       `${BASE_URL}/account-setup/verification-upload?userType=foreigner`,
