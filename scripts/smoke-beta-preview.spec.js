@@ -1,6 +1,14 @@
 const { test, expect } = require("@playwright/test");
+const path = require("node:path");
 
 const BASE_URL = process.env.PM_APP_BETA_URL || "https://beta.pinaymate.com";
+const PROFILE_PHOTO_FIXTURE = path.join(
+  __dirname,
+  "..",
+  "assets",
+  "images",
+  "icon.png",
+);
 const FILIPINA_CARD =
   /(?:Maria, 28|Angela, 25|Grace, 30|Samantha, 31|Kyla, 24|Francesca, 27|Leah, 32|Trisha, 28)/;
 const FOREIGNER_CARD = /(?:Daniel, 34|James, 39|Michael, 31|Thomas, 42)/;
@@ -134,6 +142,23 @@ async function exerciseDemoLikedYouActions(page) {
   await expect(
     page.getByText("Demo chat replies and photos stay local on this device."),
   ).toBeVisible({ timeout: 15000 });
+}
+
+async function uploadDemoChatPhotoThroughPicker(page) {
+  const fileChooserPromise = page.waitForEvent("filechooser", {
+    timeout: 15000,
+  });
+
+  await page.getByRole("button", { name: "Attach demo photo" }).click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles(PROFILE_PHOTO_FIXTURE);
+
+  await expect(page.getByLabel(/You: Photo message,/).last()).toBeVisible({
+    timeout: 20000,
+  });
+  await expect(page.getByLabel("You sent a photo").last()).toBeVisible({
+    timeout: 15000,
+  });
 }
 
 async function exerciseAuthEntryScreens(page) {
@@ -353,6 +378,8 @@ test.describe("PinayMate beta preview smoke", () => {
     await expect(page.getByLabel(new RegExp(`^You: ${demoReply}`))).toBeVisible({
       timeout: 15000,
     });
+
+    await uploadDemoChatPhotoThroughPicker(page);
 
     await page
       .getByRole("button", { name: /Open safety options for/ })
