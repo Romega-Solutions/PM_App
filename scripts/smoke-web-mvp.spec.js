@@ -134,6 +134,20 @@ async function toggleSwitchAndWaitForRpc(page, locator, rpcName) {
   await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 }
 
+async function clickAndWaitForRpc(page, locator, rpcName) {
+  const responsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/rpc/${rpcName}`) &&
+      response.request().method() === "POST",
+    { timeout: 15000 },
+  );
+
+  await locator.click();
+  const response = await responsePromise;
+  expect(response.status(), `${rpcName} response status`).toBeLessThan(400);
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+}
+
 async function saveProfileAndWait(page) {
   const responsePromise = page.waitForResponse(
     (response) =>
@@ -299,6 +313,24 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
       readReceiptsSwitch,
       "save_privacy_settings",
     );
+
+    page.once("dialog", async (dialog) => {
+      expect(dialog.message()).toMatch(/Request account deletion/i);
+      await dialog.accept();
+    });
+    await clickAndWaitForRpc(
+      page,
+      page.getByRole("button", {
+        name: "Request account deletion for support review",
+      }),
+      "request_account_deletion",
+    );
+    await expect(
+      page.getByText("Deletion request received", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/support review/i).last()).toBeVisible({
+      timeout: 15000,
+    });
 
     await openProtectedRoute(page, "/profile-settings/preferences");
     await expect(page.getByText("Match Preferences", { exact: true }).first()).toBeVisible({
