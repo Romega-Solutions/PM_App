@@ -589,6 +589,57 @@ async function uploadDemoChatPhotoThroughPicker(page) {
   });
 }
 
+async function exerciseDemoLikedYouActions(page) {
+  await openTab(page, "Liked You");
+  await expect(page.getByText("Before you message", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByText("Beta preview", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+
+  await page
+    .getByLabel("Match filters")
+    .getByText("Mutual", { exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: /^Message / }).first(),
+  ).toBeVisible({ timeout: 15000 });
+
+  await page.getByRole("button", { name: /^Report or block / }).first().click();
+  await expect(page.getByText("Report member", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await page
+    .getByRole("radio", {
+      name: "Scam, money request, or suspicious behavior",
+    })
+    .click();
+  await page
+    .getByLabel("Report details")
+    .fill("Authenticated liked-you proof: suspicious off-app payment request.");
+  await page.getByRole("button", { name: "Send private report" }).click();
+  await expect(
+    page.getByText("Demo report and block recorded", { exact: true }),
+  ).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText("No real report or block was sent.")).toBeVisible();
+  await page.getByRole("button", { name: "Close report form" }).click();
+
+  await page.getByRole("button", { name: /^Unmatch with / }).first().click();
+  await expect(page.getByText("Beta preview action", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByText(/No real unmatch was sent/)).toBeVisible();
+
+  await page.getByRole("button", { name: /^Message / }).first().click();
+  await expect(page.getByText(/Demo chat/).first()).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(
+    page.getByText("Demo chat replies and photos stay local on this device."),
+  ).toBeVisible({ timeout: 15000 });
+}
+
 async function submitDemoSafetyReportFromChat(page) {
   await page
     .getByRole("button", { name: /Open safety options for/ })
@@ -834,6 +885,20 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
 
     await uploadDemoChatPhotoThroughPicker(page);
     await submitDemoSafetyReportFromChat(page);
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("laptop: authenticated beta liked-you actions stay local and open chat", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 1366, height: 900 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await exerciseDemoLikedYouActions(page);
 
     await assertNoCriticalNoise(noise);
   });

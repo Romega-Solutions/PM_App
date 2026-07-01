@@ -85,6 +85,57 @@ async function startPreview(
   await assertBottomNav(page);
 }
 
+async function exerciseDemoLikedYouActions(page) {
+  await page.getByText("Liked You", { exact: true }).last().click();
+  await expect(page.getByText("Before you message", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByText("Beta preview", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+
+  await page
+    .getByLabel("Match filters")
+    .getByText("Mutual", { exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: /^Message / }).first(),
+  ).toBeVisible({ timeout: 15000 });
+
+  await page.getByRole("button", { name: /^Report or block / }).first().click();
+  await expect(page.getByText("Report member", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await page
+    .getByRole("radio", {
+      name: "Scam, money request, or suspicious behavior",
+    })
+    .click();
+  await page
+    .getByLabel("Report details")
+    .fill("Demo liked-you proof: suspicious off-app payment request.");
+  await page.getByRole("button", { name: "Send private report" }).click();
+  await expect(
+    page.getByText("Demo report and block recorded", { exact: true }),
+  ).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText("No real report or block was sent.")).toBeVisible();
+  await page.getByRole("button", { name: "Close report form" }).click();
+
+  await page.getByRole("button", { name: /^Unmatch with / }).first().click();
+  await expect(page.getByText("Beta preview action", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByText(/No real unmatch was sent/)).toBeVisible();
+
+  await page.getByRole("button", { name: /^Message / }).first().click();
+  await expect(page.getByText(/Demo chat/).first()).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(
+    page.getByText("Demo chat replies and photos stay local on this device."),
+  ).toBeVisible({ timeout: 15000 });
+}
+
 test.describe("PinayMate beta preview smoke", () => {
   const viewports = [
     { name: "mobile", width: 390, height: 844 },
@@ -227,6 +278,24 @@ test.describe("PinayMate beta preview smoke", () => {
     await expect(page.getByText("Demo block", { exact: true })).toBeVisible();
     await expect(page.getByText("Unmatch only", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Close safety options" }).click();
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("laptop: liked-you demo actions stay local and open seeded chat", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 1366, height: 900 });
+    const noise = collectPageNoise(page);
+
+    await startPreview(
+      page,
+      "Foreigner preview",
+      FILIPINA_CARD,
+      FOREIGNER_CARD,
+    );
+    await exerciseDemoLikedYouActions(page);
 
     await assertNoCriticalNoise(noise);
   });

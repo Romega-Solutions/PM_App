@@ -2,19 +2,20 @@
  * LikesScreen
  *
  * Main screen for displaying user matches in a grid layout.
- * Integrates with Supabase to fetch real match data.
+ * Integrates with Supabase to fetch real match data, with beta seed matches
+ * when live matches are unavailable.
  *
  * Features:
  * - Grid layout of match cards (2 columns)
  * - Filter between all matches and mutual matches
  * - Loading state while fetching data
- * - Empty state when no matches
+ * - Beta seed state when no matches are available
  * - Message and unmatch actions
  *
  * Architecture:
  * - Uses feature components for modularity
  * - Fetches data from matchingApi
- * - No mock data - 100% database-driven
+ * - Keeps seed-only actions local while preserving live match actions
  */
 
 import { supabase } from "@/src/config/supabase";
@@ -713,4 +714,3 @@ const useStyles = makeStyles((theme) => ({
     color: "rgba(255, 255, 255, 0.76)",
   },
 }));
-// touch
