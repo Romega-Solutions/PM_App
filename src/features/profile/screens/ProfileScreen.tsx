@@ -181,7 +181,7 @@ export const ProfileScreen: React.FC = () => {
           .single();
 
         if (error) {
-          console.error("Failed to fetch profile.");
+          console.warn("Failed to fetch profile.");
           setProfileData(null);
           setLoading(false);
           return;
@@ -206,7 +206,7 @@ export const ProfileScreen: React.FC = () => {
           });
         }
       } catch {
-        console.error("Failed to fetch profile data.");
+        console.warn("Failed to fetch profile data.");
         setProfileData(null);
       } finally {
         setLoading(false);

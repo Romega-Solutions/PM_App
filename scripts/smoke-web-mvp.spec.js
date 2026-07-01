@@ -134,6 +134,25 @@ async function toggleSwitchAndWaitForRpc(page, locator, rpcName) {
   await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 }
 
+async function saveProfileAndWait(page) {
+  const responsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/rest/v1/profiles") &&
+      response.request().method() === "PATCH",
+    { timeout: 15000 },
+  );
+
+  await page.getByRole("button", { name: "Save profile" }).click();
+
+  const response = await responsePromise;
+  expect(response.status(), "profile update response status").toBeLessThan(400);
+
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+  await expect(page.getByText("Profile access", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+}
+
 test.describe("PinayMate authenticated web MVP smoke", () => {
   test.skip(
     !EMAIL || !PASSWORD,
@@ -199,6 +218,46 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
     await expect(
       page.getByText("Review-based verification", { exact: true }),
     ).toBeVisible({ timeout: 15000 });
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("laptop: profile edit saves and restores a public detail", async ({ page }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 1366, height: 900 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await openProtectedRoute(page, "/profile-settings/edit");
+    await expect(page.getByText("Edit Profile", { exact: true })).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(
+      page.getByText("Profile details for discovery", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+
+    const occupationInput = page.getByLabel("Occupation");
+    await expect(occupationInput).toBeVisible({ timeout: 15000 });
+    const originalOccupation = await occupationInput.inputValue();
+    const proofOccupation =
+      originalOccupation.trim() === "Web MVP proof"
+        ? "Web MVP proof restore check"
+        : "Web MVP proof";
+
+    await occupationInput.fill(proofOccupation);
+    await saveProfileAndWait(page);
+
+    await openProtectedRoute(page, "/profile-settings/edit");
+    await expect(page.getByText("Edit Profile", { exact: true })).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.getByLabel("Occupation")).toHaveValue(proofOccupation, {
+      timeout: 15000,
+    });
+
+    await page.getByLabel("Occupation").fill(originalOccupation);
+    await saveProfileAndWait(page);
 
     await assertNoCriticalNoise(noise);
   });
