@@ -54,6 +54,7 @@ export default function AgeRangeSlider({ minAge, maxAge, onChange, min = 18, max
           <Text style={styles.sliderLabel}>Min: {minAge}</Text>
           <input 
             type="range" 
+            aria-label="Minimum age"
             min={min} 
             max={max} 
             value={minAge} 
@@ -65,6 +66,7 @@ export default function AgeRangeSlider({ minAge, maxAge, onChange, min = 18, max
           <Text style={styles.sliderLabel}>Max: {maxAge}</Text>
           <input 
             type="range" 
+            aria-label="Maximum age"
             min={min} 
             max={max} 
             value={maxAge} 

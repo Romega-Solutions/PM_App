@@ -15,7 +15,6 @@ import {
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import Slider from "@react-native-community/slider";
-import MultiSlider from "@ptomasroos/react-native-multi-slider";
 import {
   ActivityIndicator,
   Alert,
@@ -25,10 +24,10 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AgeRangeSlider from "@/src/components/preferences/AgeRangeSlider";
 
 const BRAND_BG = "#0F0814";
 const ACCENT_PINK = "#EF3E78";
@@ -53,7 +52,6 @@ const RELATIONSHIP_GOALS = [
 export default function Filters() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
   const isDemoMode = useAuthStore((state) => state.isDemoMode);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -63,7 +61,6 @@ export default function Filters() {
   const [relationshipGoal, setRelationshipGoal] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const controlWidth = Math.max(236, Math.min(width - 82, 416));
   const ageRangeValue = [
     Number.parseInt(ageMin, 10) || 18,
     Number.parseInt(ageMax, 10) || 35,
@@ -333,32 +330,16 @@ export default function Filters() {
                   </Text>
                 </View>
               </View>
-              <View
-                style={styles.sliderCard}
-                accessible
-                accessibilityLabel={`Age range from ${ageMin} to ${ageMax}`}
-              >
-                <MultiSlider
-                  values={ageRangeValue}
-                  min={18}
-                  max={70}
-                  step={1}
-                  sliderLength={controlWidth}
-                  onValuesChange={(values) => {
-                    setAgeMin(String(values[0]));
-                    setAgeMax(String(values[1]));
-                  }}
-                  selectedStyle={styles.selectedTrack}
-                  unselectedStyle={styles.unselectedTrack}
-                  markerStyle={styles.sliderMarker}
-                  pressedMarkerStyle={styles.sliderMarkerPressed}
-                  containerStyle={styles.multiSlider}
-                />
-                <View style={styles.rangeLabels}>
-                  <Text style={styles.rangeLabel}>18</Text>
-                  <Text style={styles.rangeLabel}>70+</Text>
-                </View>
-              </View>
+              <AgeRangeSlider
+                minAge={ageRangeValue[0]}
+                maxAge={ageRangeValue[1]}
+                min={18}
+                max={70}
+                onChange={(values) => {
+                  setAgeMin(String(values[0]));
+                  setAgeMax(String(values[1]));
+                }}
+              />
             </View>
 
             <View style={styles.controlGroup}>

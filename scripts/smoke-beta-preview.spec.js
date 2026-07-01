@@ -161,6 +161,30 @@ async function uploadDemoChatPhotoThroughPicker(page) {
   });
 }
 
+async function setNamedRangeInput(page, name, value) {
+  const slider = page.getByRole("slider", { name });
+  await expect(slider).toBeVisible({ timeout: 15000 });
+  await slider.evaluate((element, nextValue) => {
+    const valueSetter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set;
+    valueSetter?.call(element, nextValue);
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+    element.dispatchEvent(new Event("change", { bubbles: true }));
+  }, String(value));
+}
+
+async function assertVisibleWithinViewport(page, locator, label) {
+  await expect(locator, label).toBeVisible({ timeout: 15000 });
+  const box = await locator.boundingBox();
+  expect(box, `${label} box`).not.toBeNull();
+  expect(box.x, `${label} left edge`).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width, `${label} right edge`).toBeLessThanOrEqual(
+    page.viewportSize().width,
+  );
+}
+
 async function exerciseAuthEntryScreens(page) {
   await page.goto(`${BASE_URL}/signin`, { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Welcome back", { exact: true })).toBeVisible({
@@ -456,6 +480,65 @@ test.describe("PinayMate beta preview smoke", () => {
     await expect(page.getByText("Relationship goal", { exact: true })).toBeVisible();
 
     await page.getByRole("radio", { name: /marriage/i }).click();
+    await page.getByRole("button", { name: "Save discovery filters" }).click();
+
+    await expect(page.getByText(MARRIAGE_FILIPINA_CARD).first()).toBeVisible({
+      timeout: 30000,
+    });
+    await assertBottomNav(page);
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("mobile: demo discovery filters expose usable age controls", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const noise = collectPageNoise(page);
+
+    await startPreview(
+      page,
+      "Foreigner preview",
+      FILIPINA_CARD,
+      FOREIGNER_CARD,
+    );
+
+    page.once("dialog", async (dialog) => {
+      expect(dialog.message()).toContain("Demo filters saved");
+      await dialog.accept();
+    });
+
+    await page
+      .getByRole("button", { name: "Adjust discovery filters" })
+      .first()
+      .click();
+    await expect(page.getByText("Discovery filters", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await assertVisibleWithinViewport(
+      page,
+      page.getByRole("slider", { name: "Minimum age" }),
+      "minimum age slider",
+    );
+    await assertVisibleWithinViewport(
+      page,
+      page.getByRole("slider", { name: "Maximum age" }),
+      "maximum age slider",
+    );
+
+    await setNamedRangeInput(page, "Minimum age", 30);
+    await setNamedRangeInput(page, "Maximum age", 36);
+    await expect(page.getByText("30-36", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+
+    await page.getByRole("radio", { name: /marriage/i }).click();
+    await assertVisibleWithinViewport(
+      page,
+      page.getByRole("button", { name: "Save discovery filters" }),
+      "save discovery filters button",
+    );
     await page.getByRole("button", { name: "Save discovery filters" }).click();
 
     await expect(page.getByText(MARRIAGE_FILIPINA_CARD).first()).toBeVisible({
