@@ -1,7 +1,7 @@
 # PM_App beta live proof
 
 Date: 2026-07-02
-Branch/source: `dev` through deployed app commit `fc9e857`
+Branch/source: `dev` through deployed app commit `e0c173a`
 Environment: `https://beta.pinaymate.com`
 Owner: Codex / Romega engineering
 
@@ -43,13 +43,13 @@ gh workflow run "PM_App CI" --ref dev -f run_ocr_live_proof=true
 
 | Check | Result | Evidence note |
 | --- | --- | --- |
-| Latest dev CI | Pass | `PM_App CI` passed for `fc9e857` on pull request run `28483593945` and push run `28483592086`. |
+| Latest dev CI | Pass | `PM_App CI` passed for `e0c173a` on pull request run `28543021326` and push run `28543018618`. |
 | Manual beta preview CI | Pass | GitHub Actions run `28483228615` completed `Beta preview smoke` successfully against `https://beta.pinaymate.com`, covering no-login preview, role switch, seeded messages, seeded chat local send, demo safety report/block, demo discovery filter save/update, and responsive bottom navigation. |
-| Manual authenticated web MVP CI | Pass / latest dispatch blocked | GitHub Actions run `28481935045` completed `Web MVP live smoke` successfully using repo secrets `PM_WEB_MVP_EMAIL` and `PM_WEB_MVP_PASSWORD`; no credential values were logged. A later dispatch attempt for the preference-save extension was blocked by GitHub with HTTP `403` because the current token lacks repository admin rights to create workflow dispatch events. |
+| Manual authenticated web MVP CI | Pass | GitHub Actions run `28543328806` completed `PM_App CI` and `Web MVP live smoke` successfully using repo secrets `PM_WEB_MVP_EMAIL` and `PM_WEB_MVP_PASSWORD`; no credential values were logged. The run covers sign-in, core tabs, setup screens, protected privacy/preferences/notifications routes, and authenticated match preference save. |
 | Local authenticated web MVP smoke | Pass | `npm run smoke:web-mvp` passed 4/4 against `https://beta.pinaymate.com` on 2026-07-02 using ignored local `.env.local` disposable credentials. This run covered sign-in, core tabs, setup screens, protected privacy/preferences/notifications routes, and authenticated match preference save. |
 | Manual photo upload/storage CI | Pass | GitHub Actions run `28479924029` completed `Photo upload live proof` successfully using repo secrets; no credential values, tokens, raw URLs, or uploaded image content were logged. |
 | Manual OCR live CI | Pass | GitHub Actions run `28482324309` completed `OCR live proof` successfully using repo secrets; no credential values, tokens, raw OCR text, or document images were logged. The run covered authenticated OCR success and invalid-document safe failure. |
-| Beta deployment | Pass | GitHub deployment `Production - pm-app-beta` completed for `fc9e857`; Vercel status was successful. |
+| Beta deployment | Pass | Vercel deployment `dpl_Bowxz3USLL4DjVqx9tJh1uo4Zxhk` completed for `e0c173a`, reached `READY`, and aliased to `beta.pinaymate.com`. |
 | Beta domain | Pass | `beta.pinaymate.com` aliases to `pm-app-beta`. |
 | Production domain separation | Pass | `dev` also created a `Preview - pm-app` deployment, but production beta deployment was separate under `pm-app-beta`; `app.pinaymate.com` and `beta.pinaymate.com` both returned HTTP `200` from distinct custom domains. |
 | Live HTTP smoke | Pass | `https://beta.pinaymate.com` returned HTTP `200`. |
