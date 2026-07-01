@@ -434,6 +434,56 @@ async function uploadProfilePhotoThroughPicker(page) {
   await imageResponsePromise;
 }
 
+async function uploadProfileSettingsPhotoThroughPicker(page) {
+  const uploadResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/storage/v1/object/profile-photos/") &&
+      response.request().method() === "POST",
+    { timeout: 30000 },
+  );
+  const profileUpdatePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/rest/v1/profiles") &&
+      response.request().method() === "PATCH",
+    { timeout: 30000 },
+  );
+  const imageResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/storage/v1/object/public/profile-photos/") &&
+      response.request().method() === "GET" &&
+      response.status() < 400,
+    { timeout: 30000 },
+  );
+  const fileChooserPromise = page.waitForEvent("filechooser", {
+    timeout: 15000,
+  });
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toMatch(/Photo uploaded successfully/i);
+    await dialog.accept();
+  });
+
+  await page.getByRole("button", { name: "Change profile photo" }).click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles(PROFILE_PHOTO_FIXTURE);
+
+  const uploadResponse = await uploadResponsePromise;
+  expect(uploadResponse.status(), "settings profile photo storage upload").toBeLessThan(
+    400,
+  );
+
+  const profileUpdate = await profileUpdatePromise;
+  expect(
+    profileUpdate.status(),
+    "settings profile photos profile update",
+  ).toBeLessThan(400);
+
+  await expect(page.getByLabel("Current profile photo")).toBeVisible({
+    timeout: 20000,
+  });
+  await imageResponsePromise;
+}
+
 async function submitVerificationThroughPickers(page) {
   const validDocument = await ensureSyntheticOcrDocument();
   const selfieChooserPromise = page.waitForEvent("filechooser", {
@@ -672,6 +722,12 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
     await expect(
       page.getByText("Profile details for discovery", { exact: true }),
     ).toBeVisible({ timeout: 15000 });
+    const photoSnapshot = await snapshotProfilePhotos();
+    try {
+      await uploadProfileSettingsPhotoThroughPicker(page);
+    } finally {
+      await restoreProfilePhotos(photoSnapshot);
+    }
 
     const occupationInput = page.getByLabel("Occupation");
     await expect(occupationInput).toBeVisible({ timeout: 15000 });
