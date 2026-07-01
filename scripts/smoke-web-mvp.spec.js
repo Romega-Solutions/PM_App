@@ -290,6 +290,13 @@ async function uploadProfilePhotoThroughPicker(page) {
       response.request().method() === "PATCH",
     { timeout: 30000 },
   );
+  const imageResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/storage/v1/object/public/profile-photos/") &&
+      response.request().method() === "GET" &&
+      response.status() < 400,
+    { timeout: 30000 },
+  );
   const fileChooserPromise = page.waitForEvent("filechooser", {
     timeout: 15000,
   });
@@ -313,6 +320,7 @@ async function uploadProfilePhotoThroughPicker(page) {
   await expect(page.getByText("Minimum photo added", { exact: true })).toBeVisible({
     timeout: 20000,
   });
+  await imageResponsePromise;
 }
 
 test.describe("PinayMate authenticated web MVP smoke", () => {
