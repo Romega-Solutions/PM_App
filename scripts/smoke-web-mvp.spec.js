@@ -503,6 +503,55 @@ async function submitVerificationThroughPickers(page) {
   });
 }
 
+async function uploadDemoChatPhotoThroughPicker(page) {
+  const fileChooserPromise = page.waitForEvent("filechooser", {
+    timeout: 15000,
+  });
+
+  await page.getByRole("button", { name: "Attach demo photo" }).click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles(PROFILE_PHOTO_FIXTURE);
+
+  await expect(page.getByLabel(/You: Photo message,/).last()).toBeVisible({
+    timeout: 20000,
+  });
+  await expect(page.getByLabel("You sent a photo").last()).toBeVisible({
+    timeout: 15000,
+  });
+}
+
+async function submitDemoSafetyReportFromChat(page) {
+  await page
+    .getByRole("button", { name: /Open safety options for/ })
+    .first()
+    .click();
+  await expect(
+    page.getByText("Report safety concern", { exact: true }),
+  ).toBeVisible({ timeout: 15000 });
+
+  await page.getByRole("button", { name: /Report safety concern about/ }).click();
+  await expect(page.getByText("Report member", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByText("Private safety report", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByText("Block this member too", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+
+  await page.getByRole("button", { name: "Send private report" }).click();
+  await expect(
+    page.getByText("Demo report and block recorded", { exact: true }),
+  ).toBeVisible({ timeout: 15000 });
+  await expect(
+    page.getByText(
+      "No real report or block was sent. This keeps the beta preview safe while preserving the live safety flow for real members.",
+      { exact: true },
+    ),
+  ).toBeVisible({ timeout: 15000 });
+}
+
 test.describe("PinayMate authenticated web MVP smoke", () => {
   test.skip(
     !EMAIL || !PASSWORD,
@@ -708,16 +757,8 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
       timeout: 15000,
     });
 
-    await page
-      .getByRole("button", { name: /Open safety options for/ })
-      .first()
-      .click();
-    await expect(
-      page.getByText("Report safety concern", { exact: true }),
-    ).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText("Demo block", { exact: true })).toBeVisible();
-    await expect(page.getByText("Unmatch only", { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Close safety options" }).click();
+    await uploadDemoChatPhotoThroughPicker(page);
+    await submitDemoSafetyReportFromChat(page);
 
     await assertNoCriticalNoise(noise);
   });
