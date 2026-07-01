@@ -1,6 +1,8 @@
 const { test, expect } = require("@playwright/test");
+const fs = require("node:fs");
 const path = require("node:path");
 const { createClient } = require("@supabase/supabase-js");
+const sharp = require("sharp");
 
 const BASE_URL = process.env.PM_APP_BETA_URL || "https://beta.pinaymate.com";
 const EMAIL = process.env.PM_WEB_MVP_EMAIL || process.env.OCR_PROOF_EMAIL;
@@ -18,6 +20,8 @@ const PROFILE_PHOTO_FIXTURE = path.join(
   "images",
   "icon.png",
 );
+const OCR_PROOF_DIR = path.join(__dirname, "..", "codex-tmp", "ocr-proof");
+const OCR_VALID_DOCUMENT = path.join(OCR_PROOF_DIR, "synthetic-valid-document.png");
 
 function collectPageNoise(page) {
   const consoleErrors = [];
@@ -277,6 +281,107 @@ async function restoreProfilePhotos(snapshot) {
   }
 }
 
+async function ensureSyntheticOcrDocument() {
+  if (fs.existsSync(OCR_VALID_DOCUMENT)) {
+    return OCR_VALID_DOCUMENT;
+  }
+
+  fs.mkdirSync(OCR_PROOF_DIR, { recursive: true });
+  const validDocumentSvg = `
+    <svg width="1200" height="760" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1200" height="760" fill="#f8fafc"/>
+      <rect x="52" y="52" width="1096" height="656" rx="28" fill="#ffffff" stroke="#0f172a" stroke-width="8"/>
+      <text x="92" y="142" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="700" fill="#0f172a">PINAYMATE TEST IDENTIFICATION</text>
+      <text x="92" y="232" font-family="Arial, Helvetica, sans-serif" font-size="46" fill="#111827">Name: Maria Santos</text>
+      <text x="92" y="312" font-family="Arial, Helvetica, sans-serif" font-size="46" fill="#111827">Given Name: Maria</text>
+      <text x="92" y="392" font-family="Arial, Helvetica, sans-serif" font-size="46" fill="#111827">Surname: Santos</text>
+      <text x="92" y="472" font-family="Arial, Helvetica, sans-serif" font-size="46" fill="#111827">Date of Birth: 1998-04-03</text>
+      <text x="92" y="552" font-family="Arial, Helvetica, sans-serif" font-size="36" fill="#334155">Synthetic QA image. Not a government document.</text>
+    </svg>
+  `;
+
+  await sharp(Buffer.from(validDocumentSvg)).png().toFile(OCR_VALID_DOCUMENT);
+  return OCR_VALID_DOCUMENT;
+}
+
+async function snapshotVerificationSubmission() {
+  const { supabase, user } = await createSignedInProofClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(
+      "verification_selfie, verification_document, verification_completed, verification_status, is_verified",
+    )
+    .eq("id", user.id)
+    .single();
+
+  if (error) {
+    throw new Error("Could not snapshot verification state before smoke.");
+  }
+
+  return {
+    userId: user.id,
+    selfiePath: data?.verification_selfie || "",
+    documentPath: data?.verification_document || "",
+    completed: Boolean(data?.verification_completed),
+    status: data?.verification_status || "pending",
+    isVerified: Boolean(data?.is_verified),
+  };
+}
+
+async function cleanupVerificationSubmission(snapshot) {
+  const { supabase, user } = await createSignedInProofClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("verification_selfie, verification_document")
+    .eq("id", user.id)
+    .single();
+
+  if (error) {
+    throw new Error("Could not read verification state for cleanup.");
+  }
+
+  const snapshotPaths = new Set(
+    [snapshot.selfiePath, snapshot.documentPath].filter(Boolean),
+  );
+  const latestPaths = [data?.verification_selfie, data?.verification_document]
+    .filter(Boolean)
+    .filter((item) => !snapshotPaths.has(item))
+    .filter((item) => item.startsWith(`${user.id}/`));
+  const cleanupPaths = [...latestPaths];
+
+  if (!snapshot.completed && !snapshot.selfiePath && !snapshot.documentPath) {
+    const { data: objects } = await supabase.storage
+      .from("verification-docs")
+      .list(user.id);
+
+    for (const object of objects ?? []) {
+      const objectPath = `${user.id}/${object.name}`;
+      if (!cleanupPaths.includes(objectPath)) {
+        cleanupPaths.push(objectPath);
+      }
+    }
+  }
+
+  if (cleanupPaths.length > 0) {
+    await supabase.rpc("clear_verification_submission");
+    const { error: removeError } = await supabase.storage
+      .from("verification-docs")
+      .remove(cleanupPaths);
+
+    if (removeError) {
+      throw new Error("Could not delete uploaded verification proof files.");
+    }
+  }
+
+  if (!snapshot.completed && !snapshot.selfiePath && !snapshot.documentPath) {
+    const { error: clearError } = await supabase.rpc("clear_verification_submission");
+
+    if (clearError) {
+      throw new Error("Could not clear verification proof submission.");
+    }
+  }
+}
+
 async function uploadProfilePhotoThroughPicker(page) {
   const uploadResponsePromise = page.waitForResponse(
     (response) =>
@@ -321,6 +426,81 @@ async function uploadProfilePhotoThroughPicker(page) {
     timeout: 20000,
   });
   await imageResponsePromise;
+}
+
+async function submitVerificationThroughPickers(page) {
+  const validDocument = await ensureSyntheticOcrDocument();
+  const selfieChooserPromise = page.waitForEvent("filechooser", {
+    timeout: 15000,
+  });
+
+  await page.getByRole("button", { name: /Take a verification selfie/ }).click();
+  const selfieChooser = await selfieChooserPromise;
+  await selfieChooser.setFiles(PROFILE_PHOTO_FIXTURE);
+
+  await expect(page.getByText("Verification selfie", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByText("Captured", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+
+  const ocrResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      (response.url().includes(".functions.supabase.co/ocr") ||
+        response.url().includes("/functions/v1/ocr")),
+    { timeout: 45000 },
+  );
+  const storageUploads = [];
+  page.on("response", (response) => {
+    if (
+      response.url().includes("/storage/v1/object/verification-docs/") &&
+      response.request().method() === "POST"
+    ) {
+      storageUploads.push(response);
+    }
+  });
+  const submitResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/rest/v1/rpc/submit_verification") &&
+      response.request().method() === "POST",
+    { timeout: 45000 },
+  );
+  const documentChooserPromise = page.waitForEvent("filechooser", {
+    timeout: 15000,
+  });
+
+  await page.getByRole("button", { name: /Upload an ID document/ }).click();
+  const documentChooser = await documentChooserPromise;
+  await documentChooser.setFiles(validDocument);
+
+  const ocrResponse = await ocrResponsePromise;
+  expect(ocrResponse.status(), "verification OCR response").toBeLessThan(400);
+
+  const submitResponse = await submitResponsePromise;
+  expect(
+    submitResponse.status(),
+    "verification submit_verification response",
+  ).toBeLessThan(400);
+
+  await expect.poll(
+    () => storageUploads.filter((response) => response.status() < 400).length,
+    {
+      message: "verification private storage uploads",
+      timeout: 15000,
+    },
+  ).toBeGreaterThanOrEqual(2);
+
+  await expect(page.getByText("Review pending", { exact: true })).toBeVisible({
+    timeout: 20000,
+  });
+  await expect(page.getByText("ID document", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByText("Submitted", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
 }
 
 test.describe("PinayMate authenticated web MVP smoke", () => {
@@ -394,6 +574,18 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
     await expect(
       page.getByText("Review-based verification", { exact: true }),
     ).toBeVisible({ timeout: 15000 });
+    const verificationSnapshot = await snapshotVerificationSubmission();
+    expect(
+      verificationSnapshot.completed ||
+        verificationSnapshot.selfiePath ||
+        verificationSnapshot.documentPath,
+      "disposable proof user should start without verification submission",
+    ).toBeFalsy();
+    try {
+      await submitVerificationThroughPickers(page);
+    } finally {
+      await cleanupVerificationSubmission(verificationSnapshot);
+    }
 
     await assertNoCriticalNoise(noise);
   });
