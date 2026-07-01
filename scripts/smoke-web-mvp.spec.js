@@ -276,6 +276,55 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
     await assertNoCriticalNoise(noise);
   });
 
+  test("laptop: authenticated beta seeded inbox opens and sends a local reply", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 1366, height: 900 });
+    const demoReply =
+      "Authenticated demo smoke reply: staying respectful and inside the app.";
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await openTab(page, "Messages");
+    await expect(page.getByText("Beta seeded inbox", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText(
+        "Sample unread and active chats are shown until real conversations are available.",
+      ),
+    ).toBeVisible({ timeout: 15000 });
+
+    await page.getByRole("button", { name: /Open chat with/ }).first().click();
+    await expect(page.getByText(/Demo chat/).first()).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText("Demo chat replies and photos stay local on this device."),
+    ).toBeVisible({ timeout: 15000 });
+
+    await page.getByLabel("Message input").fill(demoReply);
+    await page.getByRole("button", { name: "Send demo reply" }).click();
+    await expect(page.getByLabel(new RegExp(`^You: ${demoReply}`))).toBeVisible({
+      timeout: 15000,
+    });
+
+    await page
+      .getByRole("button", { name: /Open safety options for/ })
+      .first()
+      .click();
+    await expect(
+      page.getByText("Report safety concern", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Demo block", { exact: true })).toBeVisible();
+    await expect(page.getByText("Unmatch only", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Close safety options" }).click();
+
+    await assertNoCriticalNoise(noise);
+  });
+
   test("laptop: privacy, preference, and notification settings save", async ({ page }) => {
     test.setTimeout(90000);
     await page.setViewportSize({ width: 1366, height: 900 });

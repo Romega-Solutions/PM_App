@@ -45,6 +45,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { supabase } from "@/src/config/supabase";
+import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
 import {
   DEMO_CURRENT_USER_ID,
   getSeedConversations,
@@ -206,7 +207,9 @@ export const MessagesScreen: React.FC = () => {
     hiddenDemoConversationIds,
   ]);
   const usingSeedConversations =
-    isDemoMode && !loading && (Boolean(error) || conversations.length === 0);
+    (isDemoMode || isBetaDemoModeEnabled()) &&
+    !loading &&
+    (Boolean(error) || conversations.length === 0);
   const displayConversations = usingSeedConversations
     ? seedConversations
     : conversations;
