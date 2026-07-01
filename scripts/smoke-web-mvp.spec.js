@@ -120,6 +120,20 @@ async function openProtectedRoute(page, path) {
   await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 }
 
+async function toggleSwitchAndWaitForRpc(page, locator, rpcName) {
+  const responsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/rpc/${rpcName}`) &&
+      response.request().method() === "POST",
+    { timeout: 15000 },
+  );
+
+  await locator.click();
+  const response = await responsePromise;
+  expect(response.status(), `${rpcName} response status`).toBeLessThan(400);
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+}
+
 test.describe("PinayMate authenticated web MVP smoke", () => {
   test.skip(
     !EMAIL || !PASSWORD,
@@ -189,7 +203,7 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
     await assertNoCriticalNoise(noise);
   });
 
-  test("laptop: privacy and preference settings render", async ({ page }) => {
+  test("laptop: privacy, preference, and notification settings save", async ({ page }) => {
     test.setTimeout(90000);
     await page.setViewportSize({ width: 1366, height: 900 });
 
@@ -209,6 +223,23 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
       }),
     ).toBeVisible({ timeout: 15000 });
     await expect(page.getByText("Settings need to reload")).toHaveCount(0);
+    const readReceiptsSwitch = page.getByRole("switch", {
+      name: /Read Receipts:/i,
+    });
+    await expect(readReceiptsSwitch).toBeVisible({ timeout: 15000 });
+    await expect(readReceiptsSwitch).toBeEnabled();
+    await toggleSwitchAndWaitForRpc(
+      page,
+      readReceiptsSwitch,
+      "save_privacy_settings",
+    );
+    await expect(readReceiptsSwitch).toBeVisible({ timeout: 15000 });
+    await expect(readReceiptsSwitch).toBeEnabled();
+    await toggleSwitchAndWaitForRpc(
+      page,
+      readReceiptsSwitch,
+      "save_privacy_settings",
+    );
 
     await openProtectedRoute(page, "/profile-settings/preferences");
     await expect(page.getByText("Match Preferences", { exact: true }).first()).toBeVisible({
@@ -242,6 +273,23 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
       page.getByRole("switch", { name: /Enable push notifications:/ }),
     ).toBeVisible({ timeout: 15000 });
     await expect(page.getByText("Preferences need to reload")).toHaveCount(0);
+    const emailUpdatesSwitch = page.getByRole("switch", {
+      name: /Email updates:/i,
+    });
+    await expect(emailUpdatesSwitch).toBeVisible({ timeout: 15000 });
+    await expect(emailUpdatesSwitch).toBeEnabled();
+    await toggleSwitchAndWaitForRpc(
+      page,
+      emailUpdatesSwitch,
+      "save_notification_preferences",
+    );
+    await expect(emailUpdatesSwitch).toBeVisible({ timeout: 15000 });
+    await expect(emailUpdatesSwitch).toBeEnabled();
+    await toggleSwitchAndWaitForRpc(
+      page,
+      emailUpdatesSwitch,
+      "save_notification_preferences",
+    );
 
     await assertNoCriticalNoise(noise);
   });
