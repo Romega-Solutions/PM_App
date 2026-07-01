@@ -1,7 +1,7 @@
 # PM_App beta live proof
 
 Date: 2026-07-02
-Branch/source: `dev` proof source through `f869ba8`
+Branch/source: `dev` proof source through `67b18ee`
 Environment: `https://beta.pinaymate.com`
 Owner: Codex / Romega engineering
 
@@ -19,6 +19,7 @@ Owner: Codex / Romega engineering
 | Authenticated sign-in shell | Pass | Disposable beta account signed in on mobile `390x844` and laptop `1366x900`; Discover, Liked You, Messages, and You tabs loaded and were not clipped. |
 | Authenticated setup screens | Pass | After sign-in, basic info, profile photo upload, and review-based verification setup screens rendered on laptop without HTTP/page failures. |
 | Authenticated profile edit | Pass | After sign-in, the protected Edit Profile route loaded, saved a public Occupation field through the Supabase profile update path, reloaded the saved value, then restored the original value. |
+| Authenticated beta discovery match | Pass | When the signed-in disposable beta account had no live discovery candidates, Discover showed the seeded beta feed, opened profile details, liked a seed profile, showed the demo match receipt, and opened the seeded demo chat without backend match/message writes. |
 | Authenticated beta seeded inbox | Pass | When the signed-in disposable beta account had no live conversations, Messages showed the seeded beta inbox, opened a seeded chat, sent a local-only reply, and exposed chat safety options while preserving live conversation precedence when real conversations exist. |
 | Authenticated settings screens | Pass | After sign-in, protected Privacy, Match Preferences, and Notifications routes rendered on laptop without reload-error banners, HTTP failures, or page errors. The live smoke saved and restored read-receipt privacy, submitted the backend-backed account deletion request through its support-review RPC, saved the Marriage relationship goal, and saved/restored email notification preferences through their Supabase RPC paths. |
 | Profile photo upload/storage | Pass | Live proof signed in as the disposable beta user, uploaded a generated image to the user-scoped `profile-photos` storage path, updated the profile photo list, verified public image readability, and cleaned up profile/storage state. |
@@ -45,13 +46,13 @@ gh workflow run "PM_App CI" --ref dev -f run_ocr_live_proof=true
 
 | Check | Result | Evidence note |
 | --- | --- | --- |
-| Latest functional dev CI | Pass | `PM_App CI` passed for `f869ba8` on pull request run `28546499725` and push run `28546495798`. |
+| Latest functional dev CI | Pass | `PM_App CI` passed for `67b18ee` on pull request run `28547506629` and push run `28547504008`. |
 | Manual beta preview CI | Pass | GitHub Actions run `28483228615` completed `Beta preview smoke` successfully against `https://beta.pinaymate.com`, covering no-login preview, role switch, seeded messages, seeded chat local send, demo safety report/block, demo discovery filter save/update, and responsive bottom navigation. |
-| Manual authenticated web MVP CI | Pass | GitHub Actions run `28546791282` completed `PM_App CI` and `Web MVP live smoke` successfully using repo secrets `PM_WEB_MVP_EMAIL` and `PM_WEB_MVP_PASSWORD`; no credential values were logged. The run covers sign-in, core tabs, setup screens, authenticated profile edit save/restore, signed-in seeded inbox/chat local send when live conversations are absent, protected settings routes, authenticated privacy save/restore, authenticated account deletion request submission through the support-review RPC, authenticated match preference save, and authenticated notification save/restore. |
-| Local authenticated web MVP smoke | Pass | `npm run smoke:web-mvp` passed 6/6 against `https://beta.pinaymate.com` on 2026-07-02 using ignored local `.env.local` disposable credentials. This run covered sign-in, core tabs, setup screens, authenticated profile edit save/restore, signed-in seeded inbox/chat local send when live conversations are absent, protected settings routes, authenticated privacy save/restore, authenticated account deletion request submission through the support-review RPC, authenticated match preference save, and authenticated notification save/restore. |
+| Manual authenticated web MVP CI | Pass | GitHub Actions run `28547648293` completed `PM_App CI` and `Web MVP live smoke` successfully using repo secrets `PM_WEB_MVP_EMAIL` and `PM_WEB_MVP_PASSWORD`; no credential values were logged. The run covers sign-in, core tabs, setup screens, authenticated profile edit save/restore, signed-in discovery details/demo match/demo chat when live discovery candidates are absent, signed-in seeded inbox/chat local send when live conversations are absent, protected settings routes, authenticated privacy save/restore, authenticated account deletion request submission through the support-review RPC, authenticated match preference save, and authenticated notification save/restore. |
+| Local authenticated web MVP smoke | Pass | `npm run smoke:web-mvp` passed 7/7 against `https://beta.pinaymate.com` on 2026-07-02 using ignored local `.env.local` disposable credentials. This run covered sign-in, core tabs, setup screens, authenticated profile edit save/restore, signed-in discovery details/demo match/demo chat when live discovery candidates are absent, signed-in seeded inbox/chat local send when live conversations are absent, protected settings routes, authenticated privacy save/restore, authenticated account deletion request submission through the support-review RPC, authenticated match preference save, and authenticated notification save/restore. |
 | Manual photo upload/storage CI | Pass | GitHub Actions run `28479924029` completed `Photo upload live proof` successfully using repo secrets; no credential values, tokens, raw URLs, or uploaded image content were logged. |
 | Manual OCR live CI | Pass | GitHub Actions run `28482324309` completed `OCR live proof` successfully using repo secrets; no credential values, tokens, raw OCR text, or document images were logged. The run covered authenticated OCR success and invalid-document safe failure. |
-| Beta deployment | Pass | Vercel deployment `dpl_A39xFiuEHtqvgwS6anMtUix1JR1c` completed for `f869ba8`, reached `READY`, and aliased to `beta.pinaymate.com`. |
+| Beta deployment | Pass | Vercel deployment `dpl_7ACmrUdKZ6jqVx6wbCdiBDnLmGt1` completed for `67b18ee`, reached `READY`, and aliased to `beta.pinaymate.com`. |
 | Beta domain | Pass | `beta.pinaymate.com` aliases to `pm-app-beta`. |
 | Production domain separation | Pass | `dev` also created a `Preview - pm-app` deployment, but production beta deployment was separate under `pm-app-beta`; `app.pinaymate.com` and `beta.pinaymate.com` both returned HTTP `200` from distinct custom domains. |
 | Live HTTP smoke | Pass | `https://beta.pinaymate.com` returned HTTP `200`. |
