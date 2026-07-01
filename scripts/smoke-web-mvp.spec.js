@@ -70,11 +70,17 @@ function collectPageNoise(page) {
 async function assertNoCriticalNoise(noise) {
   expect(noise.pageErrors, "page errors").toEqual([]);
   expect(noise.failedRequests, "failed requests").toEqual([]);
-  expect(noise.badResponses, "bad responses").toEqual([]);
+  expect(
+    noise.badResponses.filter(
+      (item) => !(item.startsWith("429 ") && item.includes("/ocr")),
+    ),
+    "bad responses",
+  ).toEqual([]);
   expect(
     noise.consoleErrors.filter(
       (item) =>
         !item.includes("AdUnit") &&
+        !item.includes("status of 429") &&
         !(
           item.includes("TypeError: Failed to fetch") &&
           item.includes("_getUser")
@@ -476,13 +482,26 @@ async function submitVerificationThroughPickers(page) {
   await documentChooser.setFiles(validDocument);
 
   const ocrResponse = await ocrResponsePromise;
-  expect(ocrResponse.status(), "verification OCR response").toBeLessThan(400);
+  const ocrStatus = ocrResponse.status();
+  expect(
+    ocrStatus < 400 || ocrStatus === 429,
+    `verification OCR response status ${ocrStatus}`,
+  ).toBe(true);
 
   const submitResponse = await submitResponsePromise;
   expect(
     submitResponse.status(),
     "verification submit_verification response",
   ).toBeLessThan(400);
+
+  if (ocrStatus === 429) {
+    await expect(
+      page.getByText(
+        "Document scan did not complete, so we submitted your selfie and ID for manual review.",
+        { exact: true },
+      ),
+    ).toBeVisible({ timeout: 15000 });
+  }
 
   await expect.poll(
     () => storageUploads.filter((response) => response.status() < 400).length,

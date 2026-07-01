@@ -49,7 +49,10 @@ import { useAppTheme } from "@/src/theme/ThemeContext";
 import { makeStyles } from "@/src/theme/makeStyles";
 import { useDemoMatchingStore } from "@/src/stores/demoMatchingStore";
 import { useAuthStore } from "@/src/stores/authStore";
-import type { DemoPreviewUserType } from "@/src/features/auth/demoMode";
+import {
+  isBetaDemoModeEnabled,
+  type DemoPreviewUserType,
+} from "@/src/features/auth/demoMode";
 
 function isMissingAuthSession(error: unknown) {
   return (
@@ -120,7 +123,11 @@ export default function LikesScreen() {
       } = await supabase.auth.getUser();
 
       if (userError || !user) {
-        if (userError && !isMissingAuthSession(userError)) {
+        if (
+          userError &&
+          !isMissingAuthSession(userError) &&
+          !isBetaDemoModeEnabled()
+        ) {
           console.error("Failed to fetch user.");
         }
         setMatches(

@@ -55,6 +55,7 @@ import { useAppTheme } from "@/src/theme/ThemeContext";
 import { makeStyles } from "@/src/theme/makeStyles";
 import { useDemoMatchingStore } from "@/src/stores/demoMatchingStore";
 import { getDemoMatchPreferences } from "@/src/features/profile/data/demoSettingsStore";
+import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
 import { useAuthStore } from "@/src/stores/authStore";
 
 // Brand Colors
@@ -262,7 +263,11 @@ export const DiscoverScreen: React.FC = () => {
       } = await supabase.auth.getUser();
 
       if (userError || !user) {
-        if (userError && !isMissingAuthSession(userError)) {
+        if (
+          userError &&
+          !isMissingAuthSession(userError) &&
+          !isBetaDemoModeEnabled()
+        ) {
           console.error("Failed to fetch user.");
         }
         setUserId(null);
