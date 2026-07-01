@@ -136,6 +136,92 @@ async function exerciseDemoLikedYouActions(page) {
   ).toBeVisible({ timeout: 15000 });
 }
 
+async function exerciseAuthEntryScreens(page) {
+  await page.goto(`${BASE_URL}/signin`, { waitUntil: "domcontentloaded" });
+  await expect(page.getByText("Welcome back", { exact: true })).toBeVisible({
+    timeout: 20000,
+  });
+  await expect(page.getByRole("button", { name: "Forgot password" })).toBeVisible({
+    timeout: 15000,
+  });
+
+  await page.getByText("Create Account", { exact: true }).click();
+  await expect(
+    page.getByText("Choose your profile path", { exact: true }),
+  ).toBeVisible({ timeout: 15000 });
+  await expect(
+    page.getByRole("button", { name: "Choose a profile type before continuing" }),
+  ).toBeDisabled();
+  await page.getByRole("radio", { name: "I am a foreign man" }).click();
+  await page.getByRole("button", { name: "Continue to account signup" }).click();
+
+  await expect(
+    page.getByText("Create your Foreign Man profile", { exact: true }),
+  ).toBeVisible({ timeout: 15000 });
+  await expect(
+    page.getByText("Email signup is the active path", { exact: true }),
+  ).toBeVisible({ timeout: 15000 });
+
+  await page.getByRole("button", { name: "Create profile" }).click();
+  await expect(page.getByText("First name is required")).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByText("Email is required")).toBeVisible();
+  await expect(page.getByText("Password is required")).toBeVisible();
+
+  await page.getByRole("textbox", { name: "First name" }).fill("A");
+  await page.getByRole("textbox", { name: "Email" }).fill("not-an-email");
+  await page
+    .getByRole("textbox", { name: "Password", exact: true })
+    .fill("short");
+  await page
+    .getByRole("textbox", { name: "Confirm Password" })
+    .fill("different");
+  await page.getByRole("button", { name: "Show password" }).click();
+  await page.getByRole("button", { name: "Show confirm password" }).click();
+  await page.getByRole("button", { name: "Create profile" }).click();
+  await expect(page.getByText("First name must be at least 2 characters")).toBeVisible();
+  await expect(page.getByText("Please enter a valid email")).toBeVisible();
+  await expect(page.getByText("Password must be at least 8 characters")).toBeVisible();
+  await expect(page.getByText("Passwords do not match")).toBeVisible();
+
+  await page.goto(`${BASE_URL}/forgot-password`, { waitUntil: "domcontentloaded" });
+  await expect(page.getByText("Reset Password", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await page.getByRole("button", { name: "Send password reset link to your email" }).click();
+  await expect(
+    page.getByText("Enter the email address connected to your account."),
+  ).toBeVisible({ timeout: 15000 });
+  await page
+    .getByRole("textbox", { name: "Email Address" })
+    .fill("invalid-email");
+  await page.getByRole("button", { name: "Send password reset link to your email" }).click();
+  await expect(
+    page.getByText("Use a valid email address, like name@example.com."),
+  ).toBeVisible();
+
+  await page.goto(`${BASE_URL}/reset-password`, { waitUntil: "domcontentloaded" });
+  await expect(page.getByText("Create New Password", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByText("Password must include", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Update your password" }).click();
+  await expect(page.getByText("Password is required.")).toBeVisible({
+    timeout: 15000,
+  });
+  await page
+    .getByRole("textbox", { name: "New Password", exact: true })
+    .fill("NewPassword1!");
+  await page
+    .getByRole("textbox", { name: "Confirm New Password" })
+    .fill("Different1!");
+  await page.getByRole("button", { name: "Show new password" }).click();
+  await page.getByRole("button", { name: "Show confirmed password" }).click();
+  await page.getByRole("button", { name: "Update your password" }).click();
+  await expect(page.getByText("Passwords do not match.")).toBeVisible();
+}
+
 test.describe("PinayMate beta preview smoke", () => {
   const viewports = [
     { name: "mobile", width: 390, height: 844 },
@@ -296,6 +382,18 @@ test.describe("PinayMate beta preview smoke", () => {
       FOREIGNER_CARD,
     );
     await exerciseDemoLikedYouActions(page);
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("laptop: auth signup and recovery entry screens validate", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 1366, height: 900 });
+    const noise = collectPageNoise(page);
+
+    await exerciseAuthEntryScreens(page);
 
     await assertNoCriticalNoise(noise);
   });
