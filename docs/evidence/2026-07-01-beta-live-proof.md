@@ -89,6 +89,7 @@ npx playwright test "scripts/smoke-web-mvp.spec.js" --grep "mobile:" --reporter=
 | Manual OCR live CI | Pass | GitHub Actions run `28482324309` completed `OCR live proof` successfully using repo secrets; no credential values, tokens, raw OCR text, or document images were logged. The run covered authenticated OCR success and invalid-document safe failure. |
 | Local secret hygiene audit | Pass | `npm run check:source-contracts` now includes `npm run check:secret-hygiene`; the combined source contract wrapper passed on 2026-07-02 with `Secret hygiene audit: PASS`. |
 | Local dependency audit | Pass | `npm audit --audit-level=moderate` returned `found 0 vulnerabilities` on 2026-07-02. |
+| CI quality gate contract | Pass | `npm run check:launch-file-contract` now checks `.github/workflows/pm-app-ci.yml` and `package.json` for source contracts, secret hygiene, dependency audit, typecheck, Jest, and web export wiring; the contract passed on 2026-07-02. |
 | Beta deployment | Pass | Vercel `pm-app-beta` deployment target `https://vercel.com/romega-solutions/pm-app-beta/5UeQZVBr2X94YUHHKnztV3AqAX4x` completed for `928d68e` and aliased to `beta.pinaymate.com`. |
 | Beta domain | Pass | `beta.pinaymate.com` aliases to `pm-app-beta`. |
 | Production domain separation | Pass | `dev` also created a `Preview - pm-app` deployment, but production beta deployment was separate under `pm-app-beta`; `app.pinaymate.com` and `beta.pinaymate.com` both returned HTTP `200` from distinct custom domains. |

@@ -158,6 +158,10 @@ const requiredFiles = [
   {
     path: "package.json",
     markers: [
+      "check:source-contracts",
+      "npm run check:secret-hygiene && npm run check:privacy-logs",
+      "check:dependency-audit",
+      "npm run check:source-contracts && npm run check:dependency-audit",
       "check:production-ownership-contract",
       "check:safety-operations-contract",
       "check:launch-evidence-contract",
@@ -166,6 +170,18 @@ const requiredFiles = [
       "check:release-local",
       "check:local-quality",
       "check:supabase-static-contract:report",
+    ],
+  },
+  {
+    path: ".github/workflows/pm-app-ci.yml",
+    markers: [
+      "name: PM_App CI",
+      "npm run check:source-contracts",
+      "name: Dependency audit",
+      "npm run check:dependency-audit",
+      "npx tsc --noEmit --pretty false",
+      "npm test -- --runInBand --no-cache",
+      "npm run build:web",
     ],
   },
   {
