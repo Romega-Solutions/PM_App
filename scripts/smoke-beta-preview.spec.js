@@ -183,6 +183,10 @@ async function assertVisibleWithinViewport(page, locator, label) {
   expect(box.x + box.width, `${label} right edge`).toBeLessThanOrEqual(
     page.viewportSize().width,
   );
+  expect(box.y, `${label} top edge`).toBeGreaterThanOrEqual(0);
+  expect(box.y + box.height, `${label} bottom edge`).toBeLessThanOrEqual(
+    page.viewportSize().height,
+  );
 }
 
 async function exerciseAuthEntryScreens(page) {
@@ -419,6 +423,108 @@ test.describe("PinayMate beta preview smoke", () => {
     await assertNoCriticalNoise(noise);
   });
 
+  test("mobile: seeded chat safety report stays local and fits", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const noise = collectPageNoise(page);
+    const realSafetyRequests = [];
+    page.on("request", (request) => {
+      if (
+        /\/rpc\/(submit_user_report|block_user|unmatch_user)/.test(
+          request.url(),
+        )
+      ) {
+        realSafetyRequests.push(`${request.method()} ${request.url()}`);
+      }
+    });
+
+    await startPreview(
+      page,
+      "Foreigner preview",
+      FILIPINA_CARD,
+      FOREIGNER_CARD,
+    );
+    await page.getByText("Messages", { exact: true }).last().click();
+    await expect(page.getByText("Beta seeded inbox", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+
+    await page.getByRole("button", { name: /Open chat with/ }).first().click();
+    await expect(page.getByText(/Demo chat/).first()).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText("Demo chat replies and photos stay local on this device."),
+    ).toBeVisible({ timeout: 15000 });
+
+    await page
+      .getByRole("button", { name: /Open safety options for/ })
+      .first()
+      .click();
+
+    const reportButton = page.getByRole("button", {
+      name: /Report safety concern about/,
+    });
+    const demoBlockButton = page.getByRole("button", {
+      name: /Record demo block for/,
+    });
+    const demoUnmatchButton = page.getByRole("button", {
+      name: /Record demo unmatch with/,
+    });
+
+    await assertVisibleWithinViewport(
+      page,
+      reportButton,
+      "chat safety report button",
+    );
+    await assertVisibleWithinViewport(
+      page,
+      demoBlockButton,
+      "chat safety demo block button",
+    );
+    await assertVisibleWithinViewport(
+      page,
+      demoUnmatchButton,
+      "chat safety demo unmatch button",
+    );
+
+    await reportButton.click();
+    await expect(page.getByText("Report member", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await page
+      .getByRole("radio", {
+        name: "Scam, money request, or suspicious behavior",
+      })
+      .click();
+    await page
+      .getByLabel("Report details")
+      .fill("Mobile demo chat safety proof: suspicious off-app payment request.");
+
+    const sendReportButton = page.getByRole("button", {
+      name: "Send private report",
+    });
+    await sendReportButton.scrollIntoViewIfNeeded();
+    await assertVisibleWithinViewport(
+      page,
+      sendReportButton,
+      "send private report button",
+    );
+    await sendReportButton.click();
+
+    await expect(
+      page.getByText("Demo report and block recorded", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("No real report or block was sent.")).toBeVisible();
+    await page.waitForTimeout(500);
+    expect(realSafetyRequests, "real safety RPC requests").toEqual([]);
+    await page.getByRole("button", { name: "Close report form" }).click();
+
+    await assertNoCriticalNoise(noise);
+  });
+
   test("laptop: liked-you demo actions stay local and open seeded chat", async ({
     page,
   }) => {
@@ -534,6 +640,9 @@ test.describe("PinayMate beta preview smoke", () => {
     });
 
     await page.getByRole("radio", { name: /marriage/i }).click();
+    await page
+      .getByRole("button", { name: "Save discovery filters" })
+      .scrollIntoViewIfNeeded();
     await assertVisibleWithinViewport(
       page,
       page.getByRole("button", { name: "Save discovery filters" }),
