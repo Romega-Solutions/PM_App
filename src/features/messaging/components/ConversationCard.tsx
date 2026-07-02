@@ -195,6 +195,9 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "stretch",
+    width: "100%",
+    maxWidth: "100%",
     minHeight: 88,
     backgroundColor: SURFACE,
     borderWidth: 1,
@@ -206,6 +209,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     position: "relative",
     marginRight: 14,
+    flexShrink: 0,
   },
   imageWrap: {
     width: 58,
@@ -247,12 +251,14 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    minWidth: 0,
     justifyContent: "center",
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    minWidth: 0,
     marginBottom: 6,
   },
   name: {
@@ -261,20 +267,24 @@ const styles = StyleSheet.create({
     color: WHITE,
     letterSpacing: 0.2,
     flex: 1,
+    minWidth: 0,
   },
   time: {
     fontSize: 12,
     fontFamily: "DMSans-Regular",
     color: TEXT_MUTED,
     marginLeft: 8,
+    flexShrink: 0,
   },
   footer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    minWidth: 0,
   },
   lastMessageContainer: {
     flex: 1,
+    minWidth: 0,
     marginRight: 8,
   },
   lastMessage: {
@@ -295,6 +305,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 8,
+    flexShrink: 0,
   },
   unreadText: {
     fontSize: 11,

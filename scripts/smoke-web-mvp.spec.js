@@ -442,16 +442,34 @@ async function setNamedRangeInput(page, name, value) {
 
 async function assertVisibleWithinViewport(page, locator, label) {
   await expect(locator, label).toBeVisible({ timeout: 15000 });
-  const box = await locator.boundingBox();
-  expect(box, `${label} box`).not.toBeNull();
-  expect(box.x, `${label} left edge`).toBeGreaterThanOrEqual(0);
-  expect(box.x + box.width, `${label} right edge`).toBeLessThanOrEqual(
-    page.viewportSize().width,
-  );
-  expect(box.y, `${label} top edge`).toBeGreaterThanOrEqual(0);
-  expect(box.y + box.height, `${label} bottom edge`).toBeLessThanOrEqual(
-    page.viewportSize().height,
-  );
+  await expect
+    .poll(
+      async () => {
+        const box = await locator.boundingBox();
+        const viewport = page.viewportSize();
+
+        if (!box || !viewport) {
+          return "missing";
+        }
+
+        const isInsideViewport =
+          box.x >= 0 &&
+          box.x + box.width <= viewport.width &&
+          box.y >= 0 &&
+          box.y + box.height <= viewport.height;
+
+        return isInsideViewport
+          ? "inside"
+          : `x=${box.x}, right=${box.x + box.width}, y=${box.y}, bottom=${
+              box.y + box.height
+            }, viewport=${viewport.width}x${viewport.height}`;
+      },
+      {
+        message: `${label} inside viewport`,
+        timeout: 15000,
+      },
+    )
+    .toBe("inside");
 }
 
 async function ensureSyntheticOcrDocument() {
@@ -1387,6 +1405,67 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
 
     await page.waitForTimeout(500);
     expect(realWriteRequests, "real liked-you demo writes").toEqual([]);
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("mobile: authenticated seeded inbox stays local", async ({ page }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const demoReply =
+      "Mobile authenticated inbox reply: staying respectful and inside the app.";
+    const realWriteRequests = [];
+
+    page.on("request", (request) => {
+      if (
+        request.method() !== "GET" &&
+        /\/(?:rest\/v1\/(?:messages|conversations|safety_reports)|rpc\/(?:block_user|unmatch_user|submit_user_report|create_conversation|send_message))/.test(
+          request.url(),
+        )
+      ) {
+        realWriteRequests.push(`${request.method()} ${request.url()}`);
+      }
+    });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await openTab(page, "Messages");
+    await expect(page.getByText("Beta seeded inbox", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText(
+        "Sample unread and active chats are shown until real conversations are available.",
+      ),
+    ).toBeVisible({ timeout: 15000 });
+
+    const firstChatButton = page.getByRole("button", { name: /Open chat with/ }).first();
+    await assertVisibleWithinViewport(
+      page,
+      firstChatButton,
+      "mobile seeded inbox first chat",
+    );
+    await firstChatButton.click();
+    await expect(page.getByText(/Demo chat/).first()).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText("Demo chat replies and photos stay local on this device."),
+    ).toBeVisible({ timeout: 15000 });
+
+    const messageInput = page.getByLabel("Message input");
+    await assertVisibleWithinViewport(page, messageInput, "mobile inbox message input");
+    await messageInput.fill(demoReply);
+    await page.getByRole("button", { name: "Send demo reply" }).click();
+    await expect(page.getByLabel(new RegExp(`^You: ${demoReply}`))).toBeVisible({
+      timeout: 15000,
+    });
+
+    await uploadDemoChatPhotoThroughPicker(page);
+    await submitDemoSafetyReportFromChat(page);
+
+    await page.waitForTimeout(500);
+    expect(realWriteRequests, "real seeded inbox writes").toEqual([]);
     await assertNoCriticalNoise(noise);
   });
 
