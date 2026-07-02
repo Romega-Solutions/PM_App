@@ -86,6 +86,7 @@ npx playwright test "scripts/smoke-web-mvp.spec.js" --grep "mobile:" --reporter=
 | Post-deploy targeted web smoke | Pass | After the `e61d6f8` beta deployment completed, the targeted authenticated seeded inbox browser smoke passed against `https://beta.pinaymate.com`, proving local-only demo reply, browser picker demo chat photo insertion, and local-only demo report/block receipt from chat safety options. |
 | Manual photo upload/storage CI | Pass | GitHub Actions run `28479924029` completed `Photo upload live proof` successfully using repo secrets; no credential values, tokens, raw URLs, or uploaded image content were logged. |
 | Manual OCR live CI | Pass | GitHub Actions run `28482324309` completed `OCR live proof` successfully using repo secrets; no credential values, tokens, raw OCR text, or document images were logged. The run covered authenticated OCR success and invalid-document safe failure. |
+| Local dependency audit | Pass | `npm audit --audit-level=moderate` returned `found 0 vulnerabilities` on 2026-07-02. |
 | Beta deployment | Pass | Vercel `pm-app-beta` deployment target `https://vercel.com/romega-solutions/pm-app-beta/5UeQZVBr2X94YUHHKnztV3AqAX4x` completed for `928d68e` and aliased to `beta.pinaymate.com`. |
 | Beta domain | Pass | `beta.pinaymate.com` aliases to `pm-app-beta`. |
 | Production domain separation | Pass | `dev` also created a `Preview - pm-app` deployment, but production beta deployment was separate under `pm-app-beta`; `app.pinaymate.com` and `beta.pinaymate.com` both returned HTTP `200` from distinct custom domains. |
