@@ -1,6 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet, Dimensions, Platform } from "react-native";
-import { useAppTheme, makeStyles } from "@/src/theme";
+import { View, Text, Dimensions, Platform } from "react-native";
+import { makeStyles } from "@/src/theme";
 
 const { width } = Dimensions.get("window");
 const TITLE_SIZE = Math.min(width * 0.08, 32);
@@ -14,7 +14,6 @@ export default function AccountHeader({
   title = "Tell us about yourself",
   subtitle = "Let's start with the basics to create your profile",
 }: Props) {
-  const theme = useAppTheme();
   const styles = useStyles();
 
   return (

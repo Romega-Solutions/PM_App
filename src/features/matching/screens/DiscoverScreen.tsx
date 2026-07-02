@@ -49,9 +49,14 @@ import { MatchModal, MatchedProfile } from "../components/MatchModal";
 import { ProfileCard, ProfileCardData } from "../components/ProfileCard";
 import { ProfileDetailsModal } from "../components/ProfileDetailsModal";
 import { useSwipeGesture } from "../hooks/useSwipeGesture";
-import { getSeedProfiles } from "../data/seedProfiles";
+import { getSeedProfiles, isSeedProfileId } from "../data/seedProfiles";
+import { getSeedConversationForProfileId } from "@/src/features/messaging/data/seedConversations";
 import { useAppTheme } from "@/src/theme/ThemeContext";
 import { makeStyles } from "@/src/theme/makeStyles";
+import { useDemoMatchingStore } from "@/src/stores/demoMatchingStore";
+import { getDemoMatchPreferences } from "@/src/features/profile/data/demoSettingsStore";
+import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
+import { useAuthStore } from "@/src/stores/authStore";
 
 // Brand Colors
 const TEXT_SECONDARY = "rgba(255, 255, 255, 0.74)";
@@ -78,6 +83,7 @@ function convertDBProfileToDisplay(dbProfile: DBProfile): ProfileCardData {
     id: dbProfile.id,
     name: dbProfile.first_name,
     age: dbProfile.age,
+    userType: dbProfile.user_type,
     location: location || "Location not shown",
     distance: "Approximate area",
     image: dbProfile.photos?.[0] ? { uri: dbProfile.photos[0] } : null,
@@ -92,6 +98,42 @@ function convertDBProfileToDisplay(dbProfile: DBProfile): ProfileCardData {
     languages: dbProfile.languages,
     bodyType: dbProfile.body_type,
   };
+}
+
+function isSeedDisplayProfile(profile: ProfileCardData): boolean {
+  return Boolean(profile.isSeedProfile || isSeedProfileId(profile.id));
+}
+
+function convertSeedProfileToMatch(profile: ProfileCardData): MatchedProfile {
+  return {
+    id: profile.id,
+    first_name: profile.name,
+    image: profile.image ?? undefined,
+    demo: true,
+  };
+}
+
+function normalizeRelationshipGoal(goal?: string): string {
+  const normalized = (goal || "")
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!normalized || normalized === "any") return "";
+  if (normalized.includes("friend")) return "friendship";
+  if (normalized.includes("marriage")) return "marriage";
+  if (normalized.includes("serious") || normalized.includes("long")) {
+    return "long-term";
+  }
+  if (
+    normalized.includes("dating") ||
+    normalized.includes("casual") ||
+    normalized.includes("not sure") ||
+    normalized.includes("still deciding")
+  ) {
+    return "dating";
+  }
+  return normalized;
 }
 
 export const DiscoverScreen: React.FC = () => {
@@ -117,6 +159,18 @@ export const DiscoverScreen: React.FC = () => {
     null,
   );
   const [showMatchModal, setShowMatchModal] = useState(false);
+  const passedSeedProfileIds = useDemoMatchingStore(
+    (state) => state.passedProfileIds || [],
+  );
+  const matchedSeedProfileIds = useDemoMatchingStore(
+    (state) => state.matchedProfileIds || [],
+  );
+  const hiddenSeedProfileIds = useDemoMatchingStore(
+    (state) => state.hiddenProfileIds || [],
+  );
+  const recordSeedPass = useDemoMatchingStore((state) => state.recordPass);
+  const recordSeedMatch = useDemoMatchingStore((state) => state.recordMatch);
+  const demoUserType = useAuthStore((state) => state.demoUserType);
 
   const currentProfile = profiles[currentIndex] || null;
 
@@ -131,18 +185,45 @@ export const DiscoverScreen: React.FC = () => {
     extrapolate: "clamp",
   });
 
-  /**
-   * Load user data and profiles on mount
-   */
-  useEffect(() => {
-    loadUserDataAndProfiles();
+  const getVisibleSeedProfiles = useCallback(() => {
+    const demoPreferences = getDemoMatchPreferences();
+    const minAge = Number.parseInt(demoPreferences.ageMin, 10);
+    const maxAge = Number.parseInt(demoPreferences.ageMax, 10);
+    const relationshipGoal = normalizeRelationshipGoal(
+      demoPreferences.relationshipGoal,
+    );
+
+    return getSeedProfiles(demoUserType).filter(
+      (profile) =>
+        !passedSeedProfileIds.includes(profile.id) &&
+        !matchedSeedProfileIds.includes(profile.id) &&
+        !hiddenSeedProfileIds.includes(profile.id) &&
+        (!Number.isFinite(minAge) || profile.age >= minAge) &&
+        (!Number.isFinite(maxAge) || profile.age <= maxAge) &&
+        (!relationshipGoal ||
+          normalizeRelationshipGoal(profile.relationshipGoal) ===
+            relationshipGoal),
+    );
+  }, [
+    demoUserType,
+    hiddenSeedProfileIds,
+    matchedSeedProfileIds,
+    passedSeedProfileIds,
+  ]);
+
+  const removeSeedProfileFromStack = useCallback((profileId: string) => {
+    setProfiles((current) => current.filter((profile) => profile.id !== profileId));
+    setShowInfo(false);
+    setActionError(null);
+    setLastFailedAction(null);
+    resetPositionRef.current?.();
   }, []);
 
   /**
    * Load more profiles when running low
    */
   const loadMoreProfiles = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || usingSeedProfiles) return;
 
     try {
       const { data: dbProfiles } = await fetchDiscoverProfiles(userId, 10);
@@ -154,7 +235,7 @@ export const DiscoverScreen: React.FC = () => {
     } catch {
       console.error("Failed to load more profiles.");
     }
-  }, [userId]);
+  }, [userId, usingSeedProfiles]);
 
   /**
    * Load more profiles when running low
@@ -168,7 +249,7 @@ export const DiscoverScreen: React.FC = () => {
   /**
    * Fetch user data and initial profiles
    */
-  async function loadUserDataAndProfiles() {
+  const loadUserDataAndProfiles = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     setActionError(null);
@@ -182,11 +263,16 @@ export const DiscoverScreen: React.FC = () => {
       } = await supabase.auth.getUser();
 
       if (userError || !user) {
-        if (userError && !isMissingAuthSession(userError)) {
+        if (
+          userError &&
+          !isMissingAuthSession(userError) &&
+          !isBetaDemoModeEnabled()
+        ) {
           console.error("Failed to fetch user.");
         }
-        setLoadError("Please sign in to view discover profiles.");
-        setProfiles([]);
+        setUserId(null);
+        setProfiles(getVisibleSeedProfiles());
+        setUsingSeedProfiles(true);
         setLoading(false);
         return;
       }
@@ -199,9 +285,8 @@ export const DiscoverScreen: React.FC = () => {
 
       if (profilesError) {
         console.error("Failed to fetch profiles.");
-        setLoadError("We could not refresh your discover feed.");
-        // Show empty state - no fallback to mock data
-        setProfiles([]);
+        setProfiles(getVisibleSeedProfiles());
+        setUsingSeedProfiles(true);
       } else if (dbProfiles && dbProfiles.length > 0) {
         // Convert database profiles to display format
         const displayProfiles: ProfileCardData[] = dbProfiles.map(
@@ -211,18 +296,24 @@ export const DiscoverScreen: React.FC = () => {
         setUsingSeedProfiles(false);
       } else {
         // No real profiles — show seed demo profiles
-        setProfiles(getSeedProfiles());
+        setProfiles(getVisibleSeedProfiles());
         setUsingSeedProfiles(true);
       }
     } catch {
       console.error("Failed to fetch user data.");
-      setLoadError("We could not refresh your discover feed.");
-      // Show empty state - no fallback to mock data
-      setProfiles([]);
+      setProfiles(getVisibleSeedProfiles());
+      setUsingSeedProfiles(true);
     } finally {
       setLoading(false);
     }
-  }
+  }, [getVisibleSeedProfiles]);
+
+  /**
+   * Load user data and profiles on mount
+   */
+  useEffect(() => {
+    loadUserDataAndProfiles();
+  }, [loadUserDataAndProfiles]);
 
   /**
    * Move to next profile in stack
@@ -235,15 +326,25 @@ export const DiscoverScreen: React.FC = () => {
     resetPositionRef.current?.();
   }, []);
 
+  const showSeedMatch = useCallback(
+    (profile: ProfileCardData) => {
+      recordSeedMatch(profile.id);
+      setMatchedProfile(convertSeedProfileToMatch(profile));
+      setShowMatchModal(true);
+      removeSeedProfileFromStack(profile.id);
+    },
+    [recordSeedMatch, removeSeedProfileFromStack],
+  );
+
   /**
    * Handle like action
    */
   const handleLike = useCallback(async () => {
     if (!currentProfile || actionPending) return;
 
-    // Seed profiles: just move to next card, no backend call
-    if (currentProfile.isSeedProfile) {
-      moveToNextProfile();
+    // Seed profiles: local-only demo match, no backend call
+    if (isSeedDisplayProfile(currentProfile)) {
+      showSeedMatch(currentProfile);
       return;
     }
 
@@ -282,7 +383,7 @@ export const DiscoverScreen: React.FC = () => {
     } finally {
       setActionPending(false);
     }
-  }, [currentProfile, actionPending, userId, moveToNextProfile]);
+  }, [currentProfile, actionPending, userId, moveToNextProfile, showSeedMatch]);
 
   /**
    * Handle pass action
@@ -291,8 +392,9 @@ export const DiscoverScreen: React.FC = () => {
     if (!currentProfile || actionPending) return;
 
     // Seed profiles: just move to next card, no backend call
-    if (currentProfile.isSeedProfile) {
-      moveToNextProfile();
+    if (isSeedDisplayProfile(currentProfile)) {
+      recordSeedPass(currentProfile.id);
+      removeSeedProfileFromStack(currentProfile.id);
       return;
     }
 
@@ -325,7 +427,14 @@ export const DiscoverScreen: React.FC = () => {
     } finally {
       setActionPending(false);
     }
-  }, [currentProfile, actionPending, userId, moveToNextProfile]);
+  }, [
+    currentProfile,
+    actionPending,
+    userId,
+    moveToNextProfile,
+    recordSeedPass,
+    removeSeedProfileFromStack,
+  ]);
 
   /**
    * Handle super like action
@@ -333,9 +442,9 @@ export const DiscoverScreen: React.FC = () => {
   const handleSuperLike = useCallback(async () => {
     if (!currentProfile || actionPending) return;
 
-    // Seed profiles: just move to next card, no backend call
-    if (currentProfile.isSeedProfile) {
-      moveToNextProfile();
+    // Seed profiles: local-only demo match, no backend call
+    if (isSeedDisplayProfile(currentProfile)) {
+      showSeedMatch(currentProfile);
       return;
     }
 
@@ -374,7 +483,7 @@ export const DiscoverScreen: React.FC = () => {
     } finally {
       setActionPending(false);
     }
-  }, [currentProfile, actionPending, userId, moveToNextProfile]);
+  }, [currentProfile, actionPending, userId, moveToNextProfile, showSeedMatch]);
 
 
   const retryLastFailedAction = useCallback(() => {
@@ -415,10 +524,35 @@ export const DiscoverScreen: React.FC = () => {
   }, []);
 
   const handleSendMessage = useCallback(() => {
+    const profile = matchedProfile;
+
     setShowMatchModal(false);
     setMatchedProfile(null);
+
+    if (profile?.demo || (profile?.id && isSeedProfileId(profile.id))) {
+      const seedConversation = getSeedConversationForProfileId(
+        profile.id,
+        undefined,
+        demoUserType,
+      );
+
+      if (seedConversation) {
+        router.push({
+          pathname: "/chat",
+          params: {
+            userId: seedConversation.other_user.id,
+            userName: seedConversation.other_user.first_name,
+            isOnline: seedConversation.other_user.is_active ? "true" : "false",
+            conversationId: seedConversation.id,
+            isDemo: "true",
+          },
+        });
+        return;
+      }
+    }
+
     router.push("/(main)/likes");
-  }, [router]);
+  }, [demoUserType, matchedProfile, router]);
 
   const handleReportCurrentProfile = useCallback(() => {
     if (!currentProfile) return;
@@ -430,9 +564,16 @@ export const DiscoverScreen: React.FC = () => {
         userId: currentProfile.id,
         userName: currentProfile.name,
         source: "discovery",
+        ...(isSeedDisplayProfile(currentProfile) ? { isDemo: "true" } : {}),
       },
     });
   }, [currentProfile, router]);
+
+  const remainingProfiles = Math.max(profiles.length - currentIndex, 0);
+  const statusTitle = usingSeedProfiles ? "Beta demo feed" : "Live discovery";
+  const statusText = usingSeedProfiles
+    ? "Seeded profiles are available now. Real members replace them when live data is ready."
+    : "Visibility, review status, filters, and current availability shape this feed.";
 
   // Loading state
   if (loading) {
@@ -561,30 +702,61 @@ export const DiscoverScreen: React.FC = () => {
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Header with Logo */}
+      {/* Header with compact discovery status */}
       <View style={styles.header}>
-        <Text style={styles.logoText}>PinayMate</Text>
-        <Text style={styles.helperText}>
-          Review details before choosing. You can pass, like, or report without
-          pressure.
-        </Text>
-      </View>
-
-      {usingSeedProfiles && (
-        <View style={styles.seedBanner}>
-          <Text style={styles.seedBannerText}>
-            Showing demo profiles — real members will appear once the community grows
-          </Text>
+        <View style={styles.headerTopRow}>
+          <View style={styles.brandBlock}>
+            <Text style={styles.logoText}>PinayMate</Text>
+            <Text style={styles.headerSubtitle}>Discover</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.headerFilterButton}
+            onPress={() => router.push("/(modals)/filters")}
+            activeOpacity={0.84}
+            accessibilityRole="button"
+            accessibilityLabel="Adjust discovery filters"
+            accessibilityHint="Opens age, distance, and relationship filters"
+          >
+            <SlidersHorizontal
+              size={20}
+              color={theme.colors.neutral.white}
+              strokeWidth={2.5}
+            />
+          </TouchableOpacity>
         </View>
-      )}
 
-      <LaunchStateNotice
-        testID="discover-launch-state-notice"
-        style={styles.discoveryNotice}
-        title="Preference-based discovery"
-        message="Visibility settings are respected. Discovery depends on privacy settings, review status, filters, and who is currently available. Review details before liking, report anything that feels off, and pass whenever you are unsure."
-        accessibilityLabel="Discovery safety note. Preference-based discovery respects visibility settings, profile review, filters, and current availability. Reports stay available, and passing is always okay."
-      />
+        <View
+          style={styles.discoveryStatus}
+          accessible
+          accessibilityLabel={`${statusTitle}. ${statusText}`}
+        >
+          <View style={styles.discoveryStatusIcon}>
+            <ShieldCheck
+              size={18}
+              color={theme.colors.neutral.white}
+              strokeWidth={2.4}
+            />
+          </View>
+          <View style={styles.discoveryStatusCopy}>
+            <Text style={styles.discoveryStatusTitle}>{statusTitle}</Text>
+            <Text style={styles.discoveryStatusText}>{statusText}</Text>
+          </View>
+          <View style={styles.discoveryStatusPill}>
+            <Text style={styles.discoveryStatusPillText}>
+              {remainingProfiles} left
+            </Text>
+          </View>
+        </View>
+
+        <LaunchStateNotice
+          testID="discover-launch-state-notice"
+          title="Discovery depends on privacy settings"
+          message="Review details before liking. Discovery can show demo or available profiles, but visibility, matching, and chat access still depend on privacy settings, profile review, safety controls, and account availability."
+          meta="Preference-based discovery. Visibility settings are respected; report anything that feels off."
+          accessibilityLabel="Discovery depends on privacy settings. Review details before liking. Visibility, matching, and chat access depend on privacy settings, profile review, safety controls, and account availability."
+          style={styles.launchNotice}
+        />
+      </View>
 
       {/* Cards Container */}
       <View style={styles.cardsContainer}>
@@ -694,9 +866,18 @@ const useStyles = makeStyles((theme) => ({
 
   // Header
   header: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 10,
+    gap: 12,
+  },
+  headerTopRow: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+  },
+  brandBlock: {
+    flex: 1,
   },
   logoText: {
     fontSize: 28,
@@ -704,24 +885,76 @@ const useStyles = makeStyles((theme) => ({
     color: theme.colors.neutral.white,
     letterSpacing: 1,
   },
-
-  // Seed profile demo banner
-  seedBanner: {
-    marginHorizontal: 24,
-    marginBottom: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: "rgba(141, 105, 246, 0.16)",
-    borderWidth: 1,
-    borderColor: "rgba(141, 105, 246, 0.32)",
+  headerSubtitle: {
+    marginTop: -2,
+    fontSize: 13,
+    fontFamily: "DMSans-Bold",
+    color: TEXT_SECONDARY,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
-  seedBannerText: {
+  headerFilterButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.16)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  discoveryStatus: {
+    minHeight: 68,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderRadius: 18,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.14)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  discoveryStatusIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(239, 62, 120, 0.72)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  discoveryStatusCopy: {
+    flex: 1,
+  },
+  discoveryStatusTitle: {
+    fontSize: 13,
+    fontFamily: "DMSans-Bold",
+    color: theme.colors.neutral.white,
+    marginBottom: 3,
+  },
+  discoveryStatusText: {
     fontSize: 12,
     fontFamily: "DMSans-Medium",
-    color: "rgba(255, 255, 255, 0.82)",
-    textAlign: "center",
+    color: TEXT_SECONDARY,
     lineHeight: 17,
+  },
+  discoveryStatusPill: {
+    minHeight: 30,
+    borderRadius: 15,
+    paddingHorizontal: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(141, 105, 246, 0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(141, 105, 246, 0.34)",
+  },
+  discoveryStatusPillText: {
+    fontSize: 11,
+    fontFamily: "DMSans-Bold",
+    color: theme.colors.neutral.white,
+  },
+  launchNotice: {
+    marginBottom: 0,
   },
 
   // Cards
@@ -949,27 +1182,5 @@ const useStyles = makeStyles((theme) => ({
     fontSize: 15,
     fontFamily: "DMSans-Bold",
     color: theme.colors.neutral.white,
-  },
-  helperText: {
-    marginTop: 6,
-    fontSize: 13,
-    fontFamily: "DMSans-Medium",
-    color: TEXT_MUTED,
-    textAlign: "center",
-    lineHeight: 18,
-    maxWidth: 310,
-  },
-  discoveryNotice: {
-    marginHorizontal: 22,
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 18,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.14)",
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
   },
 }));

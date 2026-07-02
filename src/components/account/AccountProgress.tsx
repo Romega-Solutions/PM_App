@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import { useAppTheme, makeStyles } from "@/src/theme";
 
 interface Props {

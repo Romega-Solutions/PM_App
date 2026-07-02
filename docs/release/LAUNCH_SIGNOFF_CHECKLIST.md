@@ -167,7 +167,7 @@ npx -y supabase@latest db push --linked
 Required evidence:
 
 - The dry run lists only intended ordered production migrations and matches `supabase/LAUNCH_MIGRATION_MANIFEST.md` filename-runner order.
-- `99_final_release_security_hardening.sql` remains safe as a legacy tail migration and is recorded in the actual migration history/list output.
+- `20260611144000_final_release_security_hardening.sql` remains safe as a legacy tail migration and is recorded in the actual migration history/list output.
 - `20260610094806_add_pinaymate_storage_buckets.sql` is included so `profile-photos` and private `verification-docs` buckets/policies are migration-backed.
 - `20260610100323_add_ocr_rate_limit.sql` is included so OCR provider calls are quota-gated by `claim_ocr_attempt`.
 - `20260610100523_add_basic_info_rpc.sql` is included so basic info setup uses `save_basic_info` and direct account-type mutation is blocked.

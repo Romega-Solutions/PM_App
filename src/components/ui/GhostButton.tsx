@@ -1,9 +1,8 @@
-import { useAppTheme, makeStyles } from "@/src/theme";
+import { makeStyles } from "@/src/theme";
 import React from "react";
 import {
   ActivityIndicator,
   Platform,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -30,7 +29,6 @@ export default function GhostButton({
   accessibilityLabel,
   accessibilityHint,
 }: GhostButtonProps) {
-  const theme = useAppTheme();
   const styles = useStyles();
 
   const isDisabled = disabled || loading;

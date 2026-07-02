@@ -1,7 +1,7 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
+import { View, Text, Image, Dimensions } from "react-native";
 import { CheckCircle } from "lucide-react-native";
-import { useAppTheme, makeStyles } from "@/src/theme";
+import { makeStyles } from "@/src/theme";
 
 const { width } = Dimensions.get("window");
 
@@ -14,7 +14,6 @@ export default function VerificationSuccessHeader({
   title = "Verified Successfully!",
   subtitle = "Great! Your email is verified. Let's set up your profile now.",
 }: Props) {
-  const theme = useAppTheme();
   const styles = useStyles();
 
   return (

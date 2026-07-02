@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text } from "react-native";
 import MultiSlider from "@ptomasroos/react-native-multi-slider";
 import { useAppTheme, makeStyles } from "@/src/theme";
 

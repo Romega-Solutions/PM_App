@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text } from "react-native";
 import Slider from "@react-native-community/slider";
 import { useAppTheme, makeStyles } from "@/src/theme";
 

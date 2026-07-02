@@ -15,7 +15,15 @@
  */
 
 import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  type ImageSourcePropType,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import type { ConversationPhotoSource } from "../types/messaging.types";
 
 // Brand Colors
 const ACCENT_PURPLE = "#8D69F6";
@@ -37,8 +45,8 @@ export interface ConversationCardProps {
   userId: string;
   /** Other user's name */
   userName: string;
-  /** Other user's profile photo URL */
-  userPhoto: string | null;
+  /** Other user's profile photo URL or bundled demo image */
+  userPhoto: ConversationPhotoSource | null;
   /** Whether other user is online */
   isOnline: boolean;
   /** Last message text */
@@ -67,6 +75,7 @@ export const ConversationCard: React.FC<ConversationCardProps> = ({
   onPress,
 }) => {
   const formattedTime = formatTimestamp(lastMessageTime);
+  const userPhotoSource = normalizeImageSource(userPhoto);
   const displayLastMessage = lastMessage?.trim() || "No messages yet";
   const displayUnreadCount = unreadCount > 99 ? "99+" : `${unreadCount}`;
   const unreadLabel =
@@ -88,9 +97,9 @@ export const ConversationCard: React.FC<ConversationCardProps> = ({
       {/* Profile Image */}
       <View style={styles.imageContainer}>
         <View style={styles.imageWrap}>
-          {userPhoto ? (
+          {userPhotoSource ? (
             <Image
-              source={{ uri: userPhoto }}
+              source={userPhotoSource}
               style={styles.image}
               resizeMode="cover"
               accessibilityLabel={`${userName} profile photo`}
@@ -171,10 +180,24 @@ function formatTimestamp(timestamp: string): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+function normalizeImageSource(
+  source: ConversationPhotoSource | null,
+): ImageSourcePropType | null {
+  if (!source) return null;
+  if (typeof source === "string") {
+    const uri = source.trim();
+    return uri ? { uri } : null;
+  }
+  return source;
+}
+
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "stretch",
+    width: "100%",
+    maxWidth: "100%",
     minHeight: 88,
     backgroundColor: SURFACE,
     borderWidth: 1,
@@ -186,6 +209,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     position: "relative",
     marginRight: 14,
+    flexShrink: 0,
   },
   imageWrap: {
     width: 58,
@@ -227,12 +251,14 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    minWidth: 0,
     justifyContent: "center",
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    minWidth: 0,
     marginBottom: 6,
   },
   name: {
@@ -241,20 +267,24 @@ const styles = StyleSheet.create({
     color: WHITE,
     letterSpacing: 0.2,
     flex: 1,
+    minWidth: 0,
   },
   time: {
     fontSize: 12,
     fontFamily: "DMSans-Regular",
     color: TEXT_MUTED,
     marginLeft: 8,
+    flexShrink: 0,
   },
   footer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    minWidth: 0,
   },
   lastMessageContainer: {
     flex: 1,
+    minWidth: 0,
     marginRight: 8,
   },
   lastMessage: {
@@ -275,6 +305,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 8,
+    flexShrink: 0,
   },
   unreadText: {
     fontSize: 11,

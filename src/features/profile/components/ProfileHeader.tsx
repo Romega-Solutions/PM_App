@@ -18,14 +18,7 @@ import { MapPin, Sparkles, User } from "lucide-react-native";
 import React from "react";
 import { Image, Text, View } from "react-native";
 import { makeStyles } from "../../../theme/makeStyles";
-import { useAppTheme, AppTheme } from "../../../theme/ThemeContext";
-
-// Brand Colors
-const ACCENT_PURPLE = "#8D69F6";
-const ACCENT_PINK = "#EF3E78";
-const VERIFIED_GREEN = "#10B981";
-const WARNING_YELLOW = "#F59E0B";
-const WHITE = "#FFFFFF";
+import { useAppTheme } from "../../../theme/ThemeContext";
 
 /**
  * Props for ProfileHeader component

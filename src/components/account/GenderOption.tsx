@@ -3,7 +3,6 @@ import { Users } from "lucide-react-native";
 import React from "react";
 import {
   Platform,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,

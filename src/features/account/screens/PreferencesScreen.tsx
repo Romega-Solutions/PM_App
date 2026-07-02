@@ -47,11 +47,10 @@ export default function PreferencesScreen() {
   }, [userType, router]);
 
   const relationshipOptions = [
-    "Long-term relationship",
-    "Marriage",
-    "Casual dating",
-    "Friendship",
-    "Not sure yet",
+    { label: "Long-term relationship", value: "long-term" },
+    { label: "Marriage", value: "marriage" },
+    { label: "Casual dating", value: "dating" },
+    { label: "Friendship first", value: "friendship" },
   ];
 
   // Auto-derived display text
@@ -62,7 +61,7 @@ export default function PreferencesScreen() {
     const res = await savePreferences();
     if (res?.ok) {
       router.push({
-        pathname: "/(auth)/account-setup/verification-upload",
+        pathname: "/(auth)/account-setup/welcome-complete",
         params: { userType },
       });
     }
@@ -102,7 +101,7 @@ export default function PreferencesScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <AccountProgress steps={5} activeIndex={3} />
+          <AccountProgress steps={4} activeIndex={3} />
           <Text style={styles.title}>Your preferences</Text>
           <Text style={styles.subtitle}>
             Set comfortable discovery boundaries for the profiles you want to
@@ -152,10 +151,10 @@ export default function PreferencesScreen() {
             <View style={{ gap: 12 }}>
               {relationshipOptions.map((opt) => (
                 <RelationshipOption
-                  key={opt}
-                  option={opt}
-                  selected={form.relationshipGoal === opt}
-                  onSelect={() => setField("relationshipGoal", opt)}
+                  key={opt.value}
+                  option={opt.label}
+                  selected={form.relationshipGoal === opt.value}
+                  onSelect={() => setField("relationshipGoal", opt.value)}
                 />
               ))}
             </View>

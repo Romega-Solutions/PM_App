@@ -50,6 +50,8 @@ export default function SecondaryButton({
       borderRadius: moderateScale(28),
       height: moderateScale(56),
       minHeight: 52,
+      maxWidth: Platform.OS === "web" ? 420 : undefined,
+      alignSelf: "center",
       borderWidth: Platform.select({ ios: 1.5, android: 2, web: 1.5 }),
       justifyContent: "center",
       alignItems: "center",

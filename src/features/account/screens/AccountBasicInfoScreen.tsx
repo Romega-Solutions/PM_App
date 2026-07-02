@@ -15,7 +15,6 @@ import {
   Platform,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   View,
 } from "react-native";

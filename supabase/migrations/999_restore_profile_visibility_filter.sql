@@ -2,7 +2,7 @@
 --
 -- 20260610115000_respect_online_status_privacy.sql hid profiles when
 -- user_privacy_settings.profile_visible = false, but the later
--- 99_final_release_security_hardening.sql recreated this view without that
+-- 20260611144000_final_release_security_hardening.sql recreated this view without that
 -- predicate. Keep the final app-facing read model aligned with the privacy RPC.
 
 BEGIN;

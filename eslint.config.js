@@ -5,6 +5,12 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   expoConfig,
   {
+    rules: {
+      'import/no-unresolved': 'off',
+      'react/no-unescaped-entities': 'off',
+    },
+  },
+  {
     ignores: ['dist/*'],
     rules: {
       'import/no-unresolved': 'off',

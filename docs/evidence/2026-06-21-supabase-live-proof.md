@@ -14,7 +14,7 @@ This document proves that the backend-backed PinayMate platform is successfully 
 | Check | Result | Evidence note |
 | --- | --- | --- |
 | Full launch migration manifest applied in order | Pass | Applied 30 ordered launch migrations from manifest successfully. |
-| Legacy `99_` / `999_` tail migrations remain safe after timestamped migrations | Pass | `99_final_release_security_hardening.sql` applied correctly as tail migration. |
+| Legacy `99_` / `999_` tail migrations remain safe after timestamped migrations | Pass | `20260611144000_final_release_security_hardening.sql` applied correctly as tail migration. |
 | `20260611123000_add_notification_preferences.sql` applied | Pass | Notification preference backend storage initialized. |
 | `20260611140000_add_waitlist_edge_abuse_control.sql` applied | Pass | Throttling for waitlist Edge Function is active. |
 | Migration history matches target environment | Pass | Migration listing matches target database state exactly. |

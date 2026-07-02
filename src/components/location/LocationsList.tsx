@@ -1,6 +1,5 @@
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { useAppTheme } from "../../theme/ThemeContext";
 import { makeStyles } from "../../theme/makeStyles";
 
 interface Props {
@@ -14,7 +13,6 @@ export default function LocationsList({
   onSelect,
   emptyLabel = "No locations found",
 }: Props) {
-  const theme = useAppTheme();
   const styles = useStyles();
 
   return (

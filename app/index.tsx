@@ -25,6 +25,7 @@ const verticalScale = (size: number) => (designHeight / 812) * size; // Based on
 export default function Index() {
   const [showSplash, setShowSplash] = useState(true);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 1800);
@@ -79,7 +80,11 @@ export default function Index() {
     );
   }
 
-  return <Redirect href={isAuthenticated ? "/(main)" : "/(auth)/welcome"} />;
+  return (
+    <Redirect
+      href={isAuthenticated || isDemoMode ? "/(main)" : "/(auth)/welcome"}
+    />
+  );
 }
 
 const styles = StyleSheet.create({

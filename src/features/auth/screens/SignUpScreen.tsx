@@ -141,7 +141,7 @@ function SignUpScreen() {
       fontSize: 13,
       lineHeight: 19,
     },
-  }), [moderateScale, width, theme]);
+  }), [moderateScale, width]);
 
   const [form, setForm] = useState<FormState>({
     firstName: "",

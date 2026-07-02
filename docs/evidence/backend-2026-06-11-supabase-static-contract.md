@@ -53,7 +53,7 @@ It does not prove migrations were applied to a live Supabase project, that RLS/s
 - `supabase/functions/waitlist-signup/README.md`
 - `supabase/functions/waitlist-signup/index.ts`
 - `supabase/migrations/03_add_conversations_table.sql`
-- `supabase/migrations/04_production_security_hardening.sql`
+- `supabase/migrations/20260610090000_restore_legacy_security_primitives.sql`
 - `supabase/migrations/20260610094806_add_pinaymate_storage_buckets.sql`
 - `supabase/migrations/20260610100323_add_ocr_rate_limit.sql`
 - `supabase/migrations/20260610112000_add_account_deletion_requests.sql`
@@ -74,7 +74,7 @@ It does not prove migrations were applied to a live Supabase project, that RLS/s
 - `supabase/migrations/20260611141000_restrict_conversation_creation_rpc.sql`
 - `supabase/migrations/20260611142000_hide_empty_conversations_from_inbox.sql`
 - `supabase/migrations/999_restore_profile_visibility_filter.sql`
-- `supabase/migrations/99_final_release_security_hardening.sql`
+- `supabase/migrations/20260611144000_final_release_security_hardening.sql`
 - `supabase/tests/04_safety_smoke_test.sql`
 - `supabase/tests/05_release_preflight_audit.sql`
 

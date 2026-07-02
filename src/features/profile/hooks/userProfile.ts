@@ -1,5 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import {
+  useIsDemoSession,
+} from "@/src/features/auth/demoMode";
 import { getCurrentUserProfile, ProfileData } from "../api/profileApi";
+import { getDemoProfileApiData } from "../data/demoProfileStore";
 
 const PROFILE_LOAD_ERROR =
   "Profile could not be loaded. Check your connection and try again.";
@@ -8,11 +12,17 @@ export function useProfile(autoLoad = true) {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(autoLoad);
   const [error, setError] = useState<Error | null>(null);
+  const isDemoMode = useIsDemoSession();
 
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+
+      if (isDemoMode) {
+        setProfile(getDemoProfileApiData());
+        return;
+      }
 
       const data = await getCurrentUserProfile();
 
@@ -27,17 +37,17 @@ export function useProfile(autoLoad = true) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isDemoMode]);
 
   const refresh = () => {
-    loadProfile();
+    void loadProfile();
   };
 
   useEffect(() => {
     if (autoLoad) {
-      loadProfile();
+      void loadProfile();
     }
-  }, [autoLoad]);
+  }, [autoLoad, loadProfile]);
 
   return {
     profile,

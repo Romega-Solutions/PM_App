@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
@@ -5,7 +6,12 @@ import {
   DEFAULT_PRIVACY_SETTINGS,
   type PrivacySettings,
 } from "@/src/features/account/api/accountApi";
+import {
+  getDemoPrivacySettings,
+  saveDemoPrivacySettings,
+} from "@/src/features/profile/data/demoSettingsStore";
 import { LaunchStateNotice } from "@/src/components/ui/LaunchStateNotice";
+import { useAuthStore } from "@/src/stores/authStore";
 import {
   AlertCircle,
   ArrowLeft,
@@ -77,6 +83,7 @@ function formatPrivacyUpdatedAt(value?: string) {
 export default function PrivacyScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
   const [isRequestingDeletion, setIsRequestingDeletion] = React.useState(false);
   const [settings, setSettings] = React.useState<PrivacySettings>(
     DEFAULT_PRIVACY_SETTINGS,
@@ -104,6 +111,14 @@ export default function PrivacyScreen() {
         setSettingsLoadError(null);
       }
 
+      if (isDemoMode) {
+        if (isMounted) {
+          setSettings(getDemoPrivacySettings());
+          setIsLoadingSettings(false);
+        }
+        return;
+      }
+
       try {
         const loadedSettings = await accountApi.getPrivacySettings();
         if (isMounted) {
@@ -126,7 +141,7 @@ export default function PrivacyScreen() {
     return () => {
       isMounted = false;
     };
-  }, [reloadAttempt]);
+  }, [isDemoMode, reloadAttempt]);
 
   const saveSetting = async (key: PrivacySettingKey, value: boolean) => {
     if (isLoadingSettings || savingSetting || settingsLoadError) {
@@ -137,11 +152,19 @@ export default function PrivacyScreen() {
       return;
     }
 
+    Haptics.selectionAsync();
+
     const previousSettings = settings;
     const nextSettings = { ...settings, [key]: value };
 
     setSettings(nextSettings);
     setSavingSetting(key);
+
+    if (isDemoMode) {
+      setSettings(saveDemoPrivacySettings(nextSettings));
+      setSavingSetting(null);
+      return;
+    }
 
     try {
       const savedSettings = await accountApi.savePrivacySettings(nextSettings);
@@ -202,6 +225,18 @@ export default function PrivacyScreen() {
   const submitDeletionRequest = async () => {
     setDeletionFeedback(null);
     setIsRequestingDeletion(true);
+
+    if (isDemoMode) {
+      setIsRequestingDeletion(false);
+      setDeletionFeedback({
+        type: "success",
+        title: "Demo request recorded",
+        message:
+          "No account deletion request was sent. This preview keeps the real support workflow ready for live accounts.",
+      });
+      return;
+    }
+
     const result = await accountApi.requestAccountDeletion();
     setIsRequestingDeletion(false);
 
@@ -224,6 +259,19 @@ export default function PrivacyScreen() {
   };
 
   const confirmDeletionRequest = () => {
+    if (Platform.OS === "web") {
+      const shouldSubmit =
+        typeof window !== "undefined" &&
+        window.confirm(
+          "Request account deletion? This sends a secure deletion request to PinayMate support. It does not instantly delete your account, matches, messages, or verification records.",
+        );
+
+      if (shouldSubmit) {
+        void submitDeletionRequest();
+      }
+      return;
+    }
+
     Alert.alert(
       "Request account deletion?",
       "This sends a secure deletion request to PinayMate support. It does not instantly delete your account, matches, messages, or verification records, and support may contact you before closing the request.",
@@ -253,7 +301,7 @@ export default function PrivacyScreen() {
 
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.push("/(main)/profile")}
+          onPress={() => router.replace("/profile")}
           style={styles.backBtn}
           accessibilityRole="button"
           accessibilityLabel="Back to profile"

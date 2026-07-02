@@ -158,6 +158,10 @@ const requiredFiles = [
   {
     path: "package.json",
     markers: [
+      "check:source-contracts",
+      "npm run check:secret-hygiene && npm run check:privacy-logs",
+      "check:dependency-audit",
+      "npm run check:source-contracts && npm run check:dependency-audit",
       "check:production-ownership-contract",
       "check:safety-operations-contract",
       "check:launch-evidence-contract",
@@ -166,6 +170,18 @@ const requiredFiles = [
       "check:release-local",
       "check:local-quality",
       "check:supabase-static-contract:report",
+    ],
+  },
+  {
+    path: ".github/workflows/pm-app-ci.yml",
+    markers: [
+      "name: PM_App CI",
+      "npm run check:source-contracts",
+      "name: Dependency audit",
+      "npm run check:dependency-audit",
+      "npx tsc --noEmit --pretty false",
+      "npm test -- --runInBand --no-cache",
+      "npm run build:web",
     ],
   },
   {
@@ -350,67 +366,21 @@ const requiredFiles = [
     ],
   },
   {
-    path: "docs/evidence/2026-06-11-pinaymate-launch-state-matrix.md",
+    path: "docs/evidence/README.md",
     markers: [
-      "PinayMate Launch-State Matrix",
-      "Source matrix added, contracts not rerun",
-      "shared launch-state source of truth",
-      "does not prove PM_Web production behavior",
+      "Evidence Retention",
+      "Historical one-off source-proof notes",
+      "should not be treated as launch proof",
+      "New evidence should be added only when it proves",
     ],
   },
   {
-    path: "docs/evidence/2026-06-11-pm-app-launch-state-signoff-alignment.md",
+    path: "docs/evidence/release-2026-06-11-manager-readiness-pmapp-pmweb.md",
     markers: [
-      "PM_App Launch-State Signoff Alignment",
-      "Source/docs alignment added, checks not rerun",
-      "check-launch-file-contract.mjs",
-      "check-product-design-contract.mjs",
-    ],
-  },
-  {
-    path: "docs/evidence/2026-06-11-pm-web-launch-state-matrix-alignment.md",
-    markers: [
-      "PM_Web Launch-State Matrix Alignment",
-      "Source/docs alignment added, checks not rerun",
-      "PM_Web/RELEASE_CHECKLIST.md",
-      "PM_Web/scripts/check-product-design-contract.mjs",
-    ],
-  },
-  {
-    path: "docs/evidence/2026-06-11-pm-web-mailto-encoding-guard.md",
-    markers: [
-      "PM_Web Mailto Encoding Guard",
-      "Source guard added, checks not rerun",
-      "URLSearchParams",
-      "npm run check:local-links",
-    ],
-  },
-  {
-    path: "docs/evidence/2026-06-11-pm-web-launch-claims-matrix-guard.md",
-    markers: [
-      "PM_Web Launch Claims Matrix Guard",
-      "Source guard added, checks not rerun",
-      "PM_Web/scripts/check-launch-claims.mjs",
-      "PM_Web does not create a dating profile",
-    ],
-  },
-  {
-    path: "docs/evidence/2026-06-11-launch-evidence-contract-source-proof-guards.md",
-    markers: [
-      "Launch Evidence Contract Source-Proof Guards",
-      "Source guard added, checks not rerun",
-      "scripts/check-launch-evidence-contract.mjs",
-      "PM_Web email helper patch currency",
-    ],
-  },
-  {
-    path: "docs/evidence/2026-06-11-supabase-operator-notification-proof-map.md",
-    markers: [
-      "Supabase Operator Notification Proof Map",
-      "Source docs updated, checks not rerun",
-      "user_notification_preferences_push_children_check",
-      "supabase/tests/05_release_preflight_audit.sql",
-      "supabase/tests/04_safety_smoke_test.sql",
+      "PinayMate Readiness Report",
+      "source from what still requires external proof",
+      "Messaging path now creates conversation state on first successful send",
+      "PM_Web has release-safe messaging patterns",
     ],
   },
   {
@@ -499,7 +469,8 @@ const requiredFiles = [
   {
     path: "supabase/LAUNCH_MIGRATION_MANIFEST.md",
     markers: [
-      "04_production_security_hardening.sql",
+      "04_production_core_hardening.sql",
+      "20260610090000_restore_legacy_security_primitives.sql",
       "20260611120000_secure_send_message_rpc.sql",
       "20260611141000_restrict_conversation_creation_rpc.sql",
       "20260611142000_hide_empty_conversations_from_inbox.sql",
@@ -542,33 +513,21 @@ const requiredFiles = [
     ],
   },
   {
-    path: "docs/evidence/2026-06-11-backend-backed-notification-preferences.md",
+    path: "docs/evidence/backend-2026-06-11-supabase-static-contract.md",
     markers: [
-      "Backend-Backed Notification Preferences",
-      "Source contract only",
-      "user_notification_preferences",
-      "get_notification_preferences",
-      "save_notification_preferences",
+      "Supabase Static Contract",
+      "Notification preferences",
+      "src/features/account/api/notificationSettingsApi.ts",
+      "supabase/tests/04_safety_smoke_test.sql",
     ],
   },
   {
-    path: "docs/evidence/2026-06-11-pm-app-launch-safe-ux-hardening.md",
+    path: "docs/evidence/release-2026-06-11-manager-readiness-pmapp-pmweb.md",
     markers: [
-      "PM_App Launch-Safe UX Hardening",
-      "Source evidence only",
-      "public matching, phone verification, social login, calls, and checkout remain launch-gated",
-      "not emergency service or instant moderation",
-      "native QA and validation commands were not run",
-    ],
-  },
-  {
-    path: "docs/evidence/2026-06-11-pm-web-launch-safe-ux-hardening.md",
-    markers: [
-      "PM_Web Launch-Safe UX Hardening",
-      "Source evidence only",
-      "waitlist only, no profile today, no matching today, and no payment today",
-      "App Store and Google Play links as locked",
-      "PM_Web checks, browser smoke, and production URL validation were not run",
+      "PM_App",
+      "PM_Web",
+      "controlled release",
+      "source-state estimate",
     ],
   },
   {
@@ -711,6 +670,17 @@ const requiredFiles = [
       "p_recipient_id",
       "clampMessageLimit",
       "assertUuid",
+    ],
+  },
+  {
+    path: "src/features/messaging/api/__tests__/messages.api.test.ts",
+    markers: [
+      "signs private chat image storage paths before rendering",
+      "stores the durable chat image path through send_message and returns a signed display URL",
+      "rejects image sends without a conversation-bound storage path",
+      "expect(supabase.from).not.toHaveBeenCalled()",
+      "removes chat image storage paths only after authenticating the user",
+      "rejects unsafe chat image delete paths before storage removal",
     ],
   },
 

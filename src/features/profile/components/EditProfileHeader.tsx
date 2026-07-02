@@ -10,17 +10,12 @@ import React from "react";
 import {
   ActivityIndicator,
   Platform,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { makeStyles } from "../../../theme/makeStyles";
-import { useAppTheme, AppTheme } from "../../../theme/ThemeContext";
-
-const BRAND_BG = "#0F0814";
-const ACCENT_PINK = "#EF3E78";
-const WHITE = "#FFFFFF";
+import { useAppTheme } from "../../../theme/ThemeContext";
 
 interface EditProfileHeaderProps {
   onBack: () => void;

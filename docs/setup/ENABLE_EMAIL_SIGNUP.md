@@ -46,8 +46,8 @@ For launch, apply the ordered migrations. Do not rely on the old baseline SQL al
 
 Required hardening migrations include:
 
-- `04_production_security_hardening.sql`
-- `99_final_release_security_hardening.sql`
+- `20260610090000_restore_legacy_security_primitives.sql`
+- `20260611144000_final_release_security_hardening.sql`
 - `20260610094806_add_pinaymate_storage_buckets.sql`
 - `20260610100323_add_ocr_rate_limit.sql`
 - `20260610100523_add_basic_info_rpc.sql`

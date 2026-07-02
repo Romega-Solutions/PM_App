@@ -20,6 +20,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuthStore } from "@/src/stores/authStore";
 import { accountApi, SavedLocation } from "../api/accountApi";
 import {
   getManualLocationFromQuery,
@@ -36,6 +37,7 @@ export default function LocationScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ userType?: string }>();
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
 
   // Get userType from params
   const userType = params.userType as UserType;
@@ -135,6 +137,14 @@ export default function LocationScreen() {
     if (!hasSelectedLocation) return;
     setSaving(true);
     try {
+      if (isDemoMode) {
+        router.push({
+          pathname: "/(auth)/account-setup/preferences",
+          params: { userType },
+        });
+        return;
+      }
+
       const payload: SavedLocation = {
         locationType: useCurrentLocation ? "current" : "manual",
         locationName: selectedLocation,
@@ -161,6 +171,7 @@ export default function LocationScreen() {
     useCurrentLocation,
     router,
     userType,
+    isDemoMode,
   ]);
 
   // Don't render if userType is invalid

@@ -62,15 +62,17 @@ Do not paste secrets, access tokens, raw user data, raw ID documents, private me
 
 ## OCR Edge Function proof
 
+Command: `npm run proof:ocr:live` with `OCR_PROOF_EMAIL` / `OCR_PROOF_PASSWORD` set to a disposable proof account. Record only the redacted PASS/FAIL summary. Do not paste raw OCR text, tokens, provider output, secret-list hashes, or document images.
+
 | Check | Result | Evidence note |
 | --- | --- | --- |
 | OCR function deployed to target project |  |  |
 | JWT verification enabled |  |  |
-| `OCR_SPACE_API_KEY` present as Supabase secret |  |  |
-| unauthenticated request rejected |  |  |
-| authenticated valid document request handled |  |  |
-| invalid/oversized document request handled safely |  |  |
-| rate limit blocks excess attempts |  |  |
+| `OCR_SPACE_API_KEY` present as Supabase secret by name only |  |  |
+| unauthenticated request rejected with HTTP `401` |  |  |
+| authenticated synthetic valid document returned `result.fullText` |  |  |
+| invalid/oversized document request handled safely without provider details |  |  |
+| rate limit blocks excess attempts with HTTP `429` |  |  |
 | no sensitive payload logged |  |  |
 
 ## Waitlist Edge Function proof

@@ -38,7 +38,6 @@ const SURFACE = "rgba(255,255,255,0.12)";
 export default function WelcomeCompleteScreen() {
   const theme = useAppTheme();
   const styles = useStyles();
-  const ACCENT_PURPLE = theme.semanticColors.secondary;
   const ACCENT_PINK = theme.colors.amihan?.[500] ?? "#EF3E78";
   const router = useRouter();
   const insets = useSafeAreaInsets();

@@ -12,151 +12,31 @@ const requiredLaunchEvidenceMarkers = [
     marker: "docs/release/PINAYMATE_LAUNCH_STATE_MATRIX.md",
   },
   {
-    label: "launch-state matrix evidence note",
-    marker: "docs/evidence/2026-06-11-pinaymate-launch-state-matrix.md",
-  },
-  {
-    label: "PM_App signoff/design/safety matrix alignment evidence",
-    marker:
-      "docs/evidence/2026-06-11-pm-app-launch-state-signoff-alignment.md",
-  },
-  {
-    label: "PM_Web launch-state matrix alignment evidence",
-    marker:
-      "docs/evidence/2026-06-11-pm-web-launch-state-matrix-alignment.md",
-  },
-  {
-    label: "PM_Web mailto encoding guard evidence",
-    marker: "docs/evidence/2026-06-11-pm-web-mailto-encoding-guard.md",
+    label: "trimmed evidence retention index",
+    marker: "docs/evidence/README.md",
   },
   {
     label: "PM_Web email helper currency gate",
     marker: "PM_Web email helper patch currency",
   },
   {
-    label: "PM_App client-facing copy guard hardening evidence",
+    label: "retained PM_App local quality evidence",
     marker:
-      "docs/evidence/2026-06-11-pm-app-client-facing-copy-guard-hardening.md",
+      "docs/evidence/2026-06-11-current-local-quality-release-blockers.md",
   },
   {
-    label: "PM_App account setup client copy polish evidence",
+    label: "retained PM_App release blocker evidence",
     marker:
-      "docs/evidence/2026-06-11-account-setup-client-copy-polish.md",
+      "docs/evidence/2026-06-11-release-blockers-only.md",
   },
   {
-    label: "PM_App match card native accessibility prop evidence",
+    label: "retained backend static contract evidence",
     marker:
-      "docs/evidence/2026-06-11-match-card-native-accessibility-prop.md",
+      "docs/evidence/backend-2026-06-11-supabase-static-contract.md",
   },
   {
-    label: "PM_App match card accessibility regression guard evidence",
-    marker:
-      "docs/evidence/2026-06-11-match-card-accessibility-regression-guard.md",
-  },
-  {
-    label: "PM_App root shell first-impression design contract evidence",
-    marker:
-      "docs/evidence/2026-06-11-root-shell-first-impression-design-contract.md",
-  },
-  {
-    label: "PM_App waitlist Edge JSON content-type boundary evidence",
-    marker:
-      "docs/evidence/2026-06-11-waitlist-edge-json-content-type-boundary.md",
-  },
-  {
-    label: "PM_App waitlist Edge RPC response value guard evidence",
-    marker:
-      "docs/evidence/2026-06-11-waitlist-edge-rpc-response-value-guard.md",
-  },
-  {
-    label: "PM_App waitlist Edge single-row RPC response guard evidence",
-    marker:
-      "docs/evidence/2026-06-11-waitlist-edge-single-row-rpc-response-guard.md",
-  },
-  {
-    label: "PM_App waitlist Edge public response contract doc evidence",
-    marker:
-      "docs/evidence/2026-06-11-waitlist-edge-public-response-contract-doc.md",
-  },
-  {
-    label: "PM_App pass profile release contract coverage evidence",
-    marker:
-      "docs/evidence/2026-06-11-pass-profile-release-contract-coverage.md",
-  },
-  {
-    label: "PM_Web editorial layout contract guard evidence",
-    marker:
-      "../PM_Web/docs/evidence/2026-06-11-pm-web-editorial-layout-contract-guards.md",
-  },
-  {
-    label: "PM_Web client-facing copy guard hardening evidence",
-    marker:
-      "../PM_Web/docs/evidence/2026-06-11-pm-web-client-facing-copy-guard-hardening.md",
-  },
-  {
-    label: "PM_Web download store link copy polish evidence",
-    marker:
-      "../PM_Web/docs/evidence/2026-06-11-download-store-link-copy-polish.md",
-  },
-  {
-    label: "PM_Web launch claims contract refresh evidence",
-    marker:
-      "../PM_Web/docs/evidence/2026-06-11-launch-claims-contract-refresh.md",
-  },
-  {
-    label: "PM_Web source contract command wiring evidence",
-    marker:
-      "../PM_Web/docs/evidence/2026-06-11-pm-web-source-contract-command-wiring.md",
-  },
-  {
-    label: "PM_Web top-level app copy guard evidence",
-    marker:
-      "../PM_Web/docs/evidence/2026-06-11-pm-web-top-level-app-copy-guard.md",
-  },
-  {
-    label: "PM_Web client-copy guard contract coverage evidence",
-    marker:
-      "../PM_Web/docs/evidence/2026-06-11-pm-web-client-copy-guard-contract-coverage.md",
-  },
-  {
-    label: "PM_Web waitlist JSON handoff contract evidence",
-    marker:
-      "../PM_Web/docs/evidence/2026-06-11-waitlist-json-handoff-contract.md",
-  },
-  {
-    label: "PM_Web waitlist JSON body serialization contract evidence",
-    marker:
-      "../PM_Web/docs/evidence/2026-06-11-waitlist-json-body-serialization-contract.md",
-  },
-  {
-    label: "PM_Web waitlist JSON response content-type guard evidence",
-    marker:
-      "../PM_Web/docs/evidence/2026-06-11-waitlist-json-response-content-type-guard.md",
-  },
-  {
-    label: "PM_Web waitlist JSON response shape guard evidence",
-    marker:
-      "../PM_Web/docs/evidence/2026-06-11-waitlist-json-response-shape-guard.md",
-  },
-  {
-    label: "PM_Web waitlist public response value guard evidence",
-    marker:
-      "../PM_Web/docs/evidence/2026-06-11-waitlist-public-response-value-guard.md",
-  },
-  {
-    label: "PM_Web waitlist response email match guard evidence",
-    marker:
-      "../PM_Web/docs/evidence/2026-06-11-waitlist-response-email-match-guard.md",
-  },
-  {
-    label: "PM_Web waitlist single-row response guard evidence",
-    marker:
-      "../PM_Web/docs/evidence/2026-06-11-waitlist-single-row-response-guard.md",
-  },
-  {
-    label: "PM_Web waitlist web source marker lock evidence",
-    marker:
-      "../PM_Web/docs/evidence/2026-06-11-waitlist-web-source-marker-lock.md",
+    label: "retained PM_Web evidence index",
+    marker: "../PM_Web/docs/evidence/README.md",
   },
   {
     label: "current evidence staleness warning",

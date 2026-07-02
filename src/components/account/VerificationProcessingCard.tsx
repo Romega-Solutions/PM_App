@@ -7,7 +7,7 @@ import {
   XCircle,
 } from "lucide-react-native";
 import React from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { Platform, Text, View } from "react-native";
 
 type Status =
   | "pending"

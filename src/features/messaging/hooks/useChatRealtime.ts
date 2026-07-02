@@ -90,7 +90,7 @@ export function useChatRealtime({
    */
   const sendTyping = useCallback(
     async (isTyping: boolean) => {
-      if (!conversationId) return;
+      if (!conversationId || !userId) return;
 
       try {
         await realtimeApi.broadcastTyping(conversationId, userId, isTyping);
@@ -106,7 +106,7 @@ export function useChatRealtime({
    */
   const sendReadReceipt = useCallback(
     async (messageIds: string[]) => {
-      if (!conversationId || messageIds.length === 0) return;
+      if (!conversationId || !userId || messageIds.length === 0) return;
 
       try {
         await realtimeApi.broadcastReadReceipt(conversationId, messageIds);
@@ -114,7 +114,7 @@ export function useChatRealtime({
         console.error("Unable to broadcast read receipt.");
       }
     },
-    [conversationId],
+    [conversationId, userId],
   );
 
   return {

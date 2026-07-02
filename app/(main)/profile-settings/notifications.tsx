@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
@@ -5,7 +6,12 @@ import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   type NotificationPreferences,
 } from "@/src/features/account/api/accountApi";
+import {
+  getDemoNotificationPreferences,
+  saveDemoNotificationPreferences,
+} from "@/src/features/profile/data/demoSettingsStore";
 import { LaunchStateNotice } from "@/src/components/ui/LaunchStateNotice";
+import { useAuthStore } from "@/src/stores/authStore";
 import {
   AlertCircle,
   ArrowLeft,
@@ -67,6 +73,7 @@ function formatNotificationUpdatedAt(value?: string) {
 export default function NotificationsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
 
   const [preferences, setPreferences] = useState<NotificationPreferences>(
     DEFAULT_NOTIFICATION_PREFERENCES,
@@ -97,6 +104,14 @@ export default function NotificationsScreen() {
         setSaveError(null);
       }
 
+      if (isDemoMode) {
+        if (isMounted) {
+          setPreferences(getDemoNotificationPreferences());
+          setIsLoadingPreferences(false);
+        }
+        return;
+      }
+
       try {
         const loadedPreferences = await accountApi.getNotificationPreferences();
         if (isMounted) {
@@ -119,7 +134,7 @@ export default function NotificationsScreen() {
     return () => {
       isMounted = false;
     };
-  }, [reloadAttempt]);
+  }, [isDemoMode, reloadAttempt]);
 
   const savePreference = async (
     key: NotificationPreferenceKey,
@@ -133,6 +148,8 @@ export default function NotificationsScreen() {
       return;
     }
 
+    Haptics.selectionAsync();
+
     const previousPreferences = preferences;
     const nextPreferences = { ...preferences, [key]: value };
 
@@ -145,6 +162,12 @@ export default function NotificationsScreen() {
     setPreferences(nextPreferences);
     setSavingPreference(key);
     setSaveError(null);
+
+    if (isDemoMode) {
+      setPreferences(saveDemoNotificationPreferences(nextPreferences));
+      setSavingPreference(null);
+      return;
+    }
 
     try {
       const savedPreferences =
@@ -182,7 +205,7 @@ export default function NotificationsScreen() {
 
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.push("/(main)/profile")}
+          onPress={() => router.replace("/profile")}
           style={styles.backBtn}
           accessibilityRole="button"
           accessibilityLabel="Back to profile"

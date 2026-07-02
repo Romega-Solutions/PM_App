@@ -3,7 +3,9 @@ import VerifyEmailHeader from "@/src/components/auth/VerifyEmailHeader";
 import { supabase } from "@/src/config/supabase";
 import { UserMetadata } from "@supabase/supabase-js";
 import { authApi } from "@/src/features/auth/api/authApi";
+import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
 import { useSignupStore } from "@/src/stores/signupStore";
+import { useAuthStore } from "@/src/stores/authStore";
 import { useFonts } from "expo-font";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -28,6 +30,7 @@ export default function VerifyEmailScreen() {
   }>();
 
   const getSignupData = useSignupStore((state) => state.getSignupData);
+  const startDemoSession = useAuthStore((state) => state.startDemoSession);
 
   const [email, setEmail] = useState(params.email);
   const [firstName, setFirstName] = useState(params.firstName);
@@ -35,7 +38,9 @@ export default function VerifyEmailScreen() {
 
   const didNavigate = useRef(false);
   const [isCheckingManually, setIsCheckingManually] = useState(false);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
 
   const [fontsLoaded] = useFonts({
     HelloParis: require("@/assets/fonts/hello-paris-sans/HelloParisSans-Bold.ttf"),
@@ -212,6 +217,11 @@ export default function VerifyEmailScreen() {
     router.replace("/(auth)/signin");
   };
 
+  const handleBetaPreview = () => {
+    startDemoSession();
+    router.replace("/(main)");
+  };
+
   if (!fontsLoaded) {
     return (
       <View
@@ -373,6 +383,52 @@ export default function VerifyEmailScreen() {
             Already verified somewhere else? Go back to sign in with the same
             email.
           </Text>
+
+          {isBetaDemoModeEnabled() ? (
+            <TouchableOpacity
+              onPress={handleBetaPreview}
+              activeOpacity={0.84}
+              accessibilityRole="button"
+              accessibilityLabel="Continue in beta preview"
+              accessibilityHint="Opens the main app with seeded demo data without verifying this email"
+              style={{
+                marginTop: 16,
+                minHeight: 52,
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+                backgroundColor: "rgba(141, 105, 246, 0.18)",
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: "rgba(255, 255, 255, 0.22)",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  color: "rgba(255,255,255,0.88)",
+                  fontFamily: "DMSans",
+                  fontSize: 14,
+                  fontWeight: "600",
+                  textAlign: "center",
+                }}
+              >
+                Continue in beta preview
+              </Text>
+              <Text
+                style={{
+                  color: "rgba(255,255,255,0.62)",
+                  fontFamily: "DMSans",
+                  fontSize: 12,
+                  lineHeight: 17,
+                  marginTop: 4,
+                  textAlign: "center",
+                }}
+              >
+                Seeded demo data only. No verification or profile write is sent.
+              </Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
     </View>

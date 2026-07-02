@@ -72,6 +72,8 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
 
   if (!profile) return null;
 
+  const galleryImages =
+    profile.galleryImages?.filter((image) => image != null) ?? [];
   const detailPills = [
     profile.heightCm
       ? {
@@ -127,73 +129,97 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
       accessibilityViewIsModal
     >
       <View style={[styles.modalContainer, { touchAction: "none" } as any]} {...panHandlers}>
-        <LinearGradient
-          colors={[theme.semanticColors.background, theme.semanticColors.surface, theme.colors.dalisay[900], theme.semanticColors.background]}
-          locations={[0, 0.3, 0.7, 1]}
-          style={StyleSheet.absoluteFill}
-        />
+        <View style={styles.modalFrame}>
+          <LinearGradient
+            colors={[theme.semanticColors.background, theme.semanticColors.surface, theme.colors.dalisay[900], theme.semanticColors.background]}
+            locations={[0, 0.3, 0.7, 1]}
+            style={StyleSheet.absoluteFill}
+          />
 
-        {/* Close Button */}
-        <TouchableOpacity
-          style={[styles.closeBtn, { top: insets.top + 12 }]}
-          onPress={onClose}
-          accessibilityRole="button"
-          accessibilityLabel="Close profile details"
-          accessibilityHint="Returns to the discover card"
-        >
-          <X size={24} color={theme.colors.neutral.white} strokeWidth={2.5} />
-        </TouchableOpacity>
+          {/* Close Button */}
+          <TouchableOpacity
+            style={[styles.closeBtn, { top: Platform.OS === "web" ? 12 : insets.top + 12 }]}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close profile details"
+            accessibilityHint="Returns to the discover card"
+          >
+            <X size={24} color={theme.colors.neutral.white} strokeWidth={2.5} />
+          </TouchableOpacity>
 
-        {/* Scrollable Content */}
-        <ScrollView
-          style={styles.modalScrollView}
-          contentContainerStyle={[
-            styles.modalScrollContent,
-            { paddingBottom: Math.max(insets.bottom + 40, 56) },
-          ]}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Profile Image */}
-          <View style={styles.modalImageContainer}>
-            {profile.image ? (
-              <Image
-                source={profile.image}
-                style={styles.modalImage}
-                resizeMode="cover"
-                accessible
-                accessibilityLabel={`${profile.name}'s profile photo`}
+          {/* Scrollable Content */}
+          <ScrollView
+            style={styles.modalScrollView}
+            contentContainerStyle={[
+              styles.modalScrollContent,
+              { paddingBottom: Math.max(insets.bottom + 40, 56) },
+            ]}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Profile Image */}
+            <View style={styles.modalImageContainer}>
+              {profile.image ? (
+                <Image
+                  source={profile.image}
+                  style={styles.modalImage}
+                  resizeMode="cover"
+                  accessible
+                  accessibilityLabel={`${profile.name}'s profile photo`}
+                />
+              ) : (
+                <View
+                  style={styles.modalImageFallback}
+                  accessible
+                  accessibilityLabel={`${profile.name} has no profile photo`}
+                >
+                  <UserRound size={64} color="rgba(255,255,255,0.72)" />
+                  <Text style={styles.modalImageFallbackText}>
+                    No profile photo yet
+                  </Text>
+                </View>
+              )}
+              <LinearGradient
+                colors={["transparent", "rgba(0, 0, 0, 0.6)"]}
+                style={styles.modalImageGradient}
               />
-            ) : (
-              <View
-                style={styles.modalImageFallback}
-                accessible
-                accessibilityLabel={`${profile.name} has no profile photo`}
-              >
-                <UserRound size={64} color="rgba(255,255,255,0.72)" />
-                <Text style={styles.modalImageFallbackText}>
-                  No profile photo yet
-                </Text>
-              </View>
-            )}
-            <LinearGradient
-              colors={["transparent", "rgba(0, 0, 0, 0.6)"]}
-              style={styles.modalImageGradient}
-            />
 
-            {/* Verified Badge */}
-            {profile.verified && (
-              <View
-                style={[styles.modalVerifiedBadge, { top: insets.top + 12 }]}
-                accessible
-                accessibilityLabel="Verified profile"
-              >
-                <Sparkles size={16} color={theme.colors.neutral.white} strokeWidth={2.5} />
-              </View>
-            )}
-          </View>
+              {/* Verified Badge */}
+              {profile.verified && (
+                <View
+                  style={[styles.modalVerifiedBadge, { top: Platform.OS === "web" ? 12 : insets.top + 12 }]}
+                  accessible
+                  accessibilityLabel="Verified profile"
+                >
+                  <Sparkles size={16} color={theme.colors.neutral.white} strokeWidth={2.5} />
+                </View>
+              )}
+            </View>
 
-          {/* Profile Info */}
-          <View style={styles.modalContent}>
+            {profile.isSeedProfile && galleryImages.length > 1 ? (
+              <View style={styles.gallerySection}>
+                <Text style={styles.modalSectionTitle}>Photo Set</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.galleryList}
+                  accessibilityLabel={`${profile.name}'s demo photo poses`}
+                >
+                  {galleryImages.map((image, index) => (
+                    <Image
+                      key={`${profile.id}-pose-${index}`}
+                      source={image}
+                      style={styles.galleryImage}
+                      resizeMode="cover"
+                      accessible
+                      accessibilityLabel={`${profile.name} demo pose ${index + 1}`}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            ) : null}
+
+            {/* Profile Info */}
+            <View style={styles.modalContent}>
             {/* Name & Age */}
             <Text style={styles.modalName}>
               {profile.name}, {profile.age}
@@ -229,6 +255,23 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
               <Text style={styles.modalSectionTitle}>About</Text>
               <Text style={styles.modalBioText}>{profile.bio}</Text>
             </View>
+
+            {profile.isSeedProfile &&
+            (profile.modelBiography || profile.modelPersonality) ? (
+              <View style={styles.modalSection}>
+                <Text style={styles.modalSectionTitle}>Demo Persona</Text>
+                {profile.modelBiography ? (
+                  <Text style={styles.modalBioText}>
+                    {profile.modelBiography}
+                  </Text>
+                ) : null}
+                {profile.modelPersonality ? (
+                  <Text style={styles.modalSubText}>
+                    {profile.modelPersonality}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
 
             {/* Looking For Section */}
             <TouchableOpacity
@@ -361,8 +404,9 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({
                 </View>
               </View>
             ) : null}
-          </View>
-        </ScrollView>
+            </View>
+          </ScrollView>
+        </View>
       </View>
     </Modal>
   );
@@ -372,6 +416,28 @@ const useStyles = makeStyles((theme) => ({
   modalContainer: {
     flex: 1,
     backgroundColor: theme.semanticColors.background,
+    ...Platform.select({
+      web: {
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 20,
+        paddingVertical: 20,
+      },
+    }),
+  },
+  modalFrame: {
+    flex: 1,
+    width: "100%",
+    backgroundColor: theme.semanticColors.background,
+    overflow: "hidden",
+    ...Platform.select({
+      web: {
+        maxWidth: 520,
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: "rgba(255, 255, 255, 0.14)",
+      },
+    }),
   },
   closeBtn: {
     position: "absolute",
@@ -394,7 +460,7 @@ const useStyles = makeStyles((theme) => ({
   // Image
   modalImageContainer: {
     width: "100%",
-    height: height * 0.5,
+    height: Platform.OS === "web" ? Math.min(height * 0.42, 340) : height * 0.5,
     position: "relative",
   },
   modalImage: {
@@ -420,6 +486,24 @@ const useStyles = makeStyles((theme) => ({
     left: 0,
     right: 0,
     height: "30%",
+  },
+  gallerySection: {
+    paddingTop: 14,
+    paddingHorizontal: 20,
+    paddingBottom: 4,
+  },
+  galleryList: {
+    gap: 10,
+    paddingTop: 10,
+    paddingRight: 8,
+  },
+  galleryImage: {
+    width: 82,
+    height: 106,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.14)",
+    backgroundColor: theme.semanticColors.surface,
   },
   modalVerifiedBadge: {
     position: "absolute",

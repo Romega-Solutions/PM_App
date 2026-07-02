@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getBetaDemoProfile, useIsDemoSession } from "../../auth/demoMode";
 import type { UserType } from "../../auth/api/authApi";
 import {
   accountApi,
@@ -29,11 +30,59 @@ type WelcomeData = {
 export const useWelcomeData = () => {
   const [data, setData] = useState<WelcomeData | null>(null);
   const [loading, setLoading] = useState(true);
+  const isDemoMode = useIsDemoSession();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+
+        if (isDemoMode) {
+          const demoProfile = getBetaDemoProfile();
+          const isFilipina = demoProfile.userType === "filipina";
+          setData({
+            firstName: demoProfile.firstName,
+            userType: demoProfile.userType,
+            basicInfo: {
+              firstName: demoProfile.firstName,
+              lastName: demoProfile.lastName,
+              age: demoProfile.age,
+              gender: isFilipina ? "female" : "male",
+              userType: demoProfile.userType,
+            },
+            photos: [],
+            location: {
+              locationType: "manual",
+              locationName: demoProfile.location,
+              coordinates: null,
+              timestamp: new Date(0).toISOString(),
+            },
+            verification: {
+              selfieUri: "",
+              documentUri: "",
+              isVerified: false,
+              mismatchReasons: [
+                "Beta preview profile is not identity verified.",
+              ],
+            },
+            preferences: {
+              interestedIn: isFilipina ? "Men" : "Women",
+              ageMin: 22,
+              ageMax: 35,
+              maxDistanceKm: 50,
+              relationshipGoal: "long-term",
+              userType: demoProfile.userType,
+            },
+            completionStats: {
+              basicInfo: true,
+              photos: false,
+              location: true,
+              verification: false,
+              preferences: true,
+            },
+          });
+          return;
+        }
 
         // Fetch all data from Supabase
         const [basicInfo, photos, location, verification, preferences] =
@@ -74,7 +123,7 @@ export const useWelcomeData = () => {
     };
 
     fetchData();
-  }, []);
+  }, [isDemoMode]);
 
   const reload = async () => {
     setLoading(true);

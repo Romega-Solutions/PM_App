@@ -52,6 +52,8 @@ export default function PrimaryButton({
       borderRadius: moderateScale(28),
       height: moderateScale(56),
       minHeight: 52,
+      maxWidth: Platform.OS === "web" ? 420 : undefined,
+      alignSelf: "center",
       flexDirection: "row",
       justifyContent: "center",
       alignItems: "center",

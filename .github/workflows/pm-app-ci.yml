@@ -1,0 +1,314 @@
+name: PM_App CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+  push:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+    inputs:
+      run_live_supabase_proof:
+        description: "Run linked Supabase migration proof using configured repo secrets"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      run_web_mvp_smoke:
+        description: "Run authenticated browser smoke against beta.pinaymate.com using configured repo secrets"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      run_beta_preview_smoke:
+        description: "Run no-login beta preview browser smoke against beta.pinaymate.com"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      run_photo_upload_proof:
+        description: "Run live Supabase profile photo upload/storage proof using configured repo secrets"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      run_ocr_live_proof:
+        description: "Run live OCR Edge Function proof using configured repo secrets"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pm-app-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: PM_App CI
+    runs-on: ubuntu-latest
+    env:
+      EXPO_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      EXPO_PUBLIC_BETA_DEMO_MODE: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Source and launch contracts
+        run: npm run check:source-contracts
+
+      - name: Dependency audit
+        run: npm run check:dependency-audit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit --pretty false
+
+      - name: Unit tests
+        run: npm test -- --runInBand --no-cache
+
+      - name: Web export
+        run: npm run build:web
+
+  live-supabase-proof:
+    name: Supabase live proof
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_live_supabase_proof == 'true' }}
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify live proof configuration
+        shell: bash
+        run: |
+          if [ -z "${SUPABASE_ACCESS_TOKEN}" ]; then
+            echo "SUPABASE_ACCESS_TOKEN secret is required for live Supabase proof." >&2
+            exit 1
+          fi
+          if [ -z "${SUPABASE_DB_PASSWORD}" ]; then
+            echo "SUPABASE_DB_PASSWORD secret is required for live Supabase proof." >&2
+            exit 1
+          fi
+          if [ -z "${SUPABASE_PROJECT_REF}" ]; then
+            echo "SUPABASE_PROJECT_REF repository variable is required for live Supabase proof." >&2
+            exit 1
+          fi
+
+      - name: Supabase CLI version
+        run: npx -y supabase@latest --version
+
+      - name: Link Supabase project
+        run: npx -y supabase@latest link --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Migration history
+        run: npx -y supabase@latest migration list --linked --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Migration dry run
+        run: npx -y supabase@latest db push --dry-run --include-all --linked --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Release preflight audit SQL
+        run: npx -y supabase@latest db query --linked --file supabase/tests/05_release_preflight_audit.sql --output table
+
+      - name: Safety smoke SQL
+        run: npx -y supabase@latest db query --linked --file supabase/tests/04_safety_smoke_test.sql --output table
+
+  live-web-mvp-smoke:
+    name: Web MVP live smoke
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_web_mvp_smoke == 'true' }}
+    env:
+      PM_APP_BETA_URL: https://beta.pinaymate.com
+      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+      PM_WEB_MVP_EMAIL: ${{ secrets.PM_WEB_MVP_EMAIL }}
+      PM_WEB_MVP_PASSWORD: ${{ secrets.PM_WEB_MVP_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify web MVP smoke configuration
+        shell: bash
+        run: |
+          if [ -z "${PM_WEB_MVP_EMAIL}" ]; then
+            echo "PM_WEB_MVP_EMAIL secret is required for authenticated web MVP smoke." >&2
+            exit 1
+          fi
+          if [ -z "${PM_WEB_MVP_PASSWORD}" ]; then
+            echo "PM_WEB_MVP_PASSWORD secret is required for authenticated web MVP smoke." >&2
+            exit 1
+          fi
+          if [ -z "${EXPO_PUBLIC_SUPABASE_URL}" ]; then
+            echo "EXPO_PUBLIC_SUPABASE_URL secret is required for authenticated web MVP smoke cleanup." >&2
+            exit 1
+          fi
+          if [ -z "${EXPO_PUBLIC_SUPABASE_ANON_KEY}" ]; then
+            echo "EXPO_PUBLIC_SUPABASE_ANON_KEY secret is required for authenticated web MVP smoke cleanup." >&2
+            exit 1
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Authenticated beta browser smoke
+        run: npm run smoke:web-mvp
+
+  beta-preview-smoke:
+    name: Beta preview smoke
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_beta_preview_smoke == 'true' }}
+    env:
+      PM_APP_BETA_URL: https://beta.pinaymate.com
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: No-login beta preview smoke
+        run: npm run smoke:beta-preview
+
+  live-ocr-proof:
+    name: OCR live proof
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_ocr_live_proof == 'true' }}
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+      OCR_PROOF_EMAIL: ${{ secrets.OCR_PROOF_EMAIL || secrets.PM_WEB_MVP_EMAIL }}
+      OCR_PROOF_PASSWORD: ${{ secrets.OCR_PROOF_PASSWORD || secrets.PM_WEB_MVP_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify OCR proof configuration
+        shell: bash
+        run: |
+          if [ -z "${SUPABASE_ACCESS_TOKEN}" ]; then
+            echo "SUPABASE_ACCESS_TOKEN secret is required for OCR live proof." >&2
+            exit 1
+          fi
+          if [ -z "${EXPO_PUBLIC_SUPABASE_URL}" ]; then
+            echo "EXPO_PUBLIC_SUPABASE_URL secret is required for OCR live proof." >&2
+            exit 1
+          fi
+          if [ -z "${EXPO_PUBLIC_SUPABASE_ANON_KEY}" ]; then
+            echo "EXPO_PUBLIC_SUPABASE_ANON_KEY secret is required for OCR live proof." >&2
+            exit 1
+          fi
+          if [ -z "${OCR_PROOF_EMAIL}" ]; then
+            echo "OCR_PROOF_EMAIL or PM_WEB_MVP_EMAIL secret is required for OCR live proof." >&2
+            exit 1
+          fi
+          if [ -z "${OCR_PROOF_PASSWORD}" ]; then
+            echo "OCR_PROOF_PASSWORD or PM_WEB_MVP_PASSWORD secret is required for OCR live proof." >&2
+            exit 1
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Live OCR proof
+        run: npm run proof:ocr:live
+
+  live-photo-upload-proof:
+    name: Photo upload live proof
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_photo_upload_proof == 'true' }}
+    env:
+      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+      PM_WEB_MVP_EMAIL: ${{ secrets.PM_WEB_MVP_EMAIL }}
+      PM_WEB_MVP_PASSWORD: ${{ secrets.PM_WEB_MVP_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify photo upload proof configuration
+        shell: bash
+        run: |
+          if [ -z "${EXPO_PUBLIC_SUPABASE_URL}" ]; then
+            echo "EXPO_PUBLIC_SUPABASE_URL secret is required for photo upload proof." >&2
+            exit 1
+          fi
+          if [ -z "${EXPO_PUBLIC_SUPABASE_ANON_KEY}" ]; then
+            echo "EXPO_PUBLIC_SUPABASE_ANON_KEY secret is required for photo upload proof." >&2
+            exit 1
+          fi
+          if [ -z "${PM_WEB_MVP_EMAIL}" ]; then
+            echo "PM_WEB_MVP_EMAIL secret is required for photo upload proof." >&2
+            exit 1
+          fi
+          if [ -z "${PM_WEB_MVP_PASSWORD}" ]; then
+            echo "PM_WEB_MVP_PASSWORD secret is required for photo upload proof." >&2
+            exit 1
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Live photo upload proof
+        run: npm run proof:photo-upload:live

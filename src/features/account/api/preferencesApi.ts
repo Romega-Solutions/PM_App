@@ -16,7 +16,6 @@ const RELATIONSHIP_GOALS = new Set([
   "long-term",
   "marriage",
   "friendship",
-  "serious_relationship",
 ]);
 
 function getInterestedInFromUserType(userType: UserType): string {
@@ -31,6 +30,31 @@ function getLookingForGenderFromUserType(
 
 function isSupportedUserType(userType: UserType): boolean {
   return userType === "filipina" || userType === "foreigner";
+}
+
+function normalizeRelationshipGoal(value: string): string | null {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+
+  if (!normalized) return null;
+  if (normalized.includes("marriage")) return "marriage";
+  if (normalized.includes("friend")) return "friendship";
+  if (normalized.includes("long") || normalized.includes("serious")) {
+    return "long-term";
+  }
+  if (
+    normalized.includes("dating") ||
+    normalized.includes("casual") ||
+    normalized.includes("not sure") ||
+    normalized.includes("still deciding")
+  ) {
+    return "dating";
+  }
+
+  return RELATIONSHIP_GOALS.has(normalized) ? normalized : null;
 }
 
 export type PreferencesPayload = {
@@ -51,7 +75,7 @@ function normalizePreferencesPayload(
   const maxDistanceKm = Number.isFinite(payload.maxDistanceKm)
     ? Math.trunc(payload.maxDistanceKm)
     : NaN;
-  const relationshipGoal = payload.relationshipGoal.trim();
+  const relationshipGoal = normalizeRelationshipGoal(payload.relationshipGoal);
 
   if (
     !Number.isInteger(ageMin) ||
@@ -62,7 +86,7 @@ function normalizePreferencesPayload(
     !Number.isInteger(maxDistanceKm) ||
     maxDistanceKm < MIN_DISTANCE_KM ||
     maxDistanceKm > MAX_DISTANCE_KM ||
-    !RELATIONSHIP_GOALS.has(relationshipGoal) ||
+    !relationshipGoal ||
     !isSupportedUserType(payload.userType)
   ) {
     throw new Error(PREFERENCES_INPUT_ERROR);

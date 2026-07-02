@@ -15,18 +15,12 @@ import React from "react";
 import {
   ActivityIndicator,
   Image,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { makeStyles } from "../../../theme/makeStyles";
-import { useAppTheme, AppTheme } from "../../../theme/ThemeContext";
-
-const ACCENT_PINK = "#EF3E78";
-const ACCENT_PURPLE = "#8D69F6";
-const WHITE = "#FFFFFF";
-const SURFACE_STRONG = "rgba(255, 255, 255, 0.08)";
+import { useAppTheme } from "../../../theme/ThemeContext";
 
 interface ProfilePhotoSectionProps {
   photoUri: string | null;

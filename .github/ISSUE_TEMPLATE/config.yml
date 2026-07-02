@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Production support
+    url: mailto:support@pinaymate.com
+    about: Use this for private account, safety, or production-support details that should not be public.
