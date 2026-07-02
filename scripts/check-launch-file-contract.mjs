@@ -672,6 +672,17 @@ const requiredFiles = [
       "assertUuid",
     ],
   },
+  {
+    path: "src/features/messaging/api/__tests__/messages.api.test.ts",
+    markers: [
+      "signs private chat image storage paths before rendering",
+      "stores the durable chat image path through send_message and returns a signed display URL",
+      "rejects image sends without a conversation-bound storage path",
+      "expect(supabase.from).not.toHaveBeenCalled()",
+      "removes chat image storage paths only after authenticating the user",
+      "rejects unsafe chat image delete paths before storage removal",
+    ],
+  },
 
   {
     path: "src/features/messaging/api/realtime.api.ts",
