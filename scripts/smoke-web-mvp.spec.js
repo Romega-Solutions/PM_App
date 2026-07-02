@@ -132,6 +132,27 @@ async function assertBottomNav(page) {
   }
 }
 
+async function assertNoDocumentHorizontalOverflow(page, label) {
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(() => {
+          const documentElement = document.documentElement;
+          const body = document.body;
+          const documentOverflow =
+            documentElement.scrollWidth - documentElement.clientWidth;
+          const bodyOverflow = body.scrollWidth - body.clientWidth;
+
+          return Math.max(documentOverflow, bodyOverflow);
+        }),
+      {
+        message: `${label} horizontal overflow`,
+        timeout: 15000,
+      },
+    )
+    .toBeLessThanOrEqual(1);
+}
+
 async function openTab(page, label) {
   await page.getByText(label, { exact: true }).last().click();
   await expect(page.getByText(label, { exact: true }).last()).toBeVisible({
@@ -866,6 +887,7 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
   const viewports = [
     { name: "mobile", width: 390, height: 844 },
     { name: "laptop", width: 1366, height: 900 },
+    { name: "desktop", width: 1512, height: 982 },
   ];
 
   for (const viewport of viewports) {
@@ -876,11 +898,16 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
 
       await signIn(page);
       await assertBottomNav(page);
+      await assertNoDocumentHorizontalOverflow(page, `${viewport.name} discover`);
 
       await openTab(page, "Liked You");
+      await assertNoDocumentHorizontalOverflow(page, `${viewport.name} liked-you`);
       await openTab(page, "Messages");
+      await assertNoDocumentHorizontalOverflow(page, `${viewport.name} messages`);
       await openTab(page, "You");
+      await assertNoDocumentHorizontalOverflow(page, `${viewport.name} profile`);
       await openTab(page, "Discover");
+      await assertNoDocumentHorizontalOverflow(page, `${viewport.name} discover return`);
 
       await assertBottomNav(page);
       await assertNoCriticalNoise(noise);
