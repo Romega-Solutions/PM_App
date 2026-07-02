@@ -287,6 +287,59 @@ async function restoreProfilePhotos(snapshot) {
   }
 }
 
+async function snapshotMatchPreferences() {
+  const { supabase, user } = await createSignedInProofClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(
+      "interested_in, age_min, age_max, max_distance_km, looking_for_gender, age_preference_min, age_preference_max, distance_preference_km, relationship_goal, preferences_completed",
+    )
+    .eq("id", user.id)
+    .single();
+
+  if (error) {
+    throw new Error("Could not snapshot match preferences before smoke.");
+  }
+
+  return data || {};
+}
+
+async function restoreMatchPreferences(snapshot) {
+  const { supabase, user } = await createSignedInProofClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update(snapshot)
+    .eq("id", user.id);
+
+  if (error) {
+    throw new Error("Could not restore match preferences after smoke.");
+  }
+}
+
+async function setNamedRangeInput(page, name, value) {
+  const slider = page.getByRole("slider", { name });
+  await expect(slider).toBeVisible({ timeout: 15000 });
+  await slider.evaluate((element, nextValue) => {
+    const valueSetter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set;
+    valueSetter?.call(element, nextValue);
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+    element.dispatchEvent(new Event("change", { bubbles: true }));
+  }, String(value));
+}
+
+async function assertVisibleWithinViewport(page, locator, label) {
+  await expect(locator, label).toBeVisible({ timeout: 15000 });
+  const box = await locator.boundingBox();
+  expect(box, `${label} box`).not.toBeNull();
+  expect(box.x, `${label} left edge`).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width, `${label} right edge`).toBeLessThanOrEqual(
+    page.viewportSize().width,
+  );
+}
+
 async function ensureSyntheticOcrDocument() {
   if (fs.existsSync(OCR_VALID_DOCUMENT)) {
     return OCR_VALID_DOCUMENT;
@@ -1008,6 +1061,75 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
       emailUpdatesSwitch,
       "save_notification_preferences",
     );
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("mobile: authenticated match preference age controls save and restore", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+    const preferencesSnapshot = await snapshotMatchPreferences();
+
+    try {
+      await openProtectedRoute(page, "/profile-settings/preferences");
+      await expect(
+        page.getByText("Match Preferences", { exact: true }).first(),
+      ).toBeVisible({ timeout: 20000 });
+      await expect(page.getByText("Preference signals, not promises")).toBeVisible({
+        timeout: 15000,
+      });
+
+      await assertVisibleWithinViewport(
+        page,
+        page.getByRole("slider", { name: "Minimum age" }),
+        "minimum age slider",
+      );
+      await assertVisibleWithinViewport(
+        page,
+        page.getByRole("slider", { name: "Maximum age" }),
+        "maximum age slider",
+      );
+
+      await setNamedRangeInput(page, "Minimum age", 24);
+      await setNamedRangeInput(page, "Maximum age", 36);
+      await expect(page.getByText("24-36", { exact: true })).toBeVisible({
+        timeout: 15000,
+      });
+
+      await page.getByRole("radio", { name: /marriage/i }).click();
+      await assertVisibleWithinViewport(
+        page,
+        page.getByRole("button", { name: "Save preferences" }).last(),
+        "save preferences button",
+      );
+
+      const profileUpdatePromise = page.waitForResponse(
+        (response) =>
+          response.url().includes("/rest/v1/profiles") &&
+          response.request().method() === "PATCH",
+        { timeout: 15000 },
+      );
+      page.once("dialog", async (dialog) => {
+        expect(dialog.message()).toMatch(/Preferences updated successfully/i);
+        await dialog.accept();
+      });
+      await page.getByRole("button", { name: "Save preferences" }).last().click();
+
+      const response = await profileUpdatePromise;
+      expect(response.status(), "mobile preference profile update").toBeLessThan(
+        400,
+      );
+      await expect(page.getByText("Profile", { exact: true }).first()).toBeVisible({
+        timeout: 20000,
+      });
+    } finally {
+      await restoreMatchPreferences(preferencesSnapshot);
+    }
 
     await assertNoCriticalNoise(noise);
   });

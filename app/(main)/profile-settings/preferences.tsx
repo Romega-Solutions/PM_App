@@ -1,6 +1,6 @@
 import * as Haptics from "expo-haptics";
 import Slider from "@react-native-community/slider";
-import MultiSlider from "@ptomasroos/react-native-multi-slider";
+import AgeRangeSlider from "@/src/components/preferences/AgeRangeSlider";
 import { accountApi } from "@/src/features/account/api/accountApi";
 import {
   getDemoMatchPreferences,
@@ -26,7 +26,6 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -53,7 +52,6 @@ const RELATIONSHIP_GOALS = [
 export default function PreferencesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
   const isDemoMode = useAuthStore((state) => state.isDemoMode);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -64,7 +62,6 @@ export default function PreferencesScreen() {
   const [ageMax, setAgeMax] = useState("35");
   const [maxDistance, setMaxDistance] = useState("50");
   const [relationshipGoal, setRelationshipGoal] = useState("");
-  const controlWidth = Math.max(236, Math.min(width - 82, 416));
   const ageRangeValue = [
     Number.parseInt(ageMin, 10) || 18,
     Number.parseInt(ageMax, 10) || 35,
@@ -328,32 +325,16 @@ export default function PreferencesScreen() {
                 </Text>
               </View>
             </View>
-            <View
-              style={styles.sliderCard}
-              accessible
-              accessibilityLabel={`Age range from ${ageMin} to ${ageMax}`}
-            >
-              <MultiSlider
-                values={ageRangeValue}
-                min={18}
-                max={70}
-                step={1}
-                sliderLength={controlWidth}
-                onValuesChange={(values) => {
-                  setAgeMin(String(values[0]));
-                  setAgeMax(String(values[1]));
-                }}
-                selectedStyle={styles.selectedTrack}
-                unselectedStyle={styles.unselectedTrack}
-                markerStyle={styles.sliderMarker}
-                pressedMarkerStyle={styles.sliderMarkerPressed}
-                containerStyle={styles.multiSlider}
-              />
-              <View style={styles.rangeLabels}>
-                <Text style={styles.rangeLabel}>18</Text>
-                <Text style={styles.rangeLabel}>70+</Text>
-              </View>
-            </View>
+            <AgeRangeSlider
+              minAge={ageRangeValue[0]}
+              maxAge={ageRangeValue[1]}
+              min={18}
+              max={70}
+              onChange={(values) => {
+                setAgeMin(String(values[0]));
+                setAgeMax(String(values[1]));
+              }}
+            />
           </View>
 
           <View style={styles.controlGroup}>
