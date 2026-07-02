@@ -1286,6 +1286,110 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
     await assertNoCriticalNoise(noise);
   });
 
+  test("mobile: authenticated liked-you demo actions stay local", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const realWriteRequests = [];
+
+    page.on("request", (request) => {
+      if (
+        request.method() !== "GET" &&
+        /\/(?:rest\/v1\/(?:likes|matches|messages|conversations|safety_reports)|rpc\/(?:block_user|unmatch_user|submit_user_report|create_conversation|send_message))/.test(
+          request.url(),
+        )
+      ) {
+        realWriteRequests.push(`${request.method()} ${request.url()}`);
+      }
+    });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await openTab(page, "Liked You");
+    await expect(page.getByText("Before you message", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByText("Beta preview", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+
+    await page
+      .getByLabel("Match filters")
+      .getByText("Mutual", { exact: true })
+      .click();
+
+    const firstMessageButton = page.getByRole("button", { name: /^Message / }).first();
+    await assertVisibleWithinViewport(
+      page,
+      firstMessageButton,
+      "mobile liked-you message button",
+    );
+
+    const reportButton = page
+      .getByRole("button", { name: /^Report or block / })
+      .first();
+    await assertVisibleWithinViewport(
+      page,
+      reportButton,
+      "mobile liked-you report button",
+    );
+    await reportButton.click();
+    await expect(page.getByText("Report member", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await page
+      .getByRole("radio", {
+        name: "Scam, money request, or suspicious behavior",
+      })
+      .click();
+    await page
+      .getByLabel("Report details")
+      .fill("Mobile authenticated liked-you proof: suspicious off-app payment request.");
+    const sendReportButton = page.getByRole("button", {
+      name: "Send private report",
+    });
+    await sendReportButton.scrollIntoViewIfNeeded();
+    await assertVisibleWithinViewport(
+      page,
+      sendReportButton,
+      "mobile liked-you send report button",
+    );
+    await sendReportButton.click();
+    await expect(
+      page.getByText("Demo report and block recorded", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("No real report or block was sent.")).toBeVisible();
+    await page.getByRole("button", { name: "Close report form" }).click();
+
+    const unmatchButton = page
+      .getByRole("button", { name: /^Unmatch with / })
+      .first();
+    await assertVisibleWithinViewport(
+      page,
+      unmatchButton,
+      "mobile liked-you unmatch button",
+    );
+    await unmatchButton.click();
+    await expect(page.getByText("Beta preview action", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByText(/No real unmatch was sent/)).toBeVisible();
+
+    await firstMessageButton.click();
+    await expect(page.getByText(/Demo chat/).first()).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText("Demo chat replies and photos stay local on this device."),
+    ).toBeVisible({ timeout: 15000 });
+
+    await page.waitForTimeout(500);
+    expect(realWriteRequests, "real liked-you demo writes").toEqual([]);
+    await assertNoCriticalNoise(noise);
+  });
+
   test("laptop: privacy, preference, and notification settings save", async ({ page }) => {
     test.setTimeout(90000);
     await page.setViewportSize({ width: 1366, height: 900 });
