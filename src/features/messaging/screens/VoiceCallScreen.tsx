@@ -2,13 +2,16 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   Flag,
+  Mic,
   MicOff,
   PhoneOff,
   ShieldCheck,
   UserRound,
+  Volume,
+  VolumeX,
   X,
 } from "lucide-react-native";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Image,
   Pressable,
@@ -22,21 +25,88 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { makeStyles, useAppTheme } from "@/src/theme";
 
+const DEMO_CONNECT_DELAY_MS = 1400;
+const DEMO_TICK_MS = 1000;
+
+function formatCallDuration(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
 export default function VoiceCallScreen() {
   const theme = useAppTheme();
   const styles = useStyles();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { userName, userAvatar, userId } = useLocalSearchParams<{
+  const { userName, userAvatar, userId, isDemo, conversationId, isOnline } =
+    useLocalSearchParams<{
     userName: string;
     userAvatar: string;
     userId: string;
+    isDemo?: string;
+    conversationId?: string;
+    isOnline?: string;
   }>();
 
   const displayName = userName || "this match";
   const canOpenSafetyReport = Boolean(userId);
+  const isDemoCall = isDemo === "true";
+  const [isConnected, setIsConnected] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isSpeakerOn, setIsSpeakerOn] = useState(true);
+
+  useEffect(() => {
+    if (!isDemoCall) return;
+
+    let durationTimer: ReturnType<typeof setInterval> | undefined;
+
+    setIsConnected(false);
+    setElapsedSeconds(0);
+
+    const connectTimer = setTimeout(() => {
+      setIsConnected(true);
+      setElapsedSeconds(1);
+      durationTimer = setInterval(() => {
+        setElapsedSeconds((current) => current + 1);
+      }, DEMO_TICK_MS);
+    }, DEMO_CONNECT_DELAY_MS);
+
+    return () => {
+      clearTimeout(connectTimer);
+      if (durationTimer) clearInterval(durationTimer);
+    };
+  }, [isDemoCall]);
+
+  const callStatusText = isDemoCall
+    ? isConnected
+      ? "Connected"
+      : "Ringing"
+    : "Safety first";
+  const callTimeText = isDemoCall
+    ? isConnected
+      ? formatCallDuration(elapsedSeconds)
+      : "Connecting..."
+    : "No call started";
 
   const handleClose = () => {
+    if (isDemoCall && userId) {
+      router.replace({
+        pathname: "/chat",
+        params: {
+          userId,
+          userName: displayName,
+          userImage: userAvatar,
+          isOnline: isOnline ?? "true",
+          ...(conversationId ? { conversationId } : {}),
+          isDemo: "true",
+        },
+      });
+      return;
+    }
+
     router.back();
   };
 
@@ -48,7 +118,9 @@ export default function VoiceCallScreen() {
       params: {
         userId,
         userName: displayName,
+        ...(conversationId ? { conversationId } : {}),
         source: "chat",
+        ...(isDemo === "true" ? { isDemo: "true" } : {}),
       },
     });
   };
@@ -63,7 +135,9 @@ export default function VoiceCallScreen() {
 
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerCopy}>
-          <Text style={styles.eyebrow}>Voice call</Text>
+          <Text style={styles.eyebrow}>
+            {isDemoCall ? "Demo voice preview" : "Voice call"}
+          </Text>
           <Text style={styles.headerTitle} numberOfLines={1}>
             {displayName}
           </Text>
@@ -100,29 +174,87 @@ export default function VoiceCallScreen() {
             </View>
           )}
           <View style={styles.unavailableBadge}>
-            <MicOff size={26} color={theme.colors.neutral.white} />
+            {isDemoCall && !isMuted ? (
+              <Mic size={26} color={theme.colors.neutral.white} />
+            ) : (
+              <MicOff size={26} color={theme.colors.neutral.white} />
+            )}
           </View>
         </View>
 
         <View style={styles.statusCard}>
           <View style={styles.statusPill}>
             <ShieldCheck size={16} color={theme.colors.neutral.white} />
-            <Text style={styles.statusPillText}>Safety first</Text>
+            <Text style={styles.statusPillText}>
+              {callStatusText} - {callTimeText}
+            </Text>
           </View>
 
-          <Text style={styles.title}>Keep this chat in messages</Text>
-          <Text style={styles.description}>
-            This screen does not start voice calls. No call was started and no microphone permission was requested.
+          <Text style={styles.title}>
+            {isDemoCall ? "Voice preview" : "Keep this chat in messages"}
           </Text>
+          <Text style={styles.description}>
+            {isDemoCall
+              ? `Local voice preview with ${displayName}.`
+              : "This screen does not start voice calls. No call was started and no microphone permission was requested."}
+          </Text>
+
+          {isDemoCall ? (
+            <View style={styles.controlRow}>
+              <Pressable
+                onPress={() => setIsMuted((current) => !current)}
+                style={({ pressed }) => [
+                  styles.controlButton,
+                  isMuted && styles.controlButtonActive,
+                  pressed && styles.buttonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={isMuted ? "Unmute demo call" : "Mute demo call"}
+                accessibilityState={{ checked: isMuted }}
+              >
+                {isMuted ? (
+                  <MicOff size={20} color={theme.colors.neutral.white} />
+                ) : (
+                  <Mic size={20} color={theme.colors.neutral.white} />
+                )}
+                <Text style={styles.controlButtonText}>
+                  {isMuted ? "Muted" : "Mic on"}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setIsSpeakerOn((current) => !current)}
+                style={({ pressed }) => [
+                  styles.controlButton,
+                  isSpeakerOn && styles.controlButtonActive,
+                  pressed && styles.buttonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isSpeakerOn ? "Turn speaker off" : "Turn speaker on"
+                }
+                accessibilityState={{ checked: isSpeakerOn }}
+              >
+                {isSpeakerOn ? (
+                  <Volume size={20} color={theme.colors.neutral.white} />
+                ) : (
+                  <VolumeX size={20} color={theme.colors.neutral.white} />
+                )}
+                <Text style={styles.controlButtonText}>
+                  {isSpeakerOn ? "Speaker" : "Earpiece"}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
 
           <View style={styles.divider} />
 
           <View style={styles.noteRow}>
             <MicOff size={20} color="rgba(255,255,255,0.78)" />
             <Text style={styles.noteText}>
-              You are still in chat with {displayName}. Keep the conversation in
-              messages, and use report, block, or unmatch if anything feels
-              unsafe.
+              {isDemoCall
+                ? `You can preview the call entry point for ${displayName}. Ending returns to the seeded chat, and report or block remains demo-safe.`
+                : `You are still in chat with ${displayName}. Keep the conversation in messages, and use report, block, or unmatch if anything feels unsafe.`}
             </Text>
           </View>
         </View>
@@ -309,6 +441,33 @@ const useStyles = makeStyles((theme) => ({
     color: "rgba(255,255,255,0.78)",
     fontSize: 16,
     lineHeight: 24,
+  },
+  controlRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 20,
+  },
+  controlButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+  },
+  controlButtonActive: {
+    backgroundColor: "rgba(141, 105, 246, 0.24)",
+    borderColor: "rgba(141, 105, 246, 0.44)",
+  },
+  controlButtonText: {
+    color: theme.colors.neutral.white,
+    fontSize: 14,
+    fontWeight: "800",
   },
   divider: {
     height: 1,

@@ -1,6 +1,12 @@
 import { spawnSync } from "node:child_process";
 
-const npmCommand = "npm";
+const npmCommand = process.platform === "win32" ? "cmd.exe" : "npm";
+
+function getNpmArgs(args) {
+  if (process.platform !== "win32") return args;
+
+  return ["/d", "/s", "/c", ["npm", ...args].join(" ")];
+}
 
 const gates = [
   {
@@ -38,9 +44,8 @@ for (const gate of gates) {
   console.log("");
   console.log(`== ${gate.label} ==`);
 
-  const result = spawnSync(npmCommand, gate.args, {
+  const result = spawnSync(npmCommand, getNpmArgs(gate.args), {
     stdio: "inherit",
-    shell: true,
     env: process.env,
   });
 

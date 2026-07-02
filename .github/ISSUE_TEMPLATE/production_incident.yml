@@ -1,0 +1,50 @@
+name: Production incident
+description: Report an urgent production issue for PM_App.
+title: "incident(app): "
+labels:
+  - incident
+  - production
+body:
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Sev1 - unsafe, unavailable, or data exposure risk
+        - Sev2 - major user-facing path broken
+        - Sev3 - degraded experience or content issue
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is happening in production?
+    validations:
+      required: true
+  - type: input
+    id: started
+    attributes:
+      label: First observed
+      placeholder: "2026-06-25 04:30 UTC+8"
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: User impact
+      description: Who is affected and how?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Add screenshots, logs, device/build details, Supabase evidence, or monitoring output.
+    validations:
+      required: true
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Mitigation or rollback notes
+      description: Include any rollback target or temporary workaround.

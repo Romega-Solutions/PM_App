@@ -2,23 +2,25 @@
  * LikesScreen
  *
  * Main screen for displaying user matches in a grid layout.
- * Integrates with Supabase to fetch real match data.
+ * Integrates with Supabase to fetch real match data, with beta seed matches
+ * when live matches are unavailable.
  *
  * Features:
  * - Grid layout of match cards (2 columns)
  * - Filter between all matches and mutual matches
  * - Loading state while fetching data
- * - Empty state when no matches
+ * - Beta seed state when no matches are available
  * - Message and unmatch actions
  *
  * Architecture:
  * - Uses feature components for modularity
  * - Fetches data from matchingApi
- * - No mock data - 100% database-driven
+ * - Keeps seed-only actions local while preserving live match actions
  */
 
 import { supabase } from "@/src/config/supabase";
 import { getMatches } from "@/src/features/matching/api/matchingApi";
+import { getSeedConversationForProfileId } from "@/src/features/messaging/data/seedConversations";
 import { unmatchUser } from "@/src/features/safety/api/safetyApi";
 import { useRouter } from "expo-router";
 import { RefreshCw, ShieldCheck } from "lucide-react-native";
@@ -27,6 +29,7 @@ import {
   AccessibilityInfo,
   ActivityIndicator,
   Alert,
+  Animated,
   Platform,
   ScrollView,
   StatusBar,
@@ -39,8 +42,18 @@ import { EmptyMatchesState } from "../components/EmptyMatchesState";
 import { LikesFilter } from "../components/LikesFilter";
 import { LikesHeader } from "../components/LikesHeader";
 import { Match, MatchCard } from "../components/MatchCard";
+import {
+  getSeedProfilesInOrder,
+  isSeedProfileId,
+} from "../data/seedProfiles";
 import { useAppTheme } from "@/src/theme/ThemeContext";
 import { makeStyles } from "@/src/theme/makeStyles";
+import { useDemoMatchingStore } from "@/src/stores/demoMatchingStore";
+import { useAuthStore } from "@/src/stores/authStore";
+import {
+  isBetaDemoModeEnabled,
+  type DemoPreviewUserType,
+} from "@/src/features/auth/demoMode";
 
 function isMissingAuthSession(error: unknown) {
   return (
@@ -49,6 +62,33 @@ function isMissingAuthSession(error: unknown) {
     "name" in error &&
     error.name === "AuthSessionMissingError"
   );
+}
+
+function getSeedMatches(
+  hiddenProfileIds: string[],
+  passedProfileIds: string[],
+  demoUserType: DemoPreviewUserType,
+): Match[] {
+  return getSeedProfilesInOrder(demoUserType)
+    .filter(
+      (profile) =>
+        !hiddenProfileIds.includes(profile.id) &&
+        !passedProfileIds.includes(profile.id),
+    )
+    .map((profile, index) => ({
+      id: profile.id,
+      name: profile.name,
+      age: profile.age,
+      location: profile.location,
+      image: profile.image || undefined,
+      verified: false,
+      mutual: index % 3 !== 1,
+      gender: profile.userType === "foreigner" ? "male" : "female",
+      matchedAt: new Date(
+        Date.now() - (index + 1) * 36 * 60 * 60 * 1000,
+      ).toISOString(),
+      demo: true,
+    }));
 }
 
 export default function LikesScreen() {
@@ -60,10 +100,22 @@ export default function LikesScreen() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [usingSeedMatches, setUsingSeedMatches] = useState(false);
+  const [demoActionNotice, setDemoActionNotice] = useState<string | null>(null);
+  const demoActionOpacity = React.useRef(new Animated.Value(0)).current;
+  const demoUserType = useAuthStore((state) => state.demoUserType);
+  const hiddenSeedProfileIds = useDemoMatchingStore(
+    (state) => state.hiddenProfileIds || [],
+  );
+  const passedSeedProfileIds = useDemoMatchingStore(
+    (state) => state.passedProfileIds || [],
+  );
+  const hideSeedProfile = useDemoMatchingStore((state) => state.hideProfile);
 
   const fetchMatches = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
+    setUsingSeedMatches(false);
 
     try {
       const {
@@ -72,13 +124,24 @@ export default function LikesScreen() {
       } = await supabase.auth.getUser();
 
       if (userError || !user) {
-        if (userError && !isMissingAuthSession(userError)) {
+        if (
+          userError &&
+          !isMissingAuthSession(userError) &&
+          !isBetaDemoModeEnabled()
+        ) {
           console.error("Failed to fetch user.");
         }
-        const message = "Please sign in to view your matches.";
-        setLoadError(message);
-        AccessibilityInfo.announceForAccessibility(message);
-        setMatches([]);
+        setMatches(
+          getSeedMatches(
+            hiddenSeedProfileIds,
+            passedSeedProfileIds,
+            demoUserType,
+          ),
+        );
+        setUsingSeedMatches(true);
+        AccessibilityInfo.announceForAccessibility(
+          "Showing demo matches for beta preview.",
+        );
         return;
       }
 
@@ -88,11 +151,17 @@ export default function LikesScreen() {
 
       if (matchesError) {
         console.error("Failed to fetch matches.");
-        const message =
-          "We could not refresh your matches. Check your connection and try again.";
-        setLoadError(message);
-        AccessibilityInfo.announceForAccessibility(message);
-        setMatches([]);
+        setMatches(
+          getSeedMatches(
+            hiddenSeedProfileIds,
+            passedSeedProfileIds,
+            demoUserType,
+          ),
+        );
+        setUsingSeedMatches(true);
+        AccessibilityInfo.announceForAccessibility(
+          "Showing demo matches while live matches refresh.",
+        );
       } else if (dbMatches && dbMatches.length > 0) {
         const displayMatches: Match[] = dbMatches.map((match) => ({
           id: match.profile.id,
@@ -109,24 +178,85 @@ export default function LikesScreen() {
           matchedAt: match.matched_at,
         }));
         setMatches(displayMatches);
+        setUsingSeedMatches(false);
       } else {
-        setMatches([]);
+        setMatches(
+          getSeedMatches(
+            hiddenSeedProfileIds,
+            passedSeedProfileIds,
+            demoUserType,
+          ),
+        );
+        setUsingSeedMatches(true);
       }
     } catch {
       console.error("Failed to fetch data.");
-      const message =
-        "We could not refresh your matches. Check your connection and try again.";
-      setLoadError(message);
-      AccessibilityInfo.announceForAccessibility(message);
-      setMatches([]);
+      setMatches(
+        getSeedMatches(
+          hiddenSeedProfileIds,
+          passedSeedProfileIds,
+          demoUserType,
+        ),
+      );
+      setUsingSeedMatches(true);
+      AccessibilityInfo.announceForAccessibility(
+        "Showing demo matches while live matches refresh.",
+      );
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [demoUserType, hiddenSeedProfileIds, passedSeedProfileIds]);
 
   useEffect(() => {
     fetchMatches();
   }, [fetchMatches]);
+
+  useEffect(() => {
+    if (!usingSeedMatches) return;
+
+    setMatches(
+      getSeedMatches(hiddenSeedProfileIds, passedSeedProfileIds, demoUserType),
+    );
+  }, [
+    demoUserType,
+    hiddenSeedProfileIds,
+    passedSeedProfileIds,
+    usingSeedMatches,
+  ]);
+
+  useEffect(() => {
+    if (!demoActionNotice) {
+      demoActionOpacity.stopAnimation();
+      demoActionOpacity.setValue(0);
+      return;
+    }
+
+    demoActionOpacity.setValue(0);
+
+    const animation = Animated.sequence([
+      Animated.timing(demoActionOpacity, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+      Animated.delay(3000),
+      Animated.timing(demoActionOpacity, {
+        toValue: 0,
+        duration: 360,
+        useNativeDriver: true,
+      }),
+    ]);
+
+    animation.start(({ finished }) => {
+      if (finished) {
+        setDemoActionNotice(null);
+      }
+    });
+
+    return () => {
+      animation.stop();
+    };
+  }, [demoActionNotice, demoActionOpacity]);
 
   const filteredMatches =
     filter === "mutual" ? matches.filter((m) => m.mutual) : matches;
@@ -136,6 +266,31 @@ export default function LikesScreen() {
 
     if (!match) {
       Alert.alert("Could not open conversation", "This match could not be found.");
+      return;
+    }
+
+    if (isSeedProfileId(String(id))) {
+      const seedConversation = getSeedConversationForProfileId(
+        String(id),
+        undefined,
+        demoUserType,
+      );
+
+      if (!seedConversation) {
+        router.push("/(main)/messages");
+        return;
+      }
+
+      router.push({
+        pathname: "/chat",
+        params: {
+          userId: seedConversation.other_user.id,
+          userName: seedConversation.other_user.first_name,
+          isOnline: seedConversation.other_user.is_active ? "true" : "false",
+          conversationId: seedConversation.id,
+          isDemo: "true",
+        },
+      });
       return;
     }
 
@@ -174,6 +329,18 @@ export default function LikesScreen() {
     const match = matches.find((item) => item.id === id);
     const matchName = match?.name || "this member";
 
+    if (isSeedProfileId(String(id))) {
+      hideSeedProfile(String(id));
+      setMatches((current) => current.filter((item) => item.id !== id));
+      setDemoActionNotice(
+        `${matchName} was hidden from this beta preview. No real unmatch was sent.`,
+      );
+      AccessibilityInfo.announceForAccessibility(
+        `${matchName} was hidden from the beta preview. No real member action was sent.`,
+      );
+      return;
+    }
+
     Alert.alert(
       `Unmatch ${matchName}?`,
       "This removes the match from your list and closes the chat for you. If something unsafe happened, report first so support can review it.",
@@ -210,6 +377,7 @@ export default function LikesScreen() {
         userId: String(id),
         userName: match?.name || "this member",
         source: "likes",
+        isDemo: isSeedProfileId(String(id)) ? "true" : undefined,
       },
     });
   };
@@ -288,6 +456,20 @@ export default function LikesScreen() {
         </View>
       </View>
 
+      {usingSeedMatches && (
+        <View
+          style={styles.demoNotice}
+          accessible
+          accessibilityLabel="Demo matches are visible for beta preview. Real mutual matches will replace them when available."
+        >
+          <Text style={styles.demoNoticeTitle}>Beta preview</Text>
+          <Text style={styles.demoNoticeText}>
+            Demo matches and mutuals are visible now. Real matches replace these
+            automatically when Supabase returns live data.
+          </Text>
+        </View>
+      )}
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={{
@@ -303,6 +485,7 @@ export default function LikesScreen() {
               onMessage={() => handleMessage(match.id)}
               onUnmatch={() => handleUnmatch(match.id)}
               onReport={() => handleReport(match.id)}
+              onPress={() => handleMessage(match.id)}
             />
           ))}
         </View>
@@ -335,6 +518,33 @@ export default function LikesScreen() {
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      {demoActionNotice && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.demoActionSnackbar,
+            {
+              bottom: Math.max(insets.bottom + 86, 92),
+              opacity: demoActionOpacity,
+              transform: [
+                {
+                  translateY: demoActionOpacity.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [10, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+          accessible
+          accessibilityLiveRegion="polite"
+          accessibilityLabel={demoActionNotice}
+        >
+          <Text style={styles.demoActionSnackbarTitle}>Beta preview action</Text>
+          <Text style={styles.demoActionSnackbarText}>{demoActionNotice}</Text>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -440,5 +650,67 @@ const useStyles = makeStyles((theme) => ({
     fontFamily: "DMSans-Medium",
     color: "rgba(255, 255, 255, 0.72)",
   },
+  demoNotice: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: "rgba(141, 105, 246, 0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(141, 105, 246, 0.32)",
+  },
+  demoNoticeTitle: {
+    fontSize: 12,
+    fontFamily: "DMSans-Bold",
+    color: theme.colors.neutral.white,
+    letterSpacing: 0.2,
+    marginBottom: 4,
+  },
+  demoNoticeText: {
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: "DMSans-Medium",
+    color: "rgba(255, 255, 255, 0.74)",
+  },
+  demoActionSnackbar: {
+    position: "absolute",
+    left: 20,
+    right: 20,
+    zIndex: 20,
+    maxWidth: 520,
+    alignSelf: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: "rgba(15, 23, 42, 0.94)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.16)",
+    ...Platform.select({
+      web: {
+        boxShadow: "0 18px 42px rgba(0, 0, 0, 0.28)",
+      },
+      ios: {
+        shadowColor: theme.colors.neutral.black,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.24,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+  demoActionSnackbarTitle: {
+    fontSize: 12,
+    fontFamily: "DMSans-Bold",
+    color: theme.colors.neutral.white,
+    marginBottom: 3,
+  },
+  demoActionSnackbarText: {
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: "DMSans-Medium",
+    color: "rgba(255, 255, 255, 0.76)",
+  },
 }));
-// touch

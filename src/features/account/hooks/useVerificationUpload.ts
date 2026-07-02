@@ -1,4 +1,5 @@
 import { calculateAge, extractTextFromImage } from "@/src/services/ocrService";
+import { useIsDemoSession } from "@/src/features/auth/demoMode";
 import * as ImagePicker from "expo-image-picker";
 import { useCallback, useState } from "react";
 import { accountApi, VerificationData } from "../api/accountApi";
@@ -17,6 +18,23 @@ type VerificationFailureState = {
   error: string;
 };
 
+const OCR_FALLBACK_REVIEW_REASON =
+  "Document OCR unavailable during beta test; manual review required";
+const OCR_FALLBACK_REVIEW_MESSAGE =
+  "Document scan did not complete, so we submitted your selfie and ID for manual review.";
+const DEMO_SELFIE_URI = "pinaymate-demo://verification-selfie";
+const DEMO_DOCUMENT_URI = "pinaymate-demo://verification-document";
+
+export const getOcrFallbackVerificationPayload = (
+  selfieUri: string,
+  documentUri: string,
+): VerificationData => ({
+  selfieUri,
+  documentUri,
+  isVerified: false,
+  mismatchReasons: [OCR_FALLBACK_REVIEW_REASON],
+});
+
 export const getVerificationFailureState = (
   err: unknown,
 ): VerificationFailureState => ({
@@ -29,6 +47,7 @@ export const getVerificationFailureState = (
 });
 
 export const useVerificationUpload = () => {
+  const isDemoMode = useIsDemoSession();
   const [selfieUri, setSelfieUri] = useState<string>("");
   const [documentUri, setDocumentUri] = useState<string>("");
   const [selfieStatus, setSelfieStatus] =
@@ -39,6 +58,13 @@ export const useVerificationUpload = () => {
   const [error, setError] = useState<string>("");
 
   const takeSelfie = useCallback(async () => {
+    if (isDemoMode) {
+      setSelfieUri(DEMO_SELFIE_URI);
+      setSelfieStatus("captured");
+      setError("");
+      return;
+    }
+
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
       setError("Camera permission required");
@@ -53,11 +79,18 @@ export const useVerificationUpload = () => {
     setSelfieUri(res.assets[0].uri);
     setSelfieStatus("captured");
     setError("");
-  }, []);
+  }, [isDemoMode]);
 
   const uploadDocument = useCallback(async () => {
     if (!selfieUri) {
       setError("Take a verification selfie before uploading an ID document.");
+      return;
+    }
+
+    if (isDemoMode) {
+      setDocumentUri(DEMO_DOCUMENT_URI);
+      setDocumentStatus("submitted");
+      setError("");
       return;
     }
 
@@ -79,7 +112,17 @@ export const useVerificationUpload = () => {
 
     try {
       // 1) Extract text via OCR
-      const ocrResult = await extractTextFromImage(res.assets[0].uri);
+      let ocrResult: Awaited<ReturnType<typeof extractTextFromImage>>;
+      try {
+        ocrResult = await extractTextFromImage(res.assets[0].uri);
+      } catch {
+        await accountApi.saveVerification(
+          getOcrFallbackVerificationPayload(selfieUri, res.assets[0].uri),
+        );
+        setDocumentStatus("submitted");
+        setError(OCR_FALLBACK_REVIEW_MESSAGE);
+        return;
+      }
 
       // 2) Calculate age from birthdate
       const extractedAge = ocrResult.birthDate
@@ -112,15 +155,12 @@ export const useVerificationUpload = () => {
 
       await accountApi.saveVerification(verificationPayload);
 
-      if (comparison.match) {
-        setDocumentStatus("submitted");
-        setError("");
-      } else {
-        setDocumentStatus("submitted");
-        setError(
-          `Submitted for manual review. We found details that need a reviewer to check: ${comparison.reasons.join("; ")}`,
-        );
-      }
+      setDocumentStatus("submitted");
+      setError(
+        comparison.match
+          ? ""
+          : `Submitted for manual review. We found details that need a reviewer to check: ${comparison.reasons.join("; ")}`,
+      );
     } catch (err) {
       const failureState = getVerificationFailureState(err);
       setDocumentUri(failureState.documentUri);
@@ -129,7 +169,7 @@ export const useVerificationUpload = () => {
     } finally {
       setLoading(false);
     }
-  }, [selfieUri]);
+  }, [isDemoMode, selfieUri]);
 
   const isSubmittedForReview = documentStatus === "submitted";
 

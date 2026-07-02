@@ -20,6 +20,7 @@
 import { useProfile } from "@/src/features/profile/hooks/userProfile";
 import { useUpdateProfile } from "@/src/features/profile/hooks/useUpdateProfile";
 import { useUploadPhoto } from "@/src/features/profile/hooks/useUploadPhoto";
+import { useAuthStore } from "@/src/stores/authStore";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -32,21 +33,27 @@ import {
   View,
 } from "react-native";
 import { makeStyles } from "../../../theme/makeStyles";
-import { useAppTheme, AppTheme } from "../../../theme/ThemeContext";
+import { useAppTheme } from "../../../theme/ThemeContext";
 import { EditProfileHeader } from "../components/EditProfileHeader";
 import { ProfileEditForm } from "../components/ProfileEditForm";
 import { ProfilePhotoSection } from "../components/ProfilePhotoSection";
+import {
+  DEMO_PROFILE_PHOTO_URI,
+  getDemoProfileApiData,
+  saveDemoProfilePhotos,
+  saveDemoProfileUpdates,
+} from "../data/demoProfileStore";
 
 const BRAND_BG = "#0F0814";
-const ACCENT_PINK = "#EF3E78";
 
 export default function EditProfileScreen() {
   const styles = useStyles();
   const theme = useAppTheme();
   const router = useRouter();
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
 
   // Use custom hooks
-  const { profile, loading, refresh } = useProfile();
+  const { profile, loading, refresh } = useProfile(!isDemoMode);
   const { updateProfile, updating } = useUpdateProfile();
   const {
     pickAndUploadPhoto,
@@ -65,6 +72,21 @@ export default function EditProfileScreen() {
 
   // Load profile data into form
   useEffect(() => {
+    if (isDemoMode) {
+      const demoProfile = getDemoProfileApiData();
+
+      setFirstName(demoProfile.first_name || "");
+      setLastName(demoProfile.last_name || "");
+      setOccupation(demoProfile.occupation || "");
+      setEducation(demoProfile.education || "");
+      setLocation(demoProfile.location_name || "");
+
+      const photosArray = demoProfile.photos || [];
+      setAllPhotos(photosArray);
+      setProfileImage(photosArray.length > 0 ? photosArray[0] : null);
+      return;
+    }
+
     if (profile) {
       setFirstName(profile.first_name || "");
       setLastName(profile.last_name || "");
@@ -76,21 +98,62 @@ export default function EditProfileScreen() {
       setAllPhotos(photosArray);
       setProfileImage(photosArray.length > 0 ? photosArray[0] : null);
     }
-  }, [profile]);
+  }, [isDemoMode, profile]);
 
   const handleChangePhoto = async () => {
+    if (isDemoMode) {
+      const updatedPhotos = [
+        DEMO_PROFILE_PHOTO_URI,
+        ...allPhotos.filter((photo) => photo !== DEMO_PROFILE_PHOTO_URI),
+      ].slice(0, 6);
+
+      saveDemoProfilePhotos(updatedPhotos);
+      setProfileImage(DEMO_PROFILE_PHOTO_URI);
+      setAllPhotos(updatedPhotos);
+      Alert.alert(
+        "Success",
+        "Demo photo added locally. Live uploads still save to storage when demo mode is off.",
+      );
+      return;
+    }
+
     const result = await pickAndUploadPhoto(allPhotos);
 
     if (result.success && result.url) {
       setProfileImage(result.url);
       setAllPhotos([result.url, ...allPhotos]);
-      Alert.alert("Success", "Photo uploaded successfully!");
-      // Refresh profile to get updated data
-      refresh();
+      Alert.alert(
+        "Success",
+        isDemoMode
+          ? "Demo photo added locally. Live uploads still save to storage when demo mode is off."
+          : "Photo uploaded successfully!",
+      );
+
+      if (!isDemoMode) {
+        // Refresh profile to get updated data
+        refresh();
+      }
     }
   };
 
   const handleSave = async () => {
+    if (isDemoMode) {
+      saveDemoProfileUpdates({
+        first_name: firstName,
+        last_name: lastName,
+        occupation,
+        education,
+        location_name: location,
+      });
+
+      Alert.alert(
+        "Success",
+        "Demo profile changes saved locally for this preview.",
+      );
+      router.replace("/profile");
+      return;
+    }
+
     const success = await updateProfile({
       first_name: firstName,
       last_name: lastName,
@@ -100,15 +163,20 @@ export default function EditProfileScreen() {
     });
 
     if (success) {
-      Alert.alert("Success", "Profile updated successfully!");
-      router.back();
+      Alert.alert(
+        "Success",
+        isDemoMode
+          ? "Demo profile changes saved locally for this preview."
+          : "Profile updated successfully!",
+      );
+      router.replace("/profile");
     } else {
       Alert.alert("Error", "Failed to update profile");
     }
   };
 
   const handleBack = () => {
-    router.push("/(main)/profile");
+    router.replace("/profile");
   };
 
   if (loading) {

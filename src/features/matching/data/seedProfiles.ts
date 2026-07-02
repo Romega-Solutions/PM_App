@@ -1,20 +1,53 @@
 /**
- * Seed Profiles — AI Model Demo Data
+ * Seed Profiles - AI Model Demo Data
  *
- * Provides 20 demo Pinay profiles using the AI-generated model images
- * in assets/images/ai-models/. These are shown in the discovery feed
- * when no real database profiles are available, giving new users an
- * immediate premium feel.
+ * Provides coherent demo profiles using the organized AI model catalog.
+ * Each visual model folder maps to one seeded person with multiple poses,
+ * instead of presenting repeated generated faces as unrelated people.
  *
- * All seed profiles are clearly marked with isSeedProfile: true and
- * display a "Demo" badge. Swipe actions on seed profiles do NOT call
- * the backend.
+ * All seed profiles are clearly marked with isSeedProfile: true and display
+ * a demo badge. Swipe actions on seed profiles do not call the backend.
  */
 
 import { ProfileCardData } from "../components/ProfileCard";
+import type { DemoPreviewUserType } from "@/src/features/auth/demoMode";
+import {
+  getSeedAiModel,
+  getSeedAiModelGallery,
+  getSeedAiModelPose,
+  type SeedAiModelId,
+} from "./aiModelCatalog";
+
+type SeedProfileInput = Omit<
+  ProfileCardData,
+  | "image"
+  | "galleryImages"
+  | "modelFolder"
+  | "modelBiography"
+  | "modelPersonality"
+  | "isSeedProfile"
+> & {
+  modelId: SeedAiModelId;
+  primaryPoseId: string;
+};
+
+function buildSeedProfile(input: SeedProfileInput): ProfileCardData {
+  const model = getSeedAiModel(input.modelId);
+  const primaryPose = getSeedAiModelPose(input.modelId, input.primaryPoseId);
+
+  return {
+    ...input,
+    image: primaryPose.image,
+    galleryImages: getSeedAiModelGallery(input.modelId),
+    modelFolder: model.folder,
+    modelBiography: model.biography,
+    modelPersonality: model.personality,
+    isSeedProfile: true,
+  };
+}
 
 /**
- * Shuffle an array using Fisher-Yates algorithm
+ * Shuffle an array using Fisher-Yates algorithm.
  */
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -26,293 +59,273 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 const SEED_PROFILES: ProfileCardData[] = [
-  {
+  buildSeedProfile({
     id: "seed-01",
+    userType: "filipina",
+    modelId: "model-01-corporate",
+    primaryPoseId: "pose-01-office-window",
     name: "Maria",
-    age: 25,
+    age: 28,
     location: "Makati, Philippines",
     distance: "Demo profile",
-    image: require("@/assets/images/ai-models/ai1.webp"),
     verified: false,
-    interests: ["Travel", "Cooking", "Photography"],
-    bio: "Love exploring new places and trying local cuisines 🌏",
-    occupation: "Marketing Manager",
+    interests: ["Travel", "Coffee", "Design"],
+    bio: "Product strategist who likes slow coffee, honest plans, and weekend food trips. I am looking for something steady, respectful, and real.",
+    occupation: "Product Strategist",
     relationshipGoal: "long-term",
-    isSeedProfile: true,
-  },
-  {
+    languages: ["English", "Tagalog"],
+    education: "Business Management",
+    heightCm: 164,
+    bodyType: "Average",
+  }),
+  buildSeedProfile({
     id: "seed-02",
+    userType: "filipina",
+    modelId: "model-02-beach",
+    primaryPoseId: "pose-01-sunlit-shore",
     name: "Angela",
-    age: 23,
+    age: 25,
     location: "Cebu City, Philippines",
     distance: "Demo profile",
-    image: require("@/assets/images/ai-models/ai2.webp"),
     verified: false,
-    interests: ["Music", "Beach", "Yoga"],
-    bio: "Island girl at heart 🏝️ Love sunsets and good conversation",
-    occupation: "Graphic Designer",
+    interests: ["Beach", "Diving", "Photography"],
+    bio: "Coastal weekends keep me balanced. I like clear intentions, kind humor, and someone who can enjoy quiet sunsets without rushing.",
+    occupation: "Marine Tour Coordinator",
     relationshipGoal: "dating",
-    isSeedProfile: true,
-  },
-  {
+    languages: ["English", "Cebuano", "Tagalog"],
+    education: "Tourism Management",
+    heightCm: 160,
+    bodyType: "Athletic",
+  }),
+  buildSeedProfile({
     id: "seed-03",
-    name: "Jasmine",
-    age: 27,
-    location: "Davao City, Philippines",
-    distance: "Demo profile",
-    image: require("@/assets/images/ai-models/ai3.webp"),
-    verified: false,
-    interests: ["Reading", "Coffee", "Art"],
-    bio: "Coffee lover and bookworm ☕📚 Looking for deep connections",
-    occupation: "Software Engineer",
-    relationshipGoal: "long-term",
-    isSeedProfile: true,
-  },
-  {
-    id: "seed-04",
-    name: "Patricia",
-    age: 24,
-    location: "Quezon City, Philippines",
-    distance: "Demo profile",
-    image: require("@/assets/images/ai-models/ai4.webp"),
-    verified: false,
-    interests: ["Fitness", "Dancing", "Movies"],
-    bio: "Dance like nobody's watching 💃 Gym in the morning, salsa at night",
-    occupation: "Physical Therapist",
-    relationshipGoal: "dating",
-    isSeedProfile: true,
-  },
-  {
-    id: "seed-05",
-    name: "Isabelle",
-    age: 26,
-    location: "Taguig, Philippines",
-    distance: "Demo profile",
-    image: require("@/assets/images/ai-models/ai5.webp"),
-    verified: false,
-    interests: ["Fashion", "Travel", "Food"],
-    bio: "Fashion enthusiast with wanderlust ✈️ Let's explore together",
-    occupation: "Fashion Buyer",
-    relationshipGoal: "long-term",
-    isSeedProfile: true,
-  },
-  {
-    id: "seed-06",
-    name: "Camille",
-    age: 28,
-    location: "Pasig, Philippines",
-    distance: "Demo profile",
-    image: require("@/assets/images/ai-models/ai6.webp"),
-    verified: false,
-    interests: ["Hiking", "Photography", "Cooking"],
-    bio: "Weekend adventurer 🏔️ Love capturing moments and making memories",
-    occupation: "Architect",
-    relationshipGoal: "long-term",
-    isSeedProfile: true,
-  },
-  {
-    id: "seed-07",
-    name: "Denise",
-    age: 22,
-    location: "Manila, Philippines",
-    distance: "Demo profile",
-    image: require("@/assets/images/ai-models/ai7.webp"),
-    verified: false,
-    interests: ["K-pop", "Gaming", "Anime"],
-    bio: "Proud nerd 🎮 Love K-dramas and late-night gaming sessions",
-    occupation: "Content Creator",
-    relationshipGoal: "dating",
-    isSeedProfile: true,
-  },
-  {
-    id: "seed-08",
+    userType: "filipina",
+    modelId: "model-03-evening",
+    primaryPoseId: "pose-01-gray-gown",
     name: "Grace",
-    age: 29,
+    age: 30,
     location: "Iloilo City, Philippines",
     distance: "Demo profile",
-    image: require("@/assets/images/ai-models/ai8.webp"),
     verified: false,
-    interests: ["Volunteering", "Teaching", "Music"],
-    bio: "Passionate about education and making a difference 🌟",
-    occupation: "University Lecturer",
-    relationshipGoal: "marriage",
-    isSeedProfile: true,
-  },
-  {
-    id: "seed-09",
-    name: "Bianca",
-    age: 25,
-    location: "Baguio, Philippines",
-    distance: "Demo profile",
-    image: require("@/assets/images/ai-models/ai9.webp"),
-    verified: false,
-    interests: ["Art", "Coffee", "Nature"],
-    bio: "Mountain girl living in the City of Pines 🌲☕",
-    occupation: "Fine Arts Teacher",
+    interests: ["Volunteering", "Music", "Dinner"],
+    bio: "I care about thoughtful conversations and people who follow through. A calm dinner and sincere questions mean more than grand gestures.",
+    occupation: "Community Program Lead",
     relationshipGoal: "long-term",
-    isSeedProfile: true,
-  },
-  {
-    id: "seed-10",
-    name: "Althea",
-    age: 26,
-    location: "Makati, Philippines",
-    distance: "Demo profile",
-    image: require("@/assets/images/ai-models/ai10.webp"),
-    verified: false,
-    interests: ["Fitness", "Wellness", "Travel"],
-    bio: "Wellness advocate and gym regular 💪 Seeking a healthy lifestyle partner",
-    occupation: "Nutritionist",
-    relationshipGoal: "long-term",
-    isSeedProfile: true,
-  },
-  {
-    id: "seed-11",
-    name: "Nicole",
-    age: 24,
-    location: "Cebu City, Philippines",
-    distance: "Demo profile",
-    image: require("@/assets/images/ai-models/ai11.webp"),
-    verified: false,
-    interests: ["Diving", "Beach", "Photography"],
-    bio: "Free diver and ocean lover 🌊 Happiest underwater",
-    occupation: "Marine Biologist",
-    relationshipGoal: "dating",
-    isSeedProfile: true,
-  },
-  {
-    id: "seed-12",
+    languages: ["English", "Tagalog", "Hiligaynon"],
+    education: "Public Administration",
+    heightCm: 166,
+    bodyType: "Curvy",
+  }),
+  buildSeedProfile({
+    id: "seed-04",
+    userType: "filipina",
+    modelId: "model-04-business",
+    primaryPoseId: "pose-01-blue-suit-interior",
     name: "Samantha",
-    age: 30,
+    age: 31,
     location: "Bonifacio Global City, Philippines",
     distance: "Demo profile",
-    image: require("@/assets/images/ai-models/ai12.webp"),
     verified: false,
-    interests: ["Business", "Wine", "Travel"],
-    bio: "Entrepreneur by day, foodie by night 🍷 Love meaningful conversations",
+    interests: ["Business", "Food", "Travel"],
+    bio: "Entrepreneur by day and home-cook by night. I respect ambition, but I value emotional maturity and consistency even more.",
     occupation: "Business Owner",
     relationshipGoal: "marriage",
-    isSeedProfile: true,
-  },
-  {
-    id: "seed-13",
+    languages: ["English", "Tagalog"],
+    education: "Entrepreneurship",
+    heightCm: 165,
+    bodyType: "Average",
+  }),
+  buildSeedProfile({
+    id: "seed-05",
+    userType: "filipina",
+    modelId: "model-05-creative",
+    primaryPoseId: "pose-01-office-tablet",
     name: "Kyla",
-    age: 23,
+    age: 24,
     location: "Mandaluyong, Philippines",
     distance: "Demo profile",
-    image: require("@/assets/images/ai-models/ai13.webp"),
     verified: false,
-    interests: ["Singing", "Piano", "Movies"],
-    bio: "Music is my love language 🎵 Always humming a tune",
+    interests: ["Music", "Books", "Art"],
+    bio: "Voice teacher, playlist maker, and weekend reader. I like conversations that start light and slowly become meaningful.",
     occupation: "Voice Teacher",
     relationshipGoal: "dating",
-    isSeedProfile: true,
-  },
-  {
-    id: "seed-14",
+    languages: ["English", "Tagalog"],
+    education: "Music Education",
+    heightCm: 158,
+    bodyType: "Petite",
+  }),
+  buildSeedProfile({
+    id: "seed-06",
+    userType: "filipina",
+    modelId: "model-06-garden",
+    primaryPoseId: "pose-01-garden-dress",
     name: "Francesca",
     age: 27,
     location: "Pasay, Philippines",
     distance: "Demo profile",
-    image: require("@/assets/images/ai-models/ai14.webp"),
     verified: false,
-    interests: ["Aviation", "Travel", "Languages"],
-    bio: "Flight attendant exploring the world one city at a time ✈️",
+    interests: ["Travel", "Languages", "Wellness"],
+    bio: "Flight attendant who still loves slow mornings at home. I appreciate patience, curiosity, and someone who respects boundaries.",
     occupation: "Flight Attendant",
     relationshipGoal: "long-term",
-    isSeedProfile: true,
-  },
-  {
-    id: "seed-15",
+    languages: ["English", "Tagalog", "Spanish"],
+    education: "Hospitality Management",
+    heightCm: 167,
+    bodyType: "Slim",
+  }),
+  buildSeedProfile({
+    id: "seed-07",
+    userType: "filipina",
+    modelId: "model-07-urban",
+    primaryPoseId: "pose-01-street-casual",
     name: "Leah",
-    age: 31,
+    age: 32,
     location: "Davao City, Philippines",
     distance: "Demo profile",
-    image: require("@/assets/images/ai-models/ai15.webp"),
     verified: false,
-    interests: ["Gardening", "Cooking", "Family"],
-    bio: "Simple living, high thinking 🌻 Family-oriented and proud of it",
+    interests: ["Family", "Cooking", "Gardening"],
+    bio: "Simple routines make me happiest: cooking for people I love, caring for plants, and making space for honest connection.",
     occupation: "Registered Nurse",
     relationshipGoal: "marriage",
-    isSeedProfile: true,
-  },
-  {
-    id: "seed-16",
-    name: "Rica",
-    age: 24,
-    location: "Makati, Philippines",
-    distance: "Demo profile",
-    image: require("@/assets/images/ai-models/girl1.webp"),
-    verified: false,
-    interests: ["Fashion", "Dancing", "Socializing"],
-    bio: "Life is too short for boring outfits 👗 Let's make memories!",
-    occupation: "Events Coordinator",
-    relationshipGoal: "dating",
-    isSeedProfile: true,
-  },
-  {
-    id: "seed-17",
-    name: "Chesca",
-    age: 26,
-    location: "Quezon City, Philippines",
-    distance: "Demo profile",
-    image: require("@/assets/images/ai-models/girl2.webp"),
-    verified: false,
-    interests: ["Film", "Writing", "Coffee"],
-    bio: "Aspiring filmmaker and storyteller 🎬 Every person has a story",
-    occupation: "Film Producer",
-    relationshipGoal: "long-term",
-    isSeedProfile: true,
-  },
-  {
-    id: "seed-18",
-    name: "Ella",
-    age: 25,
-    location: "San Juan, Philippines",
-    distance: "Demo profile",
-    image: require("@/assets/images/ai-models/girl3.webp"),
-    verified: false,
-    interests: ["Baking", "Dogs", "Running"],
-    bio: "Dog mom and pastry baker 🐕🧁 Mornings start with a run and end with cake",
-    occupation: "Pastry Chef",
-    relationshipGoal: "long-term",
-    isSeedProfile: true,
-  },
-  {
-    id: "seed-19",
+    languages: ["English", "Tagalog", "Bisaya"],
+    education: "Nursing",
+    heightCm: 162,
+    bodyType: "Average",
+  }),
+  buildSeedProfile({
+    id: "seed-08",
+    userType: "filipina",
+    modelId: "model-08-red-hair",
+    primaryPoseId: "pose-04-pink-studio",
     name: "Trisha",
     age: 28,
     location: "Cebu City, Philippines",
     distance: "Demo profile",
-    image: require("@/assets/images/ai-models/girl4.webp"),
     verified: false,
     interests: ["Tech", "Gaming", "Cats"],
-    bio: "Cat lady and code wizard 🐱💻 Building apps by day, gaming by night",
+    bio: "Full-stack developer, cat person, and late-night co-op teammate. I like playful banter, direct communication, and steady effort.",
     occupation: "Full-Stack Developer",
     relationshipGoal: "long-term",
+    languages: ["English", "Cebuano", "Tagalog"],
+    education: "Computer Science",
+    heightCm: 163,
+    bodyType: "Average",
+  }),
+  {
+    id: "seed-foreigner-01",
+    name: "Daniel",
+    age: 34,
+    userType: "foreigner",
+    location: "Austin, United States",
+    distance: "Demo profile",
+    image: {
+      uri: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=900&q=80",
+    },
+    galleryImages: [],
+    verified: false,
+    interests: ["Coffee", "Travel", "Family"],
+    bio: "Product manager who likes direct communication, slow travel, and plans that leave room for real life. Looking for a steady connection built on respect.",
+    occupation: "Product Manager",
+    relationshipGoal: "long-term",
+    languages: ["English"],
+    education: "Information Systems",
+    heightCm: 180,
+    bodyType: "Average",
     isSeedProfile: true,
   },
   {
-    id: "seed-20",
-    name: "Ava",
-    age: 23,
-    location: "Taguig, Philippines",
+    id: "seed-foreigner-02",
+    name: "James",
+    age: 39,
+    userType: "foreigner",
+    location: "Vancouver, Canada",
     distance: "Demo profile",
-    image: require("@/assets/images/ai-models/girl5.webp"),
+    image: {
+      uri: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=900&q=80",
+    },
+    galleryImages: [],
     verified: false,
-    interests: ["Modeling", "Skincare", "Yoga"],
-    bio: "Aspiring model with a skincare obsession ✨ Inner and outer glow",
-    occupation: "Brand Ambassador",
+    interests: ["Cooking", "Hiking", "Books"],
+    bio: "Quiet weekends, good food, and thoughtful conversations matter to me. I value patience, consistency, and someone who enjoys building trust slowly.",
+    occupation: "Civil Engineer",
+    relationshipGoal: "marriage",
+    languages: ["English", "French"],
+    education: "Civil Engineering",
+    heightCm: 183,
+    bodyType: "Athletic",
+    isSeedProfile: true,
+  },
+  {
+    id: "seed-foreigner-03",
+    name: "Michael",
+    age: 31,
+    userType: "foreigner",
+    location: "Sydney, Australia",
+    distance: "Demo profile",
+    image: {
+      uri: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=900&q=80",
+    },
+    galleryImages: [],
+    verified: false,
+    interests: ["Fitness", "Music", "Beach"],
+    bio: "Active, family-oriented, and usually planning the next meal after a beach walk. I appreciate kindness, humor, and clear expectations.",
+    occupation: "Physiotherapist",
     relationshipGoal: "dating",
+    languages: ["English"],
+    education: "Health Sciences",
+    heightCm: 178,
+    bodyType: "Athletic",
+    isSeedProfile: true,
+  },
+  {
+    id: "seed-foreigner-04",
+    name: "Thomas",
+    age: 42,
+    userType: "foreigner",
+    location: "London, United Kingdom",
+    distance: "Demo profile",
+    image: {
+      uri: "https://images.unsplash.com/photo-1530268729831-4b0b9e170218?auto=format&fit=crop&w=900&q=80",
+    },
+    galleryImages: [],
+    verified: false,
+    interests: ["History", "Dinner", "Gardens"],
+    bio: "I like calm routines, curious people, and honest conversations about what both sides want. Serious intentions, but no pressure games.",
+    occupation: "University Lecturer",
+    relationshipGoal: "long-term",
+    languages: ["English"],
+    education: "History",
+    heightCm: 181,
+    bodyType: "Average",
     isSeedProfile: true,
   },
 ];
 
+function getVisibleSeedUserType(demoUserType: DemoPreviewUserType) {
+  return demoUserType === "filipina" ? "foreigner" : "filipina";
+}
+
 /**
  * Returns a shuffled copy of the seed profiles for variety on each load.
  */
-export function getSeedProfiles(): ProfileCardData[] {
-  return shuffleArray(SEED_PROFILES);
+export function getSeedProfiles(
+  demoUserType: DemoPreviewUserType = "foreigner",
+): ProfileCardData[] {
+  const visibleUserType = getVisibleSeedUserType(demoUserType);
+  return shuffleArray(
+    SEED_PROFILES.filter((profile) => profile.userType === visibleUserType),
+  );
+}
+
+/**
+ * Returns the seed profiles in a stable order for beta scaffold surfaces
+ * that need consistent matches, mutuals, and messages.
+ */
+export function getSeedProfilesInOrder(
+  demoUserType: DemoPreviewUserType = "foreigner",
+): ProfileCardData[] {
+  const visibleUserType = getVisibleSeedUserType(demoUserType);
+  return SEED_PROFILES.filter((profile) => profile.userType === visibleUserType);
 }
 
 /**

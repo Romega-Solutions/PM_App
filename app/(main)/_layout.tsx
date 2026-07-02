@@ -21,8 +21,10 @@ const TAB_BORDER = "rgba(255, 255, 255, 0.1)";
 const ACTIVE_TAB_SURFACE = "rgba(239, 62, 120, 0.18)";
 
 // Platform-specific constants
-const TAB_BAR_HEIGHT = Platform.OS === "ios" ? 86 : 72;
-const TAB_PADDING_TOP = Platform.OS === "ios" ? 10 : 8;
+const TAB_BAR_HEIGHT =
+  Platform.OS === "web" ? 92 : Platform.OS === "ios" ? 86 : 72;
+const TAB_PADDING_TOP =
+  Platform.OS === "web" ? 12 : Platform.OS === "ios" ? 10 : 8;
 const ICON_SIZE = 23;
 const LABEL_FONT_SIZE = 11;
 const FOCUSED_CONTAINER_WIDTH = 58;
@@ -62,7 +64,7 @@ const TabIconContainer: React.FC<TabIconProps> = ({
 );
 
 export default function MainLayout() {
-  const { isAuthenticated, isLoading } = useRequireAuth();
+  const { isAuthenticated, isDemoMode, isLoading } = useRequireAuth();
   const insets = useSafeAreaInsets();
 
   if (isLoading) {
@@ -79,9 +81,13 @@ export default function MainLayout() {
           color={ACCENT_PINK}
           accessibilityLabel="Checking session"
         />
-        <Text style={styles.authGateTitle}>Getting PinayMate ready</Text>
+        <Text style={styles.authGateTitle}>
+          {isDemoMode ? "Opening beta preview" : "Getting PinayMate ready"}
+        </Text>
         <Text style={styles.authGateText}>
-          Checking your secure session before opening the app.
+          {isDemoMode
+            ? "Seeded demo data is used for preview surfaces. No real account writes happen here."
+            : "Checking your secure session before opening the app."}
         </Text>
       </View>
     );
@@ -99,7 +105,10 @@ export default function MainLayout() {
           styles.tabBar,
           {
             height: TAB_BAR_HEIGHT + Math.max(insets.bottom, 10),
-            paddingBottom: Math.max(insets.bottom, 12),
+            paddingBottom:
+              Platform.OS === "web"
+                ? Math.max(insets.bottom, 18)
+                : Math.max(insets.bottom, 12),
           },
         ],
         tabBarActiveTintColor: ACCENT_PINK,
@@ -283,15 +292,18 @@ const styles = StyleSheet.create({
   },
   tabBarLabel: {
     fontSize: LABEL_FONT_SIZE,
+    lineHeight: 14,
     fontFamily: "DMSans-SemiBold",
     fontWeight: "600",
-    marginTop: 5,
+    marginTop: Platform.OS === "web" ? 3 : 5,
+    marginBottom: Platform.OS === "web" ? 2 : 0,
     letterSpacing: 0,
     textTransform: "capitalize",
   },
   tabBarItem: {
-    minHeight: 56,
-    paddingVertical: 4,
+    minHeight: Platform.OS === "web" ? 66 : 56,
+    paddingTop: 4,
+    paddingBottom: Platform.OS === "web" ? 8 : 4,
     gap: 3,
   },
   iconContainer: {

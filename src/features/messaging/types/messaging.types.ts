@@ -7,6 +7,10 @@
  * @module features/messaging/types
  */
 
+import type { ImageSourcePropType } from "react-native";
+
+export type ConversationPhotoSource = string | ImageSourcePropType;
+
 /**
  * Message type - what kind of message it is
  */
@@ -81,6 +85,7 @@ export interface ConversationWithUser extends Conversation {
     id: string;
     first_name: string;
     photos: string[];
+    demoPhotoSource?: ImageSourcePropType;
     is_active: boolean;
     last_active_at?: string;
   };

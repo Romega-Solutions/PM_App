@@ -162,10 +162,12 @@ export function useAuthPersistence() {
  * ```
  */
 export function useRequireAuth() {
-  const { isAuthenticated, isLoading, isInitialized } = useAuthStore();
+  const { isAuthenticated, isDemoMode, isLoading, isInitialized } =
+    useAuthStore();
 
   return {
-    isAuthenticated,
+    isAuthenticated: isAuthenticated || isDemoMode,
+    isDemoMode,
     isLoading: isLoading || !isInitialized,
   };
 }

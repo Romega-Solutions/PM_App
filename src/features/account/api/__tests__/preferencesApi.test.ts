@@ -24,7 +24,7 @@ describe("preferencesApi", () => {
     jest.clearAllMocks();
   });
 
-  it("saves preferences to the canonical discovery columns and legacy compatibility columns", async () => {
+  function mockSignedInUpdate() {
     (supabase.auth.getUser as jest.Mock).mockResolvedValue({
       data: { user: { id: "user-123" } },
       error: null,
@@ -33,11 +33,17 @@ describe("preferencesApi", () => {
     query.eq.mockResolvedValue({ error: null });
     (supabase.from as jest.Mock).mockReturnValue(query);
 
+    return query;
+  }
+
+  it("saves preferences to the canonical discovery columns and legacy compatibility columns", async () => {
+    const query = mockSignedInUpdate();
+
     await savePreferences({
       ageMin: 24,
       ageMax: 36,
       maxDistanceKm: 80,
-      relationshipGoal: "serious_relationship",
+      relationshipGoal: "long-term",
       userType: "foreigner",
     });
 
@@ -51,20 +57,14 @@ describe("preferencesApi", () => {
       age_preference_min: 24,
       age_preference_max: 36,
       distance_preference_km: 80,
-      relationship_goal: "serious_relationship",
+      relationship_goal: "long-term",
       preferences_completed: true,
     });
     expect(query.eq).toHaveBeenCalledWith("id", "user-123");
   });
 
   it("normalizes numeric preferences and relationship goal before saving", async () => {
-    (supabase.auth.getUser as jest.Mock).mockResolvedValue({
-      data: { user: { id: "user-123" } },
-      error: null,
-    });
-    const query = createQueryMock({ data: null, error: null });
-    query.eq.mockResolvedValue({ error: null });
-    (supabase.from as jest.Mock).mockReturnValue(query);
+    const query = mockSignedInUpdate();
 
     await savePreferences({
       ageMin: 24.8,
@@ -82,6 +82,32 @@ describe("preferencesApi", () => {
         age_preference_max: 36,
         distance_preference_km: 80,
         relationship_goal: "marriage",
+      }),
+    );
+  });
+
+  it.each([
+    ["Long-term relationship", "long-term"],
+    ["serious relationship", "long-term"],
+    ["long term", "long-term"],
+    ["casual dating", "dating"],
+    ["still deciding", "dating"],
+    ["friendship first", "friendship"],
+    ["Marriage", "marriage"],
+  ])("accepts UI relationship label %s as %s", async (label, canonical) => {
+    const query = mockSignedInUpdate();
+
+    await savePreferences({
+      ageMin: 24,
+      ageMax: 36,
+      maxDistanceKm: 80,
+      relationshipGoal: label,
+      userType: "foreigner",
+    });
+
+    expect(query.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        relationship_goal: canonical,
       }),
     );
   });

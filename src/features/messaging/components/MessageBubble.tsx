@@ -1,6 +1,15 @@
 import React from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
-import type { Message as MessageType } from "@/src/features/messaging/types/messaging.types";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  type ImageSourcePropType,
+} from "react-native";
+import type {
+  ConversationPhotoSource,
+  Message as MessageType,
+} from "@/src/features/messaging/types/messaging.types";
 import { Check, CheckCheck, AlertCircle, ShieldAlert, Reply } from "lucide-react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, { 
@@ -26,7 +35,7 @@ export interface MessageBubbleProps {
   message: MessageType;
   currentUserId: string;
   userName: string;
-  userImage?: string | null;
+  userImage?: ConversationPhotoSource | null;
   onSwipeToReply?: (message: MessageType) => void;
 }
 
@@ -60,6 +69,7 @@ const renderMessageStatus = (status: MessageType["status"]) => {
 export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message, currentUserId, userName, userImage, onSwipeToReply }) => {
   const isMyMessage = message.sender_id === currentUserId;
   const showAvatar = !isMyMessage;
+  const userImageSource = normalizeImageSource(userImage);
   const messageAuthor = isMyMessage ? "You" : userName;
   const messageContent = message.type === "image" ? "Photo message" : message.text;
   const messageStatus = isMyMessage && message.status ? `, ${message.status}` : "";
@@ -71,7 +81,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
   React.useEffect(() => {
     opacityAnim.value = withTiming(1, { duration: 200 });
     slideAnim.value = withSpring(0, { damping: 15, stiffness: 150 });
-  }, []);
+  }, [opacityAnim, slideAnim]);
 
   // Gesture state
   const translateX = useSharedValue(0);
@@ -155,9 +165,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
           ]}
         >
           {showAvatar &&
-            (userImage && userImage.startsWith("http") ? (
+            (userImageSource ? (
               <Image
-                source={{ uri: userImage }}
+                source={userImageSource}
                 style={styles.messageAvatar}
                 accessibilityLabel={`${userName} profile photo`}
               />
@@ -223,6 +233,17 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
     </View>
   );
 });
+
+function normalizeImageSource(
+  source?: ConversationPhotoSource | null,
+): ImageSourcePropType | null {
+  if (!source) return null;
+  if (typeof source === "string") {
+    const uri = source.trim();
+    return uri ? { uri } : null;
+  }
+  return source;
+}
 
 MessageBubble.displayName = "MessageBubble";
 

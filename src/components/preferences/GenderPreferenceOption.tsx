@@ -1,5 +1,5 @@
 import React from "react";
-import { TouchableOpacity, View, Text, StyleSheet, Platform } from "react-native";
+import { TouchableOpacity, View, Text, Platform } from "react-native";
 import { Users } from "lucide-react-native";
 import { useAppTheme, makeStyles } from "@/src/theme";
 

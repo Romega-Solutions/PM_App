@@ -42,6 +42,7 @@ export default function AccountProfilePhotosScreen() {
     loading,
     loadingInitial,
     pickFromGallery,
+    takePhoto,
     uploadPhoto,
     removePhoto,
   } = useProfilePhotos();
@@ -58,8 +59,26 @@ export default function AccountProfilePhotosScreen() {
     if (uri) await uploadPhoto(uri);
   }, [pickFromGallery, uploadPhoto]);
 
+  const onTakePhoto = useCallback(async () => {
+    const uri = await takePhoto();
+    if (uri) await uploadPhoto(uri);
+  }, [takePhoto, uploadPhoto]);
+
   const onRemove = useCallback(
     async (uri: string) => {
+      if (Platform.OS === "web") {
+        const shouldRemove =
+          typeof window === "undefined" ||
+          window.confirm(
+            "Remove this photo from your profile setup?",
+          );
+
+        if (shouldRemove) {
+          void removePhoto(uri);
+        }
+        return;
+      }
+
       Alert.alert(
         "Remove this photo?",
         "This removes the photo from your profile setup. If it was already visible, it may no longer appear to future matches after the change is saved.",
@@ -155,12 +174,13 @@ export default function AccountProfilePhotosScreen() {
         <PhotoPicker
           photos={photos}
           onAdd={onAdd}
+          onTakePhoto={onTakePhoto}
           onRemove={onRemove}
           canAdd={!loading && photos.length < 6}
         />
 
         <Text style={styles.helper}>
-          Tap a photo to replace it, or use the Add button to upload more
+          Use Library or Camera to add photos. Use the X button to remove a photo.
         </Text>
 
         {photos.length > 0 ? (

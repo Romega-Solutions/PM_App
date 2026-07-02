@@ -1,0 +1,1896 @@
+const { test, expect } = require("@playwright/test");
+const fs = require("node:fs");
+const path = require("node:path");
+const { createClient } = require("@supabase/supabase-js");
+const sharp = require("sharp");
+
+const BASE_URL = process.env.PM_APP_BETA_URL || "https://beta.pinaymate.com";
+const EMAIL = process.env.PM_WEB_MVP_EMAIL || process.env.OCR_PROOF_EMAIL;
+const PASSWORD =
+  process.env.PM_WEB_MVP_PASSWORD || process.env.OCR_PROOF_PASSWORD;
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY =
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.SUPABASE_PUBLISHABLE_KEY;
+const PROFILE_PHOTO_FIXTURE = path.join(
+  __dirname,
+  "..",
+  "assets",
+  "images",
+  "icon.png",
+);
+const MVP_PROOF_PHOTO_COUNT = 3;
+const MVP_PROOF_PHOTO_IDS = [
+  "11111111-1111-4111-8111-111111111111",
+  "22222222-2222-4222-8222-222222222222",
+  "33333333-3333-4333-8333-333333333333",
+];
+const PROFILE_PHOTO_PATH_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/[0-9]+-[a-z0-9-]+\.(?:jpg|png|webp|heic)$/i;
+const OCR_PROOF_DIR = path.join(__dirname, "..", "codex-tmp", "ocr-proof");
+const OCR_VALID_DOCUMENT = path.join(OCR_PROOF_DIR, "synthetic-valid-document.png");
+
+function collectPageNoise(page) {
+  const consoleErrors = [];
+  const pageErrors = [];
+  const failedRequests = [];
+  const badResponses = [];
+
+  page.on("console", (message) => {
+    if (message.type() === "error") {
+      consoleErrors.push(message.text());
+    }
+  });
+
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+
+  page.on("requestfailed", (request) => {
+    const url = request.url();
+    const failureText = request.failure()?.errorText || "";
+    const isNavigationAbort = failureText.includes("ERR_ABORTED");
+
+    if (
+      !isNavigationAbort &&
+      !(
+        failureText.includes("ERR_BLOCKED_BY_ORB") &&
+        url.includes("/storage/v1/object/public/profile-photos/")
+      ) &&
+      !url.includes("favicon") &&
+      !url.includes("analytics")
+    ) {
+      failedRequests.push(`${request.method()} ${url} ${failureText}`);
+    }
+  });
+
+  page.on("response", (response) => {
+    const status = response.status();
+    const url = response.url();
+
+    if (
+      status >= 400 &&
+      !url.includes("favicon") &&
+      !url.includes("analytics")
+    ) {
+      badResponses.push(`${status} ${url}`);
+    }
+  });
+
+  return { consoleErrors, pageErrors, failedRequests, badResponses };
+}
+
+async function assertNoCriticalNoise(noise) {
+  expect(noise.pageErrors, "page errors").toEqual([]);
+  expect(noise.failedRequests, "failed requests").toEqual([]);
+  expect(
+    noise.badResponses.filter(
+      (item) => !(item.startsWith("429 ") && item.includes("/ocr")),
+    ),
+    "bad responses",
+  ).toEqual([]);
+  expect(
+    noise.consoleErrors.filter(
+      (item) =>
+        !item.includes("AdUnit") &&
+        !item.includes("status of 429") &&
+        !(
+          item.includes("TypeError: Failed to fetch") &&
+          item.includes("_getUser")
+        ),
+    ),
+    "console errors",
+  ).toEqual([]);
+}
+
+async function clearBrowserSession(page) {
+  await page.goto(`${BASE_URL}/welcome`, { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => {
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+  });
+}
+
+async function signIn(page) {
+  await clearBrowserSession(page);
+  await page.goto(`${BASE_URL}/signin`, { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByText("Welcome back", { exact: true })).toBeVisible({
+    timeout: 20000,
+  });
+
+  const inputs = page.locator("input");
+  await expect(inputs.first(), "email input").toBeVisible({ timeout: 15000 });
+  await inputs.first().fill(EMAIL);
+  await inputs.nth(1).fill(PASSWORD);
+
+  await page.getByText("Sign In", { exact: true }).last().click();
+
+  await expect(page.getByText("Discover", { exact: true }).last()).toBeVisible({
+    timeout: 30000,
+  });
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+}
+
+async function assertBottomNav(page) {
+  for (const label of ["Discover", "Liked You", "Messages", "You"]) {
+    const locator = page.getByText(label, { exact: true }).last();
+    await assertVisibleWithinViewport(page, locator, `${label} tab`);
+  }
+}
+
+async function assertNoDocumentHorizontalOverflow(page, label) {
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(() => {
+          const documentElement = document.documentElement;
+          const body = document.body;
+          const documentOverflow =
+            documentElement.scrollWidth - documentElement.clientWidth;
+          const bodyOverflow = body.scrollWidth - body.clientWidth;
+
+          return Math.max(documentOverflow, bodyOverflow);
+        }),
+      {
+        message: `${label} horizontal overflow`,
+        timeout: 15000,
+      },
+    )
+    .toBeLessThanOrEqual(1);
+}
+
+async function openTab(page, label) {
+  await page.getByText(label, { exact: true }).last().click();
+  await expect(page.getByText(label, { exact: true }).last()).toBeVisible({
+    timeout: 15000,
+  });
+}
+
+async function openProtectedRoute(page, path) {
+  await page.goto(`${BASE_URL}${path}`, { waitUntil: "domcontentloaded" });
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+}
+
+async function toggleSwitchAndWaitForRpc(page, locator, rpcName) {
+  const responsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/rpc/${rpcName}`) &&
+      response.request().method() === "POST",
+    { timeout: 15000 },
+  );
+
+  await locator.click();
+  const response = await responsePromise;
+  expect(response.status(), `${rpcName} response status`).toBeLessThan(400);
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+}
+
+async function clickAndWaitForRpc(page, locator, rpcName) {
+  const responsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/rpc/${rpcName}`) &&
+      response.request().method() === "POST",
+    { timeout: 15000 },
+  );
+
+  await locator.click();
+  const response = await responsePromise;
+  expect(response.status(), `${rpcName} response status`).toBeLessThan(400);
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+}
+
+async function saveProfileAndWait(page) {
+  const responsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/rest/v1/profiles") &&
+      response.request().method() === "PATCH",
+    { timeout: 15000 },
+  );
+
+  await page.getByRole("button", { name: "Save profile" }).click();
+
+  const response = await responsePromise;
+  expect(response.status(), "profile update response status").toBeLessThan(400);
+
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+  await expect(page.getByText("Profile access", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+}
+
+function getProfilePhotoStoragePath(photoUrl) {
+  const marker = "/profile-photos/";
+  const markerIndex = photoUrl.indexOf(marker);
+
+  if (markerIndex === -1) {
+    return null;
+  }
+
+  return decodeURIComponent(photoUrl.slice(markerIndex + marker.length).split("?")[0])
+    .replace(/^\/+/, "");
+}
+
+async function createSignedInProofClient() {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error(
+      "Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY for profile photo cleanup.",
+    );
+  }
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.signInWithPassword({
+    email: EMAIL,
+    password: PASSWORD,
+  });
+
+  if (error || !user) {
+    throw new Error("Profile photo cleanup sign-in failed.");
+  }
+
+  return { supabase, user };
+}
+
+async function snapshotProfilePhotos() {
+  const { supabase, user } = await createSignedInProofClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("photos, photos_completed")
+    .eq("id", user.id)
+    .single();
+
+  if (error) {
+    throw new Error("Could not snapshot profile photos before upload smoke.");
+  }
+
+  return {
+    photos: Array.isArray(data?.photos) ? data.photos : [],
+    photosCompleted: Boolean(data?.photos_completed),
+  };
+}
+
+async function restoreProfilePhotos(snapshot) {
+  const { supabase, user } = await createSignedInProofClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("photos")
+    .eq("id", user.id)
+    .single();
+
+  if (error) {
+    throw new Error("Could not read uploaded profile photos for cleanup.");
+  }
+
+  const originalPhotoSet = new Set(snapshot.photos);
+  const latestPhotos = Array.isArray(data?.photos) ? data.photos : [];
+  const uploadedPaths = latestPhotos
+    .filter((photo) => !originalPhotoSet.has(photo))
+    .map(getProfilePhotoStoragePath)
+    .filter(Boolean)
+    .filter((photoPath) => photoPath.startsWith(`${user.id}/`));
+
+  if (uploadedPaths.length > 0) {
+    const { error: removeError } = await supabase.storage
+      .from("profile-photos")
+      .remove(uploadedPaths);
+
+    if (removeError) {
+      throw new Error("Could not delete uploaded profile photo during cleanup.");
+    }
+  }
+
+  const { error: updateError } = await supabase
+    .from("profiles")
+    .update({
+      photos: snapshot.photos,
+      photos_completed: snapshot.photosCompleted,
+    })
+    .eq("id", user.id);
+
+  if (updateError) {
+    throw new Error("Could not restore profile photos after upload smoke.");
+  }
+}
+
+async function setProfilePhotosForSmoke(photos, photosCompleted) {
+  const { supabase, user } = await createSignedInProofClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      photos,
+      photos_completed: photosCompleted,
+    })
+    .eq("id", user.id);
+
+  if (error) {
+    throw new Error("Could not prepare profile photos for smoke.");
+  }
+}
+
+async function uploadBaselineProfilePhoto(supabase, user, index) {
+  const storagePath = `${user.id}/178295880000${index}-${
+    MVP_PROOF_PHOTO_IDS[index - 1]
+  }.png`;
+  const photoBytes = fs.readFileSync(PROFILE_PHOTO_FIXTURE);
+  const { error: uploadError } = await supabase.storage
+    .from("profile-photos")
+    .upload(storagePath, photoBytes, {
+      contentType: "image/png",
+      upsert: true,
+    });
+
+  if (uploadError) {
+    throw new Error("Could not prepare baseline profile photo for smoke.");
+  }
+
+  const { data } = supabase.storage
+    .from("profile-photos")
+    .getPublicUrl(storagePath);
+
+  if (!data?.publicUrl) {
+    throw new Error("Could not resolve baseline profile photo URL for smoke.");
+  }
+
+  return data.publicUrl;
+}
+
+function isValidUserScopedProfilePhoto(photoUrl, userId) {
+  const photoPath = getProfilePhotoStoragePath(photoUrl);
+  return Boolean(
+    photoPath &&
+      photoPath.startsWith(`${userId}/`) &&
+      PROFILE_PHOTO_PATH_PATTERN.test(photoPath),
+  );
+}
+
+async function ensureMvpProofProfileReady() {
+  const { supabase, user } = await createSignedInProofClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(
+      "photos, first_name, age, country, city, looking_for_gender, relationship_goal",
+    )
+    .eq("id", user.id)
+    .single();
+
+  if (error) {
+    throw new Error("Could not read MVP proof profile before smoke.");
+  }
+
+  const photos = (Array.isArray(data?.photos) ? data.photos : [])
+    .filter((photo) => isValidUserScopedProfilePhoto(photo, user.id))
+    .slice(0, MVP_PROOF_PHOTO_COUNT);
+  for (let index = photos.length; index < MVP_PROOF_PHOTO_COUNT; index += 1) {
+    photos.push(await uploadBaselineProfilePhoto(supabase, user, index + 1));
+  }
+
+  const { error: updateError } = await supabase
+    .from("profiles")
+    .update({
+      first_name: data?.first_name || "Smoke",
+      age: data?.age || 34,
+      country: data?.country || "United States",
+      city: data?.city || "Austin",
+      looking_for_gender: data?.looking_for_gender || "female",
+      relationship_goal: data?.relationship_goal || "marriage",
+      photos: photos.slice(0, MVP_PROOF_PHOTO_COUNT),
+      basic_info_completed: true,
+      photos_completed: true,
+      location_completed: true,
+      preferences_completed: true,
+    })
+    .eq("id", user.id);
+
+  if (updateError) {
+    throw new Error("Could not prepare MVP proof profile before smoke.");
+  }
+}
+
+async function snapshotProfilePublicDetails() {
+  const { supabase, user } = await createSignedInProofClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("occupation")
+    .eq("id", user.id)
+    .single();
+
+  if (error) {
+    throw new Error("Could not snapshot public profile details before smoke.");
+  }
+
+  return {
+    occupation: data?.occupation || "",
+  };
+}
+
+async function restoreProfilePublicDetails(snapshot) {
+  const { supabase, user } = await createSignedInProofClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      occupation: snapshot.occupation,
+    })
+    .eq("id", user.id);
+
+  if (error) {
+    throw new Error("Could not restore public profile details after smoke.");
+  }
+}
+
+async function snapshotMatchPreferences() {
+  const { supabase, user } = await createSignedInProofClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(
+      "interested_in, age_min, age_max, max_distance_km, looking_for_gender, age_preference_min, age_preference_max, distance_preference_km, relationship_goal, preferences_completed",
+    )
+    .eq("id", user.id)
+    .single();
+
+  if (error) {
+    throw new Error("Could not snapshot match preferences before smoke.");
+  }
+
+  return data || {};
+}
+
+async function restoreMatchPreferences(snapshot) {
+  const { supabase, user } = await createSignedInProofClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update(snapshot)
+    .eq("id", user.id);
+
+  if (error) {
+    throw new Error("Could not restore match preferences after smoke.");
+  }
+}
+
+async function snapshotPrivacySettings() {
+  const { supabase } = await createSignedInProofClient();
+  const { data, error } = await supabase.rpc("get_privacy_settings");
+
+  if (error) {
+    throw new Error("Could not snapshot privacy settings before smoke.");
+  }
+
+  const record = Array.isArray(data) ? data[0] : data;
+  return {
+    showOnlineStatus: Boolean(record?.show_online_status),
+    showDistance: Boolean(record?.show_distance),
+    readReceipts: Boolean(record?.read_receipts),
+    profileVisible: Boolean(record?.profile_visible),
+  };
+}
+
+async function restorePrivacySettings(snapshot) {
+  const { supabase } = await createSignedInProofClient();
+  const { error } = await supabase.rpc("save_privacy_settings", {
+    p_show_online_status: snapshot.showOnlineStatus,
+    p_show_distance: snapshot.showDistance,
+    p_read_receipts: snapshot.readReceipts,
+    p_profile_visible: snapshot.profileVisible,
+  });
+
+  if (error) {
+    throw new Error("Could not restore privacy settings after smoke.");
+  }
+}
+
+async function snapshotNotificationPreferences() {
+  const { supabase } = await createSignedInProofClient();
+  const { data, error } = await supabase.rpc("get_notification_preferences");
+
+  if (error) {
+    throw new Error("Could not snapshot notification preferences before smoke.");
+  }
+
+  const record = Array.isArray(data) ? data[0] : data;
+  return {
+    pushEnabled: Boolean(record?.push_enabled),
+    newMatches: Boolean(record?.new_matches),
+    newMessages: Boolean(record?.new_messages),
+    newLikes: Boolean(record?.new_likes),
+    emailUpdates: Boolean(record?.email_updates),
+  };
+}
+
+async function restoreNotificationPreferences(snapshot) {
+  const { supabase } = await createSignedInProofClient();
+  const { error } = await supabase.rpc("save_notification_preferences", {
+    p_push_enabled: snapshot.pushEnabled,
+    p_new_matches: snapshot.newMatches,
+    p_new_messages: snapshot.newMessages,
+    p_new_likes: snapshot.newLikes,
+    p_email_updates: snapshot.emailUpdates,
+  });
+
+  if (error) {
+    throw new Error("Could not restore notification preferences after smoke.");
+  }
+}
+
+async function setNamedRangeInput(page, name, value) {
+  const slider = page.getByRole("slider", { name });
+  await expect(slider).toBeVisible({ timeout: 15000 });
+  await slider.evaluate((element, nextValue) => {
+    const valueSetter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set;
+    valueSetter?.call(element, nextValue);
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+    element.dispatchEvent(new Event("change", { bubbles: true }));
+  }, String(value));
+}
+
+async function assertVisibleWithinViewport(page, locator, label) {
+  await expect(locator, label).toBeVisible({ timeout: 15000 });
+  await expect
+    .poll(
+      async () => {
+        const box = await locator.boundingBox();
+        const viewport = page.viewportSize();
+
+        if (!box || !viewport) {
+          return "missing";
+        }
+
+        const isInsideViewport =
+          box.x >= 0 &&
+          box.x + box.width <= viewport.width &&
+          box.y >= 0 &&
+          box.y + box.height <= viewport.height;
+
+        return isInsideViewport
+          ? "inside"
+          : `x=${box.x}, right=${box.x + box.width}, y=${box.y}, bottom=${
+              box.y + box.height
+            }, viewport=${viewport.width}x${viewport.height}`;
+      },
+      {
+        message: `${label} inside viewport`,
+        timeout: 15000,
+      },
+    )
+    .toBe("inside");
+}
+
+async function ensureSyntheticOcrDocument() {
+  if (fs.existsSync(OCR_VALID_DOCUMENT)) {
+    return OCR_VALID_DOCUMENT;
+  }
+
+  fs.mkdirSync(OCR_PROOF_DIR, { recursive: true });
+  const validDocumentSvg = `
+    <svg width="1200" height="760" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1200" height="760" fill="#f8fafc"/>
+      <rect x="52" y="52" width="1096" height="656" rx="28" fill="#ffffff" stroke="#0f172a" stroke-width="8"/>
+      <text x="92" y="142" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="700" fill="#0f172a">PINAYMATE TEST IDENTIFICATION</text>
+      <text x="92" y="232" font-family="Arial, Helvetica, sans-serif" font-size="46" fill="#111827">Name: Maria Santos</text>
+      <text x="92" y="312" font-family="Arial, Helvetica, sans-serif" font-size="46" fill="#111827">Given Name: Maria</text>
+      <text x="92" y="392" font-family="Arial, Helvetica, sans-serif" font-size="46" fill="#111827">Surname: Santos</text>
+      <text x="92" y="472" font-family="Arial, Helvetica, sans-serif" font-size="46" fill="#111827">Date of Birth: 1998-04-03</text>
+      <text x="92" y="552" font-family="Arial, Helvetica, sans-serif" font-size="36" fill="#334155">Synthetic QA image. Not a government document.</text>
+    </svg>
+  `;
+
+  await sharp(Buffer.from(validDocumentSvg)).png().toFile(OCR_VALID_DOCUMENT);
+  return OCR_VALID_DOCUMENT;
+}
+
+async function snapshotVerificationSubmission() {
+  const { supabase, user } = await createSignedInProofClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(
+      "verification_selfie, verification_document, verification_completed, verification_status, is_verified",
+    )
+    .eq("id", user.id)
+    .single();
+
+  if (error) {
+    throw new Error("Could not snapshot verification state before smoke.");
+  }
+
+  return {
+    userId: user.id,
+    selfiePath: data?.verification_selfie || "",
+    documentPath: data?.verification_document || "",
+    completed: Boolean(data?.verification_completed),
+    status: data?.verification_status || "pending",
+    isVerified: Boolean(data?.is_verified),
+  };
+}
+
+async function cleanupVerificationSubmission(snapshot) {
+  const { supabase, user } = await createSignedInProofClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("verification_selfie, verification_document")
+    .eq("id", user.id)
+    .single();
+
+  if (error) {
+    throw new Error("Could not read verification state for cleanup.");
+  }
+
+  const snapshotPaths = new Set(
+    [snapshot.selfiePath, snapshot.documentPath].filter(Boolean),
+  );
+  const latestPaths = [data?.verification_selfie, data?.verification_document]
+    .filter(Boolean)
+    .filter((item) => !snapshotPaths.has(item))
+    .filter((item) => item.startsWith(`${user.id}/`));
+  const cleanupPaths = [...latestPaths];
+
+  if (!snapshot.completed && !snapshot.selfiePath && !snapshot.documentPath) {
+    const { data: objects } = await supabase.storage
+      .from("verification-docs")
+      .list(user.id);
+
+    for (const object of objects ?? []) {
+      const objectPath = `${user.id}/${object.name}`;
+      if (!cleanupPaths.includes(objectPath)) {
+        cleanupPaths.push(objectPath);
+      }
+    }
+  }
+
+  if (cleanupPaths.length > 0) {
+    await supabase.rpc("clear_verification_submission");
+    const { error: removeError } = await supabase.storage
+      .from("verification-docs")
+      .remove(cleanupPaths);
+
+    if (removeError) {
+      throw new Error("Could not delete uploaded verification proof files.");
+    }
+  }
+
+  if (!snapshot.completed && !snapshot.selfiePath && !snapshot.documentPath) {
+    const { error: clearError } = await supabase.rpc("clear_verification_submission");
+
+    if (clearError) {
+      throw new Error("Could not clear verification proof submission.");
+    }
+  }
+}
+
+async function uploadProfilePhotoThroughPicker(page) {
+  const uploadResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/storage/v1/object/profile-photos/") &&
+      response.request().method() === "POST",
+    { timeout: 30000 },
+  );
+  const profileUpdatePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/rest/v1/profiles") &&
+      response.request().method() === "PATCH",
+    { timeout: 30000 },
+  );
+  const fileChooserPromise = page.waitForEvent("filechooser", {
+    timeout: 15000,
+  });
+
+  await page
+    .getByRole("button", { name: "Choose profile photo from library" })
+    .click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles(PROFILE_PHOTO_FIXTURE);
+
+  const uploadResponse = await uploadResponsePromise;
+  expect(uploadResponse.status(), "profile photo storage upload").toBeLessThan(
+    400,
+  );
+
+  const profileUpdate = await profileUpdatePromise;
+  expect(profileUpdate.status(), "profile photos profile update").toBeLessThan(
+    400,
+  );
+
+  await expect(page.getByText("Minimum photo added", { exact: true })).toBeVisible({
+    timeout: 20000,
+  });
+}
+
+async function uploadProfileSettingsPhotoThroughPicker(page) {
+  const uploadResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/storage/v1/object/profile-photos/") &&
+      response.request().method() === "POST",
+    { timeout: 30000 },
+  );
+  const profileUpdatePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/rest/v1/profiles") &&
+      response.request().method() === "PATCH",
+    { timeout: 30000 },
+  );
+  const fileChooserPromise = page.waitForEvent("filechooser", {
+    timeout: 15000,
+  });
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toMatch(/Photo uploaded successfully/i);
+    await dialog.accept();
+  });
+
+  await page.getByRole("button", { name: "Change profile photo" }).click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles(PROFILE_PHOTO_FIXTURE);
+
+  const uploadResponse = await uploadResponsePromise;
+  expect(uploadResponse.status(), "settings profile photo storage upload").toBeLessThan(
+    400,
+  );
+
+  const profileUpdate = await profileUpdatePromise;
+  expect(
+    profileUpdate.status(),
+    "settings profile photos profile update",
+  ).toBeLessThan(400);
+
+  await expect(page.getByLabel("Current profile photo")).toBeVisible({
+    timeout: 20000,
+  });
+}
+
+async function submitVerificationThroughPickers(page) {
+  const validDocument = await ensureSyntheticOcrDocument();
+  const selfieChooserPromise = page.waitForEvent("filechooser", {
+    timeout: 15000,
+  });
+
+  await page.getByRole("button", { name: /Take a verification selfie/ }).click();
+  const selfieChooser = await selfieChooserPromise;
+  await selfieChooser.setFiles(PROFILE_PHOTO_FIXTURE);
+
+  await expect(page.getByText("Verification selfie", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByText("Captured", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+
+  const ocrResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      (response.url().includes(".functions.supabase.co/ocr") ||
+        response.url().includes("/functions/v1/ocr")),
+    { timeout: 45000 },
+  );
+  const storageUploads = [];
+  page.on("response", (response) => {
+    if (
+      response.url().includes("/storage/v1/object/verification-docs/") &&
+      response.request().method() === "POST"
+    ) {
+      storageUploads.push(response);
+    }
+  });
+  const submitResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/rest/v1/rpc/submit_verification") &&
+      response.request().method() === "POST",
+    { timeout: 45000 },
+  );
+  const documentChooserPromise = page.waitForEvent("filechooser", {
+    timeout: 15000,
+  });
+
+  await page.getByRole("button", { name: /Upload an ID document/ }).click();
+  const documentChooser = await documentChooserPromise;
+  await documentChooser.setFiles(validDocument);
+
+  const ocrResponse = await ocrResponsePromise;
+  const ocrStatus = ocrResponse.status();
+  expect(
+    ocrStatus < 400 || ocrStatus === 429,
+    `verification OCR response status ${ocrStatus}`,
+  ).toBe(true);
+
+  const submitResponse = await submitResponsePromise;
+  expect(
+    submitResponse.status(),
+    "verification submit_verification response",
+  ).toBeLessThan(400);
+
+  if (ocrStatus === 429) {
+    await expect(
+      page.getByText(
+        "Document scan did not complete, so we submitted your selfie and ID for manual review.",
+        { exact: true },
+      ),
+    ).toBeVisible({ timeout: 15000 });
+  }
+
+  await expect.poll(
+    () => storageUploads.filter((response) => response.status() < 400).length,
+    {
+      message: "verification private storage uploads",
+      timeout: 15000,
+    },
+  ).toBeGreaterThanOrEqual(2);
+
+  await expect(page.getByText("Review pending", { exact: true })).toBeVisible({
+    timeout: 20000,
+  });
+  await expect(page.getByText("ID document", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByText("Submitted", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+}
+
+async function uploadDemoChatPhotoThroughPicker(page) {
+  const fileChooserPromise = page.waitForEvent("filechooser", {
+    timeout: 15000,
+  });
+
+  await page.getByRole("button", { name: "Attach demo photo" }).click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles(PROFILE_PHOTO_FIXTURE);
+
+  await expect(page.getByLabel(/You: Photo message,/).last()).toBeVisible({
+    timeout: 20000,
+  });
+  await expect(page.getByLabel("You sent a photo").last()).toBeVisible({
+    timeout: 15000,
+  });
+}
+
+async function exerciseDemoLikedYouActions(page) {
+  await openTab(page, "Liked You");
+  await expect(page.getByText("Before you message", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByText("Beta preview", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+
+  await page
+    .getByLabel("Match filters")
+    .getByText("Mutual", { exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: /^Message / }).first(),
+  ).toBeVisible({ timeout: 15000 });
+
+  await page.getByRole("button", { name: /^Report or block / }).first().click();
+  await expect(page.getByText("Report member", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await page
+    .getByRole("radio", {
+      name: "Scam, money request, or suspicious behavior",
+    })
+    .click();
+  await page
+    .getByLabel("Report details")
+    .fill("Authenticated liked-you proof: suspicious off-app payment request.");
+  await page.getByRole("button", { name: "Send private report" }).click();
+  await expect(
+    page.getByText("Demo report and block recorded", { exact: true }),
+  ).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText("No real report or block was sent.")).toBeVisible();
+  await page.getByRole("button", { name: "Close report form" }).click();
+
+  await page.getByRole("button", { name: /^Unmatch with / }).first().click();
+  await expect(page.getByText("Beta preview action", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByText(/No real unmatch was sent/)).toBeVisible();
+
+  await page.getByRole("button", { name: /^Message / }).first().click();
+  await expect(page.getByText(/Demo chat/).first()).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(
+    page.getByText("Demo chat replies and photos stay local on this device."),
+  ).toBeVisible({ timeout: 15000 });
+}
+
+async function submitDemoSafetyReportFromChat(page) {
+  await page
+    .getByRole("button", { name: /Open safety options for/ })
+    .first()
+    .click();
+  await expect(
+    page.getByText("Report safety concern", { exact: true }),
+  ).toBeVisible({ timeout: 15000 });
+
+  await page.getByRole("button", { name: /Report safety concern about/ }).click();
+  await expect(page.getByText("Report member", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByText("Private safety report", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByText("Block this member too", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+
+  await page.getByRole("button", { name: "Send private report" }).click();
+  await expect(
+    page.getByText("Demo report and block recorded", { exact: true }),
+  ).toBeVisible({ timeout: 15000 });
+  await expect(
+    page.getByText(
+      "No real report or block was sent. This keeps the beta preview safe while preserving the live safety flow for real members.",
+      { exact: true },
+    ),
+  ).toBeVisible({ timeout: 15000 });
+}
+
+test.describe("PinayMate authenticated web MVP smoke", () => {
+  test.skip(
+    !EMAIL || !PASSWORD,
+    "Set PM_WEB_MVP_EMAIL and PM_WEB_MVP_PASSWORD for authenticated MVP smoke.",
+  );
+
+  test.beforeAll(async () => {
+    await ensureMvpProofProfileReady();
+  });
+
+  const viewports = [
+    { name: "mobile", width: 390, height: 844 },
+    { name: "laptop", width: 1366, height: 900 },
+    { name: "desktop", width: 1512, height: 982 },
+  ];
+
+  for (const viewport of viewports) {
+    test(`${viewport.name}: sign in and core app shell`, async ({ page }) => {
+      test.setTimeout(90000);
+      await page.setViewportSize(viewport);
+      const noise = collectPageNoise(page);
+
+      await signIn(page);
+      await assertBottomNav(page);
+      await assertNoDocumentHorizontalOverflow(page, `${viewport.name} discover`);
+
+      await openTab(page, "Liked You");
+      await assertNoDocumentHorizontalOverflow(page, `${viewport.name} liked-you`);
+      await openTab(page, "Messages");
+      await assertNoDocumentHorizontalOverflow(page, `${viewport.name} messages`);
+      await openTab(page, "You");
+      await assertNoDocumentHorizontalOverflow(page, `${viewport.name} profile`);
+      await openTab(page, "Discover");
+      await assertNoDocumentHorizontalOverflow(page, `${viewport.name} discover return`);
+
+      await assertBottomNav(page);
+      await assertNoCriticalNoise(noise);
+    });
+  }
+
+  test("laptop: account setup and upload screens render", async ({ page }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 1366, height: 900 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await page.goto(
+      `${BASE_URL}/account-setup/basic-info?userType=foreigner&firstName=Smoke`,
+      { waitUntil: "domcontentloaded" },
+    );
+    await expect(page.getByText("Profile basics", { exact: true })).toBeVisible({
+      timeout: 20000,
+    });
+
+    await page.goto(`${BASE_URL}/account-setup/profile-photos?userType=foreigner`, {
+      waitUntil: "domcontentloaded",
+    });
+    await expect(page.getByText("Add your photos", { exact: true })).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(
+      page.getByText("Photo safety checklist", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+    const photoSnapshot = await snapshotProfilePhotos();
+    try {
+      await uploadProfilePhotoThroughPicker(page);
+    } finally {
+      await restoreProfilePhotos(photoSnapshot);
+    }
+
+    await page.goto(
+      `${BASE_URL}/account-setup/verification-upload?userType=foreigner`,
+      { waitUntil: "domcontentloaded" },
+    );
+    await expect(
+      page.getByText("Verify your identity", { exact: true }),
+    ).toBeVisible({ timeout: 20000 });
+    await expect(
+      page.getByText("Review-based verification", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+    const verificationSnapshot = await snapshotVerificationSubmission();
+    expect(
+      verificationSnapshot.completed ||
+        verificationSnapshot.selfiePath ||
+        verificationSnapshot.documentPath,
+      "disposable proof user should start without verification submission",
+    ).toBeFalsy();
+    try {
+      await submitVerificationThroughPickers(page);
+    } finally {
+      await cleanupVerificationSubmission(verificationSnapshot);
+    }
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("mobile: account setup photo upload and verification skip controls", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+    const photoSnapshot = await snapshotProfilePhotos();
+
+    try {
+      if (photoSnapshot.photos.length >= 6) {
+        await setProfilePhotosForSmoke(photoSnapshot.photos.slice(0, 5), true);
+      }
+
+      await page.goto(`${BASE_URL}/account-setup/profile-photos?userType=foreigner`, {
+        waitUntil: "domcontentloaded",
+      });
+      await expect(page.getByText("Add your photos", { exact: true })).toBeVisible({
+        timeout: 20000,
+      });
+      await expect(
+        page.getByText("Photo safety checklist", { exact: true }),
+      ).toBeVisible({ timeout: 15000 });
+
+      const libraryButton = page.getByRole("button", {
+        name: "Choose profile photo from library",
+      });
+      await assertVisibleWithinViewport(
+        page,
+        libraryButton,
+        "setup library photo button",
+      );
+      await uploadProfilePhotoThroughPicker(page);
+
+      const continuePhotosButton = page.getByRole("button", {
+        name: "Continue with uploaded profile photos",
+      });
+      await assertVisibleWithinViewport(
+        page,
+        continuePhotosButton,
+        "continue with profile photos button",
+      );
+      await expect(continuePhotosButton).toBeEnabled();
+
+      await page.goto(
+        `${BASE_URL}/account-setup/verification-upload?userType=foreigner`,
+        { waitUntil: "domcontentloaded" },
+      );
+      await expect(
+        page.getByText("Verify your identity", { exact: true }),
+      ).toBeVisible({ timeout: 20000 });
+      await expect(
+        page.getByText("Review-based verification", { exact: true }),
+      ).toBeVisible({ timeout: 15000 });
+
+      const skipVerificationButton = page.getByRole("button", {
+        name: "Skip identity verification for now",
+      });
+      await assertVisibleWithinViewport(
+        page,
+        skipVerificationButton,
+        "skip verification button",
+      );
+      await skipVerificationButton.click();
+      await expect(page.getByText(/Welcome,/)).toBeVisible({ timeout: 20000 });
+      await expect(page.getByText("Profile setup complete", { exact: true })).toBeVisible({
+        timeout: 15000,
+      });
+    } finally {
+      await restoreProfilePhotos(photoSnapshot);
+    }
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("laptop: profile edit saves and restores a public detail", async ({ page }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 1366, height: 900 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await openProtectedRoute(page, "/profile-settings/edit");
+    await expect(page.getByText("Edit Profile", { exact: true })).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(
+      page.getByText("Profile details for discovery", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+    const photoSnapshot = await snapshotProfilePhotos();
+    try {
+      await uploadProfileSettingsPhotoThroughPicker(page);
+    } finally {
+      await restoreProfilePhotos(photoSnapshot);
+    }
+
+    const occupationInput = page.getByLabel("Occupation");
+    await expect(occupationInput).toBeVisible({ timeout: 15000 });
+    const originalOccupation = await occupationInput.inputValue();
+    const proofOccupation =
+      originalOccupation.trim() === "Web MVP proof"
+        ? "Web MVP proof restore check"
+        : "Web MVP proof";
+
+    await occupationInput.fill(proofOccupation);
+    await saveProfileAndWait(page);
+
+    await openProtectedRoute(page, "/profile-settings/edit");
+    await expect(page.getByText("Edit Profile", { exact: true })).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.getByLabel("Occupation")).toHaveValue(proofOccupation, {
+      timeout: 15000,
+    });
+
+    await page.getByLabel("Occupation").fill(originalOccupation);
+    await saveProfileAndWait(page);
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("mobile: profile edit photo upload and public detail save", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+    const photoSnapshot = await snapshotProfilePhotos();
+    const detailsSnapshot = await snapshotProfilePublicDetails();
+    const proofOccupation =
+      detailsSnapshot.occupation.trim() === "Mobile web proof"
+        ? "Mobile web proof restore check"
+        : "Mobile web proof";
+
+    try {
+      await openProtectedRoute(page, "/profile-settings/edit");
+      await expect(page.getByText("Edit Profile", { exact: true })).toBeVisible({
+        timeout: 20000,
+      });
+      await expect(
+        page.getByText("Profile details for discovery", { exact: true }),
+      ).toBeVisible({ timeout: 15000 });
+
+      const changePhotoButton = page.getByRole("button", {
+        name: "Change profile photo",
+      });
+      await assertVisibleWithinViewport(
+        page,
+        changePhotoButton,
+        "change profile photo button",
+      );
+      await uploadProfileSettingsPhotoThroughPicker(page);
+
+      const occupationInput = page.getByLabel("Occupation");
+      await occupationInput.scrollIntoViewIfNeeded();
+      await assertVisibleWithinViewport(
+        page,
+        occupationInput,
+        "occupation profile edit input",
+      );
+      await occupationInput.fill(proofOccupation);
+
+      const saveProfileButton = page.getByRole("button", { name: "Save profile" });
+      await assertVisibleWithinViewport(
+        page,
+        saveProfileButton,
+        "save profile button",
+      );
+      await saveProfileAndWait(page);
+
+      await openProtectedRoute(page, "/profile-settings/edit");
+      await expect(page.getByLabel("Occupation")).toHaveValue(proofOccupation, {
+        timeout: 15000,
+      });
+    } finally {
+      await restoreProfilePhotos(photoSnapshot);
+      await restoreProfilePublicDetails(detailsSnapshot);
+    }
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("laptop: authenticated beta discovery opens details and demo match chat", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 1366, height: 900 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await expect(page.getByText("Beta demo feed", { exact: true })).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.getByText("Demo profile", { exact: true }).first()).toBeVisible({
+      timeout: 15000,
+    });
+
+    await page.getByRole("button", { name: "View profile details" }).click();
+    await expect(page.getByText("Something feels off?", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await page.getByRole("button", { name: "Close profile details" }).click();
+
+    await page
+      .getByRole("button", { name: "Like this profile", exact: true })
+      .click();
+    await expect(page.getByText("Demo Match!", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText("Demo only. No real like, super like, match, or message was sent."),
+    ).toBeVisible({ timeout: 15000 });
+
+    await page.getByRole("button", { name: /Open .* in matches/ }).click();
+    await expect(page.getByText(/Demo chat/).first()).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText("Demo chat replies and photos stay local on this device."),
+    ).toBeVisible({ timeout: 15000 });
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("mobile: authenticated beta discovery opens match chat locally", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const demoReply =
+      "Mobile authenticated demo reply: staying respectful and inside the app.";
+    const realWriteRequests = [];
+
+    page.on("request", (request) => {
+      if (
+        request.method() !== "GET" &&
+        /\/(?:rest\/v1\/(?:likes|messages|conversations)|rpc\/(?:like_profile|create_conversation|send_message))/.test(
+          request.url(),
+        )
+      ) {
+        realWriteRequests.push(`${request.method()} ${request.url()}`);
+      }
+    });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await expect(page.getByText("Beta demo feed", { exact: true })).toBeVisible({
+      timeout: 20000,
+    });
+    const detailsButton = page.getByRole("button", {
+      name: "View profile details",
+    });
+    await assertVisibleWithinViewport(
+      page,
+      detailsButton,
+      "mobile discovery details button",
+    );
+
+    await detailsButton.click();
+    await expect(page.getByText("Something feels off?", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await page.getByRole("button", { name: "Close profile details" }).click();
+
+    const likeButton = page.getByRole("button", {
+      name: "Like this profile",
+      exact: true,
+    });
+    await assertVisibleWithinViewport(page, likeButton, "mobile discovery like button");
+    await likeButton.click();
+    await expect(page.getByText("Demo Match!", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText("Demo only. No real like, super like, match, or message was sent."),
+    ).toBeVisible({ timeout: 15000 });
+
+    await page.getByRole("button", { name: /Open .* in matches/ }).click();
+    await expect(page.getByText(/Demo chat/).first()).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText("Demo chat replies and photos stay local on this device."),
+    ).toBeVisible({ timeout: 15000 });
+
+    const messageInput = page.getByLabel("Message input");
+    await assertVisibleWithinViewport(page, messageInput, "mobile message input");
+    await messageInput.fill(demoReply);
+    await page.getByRole("button", { name: "Send demo reply" }).click();
+    await expect(page.getByLabel(new RegExp(`^You: ${demoReply}`))).toBeVisible({
+      timeout: 15000,
+    });
+
+    await uploadDemoChatPhotoThroughPicker(page);
+    await page.waitForTimeout(500);
+    expect(realWriteRequests, "real demo discovery/chat writes").toEqual([]);
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("laptop: authenticated beta seeded inbox opens and sends a local reply", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 1366, height: 900 });
+    const demoReply =
+      "Authenticated demo smoke reply: staying respectful and inside the app.";
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await openTab(page, "Messages");
+    await expect(page.getByText("Beta seeded inbox", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText(
+        "Sample unread and active chats are shown until real conversations are available.",
+      ),
+    ).toBeVisible({ timeout: 15000 });
+
+    await page.getByRole("button", { name: /Open chat with/ }).first().click();
+    await expect(page.getByText(/Demo chat/).first()).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText("Demo chat replies and photos stay local on this device."),
+    ).toBeVisible({ timeout: 15000 });
+
+    await page.getByLabel("Message input").fill(demoReply);
+    await page.getByRole("button", { name: "Send demo reply" }).click();
+    await expect(page.getByLabel(new RegExp(`^You: ${demoReply}`))).toBeVisible({
+      timeout: 15000,
+    });
+
+    await uploadDemoChatPhotoThroughPicker(page);
+    await submitDemoSafetyReportFromChat(page);
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("laptop: authenticated beta liked-you actions stay local and open chat", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 1366, height: 900 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await exerciseDemoLikedYouActions(page);
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("mobile: authenticated liked-you demo actions stay local", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const realWriteRequests = [];
+
+    page.on("request", (request) => {
+      if (
+        request.method() !== "GET" &&
+        /\/(?:rest\/v1\/(?:likes|matches|messages|conversations|safety_reports)|rpc\/(?:block_user|unmatch_user|submit_user_report|create_conversation|send_message))/.test(
+          request.url(),
+        )
+      ) {
+        realWriteRequests.push(`${request.method()} ${request.url()}`);
+      }
+    });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await openTab(page, "Liked You");
+    await expect(page.getByText("Before you message", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByText("Beta preview", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+
+    await page
+      .getByLabel("Match filters")
+      .getByText("Mutual", { exact: true })
+      .click();
+
+    const firstMessageButton = page.getByRole("button", { name: /^Message / }).first();
+    await assertVisibleWithinViewport(
+      page,
+      firstMessageButton,
+      "mobile liked-you message button",
+    );
+
+    const reportButton = page
+      .getByRole("button", { name: /^Report or block / })
+      .first();
+    await assertVisibleWithinViewport(
+      page,
+      reportButton,
+      "mobile liked-you report button",
+    );
+    await reportButton.click();
+    await expect(page.getByText("Report member", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await page
+      .getByRole("radio", {
+        name: "Scam, money request, or suspicious behavior",
+      })
+      .click();
+    await page
+      .getByLabel("Report details")
+      .fill("Mobile authenticated liked-you proof: suspicious off-app payment request.");
+    const sendReportButton = page.getByRole("button", {
+      name: "Send private report",
+    });
+    await sendReportButton.scrollIntoViewIfNeeded();
+    await assertVisibleWithinViewport(
+      page,
+      sendReportButton,
+      "mobile liked-you send report button",
+    );
+    await sendReportButton.click();
+    await expect(
+      page.getByText("Demo report and block recorded", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("No real report or block was sent.")).toBeVisible();
+    await page.getByRole("button", { name: "Close report form" }).click();
+
+    const unmatchButton = page
+      .getByRole("button", { name: /^Unmatch with / })
+      .first();
+    await assertVisibleWithinViewport(
+      page,
+      unmatchButton,
+      "mobile liked-you unmatch button",
+    );
+    await unmatchButton.click();
+    await expect(page.getByText("Beta preview action", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByText(/No real unmatch was sent/)).toBeVisible();
+
+    await firstMessageButton.click();
+    await expect(page.getByText(/Demo chat/).first()).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText("Demo chat replies and photos stay local on this device."),
+    ).toBeVisible({ timeout: 15000 });
+
+    await page.waitForTimeout(500);
+    expect(realWriteRequests, "real liked-you demo writes").toEqual([]);
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("mobile: authenticated seeded inbox stays local", async ({ page }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const demoReply =
+      "Mobile authenticated inbox reply: staying respectful and inside the app.";
+    const realWriteRequests = [];
+
+    page.on("request", (request) => {
+      if (
+        request.method() !== "GET" &&
+        /\/(?:rest\/v1\/(?:messages|conversations|safety_reports)|rpc\/(?:block_user|unmatch_user|submit_user_report|create_conversation|send_message))/.test(
+          request.url(),
+        )
+      ) {
+        realWriteRequests.push(`${request.method()} ${request.url()}`);
+      }
+    });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await openTab(page, "Messages");
+    await expect(page.getByText("Beta seeded inbox", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText(
+        "Sample unread and active chats are shown until real conversations are available.",
+      ),
+    ).toBeVisible({ timeout: 15000 });
+
+    const firstChatButton = page.getByRole("button", { name: /Open chat with/ }).first();
+    await assertVisibleWithinViewport(
+      page,
+      firstChatButton,
+      "mobile seeded inbox first chat",
+    );
+    await firstChatButton.click();
+    await expect(page.getByText(/Demo chat/).first()).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText("Demo chat replies and photos stay local on this device."),
+    ).toBeVisible({ timeout: 15000 });
+
+    const messageInput = page.getByLabel("Message input");
+    await assertVisibleWithinViewport(page, messageInput, "mobile inbox message input");
+    await messageInput.fill(demoReply);
+    await page.getByRole("button", { name: "Send demo reply" }).click();
+    await expect(page.getByLabel(new RegExp(`^You: ${demoReply}`))).toBeVisible({
+      timeout: 15000,
+    });
+
+    await uploadDemoChatPhotoThroughPicker(page);
+    await submitDemoSafetyReportFromChat(page);
+
+    await page.waitForTimeout(500);
+    expect(realWriteRequests, "real seeded inbox writes").toEqual([]);
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("laptop: privacy, preference, and notification settings save", async ({ page }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 1366, height: 900 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await openProtectedRoute(page, "/profile-settings/privacy");
+    await expect(page.getByText("Privacy Settings", { exact: true })).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.getByText("Privacy controls", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByRole("button", {
+        name: "Request account deletion for support review",
+      }),
+    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Settings need to reload")).toHaveCount(0);
+    const readReceiptsSwitch = page.getByRole("switch", {
+      name: /Read Receipts:/i,
+    });
+    await expect(readReceiptsSwitch).toBeVisible({ timeout: 15000 });
+    await expect(readReceiptsSwitch).toBeEnabled();
+    await toggleSwitchAndWaitForRpc(
+      page,
+      readReceiptsSwitch,
+      "save_privacy_settings",
+    );
+    await expect(readReceiptsSwitch).toBeVisible({ timeout: 15000 });
+    await expect(readReceiptsSwitch).toBeEnabled();
+    await toggleSwitchAndWaitForRpc(
+      page,
+      readReceiptsSwitch,
+      "save_privacy_settings",
+    );
+
+    page.once("dialog", async (dialog) => {
+      expect(dialog.message()).toMatch(/Request account deletion/i);
+      await dialog.accept();
+    });
+    await clickAndWaitForRpc(
+      page,
+      page.getByRole("button", {
+        name: "Request account deletion for support review",
+      }),
+      "request_account_deletion",
+    );
+    await expect(
+      page.getByText("Deletion request received", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/support review/i).last()).toBeVisible({
+      timeout: 15000,
+    });
+
+    await openProtectedRoute(page, "/profile-settings/preferences");
+    await expect(page.getByText("Match Preferences", { exact: true }).first()).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.getByText("Age range", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByText("Distance radius", { exact: true })).toBeVisible();
+    await expect(page.getByText("Relationship goal", { exact: true })).toBeVisible();
+    await expect(page.getByText("Preference signals, not promises")).toBeVisible();
+    await page.getByRole("radio", { name: /marriage/i }).click();
+    page.once("dialog", async (dialog) => {
+      expect(dialog.message()).toMatch(/Preferences updated successfully/i);
+      await dialog.accept();
+    });
+    await page.getByRole("button", { name: "Save preferences" }).last().click();
+    await expect(page.getByText("Match Preferences", { exact: true }).first()).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.getByText("Preference signals, not promises")).toBeVisible();
+
+    await openProtectedRoute(page, "/profile-settings/notifications");
+    await expect(page.getByText("Notifications", { exact: true })).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.getByText("Notification controls", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByRole("switch", { name: /Enable push notifications:/ }),
+    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Preferences need to reload")).toHaveCount(0);
+    const emailUpdatesSwitch = page.getByRole("switch", {
+      name: /Email updates:/i,
+    });
+    await expect(emailUpdatesSwitch).toBeVisible({ timeout: 15000 });
+    await expect(emailUpdatesSwitch).toBeEnabled();
+    await toggleSwitchAndWaitForRpc(
+      page,
+      emailUpdatesSwitch,
+      "save_notification_preferences",
+    );
+    await expect(emailUpdatesSwitch).toBeVisible({ timeout: 15000 });
+    await expect(emailUpdatesSwitch).toBeEnabled();
+    await toggleSwitchAndWaitForRpc(
+      page,
+      emailUpdatesSwitch,
+      "save_notification_preferences",
+    );
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("mobile: authenticated match preference age controls save and restore", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+    const preferencesSnapshot = await snapshotMatchPreferences();
+
+    try {
+      await openProtectedRoute(page, "/profile-settings/preferences");
+      await expect(
+        page.getByText("Match Preferences", { exact: true }).first(),
+      ).toBeVisible({ timeout: 20000 });
+      await expect(page.getByText("Preference signals, not promises")).toBeVisible({
+        timeout: 15000,
+      });
+
+      await assertVisibleWithinViewport(
+        page,
+        page.getByRole("slider", { name: "Minimum age" }),
+        "minimum age slider",
+      );
+      await assertVisibleWithinViewport(
+        page,
+        page.getByRole("slider", { name: "Maximum age" }),
+        "maximum age slider",
+      );
+
+      await setNamedRangeInput(page, "Minimum age", 24);
+      await setNamedRangeInput(page, "Maximum age", 36);
+      await expect(page.getByText("24-36", { exact: true })).toBeVisible({
+        timeout: 15000,
+      });
+
+      await page.getByRole("radio", { name: /marriage/i }).click();
+      const savePreferencesButton = page
+        .getByRole("button", { name: "Save preferences" })
+        .last();
+      await savePreferencesButton.scrollIntoViewIfNeeded();
+      await assertVisibleWithinViewport(
+        page,
+        savePreferencesButton,
+        "save preferences button",
+      );
+
+      const profileUpdatePromise = page.waitForResponse(
+        (response) =>
+          response.url().includes("/rest/v1/profiles") &&
+          response.request().method() === "PATCH",
+        { timeout: 15000 },
+      );
+      page.once("dialog", async (dialog) => {
+        expect(dialog.message()).toMatch(/Preferences updated successfully/i);
+        await dialog.accept();
+      });
+      await savePreferencesButton.click();
+
+      const response = await profileUpdatePromise;
+      expect(response.status(), "mobile preference profile update").toBeLessThan(
+        400,
+      );
+      await expect(page.getByText("Profile", { exact: true }).first()).toBeVisible({
+        timeout: 20000,
+      });
+    } finally {
+      await restoreMatchPreferences(preferencesSnapshot);
+    }
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("mobile: authenticated privacy read receipts save and restore", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+    const privacySnapshot = await snapshotPrivacySettings();
+
+    try {
+      await openProtectedRoute(page, "/profile-settings/privacy");
+      await expect(page.getByText("Privacy Settings", { exact: true })).toBeVisible({
+        timeout: 20000,
+      });
+      await expect(page.getByText("Privacy controls", { exact: true })).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(page.getByText("Settings need to reload")).toHaveCount(0);
+
+      const readReceiptsSwitch = page.getByRole("switch", {
+        name: /Read Receipts:/i,
+      });
+      await assertVisibleWithinViewport(
+        page,
+        readReceiptsSwitch,
+        "read receipts privacy switch",
+      );
+      await expect(readReceiptsSwitch).toBeEnabled();
+
+      await toggleSwitchAndWaitForRpc(
+        page,
+        readReceiptsSwitch,
+        "save_privacy_settings",
+      );
+      await expect(page.getByText("Privacy Settings", { exact: true })).toBeVisible({
+        timeout: 15000,
+      });
+    } finally {
+      await restorePrivacySettings(privacySnapshot);
+    }
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("mobile: authenticated account deletion confirmation can be cancelled", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await openProtectedRoute(page, "/profile-settings/privacy");
+    await expect(page.getByText("Privacy Settings", { exact: true })).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.getByText("Privacy controls", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByText("Settings need to reload")).toHaveCount(0);
+
+    const deletionButton = page.getByRole("button", {
+      name: "Request account deletion for support review",
+    });
+    await deletionButton.scrollIntoViewIfNeeded();
+    await assertVisibleWithinViewport(
+      page,
+      deletionButton,
+      "account deletion request button",
+    );
+    await expect(deletionButton).toBeEnabled();
+
+    const deletionRequestPromise = page
+      .waitForRequest(
+        (request) =>
+          request.url().includes("/rpc/request_account_deletion") &&
+          request.method() === "POST",
+        { timeout: 1500 },
+      )
+      .then(() => true)
+      .catch(() => false);
+
+    page.once("dialog", async (dialog) => {
+      expect(dialog.message()).toMatch(/Request account deletion/i);
+      await dialog.dismiss();
+    });
+
+    await deletionButton.click();
+    await expect(deletionRequestPromise).resolves.toBe(false);
+    await expect(page.getByText("Deletion request received")).toHaveCount(0);
+    await expect(page.getByText("Request not sent")).toHaveCount(0);
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("mobile: authenticated notification email updates save and restore", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+    const notificationSnapshot = await snapshotNotificationPreferences();
+
+    try {
+      await openProtectedRoute(page, "/profile-settings/notifications");
+      await expect(page.getByText("Notifications", { exact: true })).toBeVisible({
+        timeout: 20000,
+      });
+      await expect(page.getByText("Notification controls", { exact: true })).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(page.getByText("Preferences need to reload")).toHaveCount(0);
+
+      const emailUpdatesSwitch = page.getByRole("switch", {
+        name: /Email updates:/i,
+      });
+      await emailUpdatesSwitch.scrollIntoViewIfNeeded();
+      await assertVisibleWithinViewport(
+        page,
+        emailUpdatesSwitch,
+        "email updates notification switch",
+      );
+      await expect(emailUpdatesSwitch).toBeEnabled();
+
+      await toggleSwitchAndWaitForRpc(
+        page,
+        emailUpdatesSwitch,
+        "save_notification_preferences",
+      );
+      await expect(page.getByText("Notifications", { exact: true })).toBeVisible({
+        timeout: 15000,
+      });
+    } finally {
+      await restoreNotificationPreferences(notificationSnapshot);
+    }
+
+    await assertNoCriticalNoise(noise);
+  });
+});

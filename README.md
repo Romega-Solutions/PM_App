@@ -154,7 +154,7 @@ messages          # Chat messages
 - Full ordered Supabase launch migrations through `20260611123000_add_notification_preferences.sql` are present in `supabase/migrations`; use `supabase/LAUNCH_MIGRATION_MANIFEST.md` for the intended release order.
 - Chat media now stores durable Supabase Storage paths and signs image URLs at read/render time.
 - Conversation list reads now use a safe RPC shape for the other member's display card instead of joining full profile rows.
-- Report, block, unmatch, verification submission, least-privilege grants, and final match-safety persistence are defined across `04_production_security_hardening.sql` and `99_final_release_security_hardening.sql`.
+- Report, block, unmatch, verification submission, least-privilege grants, and final match-safety persistence are defined across `20260610090000_restore_legacy_security_primitives.sql` and `20260611144000_final_release_security_hardening.sql`.
 - OCR flow calls the bundled Supabase Edge Function via `src/services/ocrService.ts` and uses extracted data in verification upload.
 - OCR backend artifact is present at `supabase/functions/ocr`; deploy it with a server-side `OCR_SPACE_API_KEY` secret before release.
 - Verification upload now stores selfie/document evidence in the private `verification-docs` Supabase Storage bucket before submitting durable storage paths for review.
@@ -198,7 +198,7 @@ messages          # Chat messages
 
 ```bash
 # implementation evidence checks (run in PM_App)
-rg -n "app/index.tsx|app/\\(main\\)/_layout.tsx|EXPO_PUBLIC_OCR_ENDPOINT|extractTextFromImage|04_production_security_hardening|Use Current Location" PM_App
+rg -n "app/index.tsx|app/\\(main\\)/_layout.tsx|EXPO_PUBLIC_OCR_ENDPOINT|extractTextFromImage|20260610090000_restore_legacy_security_primitives|Use Current Location" PM_App
 rg -n "useLocationSearch|safetyApi|messages.api|conversations.api|supabase/tests/04_safety_smoke_test.sql" PM_App
 
 # release-clearing checks (run when env is ready)
@@ -215,7 +215,7 @@ supabase db push
 
 ### Final verification expectations before launch
 
-- Migration proof: `04_production_security_hardening.sql`, `99_final_release_security_hardening.sql`, `20260610094806_add_pinaymate_storage_buckets.sql`, `20260610100323_add_ocr_rate_limit.sql`, and `20260610100523_add_basic_info_rpc.sql`, then `supabase/tests/04_safety_smoke_test.sql` logs in staging and production.
+- Migration proof: `20260610090000_restore_legacy_security_primitives.sql`, `20260611144000_final_release_security_hardening.sql`, `20260610094806_add_pinaymate_storage_buckets.sql`, `20260610100323_add_ocr_rate_limit.sql`, and `20260610100523_add_basic_info_rpc.sql`, then `supabase/tests/04_safety_smoke_test.sql` logs in staging and production.
 - OCR proof: `npx supabase functions deploy ocr`, secret-check evidence for `OCR_SPACE_API_KEY`, and valid/invalid document extraction assertions.
 - Local quality proof: `npm run check:local-quality` from `PM_App` after any auth, profile, location, matching, messaging, verification, or UI change.
 - Local release guard proof: `npm run check:release-local` from `PM_App` after ownership, safety, and launch-evidence blockers are resolved. This runs secret hygiene, dependency audit, ownership, safety, launch evidence, and local quality gates.

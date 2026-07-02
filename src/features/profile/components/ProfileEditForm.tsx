@@ -8,11 +8,6 @@
 import React from "react";
 import { Text, TextInput, View } from "react-native";
 import { makeStyles } from "../../../theme/makeStyles";
-import { useAppTheme, AppTheme } from "../../../theme/ThemeContext";
-
-const WHITE = "#FFFFFF";
-const SURFACE_STRONG = "rgba(255, 255, 255, 0.08)";
-const TILE_BORDER = "rgba(168, 85, 247, 0.13)";
 
 interface ProfileEditFormProps {
   firstName: string;
@@ -40,7 +35,6 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
   onLocationChange,
 }) => {
   const styles = useStyles();
-  const theme = useAppTheme();
   return (
     <View style={styles.form}>
       <View

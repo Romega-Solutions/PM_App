@@ -159,13 +159,7 @@ export const useSignIn = () => {
       } else if (!profile.verification_completed) {
         router.replace("/(main)");
       } else {
-        router.replace({
-          pathname: "/(auth)/account-setup/welcome-complete",
-          params: {
-            userType: profile.user_type,
-            firstName: profile.first_name,
-          },
-        });
+        router.replace("/(main)");
       }
     } catch {
       console.error("Profile completion check failed after sign in.");

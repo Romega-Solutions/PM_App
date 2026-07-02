@@ -2,8 +2,11 @@ import AuthHeader from "@/src/components/auth/AuthHeader";
 import AuthLayout from "@/src/components/auth/AuthLayout";
 import SignUpPrompt from "@/src/components/auth/SignUpPrompt";
 import CustomTextInput from "@/src/components/forms/CustomTextInput";
+import GhostButton from "@/src/components/ui/GhostButton";
 import PrimaryButton from "@/src/components/ui/PrimaryButton";
+import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
 import { useAppTheme } from "@/src/theme";
+import { useAuthStore } from "@/src/stores/authStore";
 import { useRouter } from "expo-router";
 import { Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react-native";
 import React, { useState, useMemo } from "react";
@@ -23,6 +26,7 @@ export default function SignInScreen() {
 
   const router = useRouter();
   const { signIn, loading } = useSignIn();
+  const startDemoSession = useAuthStore((state) => state.startDemoSession);
   const { moderateScale } = useResponsive();
 
   const styles = useMemo(() => StyleSheet.create({
@@ -59,6 +63,20 @@ export default function SignInScreen() {
       fontSize: moderateScale(14),
       fontFamily: theme.fontFamilies.body.semiBold,
       letterSpacing: Platform.select({ ios: 0.2, android: 0.15, web: 0.2 }),
+    },
+    demoAction: {
+      alignItems: "center",
+      gap: 8,
+      marginTop: theme.spacing.md,
+      marginBottom: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm,
+    },
+    demoActionText: {
+      color: "rgba(255,255,255,0.68)",
+      fontSize: moderateScale(12),
+      lineHeight: moderateScale(18),
+      fontFamily: theme.fontFamilies.body.regular,
+      textAlign: "center",
     },
   }), [moderateScale, theme]);
 
@@ -120,6 +138,11 @@ export default function SignInScreen() {
   // Handle forgot password
   const handleForgotPassword = () => {
     router.push("/(auth)/forgot-password");
+  };
+
+  const handleBetaPreview = () => {
+    startDemoSession();
+    router.replace("/(main)");
   };
 
   return (
@@ -204,6 +227,21 @@ export default function SignInScreen() {
           loading={loading}
           showChevron={true}
         />
+
+        {isBetaDemoModeEnabled() ? (
+          <View style={styles.demoAction}>
+            <Text style={styles.demoActionText}>
+              Beta preview uses seeded data only and does not create or update
+              an account.
+            </Text>
+            <GhostButton
+              title="Continue in beta preview"
+              onPress={handleBetaPreview}
+              accessibilityLabel="Continue in beta preview"
+              accessibilityHint="Opens the main app with seeded demo data without signing in"
+            />
+          </View>
+        ) : null}
 
         {/* Sign Up Prompt */}
         <SignUpPrompt

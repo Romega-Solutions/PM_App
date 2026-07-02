@@ -677,8 +677,8 @@ BEGIN
     RAISE EXCEPTION 'verification-docs bucket must exist as a private bucket';
   END IF;
 
-  IF NOT EXISTS (
-    SELECT 1
+  IF (
+    SELECT COUNT(DISTINCT policyname)
     FROM pg_policies
     WHERE schemaname = 'storage'
       AND tablename = 'objects'
@@ -716,7 +716,12 @@ CREATE TEMP TABLE _pinaymate_verification_object_paths (
   path TEXT NOT NULL
 );
 
-CREATE TEMP TABLE _pinaymate_smoke_users AS
+CREATE TEMP TABLE _pinaymate_smoke_users (
+  label TEXT PRIMARY KEY,
+  id UUID NOT NULL
+);
+
+INSERT INTO _pinaymate_smoke_users (label, id)
 SELECT
   CASE ROW_NUMBER() OVER (ORDER BY created_at NULLS LAST, id)
     WHEN 1 THEN 'actor'
@@ -727,6 +732,7 @@ FROM (
   SELECT id, created_at
   FROM public.profiles
   WHERE COALESCE(is_active, TRUE) = TRUE
+    AND COALESCE(is_verified, FALSE) = TRUE
   ORDER BY created_at NULLS LAST, id
   LIMIT 2
 ) picked_profiles;
@@ -734,12 +740,120 @@ FROM (
 DO $$
 BEGIN
   IF (SELECT COUNT(*) FROM _pinaymate_smoke_users) < 2 THEN
-    RAISE EXCEPTION 'Safety smoke test requires at least two active profiles in staging/local data';
+    INSERT INTO auth.users (
+      id,
+      aud,
+      role,
+      email,
+      email_confirmed_at,
+      raw_app_meta_data,
+      raw_user_meta_data,
+      created_at,
+      updated_at
+    )
+    VALUES
+      (
+        '11111111-1111-4111-8111-111111111111'::UUID,
+        'authenticated',
+        'authenticated',
+        'pinaymate-smoke-actor@example.invalid',
+        NOW(),
+        '{"provider":"email","providers":["email"]}'::JSONB,
+        '{"first_name":"Smoke Actor","user_type":"foreigner"}'::JSONB,
+        NOW(),
+        NOW()
+      ),
+      (
+        '22222222-2222-4222-8222-222222222222'::UUID,
+        'authenticated',
+        'authenticated',
+        'pinaymate-smoke-other@example.invalid',
+        NOW(),
+        '{"provider":"email","providers":["email"]}'::JSONB,
+        '{"first_name":"Smoke Other","user_type":"filipina"}'::JSONB,
+        NOW(),
+        NOW()
+      )
+    ON CONFLICT (id) DO UPDATE SET
+      email_confirmed_at = COALESCE(auth.users.email_confirmed_at, EXCLUDED.email_confirmed_at),
+      updated_at = NOW();
+
+    INSERT INTO public.profiles (
+      id,
+      email,
+      first_name,
+      user_type,
+      gender,
+      looking_for_gender,
+      age,
+      photos,
+      is_active,
+      is_verified,
+      verification_status,
+      age_preference_min,
+      age_preference_max,
+      distance_preference_km,
+      verification_reviewer_note,
+      created_at,
+      updated_at
+    )
+    VALUES
+      (
+        '11111111-1111-4111-8111-111111111111'::UUID,
+        'pinaymate-smoke-actor@example.invalid',
+        'Smoke Actor',
+        'foreigner',
+        'male',
+        'female',
+        36,
+        ARRAY['https://example.invalid/smoke-actor.jpg'],
+        TRUE,
+        TRUE,
+        'approved',
+        18,
+        70,
+        100,
+        '',
+        NOW(),
+        NOW()
+      ),
+      (
+        '22222222-2222-4222-8222-222222222222'::UUID,
+        'pinaymate-smoke-other@example.invalid',
+        'Smoke Other',
+        'filipina',
+        'female',
+        'male',
+        28,
+        ARRAY['https://example.invalid/smoke-other.jpg'],
+        TRUE,
+        TRUE,
+        'approved',
+        18,
+        70,
+        100,
+        '',
+        NOW(),
+        NOW()
+      )
+    ON CONFLICT (id) DO UPDATE SET
+      is_active = TRUE,
+      is_verified = TRUE,
+      verification_status = 'approved',
+      updated_at = NOW();
+
+    DELETE FROM _pinaymate_smoke_users;
+
+    INSERT INTO _pinaymate_smoke_users (label, id)
+    VALUES
+      ('actor', '11111111-1111-4111-8111-111111111111'::UUID),
+      ('other', '22222222-2222-4222-8222-222222222222'::UUID);
   END IF;
 END;
 $$;
 
 GRANT SELECT ON _pinaymate_smoke_users TO authenticated;
+GRANT SELECT ON _pinaymate_verification_object_paths TO authenticated;
 
 INSERT INTO _pinaymate_verification_object_paths (kind, path)
 SELECT 'selfie', id::TEXT || '/smoke-selfie.jpg'
@@ -1908,24 +2022,11 @@ DO $$
 BEGIN
   BEGIN
     PERFORM public.send_message(
-      other_user.id,
+      (SELECT id FROM _pinaymate_smoke_users WHERE label = 'other'),
       'Blocked smoke test message',
       'text',
       NULL,
-      c.id
-    )
-    FROM public.conversations c
-    JOIN _pinaymate_smoke_users actor
-      ON actor.label = 'actor'
-    JOIN _pinaymate_smoke_users other_user
-      ON other_user.label = 'other'
-    WHERE (
-      c.participant_1_id = actor.id
-      AND c.participant_2_id = other_user.id
-    )
-    OR (
-      c.participant_1_id = other_user.id
-      AND c.participant_2_id = actor.id
+      NULL
     );
 
     RAISE EXCEPTION 'Blocked message RPC unexpectedly succeeded';

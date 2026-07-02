@@ -7,7 +7,6 @@
 
 import React from "react";
 import { Platform, Text, View } from "react-native";
-import { useAppTheme } from "@/src/theme/ThemeContext";
 import { makeStyles } from "@/src/theme/makeStyles";
 
 interface LikesHeaderProps {
@@ -19,7 +18,6 @@ export const LikesHeader: React.FC<LikesHeaderProps> = ({
   matchCount,
   filter,
 }) => {
-  const theme = useAppTheme();
   const styles = useStyles();
   const subtitle =
     matchCount === 0

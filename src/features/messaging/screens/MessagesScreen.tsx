@@ -32,6 +32,7 @@ import {
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Platform,
   ScrollView,
   StatusBar,
@@ -44,11 +45,19 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { supabase } from "@/src/config/supabase";
+import { isBetaDemoModeEnabled } from "@/src/features/auth/demoMode";
+import {
+  DEMO_CURRENT_USER_ID,
+  getSeedConversations,
+  isSeedConversationId,
+} from "@/src/features/messaging/data/seedConversations";
 import { useConversations } from "@/src/features/messaging/hooks/useConversations";
+import { useAuthStore } from "@/src/stores/authStore";
 import { useChatStore } from "@/src/stores/chatStore";
+import { useMessageStore } from "@/src/stores/messageStore";
 import { ActiveUserCard } from "../components/ActiveUserCard";
 import { ConversationCard } from "../components/ConversationCard";
-import type { ConversationWithUser } from "../types/messaging.types";
+import type { ConversationWithUser, Message } from "../types/messaging.types";
 
 // Brand Colors
 const BRAND_BG = "#0F0814";
@@ -111,6 +120,11 @@ function getConversationErrorMessage(error: Error): string {
   return message;
 }
 
+function getMessagePreview(message: Message): string {
+  if (message.type === "image") return "Photo";
+  return message.text?.trim() || "Message";
+}
+
 /**
  * MessagesScreen Component
  *
@@ -123,9 +137,20 @@ export const MessagesScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [filterType, setFilterType] = useState<ConversationFilter>("all");
+  const [showSeedSnackbar, setShowSeedSnackbar] = useState(false);
+  const seedSnackbarOpacity = React.useRef(new Animated.Value(0)).current;
+  const seedSnackbarRunKey = React.useRef<string | null>(null);
 
   // Get global unread count from Zustand store
-  const totalUnreadCount = useChatStore((state) => state.totalUnreadCount);
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
+  const demoUserType = useAuthStore((state) => state.demoUserType);
+  const realTotalUnreadCount = useChatStore((state) => state.totalUnreadCount);
+  const demoMessagesByConversation = useMessageStore(
+    (state) => state.messagesByConversation,
+  );
+  const hiddenDemoConversationIds = useMessageStore(
+    (state) => state.hiddenDemoConversationIds || [],
+  );
 
   // Get current user ID
   useEffect(() => {
@@ -142,27 +167,129 @@ export const MessagesScreen: React.FC = () => {
     autoLoad: true,
   });
 
+  const seedConversations = React.useMemo(() => {
+    return getSeedConversations(currentUserId, demoUserType)
+      .filter((conv) => !hiddenDemoConversationIds.includes(conv.id))
+      .map((conv) => {
+        const cachedMessages = demoMessagesByConversation[conv.id] || [];
+        if (cachedMessages.length === 0) return conv;
+
+        const visibleMessages = cachedMessages.filter(
+          (message) => !message.is_deleted,
+        );
+        const lastMessage = visibleMessages[visibleMessages.length - 1];
+        const demoCurrentUserId = currentUserId || DEMO_CURRENT_USER_ID;
+        const unreadCount = visibleMessages.filter(
+          (message) =>
+            message.recipient_id === demoCurrentUserId &&
+            message.status !== "read",
+        ).length;
+
+        if (!lastMessage) {
+          return { ...conv, unread_count: unreadCount };
+        }
+
+        return {
+          ...conv,
+          last_message_id: lastMessage.id,
+          last_message_text: getMessagePreview(lastMessage),
+          last_message_sender_id: lastMessage.sender_id,
+          last_message_at: lastMessage.created_at,
+          participant_1_unread_count: unreadCount,
+          unread_count: unreadCount,
+          updated_at: lastMessage.updated_at || lastMessage.created_at,
+        };
+      });
+  }, [
+    currentUserId,
+    demoMessagesByConversation,
+    demoUserType,
+    hiddenDemoConversationIds,
+  ]);
+  const usingSeedConversations =
+    (isDemoMode || isBetaDemoModeEnabled()) &&
+    !loading &&
+    (Boolean(error) || conversations.length === 0);
+  const displayConversations = usingSeedConversations
+    ? seedConversations
+    : conversations;
+  const displayUnreadCount = usingSeedConversations
+    ? displayConversations.reduce(
+        (total, conv) => total + (conv.unread_count || 0),
+        0,
+      )
+    : realTotalUnreadCount;
+  const seedSnackbarText = error
+    ? `Live messages did not refresh: ${getConversationErrorMessage(error)} Sample unread and active chats are shown for testing.`
+    : "Sample unread and active chats are shown until real conversations are available.";
+  const seedSnackbarKey = error ? "fallback-error" : "fallback-empty";
+  const liveConversationError = usingSeedConversations ? null : error;
+
+  useEffect(() => {
+    if (!usingSeedConversations) {
+      seedSnackbarOpacity.stopAnimation();
+      seedSnackbarOpacity.setValue(0);
+      setShowSeedSnackbar(false);
+      seedSnackbarRunKey.current = null;
+      return;
+    }
+
+    if (seedSnackbarRunKey.current === seedSnackbarKey) {
+      return;
+    }
+
+    seedSnackbarRunKey.current = seedSnackbarKey;
+    setShowSeedSnackbar(true);
+    seedSnackbarOpacity.setValue(0);
+
+    const animation = Animated.sequence([
+      Animated.timing(seedSnackbarOpacity, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.delay(4600),
+      Animated.timing(seedSnackbarOpacity, {
+        toValue: 0,
+        duration: 420,
+        useNativeDriver: true,
+      }),
+    ]);
+
+    animation.start(({ finished }) => {
+      if (finished) {
+        setShowSeedSnackbar(false);
+      }
+    });
+
+    return () => {
+      animation.stop();
+    };
+  }, [seedSnackbarKey, seedSnackbarOpacity, usingSeedConversations]);
+
   // Extract active users from online conversations
-  const activeUsers = conversations
+  const activeUsers = displayConversations
     .filter((conv) => conv.other_user?.is_active)
     .slice(0, 15)
     .map((conv) => ({
       id: conv.other_user.id,
+      conversationId: conv.id,
       name: conv.other_user.first_name,
-      image: conv.other_user.photos?.[0] || null,
+      image:
+        conv.other_user.demoPhotoSource ?? conv.other_user.photos?.[0] ?? null,
       isOnline: true,
     }));
-  const unreadConversationCount = conversations.filter(
+  const unreadConversationCount = displayConversations.filter(
     (conv) => (conv.unread_count || 0) > 0,
   ).length;
   const filterCounts: Record<ConversationFilter, number> = {
-    all: conversations.length,
+    all: displayConversations.length,
     unread: unreadConversationCount,
     online: activeUsers.length,
   };
 
   // Filter conversations based on search and the visible segmented control.
-  const filteredConversations = conversations.filter((conv) => {
+  const filteredConversations = displayConversations.filter((conv) => {
     if (!conv.other_user) return false;
     if (filterType === "unread" && (conv.unread_count || 0) === 0) {
       return false;
@@ -174,14 +301,18 @@ export const MessagesScreen: React.FC = () => {
     const firstName = conv.other_user.first_name || "";
     return firstName.toLowerCase().includes(searchQuery.toLowerCase());
   });
-  const emptyTitle = searchQuery
+  const emptyTitle = liveConversationError
+    ? "Messages did not refresh"
+    : searchQuery
     ? "No conversations found"
     : filterType === "unread"
       ? "No unread messages"
       : filterType === "online"
         ? "No one active right now"
         : "No conversations yet";
-  const emptyMessage = searchQuery
+  const emptyMessage = liveConversationError
+    ? getConversationErrorMessage(liveConversationError)
+    : searchQuery
     ? "Try a first name, or clear the search to see all chats."
     : filterType === "unread"
       ? "You are caught up. New replies will appear here when they arrive."
@@ -191,6 +322,8 @@ export const MessagesScreen: React.FC = () => {
 
   // Navigate to chat screen
   const handleChatPress = (conv: ConversationWithUser) => {
+    const isSeedConversation = isSeedConversationId(conv.id);
+
     router.push({
       pathname: "/chat",
       params: {
@@ -199,6 +332,7 @@ export const MessagesScreen: React.FC = () => {
         userImage: conv.other_user.photos?.[0] || undefined,
         isOnline: conv.other_user.is_active ? "true" : "false",
         conversationId: conv.id,
+        ...(isSeedConversation ? { isDemo: "true" } : {}),
       },
     });
   };
@@ -207,14 +341,18 @@ export const MessagesScreen: React.FC = () => {
   const handleActiveUserPress = (userId: string) => {
     const user = activeUsers.find((u) => u.id === userId);
     if (!user) return;
+    const isSeedConversation = isSeedConversationId(user.conversationId);
 
     router.push({
       pathname: "/chat",
       params: {
         userId: user.id,
         userName: user.name,
-        userImage: user.image || undefined,
+        userImage: typeof user.image === "string" ? user.image : undefined,
         isOnline: "true",
+        ...(isSeedConversation
+          ? { conversationId: user.conversationId, isDemo: "true" }
+          : {}),
       },
     });
   };
@@ -242,37 +380,6 @@ export const MessagesScreen: React.FC = () => {
     );
   }
 
-  // Error state
-  if (error) {
-    return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <StatusBar barStyle="light-content" backgroundColor={BRAND_BG} />
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Messages</Text>
-        </View>
-        <View style={styles.loadingContainer} accessibilityRole="alert">
-          <View style={styles.errorIconWrap}>
-            <AlertCircle size={28} color={ACCENT_PURPLE} strokeWidth={2} />
-          </View>
-          <Text style={styles.errorText}>Failed to load conversations</Text>
-          <Text style={styles.errorSubtext}>
-            {getConversationErrorMessage(error)}
-          </Text>
-          <TouchableOpacity
-            style={styles.retryButton}
-            onPress={refresh}
-            activeOpacity={0.84}
-            accessibilityRole="button"
-            accessibilityLabel="Retry loading conversations"
-            accessibilityHint="Attempts to load your messages again"
-          >
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" backgroundColor={BRAND_BG} />
@@ -281,9 +388,9 @@ export const MessagesScreen: React.FC = () => {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.headerTitle}>Messages</Text>
-          {totalUnreadCount > 0 && (
+          {displayUnreadCount > 0 && (
             <View style={styles.headerBadge}>
-              <Text style={styles.headerBadgeText}>{totalUnreadCount}</Text>
+              <Text style={styles.headerBadgeText}>{displayUnreadCount}</Text>
             </View>
           )}
         </View>
@@ -464,7 +571,18 @@ export const MessagesScreen: React.FC = () => {
                   report, block, or unmatch.
                 </Text>
               </View>
-              {searchQuery || filterType !== "all" ? (
+              {liveConversationError ? (
+                <TouchableOpacity
+                  style={styles.emptyActionButton}
+                  onPress={refresh}
+                  activeOpacity={0.84}
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry loading conversations"
+                >
+                  <RefreshCw size={18} color={WHITE} strokeWidth={2.4} />
+                  <Text style={styles.emptyActionButtonText}>Retry</Text>
+                </TouchableOpacity>
+              ) : searchQuery || filterType !== "all" ? (
                 <TouchableOpacity
                   style={styles.emptyActionButton}
                   onPress={() => {
@@ -489,7 +607,11 @@ export const MessagesScreen: React.FC = () => {
                   conversationId={conv.id}
                   userId={conv.other_user.id}
                   userName={conv.other_user.first_name}
-                  userPhoto={conv.other_user.photos?.[0] || null}
+                  userPhoto={
+                    conv.other_user.demoPhotoSource ??
+                    conv.other_user.photos?.[0] ??
+                    null
+                  }
                   isOnline={conv.other_user.is_active}
                   lastMessage={conv.last_message_text || "No messages yet"}
                   lastMessageTime={
@@ -503,6 +625,50 @@ export const MessagesScreen: React.FC = () => {
           )}
         </View>
       </ScrollView>
+
+      {showSeedSnackbar && usingSeedConversations && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.seedSnackbar,
+            {
+              bottom: Math.max(insets.bottom + 86, 92),
+              opacity: seedSnackbarOpacity,
+              transform: [
+                {
+                  translateY: seedSnackbarOpacity.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [12, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+          accessible
+          accessibilityLiveRegion="polite"
+          accessibilityLabel={`Beta seeded inbox. ${seedSnackbarText}`}
+        >
+          <View style={styles.seedSnackbarIcon}>
+            {error ? (
+              <AlertCircle
+                size={18}
+                color={ACCENT_PURPLE}
+                strokeWidth={2.4}
+              />
+            ) : (
+              <MessageCircle
+                size={18}
+                color={ACCENT_PURPLE}
+                strokeWidth={2.4}
+              />
+            )}
+          </View>
+          <View style={styles.seedSnackbarCopy}>
+            <Text style={styles.seedSnackbarTitle}>Beta seeded inbox</Text>
+            <Text style={styles.seedSnackbarText}>{seedSnackbarText}</Text>
+          </View>
+        </Animated.View>
+      )}
     </View>
   );
 };
@@ -675,6 +841,54 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-Regular",
     color: TEXT_SECONDARY,
     lineHeight: 19,
+  },
+  seedSnackbar: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    minHeight: 66,
+    padding: 13,
+    borderRadius: 16,
+    backgroundColor: "rgba(24, 14, 31, 0.96)",
+    borderWidth: 1,
+    borderColor: "rgba(141,105,246,0.36)",
+    flexDirection: "row",
+    alignItems: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.32,
+        shadowRadius: 18,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+  seedSnackbarIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(141,105,246,0.14)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  seedSnackbarCopy: {
+    flex: 1,
+  },
+  seedSnackbarTitle: {
+    fontSize: 13,
+    fontFamily: "DMSans-Bold",
+    color: WHITE,
+    marginBottom: 4,
+  },
+  seedSnackbarText: {
+    fontSize: 12,
+    fontFamily: "DMSans-Medium",
+    color: TEXT_SECONDARY,
+    lineHeight: 17,
   },
   sectionHeader: {
     flexDirection: "row",

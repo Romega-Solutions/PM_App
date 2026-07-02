@@ -242,6 +242,10 @@ SET search_path = ''
 AS $$
 DECLARE
   v_current_user UUID := auth.uid();
+  v_reason TEXT := LEFT(BTRIM(COALESCE(p_reason, '')), 120);
+  v_details TEXT := LEFT(BTRIM(COALESCE(p_details, '')), 800);
+  v_source TEXT := LOWER(BTRIM(COALESCE(p_source, 'app')));
+  v_report_id UUID;
 BEGIN
   IF v_current_user IS NULL THEN
     RAISE EXCEPTION 'Authentication required' USING ERRCODE = '42501';
@@ -373,8 +377,12 @@ BEGIN
     RAISE EXCEPTION 'Choose a different member to report' USING ERRCODE = '22023';
   END IF;
 
-  IF COALESCE(NULLIF(trim(p_reason), ''), '') = '' THEN
+  IF v_reason = '' THEN
     RAISE EXCEPTION 'Report reason is required' USING ERRCODE = '22023';
+  END IF;
+
+  IF v_source NOT IN ('chat', 'profile', 'likes', 'discovery', 'app') THEN
+    v_source := 'app';
   END IF;
 
   IF p_conversation_id IS NOT NULL
@@ -397,6 +405,72 @@ BEGIN
     RAISE EXCEPTION 'Report conversation does not match this member' USING ERRCODE = '42501';
   END IF;
 
+  PERFORM pg_advisory_xact_lock(
+    hashtext(
+      v_current_user::TEXT
+      || ':'
+      || p_reported_user_id::TEXT
+      || ':'
+      || COALESCE(p_conversation_id::TEXT, 'none')
+      || ':'
+      || v_source
+    )
+  );
+
+  SELECT r.id
+  INTO v_report_id
+  FROM public.user_reports r
+  WHERE r.reporter_id = v_current_user
+    AND r.reported_user_id = p_reported_user_id
+    AND r.source = v_source
+    AND COALESCE(r.conversation_id, '00000000-0000-0000-0000-000000000000'::UUID)
+      = COALESCE(p_conversation_id, '00000000-0000-0000-0000-000000000000'::UUID)
+    AND r.status IN ('pending', 'reviewing')
+  ORDER BY r.created_at DESC
+  LIMIT 1
+  FOR UPDATE;
+
+  IF v_report_id IS NOT NULL THEN
+    UPDATE public.user_reports
+    SET
+      reason = v_reason,
+      details = CASE
+        WHEN v_details <> '' THEN v_details
+        ELSE details
+      END,
+      updated_at = NOW()
+    WHERE id = v_report_id;
+
+    RETURN;
+  END IF;
+
+  SELECT r.id
+  INTO v_report_id
+  FROM public.user_reports r
+  WHERE r.reporter_id = v_current_user
+    AND r.reported_user_id = p_reported_user_id
+    AND r.source = v_source
+    AND COALESCE(r.conversation_id, '00000000-0000-0000-0000-000000000000'::UUID)
+      = COALESCE(p_conversation_id, '00000000-0000-0000-0000-000000000000'::UUID)
+    AND r.created_at >= NOW() - INTERVAL '10 minutes'
+  ORDER BY r.created_at DESC
+  LIMIT 1
+  FOR UPDATE;
+
+  IF v_report_id IS NOT NULL THEN
+    UPDATE public.user_reports
+    SET
+      reason = v_reason,
+      details = CASE
+        WHEN v_details <> '' THEN v_details
+        ELSE details
+      END,
+      updated_at = NOW()
+    WHERE id = v_report_id;
+
+    RETURN;
+  END IF;
+
   INSERT INTO public.user_reports (
     reporter_id,
     reported_user_id,
@@ -409,9 +483,9 @@ BEGIN
     v_current_user,
     p_reported_user_id,
     p_conversation_id,
-    trim(p_reason),
-    COALESCE(trim(p_details), ''),
-    COALESCE(NULLIF(trim(p_source), ''), 'app')
+    v_reason,
+    v_details,
+    v_source
   );
 END;
 $$;
@@ -1013,6 +1087,22 @@ DROP POLICY IF EXISTS "Conversation participants can update message state" ON pu
 DROP POLICY IF EXISTS "Users can update their received messages" ON public.messages;
 DROP POLICY IF EXISTS "Users can update their own messages" ON public.messages;
 
+CREATE OR REPLACE FUNCTION public.current_user_allows_read_receipts()
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT COALESCE(
+    (
+      SELECT s.read_receipts
+      FROM public.user_privacy_settings s
+      WHERE s.user_id = auth.uid()
+    ),
+    FALSE
+  );
+$$;
+
 CREATE OR REPLACE FUNCTION public.mark_messages_read(
   p_message_ids UUID[]
 )
@@ -1023,12 +1113,19 @@ SET search_path = ''
 AS $$
 DECLARE
   v_current_user UUID := auth.uid();
+  v_allow_read_receipts BOOLEAN;
 BEGIN
   IF v_current_user IS NULL THEN
     RAISE EXCEPTION 'Authentication required' USING ERRCODE = '42501';
   END IF;
 
   IF p_message_ids IS NULL OR cardinality(p_message_ids) = 0 THEN
+    RETURN;
+  END IF;
+
+  v_allow_read_receipts := public.current_user_allows_read_receipts();
+
+  IF NOT v_allow_read_receipts THEN
     RETURN;
   END IF;
 
@@ -1075,54 +1172,59 @@ SET search_path = ''
 AS $$
 DECLARE
   v_current_user UUID := auth.uid();
+  v_allow_read_receipts BOOLEAN;
 BEGIN
   IF v_current_user IS NULL THEN
     RAISE EXCEPTION 'Authentication required' USING ERRCODE = '42501';
   END IF;
 
-  UPDATE public.messages m
-  SET
-    status = 'read',
-    read_at = COALESCE(m.read_at, NOW()),
-    updated_at = NOW()
-  FROM public.conversations c
-  WHERE c.id = p_conversation_id
-    AND m.conversation_id = c.id
-    AND m.recipient_id = v_current_user
-    AND COALESCE(m.status, 'sent') <> 'read'
-    AND (
-      c.participant_1_id = v_current_user
-      OR c.participant_2_id = v_current_user
-    )
-    AND NOT EXISTS (
-      SELECT 1
-      FROM public.user_blocks b
-      WHERE (
-        b.blocker_id = c.participant_1_id
-        AND b.blocked_user_id = c.participant_2_id
+  v_allow_read_receipts := public.current_user_allows_read_receipts();
+
+  IF v_allow_read_receipts THEN
+    UPDATE public.messages m
+    SET
+      status = 'read',
+      read_at = COALESCE(m.read_at, NOW()),
+      updated_at = NOW()
+    FROM public.conversations c
+    WHERE c.id = p_conversation_id
+      AND m.conversation_id = c.id
+      AND m.recipient_id = v_current_user
+      AND COALESCE(m.status, 'sent') <> 'read'
+      AND (
+        c.participant_1_id = v_current_user
+        OR c.participant_2_id = v_current_user
       )
-      OR (
-        b.blocker_id = c.participant_2_id
-        AND b.blocked_user_id = c.participant_1_id
+      AND NOT EXISTS (
+        SELECT 1
+        FROM public.user_blocks b
+        WHERE (
+          b.blocker_id = c.participant_1_id
+          AND b.blocked_user_id = c.participant_2_id
+        )
+        OR (
+          b.blocker_id = c.participant_2_id
+          AND b.blocked_user_id = c.participant_1_id
+        )
       )
-    )
-    AND EXISTS (
-      SELECT 1
-      FROM public.likes l1
-      JOIN public.likes l2
-        ON l2.from_user_id = CASE
-          WHEN c.participant_1_id = v_current_user THEN c.participant_2_id
-          ELSE c.participant_1_id
-        END
-       AND l2.to_user_id = v_current_user
-       AND l2.is_match = TRUE
-      WHERE l1.from_user_id = v_current_user
-        AND l1.to_user_id = CASE
-          WHEN c.participant_1_id = v_current_user THEN c.participant_2_id
-          ELSE c.participant_1_id
-        END
-        AND l1.is_match = TRUE
-    );
+      AND EXISTS (
+        SELECT 1
+        FROM public.likes l1
+        JOIN public.likes l2
+          ON l2.from_user_id = CASE
+            WHEN c.participant_1_id = v_current_user THEN c.participant_2_id
+            ELSE c.participant_1_id
+          END
+         AND l2.to_user_id = v_current_user
+         AND l2.is_match = TRUE
+        WHERE l1.from_user_id = v_current_user
+          AND l1.to_user_id = CASE
+            WHEN c.participant_1_id = v_current_user THEN c.participant_2_id
+            ELSE c.participant_1_id
+          END
+          AND l1.is_match = TRUE
+      );
+  END IF;
 
   UPDATE public.conversations
   SET
@@ -1153,6 +1255,7 @@ SET search_path = ''
 AS $$
 DECLARE
   v_current_user UUID := auth.uid();
+  v_allow_read_receipts BOOLEAN;
 BEGIN
   IF v_current_user IS NULL THEN
     RAISE EXCEPTION 'Authentication required' USING ERRCODE = '42501';
@@ -1162,38 +1265,42 @@ BEGIN
     RAISE EXCEPTION 'A different member is required' USING ERRCODE = '22023';
   END IF;
 
-  UPDATE public.messages m
-  SET
-    status = 'read',
-    read_at = COALESCE(m.read_at, NOW()),
-    is_read = TRUE,
-    updated_at = NOW()
-  WHERE m.sender_id = p_other_user_id
-    AND m.recipient_id = v_current_user
-    AND COALESCE(m.status, 'sent') <> 'read'
-    AND NOT EXISTS (
-      SELECT 1
-      FROM public.user_blocks b
-      WHERE (
-        b.blocker_id = p_other_user_id
-        AND b.blocked_user_id = v_current_user
+  v_allow_read_receipts := public.current_user_allows_read_receipts();
+
+  IF v_allow_read_receipts THEN
+    UPDATE public.messages m
+    SET
+      status = 'read',
+      read_at = COALESCE(m.read_at, NOW()),
+      is_read = TRUE,
+      updated_at = NOW()
+    WHERE m.sender_id = p_other_user_id
+      AND m.recipient_id = v_current_user
+      AND COALESCE(m.status, 'sent') <> 'read'
+      AND NOT EXISTS (
+        SELECT 1
+        FROM public.user_blocks b
+        WHERE (
+          b.blocker_id = p_other_user_id
+          AND b.blocked_user_id = v_current_user
+        )
+        OR (
+          b.blocker_id = v_current_user
+          AND b.blocked_user_id = p_other_user_id
+        )
       )
-      OR (
-        b.blocker_id = v_current_user
-        AND b.blocked_user_id = p_other_user_id
-      )
-    )
-    AND EXISTS (
-      SELECT 1
-      FROM public.likes l1
-      JOIN public.likes l2
-        ON l2.from_user_id = p_other_user_id
-       AND l2.to_user_id = v_current_user
-       AND l2.is_match = TRUE
-      WHERE l1.from_user_id = v_current_user
-        AND l1.to_user_id = p_other_user_id
-        AND l1.is_match = TRUE
-    );
+      AND EXISTS (
+        SELECT 1
+        FROM public.likes l1
+        JOIN public.likes l2
+          ON l2.from_user_id = p_other_user_id
+         AND l2.to_user_id = v_current_user
+         AND l2.is_match = TRUE
+        WHERE l1.from_user_id = v_current_user
+          AND l1.to_user_id = p_other_user_id
+          AND l1.is_match = TRUE
+      );
+  END IF;
 
   UPDATE public.conversations
   SET
@@ -1228,6 +1335,7 @@ SET search_path = ''
 AS $$
 DECLARE
   v_current_user UUID := auth.uid();
+  v_allow_read_receipts BOOLEAN;
 BEGIN
   IF v_current_user IS NULL THEN
     RAISE EXCEPTION 'Authentication required' USING ERRCODE = '42501';
@@ -1235,6 +1343,14 @@ BEGIN
 
   IF p_status NOT IN ('sent', 'delivered', 'read') THEN
     RAISE EXCEPTION 'Unsupported message status' USING ERRCODE = '22023';
+  END IF;
+
+  IF p_status = 'read' THEN
+    v_allow_read_receipts := public.current_user_allows_read_receipts();
+
+    IF NOT v_allow_read_receipts THEN
+      RETURN;
+    END IF;
   END IF;
 
   UPDATE public.messages m
@@ -1331,6 +1447,7 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.current_user_allows_read_receipts() FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.mark_messages_read(UUID[]) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.mark_conversation_read(UUID) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.mark_pair_messages_read(UUID) FROM PUBLIC, anon;

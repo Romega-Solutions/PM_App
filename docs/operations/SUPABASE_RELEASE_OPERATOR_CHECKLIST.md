@@ -83,7 +83,7 @@ Evidence to record:
 00_complete_database_setup.sql
 02_chat_schema_updates.sql
 03_add_conversations_table.sql
-04_production_security_hardening.sql
+20260610090000_restore_legacy_security_primitives.sql
 20260610094806_add_pinaymate_storage_buckets.sql
 20260610100323_add_ocr_rate_limit.sql
 20260610100523_add_basic_info_rpc.sql
@@ -91,7 +91,7 @@ Evidence to record:
 20260610113000_add_privacy_settings.sql
 20260610114000_respect_read_receipts_privacy.sql
 20260610115000_respect_online_status_privacy.sql
-99_final_release_security_hardening.sql
+20260611144000_final_release_security_hardening.sql
 20260611120000_secure_send_message_rpc.sql
 20260611121000_harden_user_report_payload.sql
 999_restore_profile_visibility_filter.sql

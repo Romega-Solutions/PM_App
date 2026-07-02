@@ -1,4 +1,5 @@
 import { supabase } from "@/src/config/supabase";
+import { getPublicEnvValue } from "@/src/config/publicEnv";
 import * as FileSystem from "expo-file-system/legacy";
 import { Platform } from "react-native";
 
@@ -36,6 +37,38 @@ function getImageContentType(extension: string): string {
   return `image/${extension}`;
 }
 
+function getImageExtensionFromContentType(contentType: string): string | undefined {
+  const normalizedContentType = contentType.split(";")[0]?.trim().toLowerCase();
+
+  if (normalizedContentType === "image/jpeg" || normalizedContentType === "image/jpg") {
+    return "jpg";
+  }
+
+  if (normalizedContentType === "image/png") {
+    return "png";
+  }
+
+  if (normalizedContentType === "image/webp") {
+    return "webp";
+  }
+
+  if (normalizedContentType === "image/heic") {
+    return "heic";
+  }
+
+  return undefined;
+}
+
+function ensureImageFilename(filename: string, extension: string): string {
+  const cleanFilename = filename.split("?")[0].split("#")[0];
+
+  if (/\.(jpe?g|png|webp|heic)$/i.test(cleanFilename)) {
+    return cleanFilename;
+  }
+
+  return `verification-document.${extension}`;
+}
+
 async function assertReadableOcrDocument(uri: string): Promise<void> {
   if (Platform.OS === "web") {
     try {
@@ -61,12 +94,41 @@ async function assertReadableOcrDocument(uri: string): Promise<void> {
   }
 }
 
-function getOcrEndpoint(): string | undefined {
-  if (process.env.EXPO_PUBLIC_OCR_ENDPOINT) {
-    return process.env.EXPO_PUBLIC_OCR_ENDPOINT;
+async function appendOcrDocument(
+  formData: FormData,
+  uri: string,
+  filename: string,
+  extension: string,
+  contentType: string,
+): Promise<void> {
+  if (Platform.OS === "web") {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const blobExtension =
+      getImageExtensionFromContentType(blob.type) || extension;
+    const safeFilename = ensureImageFilename(filename, blobExtension);
+    const uploadBlob =
+      blob.type || contentType
+        ? new Blob([blob], { type: blob.type || contentType })
+        : blob;
+    formData.append("document", uploadBlob, safeFilename);
+    return;
   }
 
-  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  formData.append("document", {
+    uri,
+    name: filename,
+    type: contentType,
+  } as unknown as Blob);
+}
+
+function getOcrEndpoint(): string | undefined {
+  const configuredEndpoint = getPublicEnvValue("EXPO_PUBLIC_OCR_ENDPOINT");
+  if (configuredEndpoint) {
+    return configuredEndpoint;
+  }
+
+  const supabaseUrl = getPublicEnvValue("EXPO_PUBLIC_SUPABASE_URL");
   if (!supabaseUrl) return undefined;
 
   try {
@@ -153,12 +215,9 @@ export async function extractTextFromImage(uri: string): Promise<OCRResult> {
 
   const filename = uri.split("/").pop() || "verification-document.jpg";
   const extension = getImageExtension(filename);
+  const contentType = getImageContentType(extension);
   const formData = new FormData();
-  formData.append("document", {
-    uri,
-    name: filename,
-    type: getImageContentType(extension),
-  } as unknown as Blob);
+  await appendOcrDocument(formData, uri, filename, extension, contentType);
 
   const headers: Record<string, string> = {
     Accept: "application/json",
@@ -175,8 +234,9 @@ export async function extractTextFromImage(uri: string): Promise<OCRResult> {
   headers.Authorization = `Bearer ${session.access_token}`;
 
   if (isSupabaseFunctionsEndpoint(ocrEndpoint)) {
-    if (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY) {
-      headers.apikey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseAnonKey = getPublicEnvValue("EXPO_PUBLIC_SUPABASE_ANON_KEY");
+    if (supabaseAnonKey) {
+      headers.apikey = supabaseAnonKey;
     }
   }
 
