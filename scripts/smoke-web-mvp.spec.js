@@ -1063,6 +1063,83 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
     await assertNoCriticalNoise(noise);
   });
 
+  test("mobile: authenticated beta discovery opens match chat locally", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const demoReply =
+      "Mobile authenticated demo reply: staying respectful and inside the app.";
+    const realWriteRequests = [];
+
+    page.on("request", (request) => {
+      if (
+        request.method() !== "GET" &&
+        /\/(?:rest\/v1\/(?:likes|messages|conversations)|rpc\/(?:like_profile|create_conversation|send_message))/.test(
+          request.url(),
+        )
+      ) {
+        realWriteRequests.push(`${request.method()} ${request.url()}`);
+      }
+    });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await expect(page.getByText("Beta demo feed", { exact: true })).toBeVisible({
+      timeout: 20000,
+    });
+    const detailsButton = page.getByRole("button", {
+      name: "View profile details",
+    });
+    await assertVisibleWithinViewport(
+      page,
+      detailsButton,
+      "mobile discovery details button",
+    );
+
+    await detailsButton.click();
+    await expect(page.getByText("Something feels off?", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await page.getByRole("button", { name: "Close profile details" }).click();
+
+    const likeButton = page.getByRole("button", {
+      name: "Like this profile",
+      exact: true,
+    });
+    await assertVisibleWithinViewport(page, likeButton, "mobile discovery like button");
+    await likeButton.click();
+    await expect(page.getByText("Demo Match!", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText("Demo only. No real like, super like, match, or message was sent."),
+    ).toBeVisible({ timeout: 15000 });
+
+    await page.getByRole("button", { name: /Open .* in matches/ }).click();
+    await expect(page.getByText(/Demo chat/).first()).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText("Demo chat replies and photos stay local on this device."),
+    ).toBeVisible({ timeout: 15000 });
+
+    const messageInput = page.getByLabel("Message input");
+    await assertVisibleWithinViewport(page, messageInput, "mobile message input");
+    await messageInput.fill(demoReply);
+    await page.getByRole("button", { name: "Send demo reply" }).click();
+    await expect(page.getByLabel(new RegExp(`^You: ${demoReply}`))).toBeVisible({
+      timeout: 15000,
+    });
+
+    await uploadDemoChatPhotoThroughPicker(page);
+    await page.waitForTimeout(500);
+    expect(realWriteRequests, "real demo discovery/chat writes").toEqual([]);
+
+    await assertNoCriticalNoise(noise);
+  });
+
   test("laptop: authenticated beta seeded inbox opens and sends a local reply", async ({
     page,
   }) => {
