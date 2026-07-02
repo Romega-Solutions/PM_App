@@ -122,13 +122,7 @@ async function signIn(page) {
 async function assertBottomNav(page) {
   for (const label of ["Discover", "Liked You", "Messages", "You"]) {
     const locator = page.getByText(label, { exact: true }).last();
-    await expect(locator, `${label} tab`).toBeVisible({ timeout: 15000 });
-
-    const box = await locator.boundingBox();
-    expect(box, `${label} tab box`).not.toBeNull();
-    expect(box.y + box.height, `${label} tab not clipped`).toBeLessThanOrEqual(
-      page.viewportSize().height,
-    );
+    await assertVisibleWithinViewport(page, locator, `${label} tab`);
   }
 }
 

@@ -56,14 +56,29 @@ async function assertNoCriticalNoise(noise) {
 async function assertBottomNav(page) {
   for (const label of ["Discover", "Liked You", "Messages", "You"]) {
     const locator = page.getByText(label, { exact: true }).last();
-    await expect(locator, `${label} tab`).toBeVisible({ timeout: 15000 });
-
-    const box = await locator.boundingBox();
-    expect(box, `${label} tab box`).not.toBeNull();
-    expect(box.y + box.height, `${label} tab not clipped`).toBeLessThanOrEqual(
-      page.viewportSize().height,
-    );
+    await assertVisibleWithinViewport(page, locator, `${label} tab`);
   }
+}
+
+async function assertNoDocumentHorizontalOverflow(page, label) {
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(() => {
+          const documentElement = document.documentElement;
+          const body = document.body;
+          const documentOverflow =
+            documentElement.scrollWidth - documentElement.clientWidth;
+          const bodyOverflow = body.scrollWidth - body.clientWidth;
+
+          return Math.max(documentOverflow, bodyOverflow);
+        }),
+      {
+        message: `${label} horizontal overflow`,
+        timeout: 15000,
+      },
+    )
+    .toBeLessThanOrEqual(1);
 }
 
 async function openCurrentProfileDetails(page) {
@@ -91,6 +106,7 @@ async function startPreview(
   });
   await expect(page.getByText(blockedCardPattern)).toHaveCount(0);
   await assertBottomNav(page);
+  await assertNoDocumentHorizontalOverflow(page, `${label} discover`);
 }
 
 async function exerciseDemoLikedYouActions(page) {
@@ -177,16 +193,34 @@ async function setNamedRangeInput(page, name, value) {
 
 async function assertVisibleWithinViewport(page, locator, label) {
   await expect(locator, label).toBeVisible({ timeout: 15000 });
-  const box = await locator.boundingBox();
-  expect(box, `${label} box`).not.toBeNull();
-  expect(box.x, `${label} left edge`).toBeGreaterThanOrEqual(0);
-  expect(box.x + box.width, `${label} right edge`).toBeLessThanOrEqual(
-    page.viewportSize().width,
-  );
-  expect(box.y, `${label} top edge`).toBeGreaterThanOrEqual(0);
-  expect(box.y + box.height, `${label} bottom edge`).toBeLessThanOrEqual(
-    page.viewportSize().height,
-  );
+  await expect
+    .poll(
+      async () => {
+        const box = await locator.boundingBox();
+        const viewport = page.viewportSize();
+
+        if (!box || !viewport) {
+          return "missing";
+        }
+
+        const isInsideViewport =
+          box.x >= 0 &&
+          box.x + box.width <= viewport.width &&
+          box.y >= 0 &&
+          box.y + box.height <= viewport.height;
+
+        return isInsideViewport
+          ? "inside"
+          : `x=${box.x}, right=${box.x + box.width}, y=${box.y}, bottom=${
+              box.y + box.height
+            }, viewport=${viewport.width}x${viewport.height}`;
+      },
+      {
+        message: `${label} inside viewport`,
+        timeout: 15000,
+      },
+    )
+    .toBe("inside");
 }
 
 async function exerciseAuthEntryScreens(page) {
@@ -300,10 +334,18 @@ test.describe("PinayMate beta preview smoke", () => {
       await expect(page.getByText("Beta seeded inbox", { exact: true })).toBeVisible({
         timeout: 15000,
       });
+      await assertNoDocumentHorizontalOverflow(
+        page,
+        `${viewport.name} foreigner messages`,
+      );
       await page.getByText("You", { exact: true }).last().click();
       await expect(
         page.getByRole("button", { name: "Switch to foreigner preview" }),
       ).toBeVisible({ timeout: 15000 });
+      await assertNoDocumentHorizontalOverflow(
+        page,
+        `${viewport.name} foreigner profile`,
+      );
       await page
         .getByRole("button", { name: "Switch to Pinay preview" })
         .click();
@@ -316,12 +358,20 @@ test.describe("PinayMate beta preview smoke", () => {
       });
       await expect(page.getByText(FILIPINA_CARD)).toHaveCount(0);
       await assertBottomNav(page);
+      await assertNoDocumentHorizontalOverflow(
+        page,
+        `${viewport.name} switched discover`,
+      );
 
       await startPreview(page, "Pinay preview", FOREIGNER_CARD, FILIPINA_CARD);
       await page.getByText("Messages", { exact: true }).last().click();
       await expect(page.getByText("Your note about family")).toBeVisible({
         timeout: 15000,
       });
+      await assertNoDocumentHorizontalOverflow(
+        page,
+        `${viewport.name} pinay messages`,
+      );
 
       await assertNoCriticalNoise(noise);
     });
