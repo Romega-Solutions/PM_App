@@ -347,6 +347,39 @@ async function restorePrivacySettings(snapshot) {
   }
 }
 
+async function snapshotNotificationPreferences() {
+  const { supabase } = await createSignedInProofClient();
+  const { data, error } = await supabase.rpc("get_notification_preferences");
+
+  if (error) {
+    throw new Error("Could not snapshot notification preferences before smoke.");
+  }
+
+  const record = Array.isArray(data) ? data[0] : data;
+  return {
+    pushEnabled: Boolean(record?.push_enabled),
+    newMatches: Boolean(record?.new_matches),
+    newMessages: Boolean(record?.new_messages),
+    newLikes: Boolean(record?.new_likes),
+    emailUpdates: Boolean(record?.email_updates),
+  };
+}
+
+async function restoreNotificationPreferences(snapshot) {
+  const { supabase } = await createSignedInProofClient();
+  const { error } = await supabase.rpc("save_notification_preferences", {
+    p_push_enabled: snapshot.pushEnabled,
+    p_new_matches: snapshot.newMatches,
+    p_new_messages: snapshot.newMessages,
+    p_new_likes: snapshot.newLikes,
+    p_email_updates: snapshot.emailUpdates,
+  });
+
+  if (error) {
+    throw new Error("Could not restore notification preferences after smoke.");
+  }
+}
+
 async function setNamedRangeInput(page, name, value) {
   const slider = page.getByRole("slider", { name });
   await expect(slider).toBeVisible({ timeout: 15000 });
@@ -1205,6 +1238,51 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
       });
     } finally {
       await restorePrivacySettings(privacySnapshot);
+    }
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("mobile: authenticated notification email updates save and restore", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+    const notificationSnapshot = await snapshotNotificationPreferences();
+
+    try {
+      await openProtectedRoute(page, "/profile-settings/notifications");
+      await expect(page.getByText("Notifications", { exact: true })).toBeVisible({
+        timeout: 20000,
+      });
+      await expect(page.getByText("Notification controls", { exact: true })).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(page.getByText("Preferences need to reload")).toHaveCount(0);
+
+      const emailUpdatesSwitch = page.getByRole("switch", {
+        name: /Email updates:/i,
+      });
+      await assertVisibleWithinViewport(
+        page,
+        emailUpdatesSwitch,
+        "email updates notification switch",
+      );
+      await expect(emailUpdatesSwitch).toBeEnabled();
+
+      await toggleSwitchAndWaitForRpc(
+        page,
+        emailUpdatesSwitch,
+        "save_notification_preferences",
+      );
+      await expect(page.getByText("Notifications", { exact: true })).toBeVisible({
+        timeout: 15000,
+      });
+    } finally {
+      await restoreNotificationPreferences(notificationSnapshot);
     }
 
     await assertNoCriticalNoise(noise);
