@@ -287,6 +287,37 @@ async function restoreProfilePhotos(snapshot) {
   }
 }
 
+async function snapshotProfilePublicDetails() {
+  const { supabase, user } = await createSignedInProofClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("occupation")
+    .eq("id", user.id)
+    .single();
+
+  if (error) {
+    throw new Error("Could not snapshot public profile details before smoke.");
+  }
+
+  return {
+    occupation: data?.occupation || "",
+  };
+}
+
+async function restoreProfilePublicDetails(snapshot) {
+  const { supabase, user } = await createSignedInProofClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      occupation: snapshot.occupation,
+    })
+    .eq("id", user.id);
+
+  if (error) {
+    throw new Error("Could not restore public profile details after smoke.");
+  }
+}
+
 async function snapshotMatchPreferences() {
   const { supabase, user } = await createSignedInProofClient();
   const { data, error } = await supabase
@@ -922,6 +953,69 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
 
     await page.getByLabel("Occupation").fill(originalOccupation);
     await saveProfileAndWait(page);
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("mobile: profile edit photo upload and public detail save", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+    const photoSnapshot = await snapshotProfilePhotos();
+    const detailsSnapshot = await snapshotProfilePublicDetails();
+    const proofOccupation =
+      detailsSnapshot.occupation.trim() === "Mobile web proof"
+        ? "Mobile web proof restore check"
+        : "Mobile web proof";
+
+    try {
+      await openProtectedRoute(page, "/profile-settings/edit");
+      await expect(page.getByText("Edit Profile", { exact: true })).toBeVisible({
+        timeout: 20000,
+      });
+      await expect(
+        page.getByText("Profile details for discovery", { exact: true }),
+      ).toBeVisible({ timeout: 15000 });
+
+      const changePhotoButton = page.getByRole("button", {
+        name: "Change profile photo",
+      });
+      await assertVisibleWithinViewport(
+        page,
+        changePhotoButton,
+        "change profile photo button",
+      );
+      await uploadProfileSettingsPhotoThroughPicker(page);
+
+      const occupationInput = page.getByLabel("Occupation");
+      await occupationInput.scrollIntoViewIfNeeded();
+      await assertVisibleWithinViewport(
+        page,
+        occupationInput,
+        "occupation profile edit input",
+      );
+      await occupationInput.fill(proofOccupation);
+
+      const saveProfileButton = page.getByRole("button", { name: "Save profile" });
+      await assertVisibleWithinViewport(
+        page,
+        saveProfileButton,
+        "save profile button",
+      );
+      await saveProfileAndWait(page);
+
+      await openProtectedRoute(page, "/profile-settings/edit");
+      await expect(page.getByLabel("Occupation")).toHaveValue(proofOccupation, {
+        timeout: 15000,
+      });
+    } finally {
+      await restoreProfilePhotos(photoSnapshot);
+      await restoreProfilePublicDetails(detailsSnapshot);
+    }
 
     await assertNoCriticalNoise(noise);
   });
