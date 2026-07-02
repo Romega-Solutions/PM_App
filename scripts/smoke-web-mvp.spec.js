@@ -316,6 +316,37 @@ async function restoreMatchPreferences(snapshot) {
   }
 }
 
+async function snapshotPrivacySettings() {
+  const { supabase } = await createSignedInProofClient();
+  const { data, error } = await supabase.rpc("get_privacy_settings");
+
+  if (error) {
+    throw new Error("Could not snapshot privacy settings before smoke.");
+  }
+
+  const record = Array.isArray(data) ? data[0] : data;
+  return {
+    showOnlineStatus: Boolean(record?.show_online_status),
+    showDistance: Boolean(record?.show_distance),
+    readReceipts: Boolean(record?.read_receipts),
+    profileVisible: Boolean(record?.profile_visible),
+  };
+}
+
+async function restorePrivacySettings(snapshot) {
+  const { supabase } = await createSignedInProofClient();
+  const { error } = await supabase.rpc("save_privacy_settings", {
+    p_show_online_status: snapshot.showOnlineStatus,
+    p_show_distance: snapshot.showDistance,
+    p_read_receipts: snapshot.readReceipts,
+    p_profile_visible: snapshot.profileVisible,
+  });
+
+  if (error) {
+    throw new Error("Could not restore privacy settings after smoke.");
+  }
+}
+
 async function setNamedRangeInput(page, name, value) {
   const slider = page.getByRole("slider", { name });
   await expect(slider).toBeVisible({ timeout: 15000 });
@@ -1129,6 +1160,51 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
       });
     } finally {
       await restoreMatchPreferences(preferencesSnapshot);
+    }
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("mobile: authenticated privacy read receipts save and restore", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+    const privacySnapshot = await snapshotPrivacySettings();
+
+    try {
+      await openProtectedRoute(page, "/profile-settings/privacy");
+      await expect(page.getByText("Privacy Settings", { exact: true })).toBeVisible({
+        timeout: 20000,
+      });
+      await expect(page.getByText("Privacy controls", { exact: true })).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(page.getByText("Settings need to reload")).toHaveCount(0);
+
+      const readReceiptsSwitch = page.getByRole("switch", {
+        name: /Read Receipts:/i,
+      });
+      await assertVisibleWithinViewport(
+        page,
+        readReceiptsSwitch,
+        "read receipts privacy switch",
+      );
+      await expect(readReceiptsSwitch).toBeEnabled();
+
+      await toggleSwitchAndWaitForRpc(
+        page,
+        readReceiptsSwitch,
+        "save_privacy_settings",
+      );
+      await expect(page.getByText("Privacy Settings", { exact: true })).toBeVisible({
+        timeout: 15000,
+      });
+    } finally {
+      await restorePrivacySettings(privacySnapshot);
     }
 
     await assertNoCriticalNoise(noise);
