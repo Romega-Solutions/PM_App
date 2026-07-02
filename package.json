@@ -11,7 +11,7 @@
     "build:web": "expo export -p web && node scripts/patch-web-export.js",
     "check:local-quality": "npm run check:source-contracts && npm run check:dependency-audit && npm run lint && npx tsc --noEmit --pretty false && npm test -- --runInBand --no-cache && npm run build:web",
     "check:safety-operations-contract": "node scripts/check-safety-operations-contract.mjs",
-    "check:source-contracts": "npm run check:privacy-logs && npm run check:supabase-static-contract && npm run check:migration-manifest && npm run check:user-facing-safe-errors && npm run check:auth-redirect-contract && npm run check:env-template-contract && npm run check:product-design-contract && npm run check:client-copy && npm run check:notification-delivery-contract && npm run check:vercel-branch-policy && npm run check:launch-file-contract",
+    "check:source-contracts": "npm run check:secret-hygiene && npm run check:privacy-logs && npm run check:supabase-static-contract && npm run check:migration-manifest && npm run check:user-facing-safe-errors && npm run check:auth-redirect-contract && npm run check:env-template-contract && npm run check:product-design-contract && npm run check:client-copy && npm run check:notification-delivery-contract && npm run check:vercel-branch-policy && npm run check:launch-file-contract",
     "check:privacy-logs": "node scripts/check-privacy-logs.mjs",
     "check:release-local": "node scripts/check-release-local.mjs",
     "check:dependency-audit": "npm audit --audit-level=moderate",
