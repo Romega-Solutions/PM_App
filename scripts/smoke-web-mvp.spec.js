@@ -402,6 +402,10 @@ async function assertVisibleWithinViewport(page, locator, label) {
   expect(box.x + box.width, `${label} right edge`).toBeLessThanOrEqual(
     page.viewportSize().width,
   );
+  expect(box.y, `${label} top edge`).toBeGreaterThanOrEqual(0);
+  expect(box.y + box.height, `${label} bottom edge`).toBeLessThanOrEqual(
+    page.viewportSize().height,
+  );
 }
 
 async function ensureSyntheticOcrDocument() {
@@ -1166,9 +1170,13 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
       });
 
       await page.getByRole("radio", { name: /marriage/i }).click();
+      const savePreferencesButton = page
+        .getByRole("button", { name: "Save preferences" })
+        .last();
+      await savePreferencesButton.scrollIntoViewIfNeeded();
       await assertVisibleWithinViewport(
         page,
-        page.getByRole("button", { name: "Save preferences" }).last(),
+        savePreferencesButton,
         "save preferences button",
       );
 
@@ -1182,7 +1190,7 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
         expect(dialog.message()).toMatch(/Preferences updated successfully/i);
         await dialog.accept();
       });
-      await page.getByRole("button", { name: "Save preferences" }).last().click();
+      await savePreferencesButton.click();
 
       const response = await profileUpdatePromise;
       expect(response.status(), "mobile preference profile update").toBeLessThan(
@@ -1243,6 +1251,58 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
     await assertNoCriticalNoise(noise);
   });
 
+  test("mobile: authenticated account deletion confirmation can be cancelled", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+
+    await openProtectedRoute(page, "/profile-settings/privacy");
+    await expect(page.getByText("Privacy Settings", { exact: true })).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.getByText("Privacy controls", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByText("Settings need to reload")).toHaveCount(0);
+
+    const deletionButton = page.getByRole("button", {
+      name: "Request account deletion for support review",
+    });
+    await deletionButton.scrollIntoViewIfNeeded();
+    await assertVisibleWithinViewport(
+      page,
+      deletionButton,
+      "account deletion request button",
+    );
+    await expect(deletionButton).toBeEnabled();
+
+    const deletionRequestPromise = page
+      .waitForRequest(
+        (request) =>
+          request.url().includes("/rpc/request_account_deletion") &&
+          request.method() === "POST",
+        { timeout: 1500 },
+      )
+      .then(() => true)
+      .catch(() => false);
+
+    page.once("dialog", async (dialog) => {
+      expect(dialog.message()).toMatch(/Request account deletion/i);
+      await dialog.dismiss();
+    });
+
+    await deletionButton.click();
+    await expect(deletionRequestPromise).resolves.toBe(false);
+    await expect(page.getByText("Deletion request received")).toHaveCount(0);
+    await expect(page.getByText("Request not sent")).toHaveCount(0);
+
+    await assertNoCriticalNoise(noise);
+  });
+
   test("mobile: authenticated notification email updates save and restore", async ({
     page,
   }) => {
@@ -1266,6 +1326,7 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
       const emailUpdatesSwitch = page.getByRole("switch", {
         name: /Email updates:/i,
       });
+      await emailUpdatesSwitch.scrollIntoViewIfNeeded();
       await assertVisibleWithinViewport(
         page,
         emailUpdatesSwitch,
