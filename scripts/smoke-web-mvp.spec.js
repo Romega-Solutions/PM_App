@@ -287,6 +287,21 @@ async function restoreProfilePhotos(snapshot) {
   }
 }
 
+async function setProfilePhotosForSmoke(photos, photosCompleted) {
+  const { supabase, user } = await createSignedInProofClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      photos,
+      photos_completed: photosCompleted,
+    })
+    .eq("id", user.id);
+
+  if (error) {
+    throw new Error("Could not prepare profile photos for smoke.");
+  }
+}
+
 async function snapshotProfilePublicDetails() {
   const { supabase, user } = await createSignedInProofClient();
   const { data, error } = await supabase
@@ -906,6 +921,82 @@ test.describe("PinayMate authenticated web MVP smoke", () => {
       await submitVerificationThroughPickers(page);
     } finally {
       await cleanupVerificationSubmission(verificationSnapshot);
+    }
+
+    await assertNoCriticalNoise(noise);
+  });
+
+  test("mobile: account setup photo upload and verification skip controls", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await signIn(page);
+    const noise = collectPageNoise(page);
+    const photoSnapshot = await snapshotProfilePhotos();
+
+    try {
+      if (photoSnapshot.photos.length >= 6) {
+        await setProfilePhotosForSmoke(photoSnapshot.photos.slice(0, 5), true);
+      }
+
+      await page.goto(`${BASE_URL}/account-setup/profile-photos?userType=foreigner`, {
+        waitUntil: "domcontentloaded",
+      });
+      await expect(page.getByText("Add your photos", { exact: true })).toBeVisible({
+        timeout: 20000,
+      });
+      await expect(
+        page.getByText("Photo safety checklist", { exact: true }),
+      ).toBeVisible({ timeout: 15000 });
+
+      const libraryButton = page.getByRole("button", {
+        name: "Choose profile photo from library",
+      });
+      await assertVisibleWithinViewport(
+        page,
+        libraryButton,
+        "setup library photo button",
+      );
+      await uploadProfilePhotoThroughPicker(page);
+
+      const continuePhotosButton = page.getByRole("button", {
+        name: "Continue with uploaded profile photos",
+      });
+      await assertVisibleWithinViewport(
+        page,
+        continuePhotosButton,
+        "continue with profile photos button",
+      );
+      await expect(continuePhotosButton).toBeEnabled();
+
+      await page.goto(
+        `${BASE_URL}/account-setup/verification-upload?userType=foreigner`,
+        { waitUntil: "domcontentloaded" },
+      );
+      await expect(
+        page.getByText("Verify your identity", { exact: true }),
+      ).toBeVisible({ timeout: 20000 });
+      await expect(
+        page.getByText("Review-based verification", { exact: true }),
+      ).toBeVisible({ timeout: 15000 });
+
+      const skipVerificationButton = page.getByRole("button", {
+        name: "Skip identity verification for now",
+      });
+      await assertVisibleWithinViewport(
+        page,
+        skipVerificationButton,
+        "skip verification button",
+      );
+      await skipVerificationButton.click();
+      await expect(page.getByText(/Welcome,/)).toBeVisible({ timeout: 20000 });
+      await expect(page.getByText("Profile setup complete", { exact: true })).toBeVisible({
+        timeout: 15000,
+      });
+    } finally {
+      await restoreProfilePhotos(photoSnapshot);
     }
 
     await assertNoCriticalNoise(noise);
