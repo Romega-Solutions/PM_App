@@ -83,6 +83,9 @@ jobs:
       - name: Source and launch contracts
         run: npm run check:source-contracts
 
+      - name: Dependency audit
+        run: npm run check:dependency-audit
+
       - name: Lint
         run: npm run lint
 
