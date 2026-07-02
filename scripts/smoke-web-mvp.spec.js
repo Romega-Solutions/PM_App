@@ -95,10 +95,10 @@ async function assertNoCriticalNoise(noise) {
   ).toEqual([]);
   expect(
     noise.consoleErrors.filter(
-      (item) =>
-        !item.includes("AdUnit") &&
-        !item.includes("status of 429") &&
-        !item.includes("status of 502") &&
+        (item) =>
+          !item.includes("AdUnit") &&
+          !item.includes("status of 429") &&
+          !item.includes("status of 502") &&
         !(
           item.includes("TypeError: Failed to fetch") &&
           item.includes("_getUser")
