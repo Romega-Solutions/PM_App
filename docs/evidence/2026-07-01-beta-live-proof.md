@@ -5,6 +5,19 @@ Branch/source: current `dev` proof source
 Environment: `https://beta.pinaymate.com`
 Owner: Codex / Romega engineering
 
+## 2026-07-03 handoff refresh
+
+| Check | Result | Evidence note |
+| --- | --- | --- |
+| PR #2 merge to production | Pass | PR #2 merged into `main` on 2026-07-02T21:45:09Z. Merge commit `5b38750613852b41e03dc0add846f5d7e67e3d56`; merged head `2ae46f62358f7882ce3706e3275b1b177d9fec70`. |
+| Production domain HTTP | Pass | `https://app.pinaymate.com` returned HTTP 200 on 2026-07-03. Production intentionally does not expose beta preview buttons, so beta-preview assertions for `Foreigner preview` are not expected to pass on production. |
+| Beta domain HTTP | Pass | `https://beta.pinaymate.com` returned HTTP 200 on 2026-07-03. |
+| Local release gate | Pass | `npm run check:release-local` passed on 2026-07-03, including secret hygiene, dependency audit with 0 vulnerabilities, production ownership, safety operations, launch evidence, source contracts, lint, TypeScript, 20 Jest suites / 143 tests, and web export. |
+| Supabase migration state | Pass | `npx -y supabase@latest migration list --linked` showed local and remote versions aligned through `20260625100000` and `999`; `npx -y supabase@latest db push --dry-run --linked` reported the remote database is up to date. |
+| Supabase release SQL | Pass | `05_release_preflight_audit.sql` returned `PASS: release preflight audit completed; transaction will roll back`. `04_safety_smoke_test.sql` returned `PASS: production hardening report/block/unmatch/messaging/privacy discovery safety smoke test completed; transaction will roll back`. |
+| Beta preview smoke | Pass | `npm run smoke:beta-preview` passed 10/10 against `https://beta.pinaymate.com` on 2026-07-03. |
+| Authenticated beta MVP smoke | Pass | `npm run smoke:web-mvp` passed 18/18 against `https://beta.pinaymate.com` on 2026-07-03 using ignored local disposable credentials. The verification proof now accepts OCR provider `429` or `5xx` only when the app successfully submits the selfie/ID to manual review through `submit_verification`; client/malformed OCR failures still fail the smoke. |
+
 ## Browser beta smoke
 
 | Check | Result | Evidence note |
