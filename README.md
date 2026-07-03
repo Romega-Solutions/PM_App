@@ -2,6 +2,8 @@
 
 > React Native dating app connecting Filipino women with foreign men
 
+> Current handoff note: see [`HANDOFF.md`](./HANDOFF.md) for the July 2026 repository, branch, deployment, Supabase, CI, and archive-readiness state. Older release-readiness sections in this README are historical unless refreshed by that handoff or the linked evidence docs.
+
 ---
 
 ## 🚀 Quick Start
