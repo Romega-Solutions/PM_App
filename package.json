@@ -14,7 +14,7 @@
     "check:source-contracts": "npm run check:secret-hygiene && npm run check:privacy-logs && npm run check:supabase-static-contract && npm run check:migration-manifest && npm run check:user-facing-safe-errors && npm run check:auth-redirect-contract && npm run check:env-template-contract && npm run check:product-design-contract && npm run check:client-copy && npm run check:notification-delivery-contract && npm run check:vercel-branch-policy && npm run check:launch-file-contract",
     "check:privacy-logs": "node scripts/check-privacy-logs.mjs",
     "check:release-local": "node scripts/check-release-local.mjs",
-    "check:dependency-audit": "npm audit --audit-level=moderate",
+    "check:dependency-audit": "node scripts/check-dependency-audit.mjs",
     "check:user-facing-safe-errors": "node scripts/check-user-facing-safe-errors.mjs",
     "check:auth-redirect-contract": "node scripts/check-auth-redirect-contract.mjs",
     "check:env-template-contract": "node scripts/check-env-template-contract.mjs",
@@ -97,14 +97,29 @@
     "expo-atlas": "^0.4.3",
     "jest": "^29.7.0",
     "jest-expo": "~54.0.13",
-    "sharp": "^0.35.2",
+    "sharp": "^0.35.5",
     "typescript": "~5.9.2"
   },
   "private": true,
   "overrides": {
-    "brace-expansion": "1.1.13",
-    "postcss": "8.5.10",
-    "uuid": "11.1.1",
-    "js-yaml": "^4.1.2"
+    "@humanfs/node": "0.16.8",
+    "@xmldom/xmldom": "0.8.15",
+    "baseline-browser-mapping": "2.11.28",
+    "body-parser": "1.20.8",
+    "brace-expansion": "1.1.21",
+    "browserslist": "4.29.3",
+    "compression": "1.8.2",
+    "express": "4.22.3",
+    "js-yaml": "4.3.2",
+    "morgan": "1.12.1",
+    "nanoid": "3.3.20",
+    "postcss": "8.5.29",
+    "proxy-addr": "2.0.8",
+    "qs": "6.16.0",
+    "shell-quote": "1.12.0",
+    "source-map-js": "1.2.2",
+    "tar": "7.5.22",
+    "undici": "6.29.0",
+    "uuid": "11.1.1"
   }
 }
