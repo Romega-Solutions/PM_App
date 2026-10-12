@@ -1,28 +1,16 @@
 # Dependency Audit Remediation Plan
 
-Last updated: 2026-06-11
+Last updated: 2026-10-09
 
 ## Current status
 
-PM_App release-local now includes:
+`npm run check:dependency-audit` is the blocking gate. It fails on critical advisories in the production dependency tree (`npm audit --omit=dev --audit-level=critical`) unless the advisory is listed in `docs/operations/dependency-audit-exceptions.json` with a reason and a review date. The accepted critical list is empty as of 2026-10-09.
 
-```bash
-npm run check:dependency-audit
-```
+PM_App CI also runs a separate `npm audit` step with `continue-on-error: true`. That step prints the full tree, including dev and build-tool findings, and does not decide whether the job passes.
 
-The command runs:
+On 2026-07-02 this gate was `npm audit --audit-level=moderate` and it passed with 0 vulnerabilities. By 2026-10-09 newly published advisories made that same command fail with about 80 vulnerabilities (3 critical, 65 high, 12 moderate) without a corresponding application change. Non-breaking overrides and lockfile updates cleared every critical advisory. The remaining findings are the five packages in the exceptions file. Their advertised fixes are Jest 30, expo-router 58, an expo-updates downgrade, image-size 2 (which Metro's path-based call cannot use), or an expo-atlas downgrade.
 
-```bash
-npm audit --audit-level=moderate
-```
-
-QA observed moderate advisories through the Expo dependency chain. The reported chain was:
-
-```text
-uuid -> xcode -> @expo/config-plugins -> expo
-```
-
-`npm audit fix --force` is not approved for the release branch because it can downgrade or otherwise change Expo runtime dependencies in a way that breaks the Expo SDK 54 app.
+`npm audit fix --force` is not approved. On 2026-10-09 it proposed those breaking upgrades, including downgrades of Expo packages. An unbounded `npm audit fix` also floated Expo SDK 54 patch dependencies into nested SDK 58 copies and was reverted. Targeted overrides were applied instead. Expo stayed at 54.0.35, React Native at 0.81.5, and expo-router at 6.0.24.
 
 ## Remediation path
 
@@ -55,7 +43,7 @@ npm run build:web
 - Do not downgrade Expo, React Native, React, navigation, image-picker, file-system, or Supabase dependencies just to silence audit output.
 - Do not mark a dependency advisory as resolved using lockfile-only changes unless the audit output proves the advisory is gone.
 - Do not ship a runtime dependency change without rerunning native QA on the target build path.
-- Do not hide the advisory by lowering the audit level without written release/security approval.
+- Do not hide the advisory by deleting the audit step or discarding its log. The 2026-10-09 gate change is the written decision: block on production critical advisories, keep the full report visible, and record each unfixed package in `docs/operations/dependency-audit-exceptions.json`. Review that file by 2026-11-09.
 
 ## Evidence that clears this blocker
 
@@ -88,7 +76,7 @@ Use only when remediation would create larger launch risk than the advisory itse
 
 Required evidence:
 
-- current `npm audit --audit-level=moderate` output with secret-free logs
+- current `npm audit` output with secret-free logs, plus `npm run check:dependency-audit`
 - advisory scope summary
 - affected dependency chain
 - reason immediate remediation is deferred
