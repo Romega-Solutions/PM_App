@@ -1,0 +1,63 @@
+{
+  "reviewedOn": "2026-10-09",
+  "reviewBy": "2026-11-09",
+  "owner": "Duane reviews and merges this gate. Engineering removes an entry when the advisory is actually fixed.",
+  "policy": {
+    "blocking": "npm audit --omit=dev --audit-level=critical",
+    "fullReport": "The PM_App CI workflow runs npm audit as its own non-blocking step so the full tree, including dev and build-tool findings, stays in the job log.",
+    "rationale": "On 2026-10-09 the moderate audit of the whole tree reported about 80 vulnerabilities from advisories published after the 2026-07-02 green main run. Safe non-breaking updates removed every critical advisory, including tar, shell-quote, and proxy-addr. The packages below still need a breaking Jest, Expo Router, Expo Updates, Metro, or expo-atlas upgrade. Failing the job on those highs would keep every pull request red without a safe fix. New critical advisories in production dependencies still fail this gate unless they are added here with a reason and a review date."
+  },
+  "acceptedCriticalExceptions": [],
+  "residualAdvisories": [
+    {
+      "package": "braces",
+      "installed": "3.0.3",
+      "severity": "high",
+      "ghsa": ["GHSA-vfj7-8cjw-p6xm"],
+      "scope": "Transitive through micromatch. Jest 29 uses it, and Metro's file map uses it under expo and react-native, so npm --omit=dev still counts it.",
+      "reason": "3.0.3 is the latest braces release and it is still vulnerable to stack exhaustion on deeply nested patterns. npm audit fix --force would install Jest 30, which is outside the Jest 29 line pinned by jest-expo for Expo SDK 54. Patterns are build and test globs, not end-user input.",
+      "followUp": "Take a braces release newer than 3.0.3, or a micromatch release that no longer depends on the vulnerable braces, when it can be installed without a Jest 30 or Expo SDK major upgrade.",
+      "reviewedOn": "2026-10-09"
+    },
+    {
+      "package": "node-forge",
+      "installed": "1.4.0",
+      "severity": "high",
+      "ghsa": ["GHSA-86w9-cpqp-85rv"],
+      "scope": "Transitive through @expo/code-signing-certificates, used by expo-updates and @expo/cli.",
+      "reason": "1.4.0 is the latest node-forge release and the PKCS#1 v1.5 signature-verification advisory still covers it. The only audit fix npm offers is downgrading expo-updates to 0.11.7, which leaves Expo SDK 54. There is no patched override target.",
+      "followUp": "Upgrade node-forge when a release above 1.4.0 is published and Expo SDK 54 can depend on it without an Expo or React Native major upgrade. Re-check code-signing verification for EAS Update.",
+      "reviewedOn": "2026-10-09"
+    },
+    {
+      "package": "image-size",
+      "installed": "1.2.1",
+      "severity": "high",
+      "ghsa": ["GHSA-5p2g-fcmc-qvqq", "GHSA-w3rx-r6r6-pgpr"],
+      "scope": "Transitive through metro, pulled in by expo and react-native. Used while bundling local image assets, not in the shipped client runtime.",
+      "reason": "The patched releases are 2.0.3 and later. Metro 0.83 calls the default export with a filesystem path for normal assets. image-size 2 removed path support from that function and moved file reads to image-size/fromFile, so an override would break asset dimension parsing during export.",
+      "followUp": "Wait for an image-size 1.x patch or a Metro release that reads buffers or calls image-size/fromFile before moving to 2.0.3+.",
+      "reviewedOn": "2026-10-09"
+    },
+    {
+      "package": "decode-uri-component",
+      "installed": "0.2.2",
+      "severity": "moderate",
+      "ghsa": ["GHSA-vcc3-ghjq-m6fr"],
+      "scope": "Transitive through query-string, used by expo-router and @react-navigation/core when parsing URLs.",
+      "reason": "query-string 7 requires decode-uri-component ^0.2.2 via CommonJS require(). The advisory covers every release through 0.4.2. The patched 0.5.0 package is ESM-only, so overriding it breaks that require(). npm audit fix --force would install expo-router 58, a major upgrade off Expo SDK 54.",
+      "followUp": "Pick up a CommonJS-compatible patched 0.2.x or 0.4.x, or an Expo SDK 54-compatible expo-router that depends on decode-uri-component >= 0.5.0 through an import the bundler can load.",
+      "reviewedOn": "2026-10-09"
+    },
+    {
+      "package": "stream-json",
+      "installed": "1.9.1",
+      "severity": "moderate",
+      "ghsa": ["GHSA-528h-pc64-c93x", "GHSA-hqr4-qq8f-hg3x", "GHSA-mjw6-4jj6-33hc"],
+      "scope": "Dev-only transitive of expo-atlas. Not part of the production dependency tree.",
+      "reason": "expo-atlas 0.4.3 depends on stream-json ^1.8.0. The patched line is 3.7.0, a major jump, and the audit's forced fix downgrades expo-atlas to 0.0.6. The package is the bundle analyzer, not application runtime.",
+      "followUp": "Upgrade expo-atlas when a release depends on stream-json > 3.5.0, or confirm the Disassembler and Stringer imports still work before overriding to 3.x.",
+      "reviewedOn": "2026-10-09"
+    }
+  ]
+}

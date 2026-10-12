@@ -145,7 +145,7 @@ Minimum unblock commands:
 - Expo SDK 54 dependency compatibility is aligned:
   - `npx expo install --check` passes after updating the SDK-compatible native module versions.
   - PM_App lint, typecheck, and web export still pass after dependency alignment.
-  - `npm run check:dependency-audit` passed with 0 vulnerabilities on 2026-07-01, so there is no current Expo-chain dependency-audit blocker.
+  - `npm run check:dependency-audit` passed with 0 vulnerabilities on 2026-07-01. On 2026-10-09 that moderate whole-tree command was replaced by a production-critical gate after new advisories landed. Residual high and moderate findings are documented in `docs/operations/dependency-audit-exceptions.json`.
 
 ### Blocked
 
@@ -242,7 +242,7 @@ Minimum unblock commands:
   - `npm run build` and `npm run lint` from `PM_Web`
   - validate marketing landing CTAs and links are accurate to current release destinations
 - Dependency/security checks:
-  - `npm audit --audit-level=moderate` from `PM_App`
+  - `npm run check:dependency-audit` from `PM_App` (critical production advisories). Read the full `npm audit` log and `docs/operations/dependency-audit-exceptions.json` before treating residual high or moderate findings as accepted.
   - `npm audit --audit-level=moderate` from `PM_Web`
   - If PM_App reports future Expo-chain advisories, open a dedicated Expo upgrade task instead of using `npm audit fix --force` directly on the release branch.
 
@@ -253,6 +253,6 @@ Minimum unblock commands:
 | PM_App        | Location runtime permissions and coordinate persistence                      | emulator/device logs + pass scenario + denial scenario                           | Blocked |
 | PM_App        | OCR Edge Function deployment and document extraction resilience              | function deploy logs + provider-secret check + valid/invalid document assertions | Blocked |
 | PM_App        | Supabase migrations 04, 99, storage, OCR quota, and basic-info RPC execution | migration plan + SQL checks + smoke test outputs                                 | Blocked |
-| PM_App        | Dependency audit current-head check                                          | `npm audit --audit-level=moderate` output plus local release gate output          | Pass locally |
+| PM_App        | Dependency audit current-head check                                          | `npm run check:dependency-audit` plus the full `npm audit` log and exceptions file | Pass on the 2026-10-09 production-critical gate; residual advisories are documented, not cleared |
 | PM_App/PM_Web | Launch comms correctness (CTAs and deep links)                               | post-build verification notes                                                    | Blocked |
 | PM_App/PM_Web | Production ownership and launch evidence packet                              | completed ownership checklist + filled launch evidence packet                    | Blocked |
