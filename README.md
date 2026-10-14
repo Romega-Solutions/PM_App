@@ -4,6 +4,20 @@
 
 ---
 
+## Prerequisites
+
+- Node.js 20.19.4 or later
+- npm package manager
+- Git
+- A phone with an Expo Go version compatible with Expo SDK 54,
+  or an Android emulator / iOS simulator
+  - Android emulator: Android Studio
+  - iOS simulator: macOS with Xcode
+- Supabase development project URL and anon key provided by the team
+
+Copy `.env.example` to `.env` and add the Supabase values
+provided by the team. Do not commit `.env` to version control.
+
 ## 🚀 Quick Start
 
 ```bash
