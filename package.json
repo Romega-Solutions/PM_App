@@ -102,6 +102,7 @@
   },
   "private": true,
   "overrides": {
+    "react-native": "$react-native",
     "@humanfs/node": "0.16.8",
     "@xmldom/xmldom": "0.8.15",
     "baseline-browser-mapping": "2.11.28",
