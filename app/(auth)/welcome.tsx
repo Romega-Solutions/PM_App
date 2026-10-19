@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PrimaryButton from "../../src/components/ui/PrimaryButton";
 import SecondaryButton from "../../src/components/ui/SecondaryButton";
+import { spacing } from "@/src/shared/utils/spacing";
 import {
   BETA_DEMO_COPY,
   type DemoPreviewUserType,
@@ -246,6 +247,7 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     justifyContent: "space-between",
+    rowGap: spacing.lg,
     zIndex: 2,
   },
   header: { alignItems: "center", flex: 1, justifyContent: "center" },
