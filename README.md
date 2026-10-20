@@ -7,6 +7,10 @@
 ## 🚀 Quick Start
 
 ```bash
+# Clone the repository
+git clone https://github.com/Romega-Solutions/PM_App.git
+cd PM_App
+
 # Install dependencies
 npm install
 
