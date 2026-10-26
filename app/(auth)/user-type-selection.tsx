@@ -39,7 +39,7 @@ export default function UserTypeSelectionScreen() {
   };
 
   return (
-    <AuthLayout showBackButton={false}>
+    <AuthLayout showBackButton={true}>
       <View style={styles.container}>
         {/* Logo */}
         <View style={styles.logoWrap}>
