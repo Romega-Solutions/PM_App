@@ -38,8 +38,16 @@ export default function UserTypeSelectionScreen() {
     });
   };
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/(auth)/welcome");
+    }
+  };
+
   return (
-    <AuthLayout showBackButton={true}>
+    <AuthLayout showBackButton onBackPress={handleBack}>
       <View style={styles.container}>
         {/* Logo */}
         <View style={styles.logoWrap}>
