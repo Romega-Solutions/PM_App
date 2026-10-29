@@ -1,18 +1,8 @@
-require("dotenv").config();
-
 const fs = require("node:fs");
 const path = require("node:path");
 
 const indexPath = path.join(__dirname, "..", "dist", "index.html");
-const jsDir = path.join(
-  __dirname,
-  "..",
-  "dist",
-  "_expo",
-  "static",
-  "js",
-  "web",
-);
+const jsDir = path.join(__dirname, "..", "dist", "_expo", "static", "js", "web");
 const localEnvPath = path.join(__dirname, "..", ".env.local");
 const publicEnvKeys = [
   "EXPO_PUBLIC_SUPABASE_URL",
@@ -25,7 +15,7 @@ function parseEnvValue(rawValue) {
   const value = rawValue.trim();
   const quote = value[0];
 
-  if ((quote === '"' || quote === "'") && value.endsWith(quote)) {
+  if ((quote === "\"" || quote === "'") && value.endsWith(quote)) {
     return value.slice(1, -1);
   }
 
@@ -63,10 +53,7 @@ for (const filename of fs.readdirSync(jsDir)) {
   const bundlePath = path.join(jsDir, filename);
   let js = fs.readFileSync(bundlePath, "utf8");
 
-  js = js.replaceAll(
-    "import.meta.env?import.meta.env.MODE:void 0",
-    '"production"',
-  );
+  js = js.replaceAll("import.meta.env?import.meta.env.MODE:void 0", '"production"');
 
   if (js.includes("import.meta")) {
     throw new Error(`Unsupported import.meta reference remains in ${filename}`);
@@ -76,7 +63,7 @@ for (const filename of fs.readdirSync(jsDir)) {
 }
 
 let html = fs.readFileSync(indexPath, "utf8");
-if (!html.includes("defer></script>")) {
+if (!html.includes('defer></script>')) {
   throw new Error("Expected Expo web bundle script tag was not found");
 }
 
