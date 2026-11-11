@@ -136,7 +136,7 @@ export default function VideoCallScreen() {
       <StatusBar barStyle="light-content" />
       <LinearGradient
         colors={["#24103A", BRAND_BG, "#130916"]}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
       />
 
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>

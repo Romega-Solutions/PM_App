@@ -266,7 +266,7 @@ const useStyles = makeStyles((theme) => ({
     borderColor: "rgba(141, 105, 246, 0.24)",
   },
   safetyNoteBlur: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 14,
   },
   safetyNoteText: {
