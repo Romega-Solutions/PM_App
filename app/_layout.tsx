@@ -125,7 +125,7 @@ export default function RootLayout() {
           </>
         ) : null}
         <View style={[styles.appFrame, useDesktopFrame && styles.desktopAppFrame]}>
-          <StatusBar style="light" backgroundColor={semanticColors.background} />
+          <StatusBar style="light" />
           {content}
         </View>
       </GestureHandlerRootView>

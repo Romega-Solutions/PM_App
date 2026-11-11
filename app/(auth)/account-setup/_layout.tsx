@@ -5,7 +5,7 @@ import { theme } from "@/src/theme";
 export default function AccountSetupLayout() {
   return (
     <>
-      <StatusBar style="light" backgroundColor="transparent" translucent />
+      <StatusBar style="light" />
       <Stack
         screenOptions={{
           headerShown: false,

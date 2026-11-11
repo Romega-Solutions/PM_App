@@ -6,13 +6,13 @@
 
 ## Prerequisites
 
-- Node.js 20.19.4 or later
+- Node.js 22.13.0 or later (required by Expo SDK 57)
 - npm package manager
 - Git
-- A phone with an Expo Go version compatible with Expo SDK 54,
+- A phone with an Expo Go version compatible with Expo SDK 57,
   or an Android emulator / iOS simulator
-  - Android emulator: Android Studio
-  - iOS simulator: macOS with Xcode
+  - Android builds: Android Studio with Android SDK 36 (compile/target API 36)
+  - iOS builds: macOS with Xcode 26.4 or later; the minimum supported iOS version is 16.4
 - Supabase development project URL and anon key provided by the team
 
 Copy `.env.example` to `.env` and add the Supabase values
@@ -77,7 +77,7 @@ Fill in the real Supabase values locally. `EXPO_PUBLIC_OCR_ENDPOINT` is optional
 
 ## 🏗️ Tech Stack
 
-- **Framework:** React Native + Expo SDK 54+
+- **Framework:** React Native 0.86 + Expo SDK 57
 - **Router:** expo-router (file-based)
 - **Styling:** NativeWind (Tailwind CSS)
 - **Backend:** Supabase (PostgreSQL + Auth + Storage)

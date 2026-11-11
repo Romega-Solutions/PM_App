@@ -130,7 +130,7 @@ export default function VoiceCallScreen() {
       <StatusBar barStyle="light-content" />
       <LinearGradient
         colors={[theme.colors.dalisay[900], theme.semanticColors.background, theme.colors.dalisay[900]]}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
       />
 
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
