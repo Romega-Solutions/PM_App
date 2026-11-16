@@ -8,11 +8,10 @@ module.exports = defineConfig([
     rules: {
       'import/no-unresolved': 'off',
       'react/no-unescaped-entities': 'off',
-      // These compiler rules were added by the SDK 57 lint preset and flag
-      // established async-loading and Reanimated ref patterns across the app.
-      'react-hooks/set-state-in-effect': 'off',
-      'react-hooks/refs': 'off',
-      'react-hooks/preserve-manual-memoization': 'off',
+      // Keep SDK 57 compiler guidance visible while making incremental cleanup non-blocking.
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
     },
   },
   {

@@ -1,5 +1,6 @@
 import { supabase } from "@/src/config/supabase";
 import { getPublicEnvValue } from "@/src/config/publicEnv";
+import { File as ExpoFile } from "expo-file-system";
 import * as FileSystem from "expo-file-system/legacy";
 import { Platform } from "react-native";
 
@@ -115,11 +116,7 @@ async function appendOcrDocument(
     return;
   }
 
-  formData.append("document", {
-    uri,
-    name: filename,
-    type: contentType,
-  } as unknown as Blob);
+  formData.append("document", new ExpoFile(uri));
 }
 
 function getOcrEndpoint(): string | undefined {
