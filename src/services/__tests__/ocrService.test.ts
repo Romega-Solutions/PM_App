@@ -1,6 +1,8 @@
 import { extractTextFromImage } from "../ocrService";
 import { supabase } from "@/src/config/supabase";
+import { File as ExpoFile } from "expo-file-system";
 import * as FileSystem from "expo-file-system/legacy";
+import { Platform } from "react-native";
 
 jest.mock("expo/virtual/env", () => ({
   env: process.env,
@@ -18,16 +20,49 @@ jest.mock("expo-file-system/legacy", () => ({
   getInfoAsync: jest.fn(),
 }));
 
+jest.mock("expo-file-system", () => ({
+  File: jest.fn(),
+}));
+
 describe("ocrService", () => {
   const testEnv = process.env as Record<string, string | undefined>;
   const originalEndpoint = testEnv.EXPO_PUBLIC_OCR_ENDPOINT;
   const originalSupabaseUrl = testEnv.EXPO_PUBLIC_SUPABASE_URL;
   const originalAnonKey = testEnv.EXPO_PUBLIC_SUPABASE_ANON_KEY;
   const originalFetch = global.fetch;
+  const platform = Platform as unknown as { OS: string };
+  const originalPlatformOs = platform.OS;
+  const expoFileConstructor = ExpoFile as unknown as jest.Mock;
+
+  function createExpoFile(uri: string) {
+    const filename = uri.split("/").pop() || "verification-document.jpg";
+    const extension = filename.split(".").pop()?.toLowerCase();
+    const contentType = extension === "png" ? "image/png" : "image/jpeg";
+    const bytes = new Uint8Array([80, 77, 45, 79, 67, 82]);
+    const file = new Blob([bytes], { type: contentType }) as Blob & {
+      uri: string;
+      name: string;
+      bytes: () => Promise<Uint8Array>;
+    };
+
+    Object.defineProperty(file, "uri", { configurable: true, value: uri });
+    Object.defineProperty(file, "name", {
+      configurable: true,
+      writable: true,
+      value: filename,
+    });
+    Object.assign(file, {
+      bytes: jest.fn().mockResolvedValue(bytes),
+    });
+
+    return file;
+  }
 
   afterEach(() => {
     jest.restoreAllMocks();
     jest.clearAllMocks();
+    expoFileConstructor.mockReset();
+    platform.OS = originalPlatformOs;
     if (originalEndpoint === undefined) {
       delete testEnv.EXPO_PUBLIC_OCR_ENDPOINT;
     } else {
@@ -55,6 +90,8 @@ describe("ocrService", () => {
   }
 
   beforeEach(() => {
+    platform.OS = "ios";
+    expoFileConstructor.mockImplementation(createExpoFile);
     (FileSystem.getInfoAsync as jest.Mock).mockResolvedValue({
       exists: true,
       size: 1024,
@@ -111,6 +148,90 @@ describe("ocrService", () => {
       fullText: "Maria Santos 1998-04-03",
     });
     expect(supabase.auth.getSession).toHaveBeenCalled();
+  });
+
+  it.each(["ios", "android"])(
+    "appends an Expo File with readable binary data on %s",
+    async (platformName) => {
+      platform.OS = platformName;
+      const uri = "file:///ids/passport.png";
+      const nativeFile = createExpoFile(uri);
+      expoFileConstructor.mockImplementation(() => nativeFile);
+      const appendSpy = jest.spyOn(FormData.prototype, "append");
+      const fetchMock = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({ fullText: "Maria Santos" }),
+      });
+      global.fetch = fetchMock as unknown as typeof fetch;
+      setOcrEndpoint("https://ocr.example.com/extract");
+      (supabase.auth.getSession as jest.Mock).mockResolvedValue({
+        data: { session: { access_token: "session-token" } },
+        error: null,
+      });
+
+      await extractTextFromImage(uri);
+
+      const documentAppend = appendSpy.mock.calls.find(
+        ([fieldName]) => fieldName === "document",
+      );
+      expect(expoFileConstructor).toHaveBeenCalledWith(uri);
+      expect(documentAppend?.[1]).toBe(nativeFile);
+      expect((documentAppend?.[1] as typeof nativeFile).bytes).toEqual(
+        expect.any(Function),
+      );
+      expect((documentAppend?.[1] as typeof nativeFile).name).toBe("passport.png");
+      expect((documentAppend?.[1] as typeof nativeFile).type).toBe("image/png");
+      expect(await nativeFile.bytes()).toEqual(
+        new Uint8Array([80, 77, 45, 79, 67, 82]),
+      );
+
+      const postedFormData = fetchMock.mock.calls[0]?.[1]?.body as FormData;
+      const postedDocument = postedFormData.get("document");
+      expect(postedDocument).toBeInstanceOf(Blob);
+      expect((postedDocument as Blob).type).toBe("image/png");
+      expect(
+        new Uint8Array(await (postedDocument as Blob).arrayBuffer()),
+      ).toEqual(new Uint8Array([80, 77, 45, 79, 67, 82]));
+    },
+  );
+
+  it("preserves the browser Blob upload and safe filename", async () => {
+    platform.OS = "web";
+    const uri = "https://example.com/ids/passport.png?token=fixture";
+    const imageBlob = new Blob(["browser image fixture"], {
+      type: "image/png",
+    });
+    const fetchMock = jest
+      .fn()
+      .mockImplementation(async (input: RequestInfo | URL) => {
+        if (String(input) === uri) {
+          return { blob: jest.fn().mockResolvedValue(imageBlob) };
+        }
+        return {
+          ok: true,
+          json: jest.fn().mockResolvedValue({ fullText: "Maria Santos" }),
+        };
+      });
+    global.fetch = fetchMock as unknown as typeof fetch;
+    setOcrEndpoint("https://ocr.example.com/extract");
+    (supabase.auth.getSession as jest.Mock).mockResolvedValue({
+      data: { session: { access_token: "session-token" } },
+      error: null,
+    });
+
+    await extractTextFromImage(uri);
+
+    expect(expoFileConstructor).not.toHaveBeenCalled();
+    const postedFormData = fetchMock.mock.calls[2]?.[1]?.body as FormData;
+    const postedDocument = postedFormData.get("document") as Blob & {
+      name?: string;
+    };
+    expect(postedDocument).toBeInstanceOf(Blob);
+    expect(postedDocument.name).toBe("passport.png");
+    expect(postedDocument.type).toBe("image/png");
+    expect(
+      new TextDecoder().decode(await postedDocument.arrayBuffer()),
+    ).toBe("browser image fixture");
   });
 
   it("requires a session before calling a configured custom OCR endpoint", async () => {

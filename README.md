@@ -6,14 +6,17 @@
 
 ## Prerequisites
 
-- Node.js 20.19.4 or later
+- Node.js 22.13.0 or later (required by Expo SDK 57)
 - npm package manager
 - Git
-- A phone with an Expo Go version compatible with Expo SDK 54,
+- An installed PinayMate SDK 57 development build on a phone,
   or an Android emulator / iOS simulator
-  - Android emulator: Android Studio
-  - iOS simulator: macOS with Xcode
-- Supabase development project URL and anon key provided by the team
+  - Android builds: Android Studio with Android SDK 36 (compile/target API 36)
+  - iOS builds: macOS with Xcode 26.4 or later; the minimum supported iOS version is 16.4
+- The team's approved Supabase development/test project URL and anon key
+
+PinayMate uses native modules, so Expo Go is not a supported test client. Use the
+development build installed for this repository.
 
 Copy `.env.example` to `.env` and add the Supabase values
 provided by the team. Do not commit `.env` to version control.
@@ -21,16 +24,22 @@ provided by the team. Do not commit `.env` to version control.
 ## 🚀 Quick Start
 
 ```bash
-# Install dependencies
-npm install
+# Install the versions pinned in the lockfile
+npm ci
 
-# Start dev server
-npm start
-
-# Run on devices
+# First native build/install for each platform, or after changing native
+# dependencies, config plugins, permissions, or other native project settings
 npm run ios
 npm run android
+
+# Start Metro for an already-installed development build
+npx expo start --dev-client
 ```
+
+The existing EAS development profile can also produce an internal development
+build when the team provides an authorized build path. JavaScript-only edits
+normally need a Metro reload; changes to native dependencies or configuration
+require rebuilding and reinstalling the development app.
 
 ---
 
@@ -77,7 +86,7 @@ Fill in the real Supabase values locally. `EXPO_PUBLIC_OCR_ENDPOINT` is optional
 
 ## 🏗️ Tech Stack
 
-- **Framework:** React Native + Expo SDK 54+
+- **Framework:** React Native 0.86 + Expo SDK 57
 - **Router:** expo-router (file-based)
 - **Styling:** NativeWind (Tailwind CSS)
 - **Backend:** Supabase (PostgreSQL + Auth + Storage)
