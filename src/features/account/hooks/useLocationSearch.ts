@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import * as ExpoLocation from "expo-location";
 import { useIsDemoSession } from "@/src/features/auth/demoMode";
+import { ACCOUNT_SETUP_CURRENT_LOCATION_ENABLED } from "../config/locationFeatures";
 import { accountApi, type SavedLocation } from "../api/accountApi";
 
 // ✅ Changed: Added city and country properties
@@ -180,6 +181,10 @@ export const useLocationSearch = () => {
   }, [isDemoMode]);
 
   const getCurrentLocation = useCallback(async (): Promise<Location | null> => {
+    if (!ACCOUNT_SETUP_CURRENT_LOCATION_ENABLED) {
+      return null;
+    }
+
     if (isDemoMode) {
       const currentLocation = sampleLocations[0];
       setSelectedLocation(currentLocation);
