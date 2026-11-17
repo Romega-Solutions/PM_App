@@ -48,12 +48,15 @@ Fill in the real Supabase values locally. `EXPO_PUBLIC_OCR_ENDPOINT` is optional
 
 ### Native Permissions
 
-- Current location uses `expo-location` foreground permission, device coordinates, and reverse geocoding.
-- The location permission copy is configured in `app.json`; rebuild the native app after changing it.
+- Account setup currently collects location through manual city selection only. Device-location collection is disabled by `ACCOUNT_SETUP_CURRENT_LOCATION_ENABLED` in `src/features/account/config/locationFeatures.ts`.
+- The current-location hook and `expo-location` plugin remain configured for a future approved rounded-coordinate change. Keep the switch false until that work is implemented and validated; the plugin's presence does not mean account setup requests device GPS.
+- The native location permission copy remains configured in `app.json`; rebuild the native app after changing it.
 - The camera/photo permission copy for verification selfie and ID document selection is configured through the `expo-image-picker` plugin in `app.json`; rebuild the native app after changing it.
 - ID OCR calls the bundled Supabase OCR Edge Function, deriving the URL from `EXPO_PUBLIC_SUPABASE_URL` unless `EXPO_PUBLIC_OCR_ENDPOINT` is explicitly set, and fails closed when the user is unauthenticated, the endpoint is unavailable, or the response is invalid.
 
 ### Production-hardening reality check
+
+The dated implementation evidence and QA notes below retain their historical context. For current account-setup location behavior and required checks, follow the Native Permissions section above and `docs/testing/NATIVE_QA_SCRIPT.md` section 3.
 
 - Local release gate:
   - `npm run check:release-local` first checks secret hygiene, verifies launch-critical files are present and tracked, checks dependency advisories, then runs local quality checks.
@@ -203,7 +206,7 @@ messages          # Chat messages
 
 - Execute the migration on staging/local first, then on production Supabase.
 - Run `supabase/tests/04_safety_smoke_test.sql` after applying the full ordered migration set in staging/local to validate report, block, unmatch, storage, notification preferences, privacy settings, read receipts, discovery filtering, and blocked-chat behavior.
-- Complete physical-device QA for location permission + reverse-geocode + coordinate persistence.
+- Complete physical-device QA for manual city selection and save in account setup. Current-location permission/reverse-geocode behavior is not active in this flow; validate it only after the separate rounded-coordinate work is approved.
 - Stand up and smoke-test OCR endpoint with valid/invalid documents in a deployed environment (local DB checks alone are insufficient for function-level hardening).
 - Run end-to-end mobile QA: onboarding, auth gate, matching, chat media, and verification flows.
 - Validate report, block, unmatch, and blocked-chat behavior after the Supabase policy migration is applied.
@@ -253,12 +256,12 @@ supabase db push
 
 #### Verified
 
-- Current doc state confirms: auth gate, OCR service wiring, and current-location capture logic are implemented.
+- Current doc state confirms: auth gate, OCR service wiring, and current-location capture logic are implemented; the account-setup action is currently disabled as described above.
 - Existing migration file and feature wiring are traceable in this repository.
 
 #### Blocked
 
-- Native runtime validation of location permission prompt, permission denial behavior, and coordinate persistence.
+- Historical native runtime validation of location permission prompt, permission denial behavior, and coordinate persistence was pending; the current account-setup flow is manual city selection only.
 - OCR endpoint deployment, production security, and real-image verification behavior.
 - Supabase migration execution and advisor checks for:
   - RLS and storage policy enforcement
@@ -269,7 +272,7 @@ supabase db push
 
 - **Mobile App**
   - Run build and install QA on Android/iOS (emulator + physical if possible).
-  - Validate onboarding, account setup, `Use Current Location`, verification, matching, and messaging.
+  - Validate onboarding, account setup manual city selection, verification, matching, and messaging. Validate device-location behavior only after its separate approved rounded-coordinate work.
 - **Web**
   - Confirm PM_Web release page matches mobile deep-link and feature availability links.
   - Validate production build output and static delivery for landing routes.

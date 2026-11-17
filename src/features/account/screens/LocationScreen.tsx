@@ -22,6 +22,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/src/stores/authStore";
 import { accountApi, SavedLocation } from "../api/accountApi";
+import { ACCOUNT_SETUP_CURRENT_LOCATION_ENABLED } from "../config/locationFeatures";
 import {
   getManualLocationFromQuery,
   useLocationSearch,
@@ -110,7 +111,7 @@ export default function LocationScreen() {
       setLocationNotice(
         location.coordinates
           ? null
-          : "Saved as a manual city. PinayMate will not treat this as exact GPS.",
+          : "Manual city selected. It will be saved when you continue.",
       );
       setQuery("");
     },
@@ -130,8 +131,8 @@ export default function LocationScreen() {
         manualLocationLabel.toLowerCase(),
     );
   const selectedLocationPrivacyLabel = useCurrentLocation
-    ? "Current location selected. Approximate coordinates may be saved for matching preferences."
-    : "Manual city selected. PinayMate will not treat this as exact GPS.";
+    ? "Device location selected."
+    : "City selected. Choosing a city does not request your device's GPS.";
 
   const handleNext = useCallback(async () => {
     if (!hasSelectedLocation) return;
@@ -215,26 +216,34 @@ export default function LocationScreen() {
             <AccountProgress steps={5} activeIndex={2} />
             <Text style={styles.title}>Where are you located?</Text>
             <Text style={styles.subtitle}>
-              City-level location is enough to continue. Exact GPS is optional
-              and can be denied.
+              {ACCOUNT_SETUP_CURRENT_LOCATION_ENABLED
+                ? "Choose a city or use your device location to continue."
+                : "Choose your city to continue."}
             </Text>
           </View>
 
           <View style={styles.form}>
-            <LocationItem
-              label="Use Current Location"
-              isCurrent
-              selected={useCurrentLocation}
-              onPress={handleUseCurrentLocation}
-            />
+            {ACCOUNT_SETUP_CURRENT_LOCATION_ENABLED ? (
+              <>
+                <LocationItem
+                  label="Use Current Location"
+                  isCurrent
+                  selected={useCurrentLocation}
+                  onPress={handleUseCurrentLocation}
+                />
 
-            <View style={styles.privacyNote}>
-              <MapPin size={16} color="rgba(255,255,255,0.82)" />
+                <View style={styles.privacyNote}>
+                  <MapPin size={16} color="rgba(255,255,255,0.82)" />
+                  <Text style={styles.privacyNoteText}>
+                    You can also search for a city manually.
+                  </Text>
+                </View>
+              </>
+            ) : (
               <Text style={styles.privacyNoteText}>
-                If permission fails or you prefer not to share GPS, type your
-                city below and use the manual result.
+                Search for your city below. If it is not listed, you can enter it manually.
               </Text>
-            </View>
+            )}
 
             {locationNotice ? (
               <View
@@ -247,11 +256,13 @@ export default function LocationScreen() {
               </View>
             ) : null}
 
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or search for a city</Text>
-              <View style={styles.dividerLine} />
-            </View>
+            {ACCOUNT_SETUP_CURRENT_LOCATION_ENABLED ? (
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or search for a city</Text>
+                <View style={styles.dividerLine} />
+              </View>
+            ) : null}
 
             <CustomTextInput
               label="Search Location"
