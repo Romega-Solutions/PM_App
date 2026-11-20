@@ -1289,7 +1289,7 @@ BEGIN
      AND other_user.id = r.reported_user_id
     WHERE r.source = 'app'
       AND r.reason = 'Smoke invalid source report'
-      AND r.status IN ('open', 'reviewing')
+      AND r.status IN ('pending', 'reviewing')
   ) <> 1 THEN
     RAISE EXCEPTION 'Duplicate same-pair report was not merged into one open queue row';
   END IF;
