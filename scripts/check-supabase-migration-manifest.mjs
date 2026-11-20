@@ -11,6 +11,7 @@ const expectedOrder = [
   "02_chat_schema_updates.sql",
   "03_add_conversations_table.sql",
   "04_production_core_hardening.sql",
+  "05_restore_archived_profile_message_columns.sql",
   "20260610090000_restore_legacy_security_primitives.sql",
   "20260610094806_add_pinaymate_storage_buckets.sql",
   "20260610100323_add_ocr_rate_limit.sql",
@@ -38,6 +39,7 @@ const expectedOrder = [
   "20260611143000_restrict_public_function_execute_defaults.sql",
   "999_restore_profile_visibility_filter.sql",
   "20260611144000_final_release_security_hardening.sql",
+  "20261120090000_harden_legacy_security_definer_helpers.sql",
 ];
 
 const tailMigrationOrderHazards = [
