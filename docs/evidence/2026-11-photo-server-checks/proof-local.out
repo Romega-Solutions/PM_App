@@ -1,0 +1,24 @@
+PASS  bucket private, 10 MB, 4 MIME types  -- {"public":false,"file_size_limit":10485760,"allowed_mime_types":["image/jpeg","image/png","image/webp","image/heic"]}
+PASS  11 MB JPEG rejected (413)  -- 413 {"error":"Photo is too large. Choose a photo under 10 MB.","code":"too_large"}
+PASS  image/gif rejected (415)  -- 415 {"error":"Photo type is not supported. Use JPEG, PNG, WebP or HEIC.","code":"unsupported_type"}
+PASS  GIF bytes labelled image/jpeg rejected by magic-byte sniff (415)  -- 415 {"error":"Photo type is not supported. Use JPEG, PNG, WebP or HEIC.","code":"unsupported_type"}
+PASS  upload without sign-in rejected (401)  -- 401
+PASS  direct member upload to profile-photos blocked  -- new row violates row-level security policy
+PASS  gps.jpg: GPS before=14.5994,120.9775 after=none; still decodes 640x480 orientation=6  -- path=<owner>/1795237398353-<uuid>.jpg removed=JPEG APP1 EXIF
+PASS  gps.png: GPS before=14.5994,120.9775 after=none; still decodes 640x480  -- path=<owner>/1795237398510-<uuid>.png removed=PNG eXIf
+PASS  gps.webp: GPS before=14.5994,120.9775 after=none; still decodes 640x480  -- path=<owner>/1795237398729-<uuid>.webp removed=WebP EXIF
+PASS  public URL fails after bucket flip  -- 400 {"statusCode":"404","error":"Bucket not found","message":"Bucket not found","code":"NoSuchBucket"}
+PASS  own photos saved; old public URL normalised to a path  -- ["<owner>/1795237398353-<uuid>.jpg","<owner>/1795237398510-<uuid>.png"]
+PASS  another member's photo path rejected  -- Invalid profile photo
+PASS  path with no uploaded object rejected  -- Invalid profile photo
+PASS  external URL rejected  -- Invalid profile photo
+PASS  discoverable member's photo: viewer gets a signed URL that loads  -- 200 image/jpeg
+PASS  photo not on the owner's profile cannot be signed by others  -- Object not found
+PASS  blocked member cannot sign  -- Object not found
+PASS  hidden profile (profile_visible=false), no match: stranger cannot sign  -- Object not found
+PASS  hidden profile but mutual match (Messages): can sign
+PASS  owner can sign own photo even before it is on the profile
+PASS  3-second signed URL loads, then fails after expiry  -- before=200 after=400 {"statusCode":"400","error":"InvalidJWT","message":"\"exp\" claim timestamp check failed","code":"InvalidJWT"} (signer=matched member)
+PASS  owner can delete own photo
+
+22/22 checks passed

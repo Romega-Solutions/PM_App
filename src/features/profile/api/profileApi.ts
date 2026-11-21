@@ -2,6 +2,12 @@ import { supabase } from "@/src/config/supabase";
 import { decode } from "base64-arraybuffer";
 import * as FileSystem from "expo-file-system/legacy";
 import { Platform } from "react-native";
+import {
+  PROFILE_PHOTOS_BUCKET,
+  resolveProfilePhotoUrl,
+  toProfilePhotoStoragePath,
+  withSignedProfilePhotos,
+} from "./profilePhotoUrls";
 
 export interface ProfileData {
   id: string;
@@ -38,7 +44,7 @@ const PROFILE_UPDATE_FIELDS = [
   "location_name",
 ] as const satisfies readonly (keyof UpdateProfileData)[];
 
-type ProfileAction = "update" | "upload" | "photos" | "delete";
+type ProfileAction = "update" | "upload" | "uploadRejected" | "photos" | "delete";
 const MAX_PROFILE_PHOTO_BYTES = 6 * 1024 * 1024;
 const MAX_PROFILE_PHOTOS = 6;
 const PROFILE_PHOTO_TYPES: Record<string, string> = {
@@ -55,15 +61,17 @@ const PROFILE_PHOTO_EXTENSIONS_BY_TYPE: Record<string, string> = {
   "image/webp": "webp",
   "image/heic": "heic",
 };
-const PROFILE_PHOTOS_BUCKET = "profile-photos";
-const PROFILE_PHOTO_PATH_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/[0-9]+-[a-z0-9-]+\.(?:jpg|png|webp|heic)$/i;
+const PROFILE_PHOTO_INGEST_FUNCTION = "profile-photo-ingest";
 const USER_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function getSafeProfileError(action: ProfileAction): string {
   if (action === "upload") {
     return "Photo upload failed. Check your connection and try again.";
+  }
+
+  if (action === "uploadRejected") {
+    return "Photo was not accepted. Use a JPEG, PNG, WebP or HEIC photo under 10 MB.";
   }
 
   if (action === "photos") {
@@ -149,43 +157,11 @@ async function assertProfilePhotoUpload(uri: string, webBlob?: Blob) {
   return uploadType;
 }
 
-function assertUserScopedProfilePhotoPath(userId: string, extension: string) {
-  if (!USER_ID_PATTERN.test(userId)) {
-    throw new Error("Invalid profile photo owner");
-  }
-
-  return `${userId}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
-}
-
-function getProfilePhotoStoragePath(photoUrl: string): string | null {
-  const normalizedPhotoUrl = photoUrl.trim();
-
-  if (!normalizedPhotoUrl) {
-    return null;
-  }
-
-  const marker = `/${PROFILE_PHOTOS_BUCKET}/`;
-  const markerIndex = normalizedPhotoUrl.indexOf(marker);
-
-  if (markerIndex === -1) {
-    return null;
-  }
-
-  const pathWithQuery = normalizedPhotoUrl.slice(markerIndex + marker.length);
-  const filePath = decodeURIComponent(pathWithQuery.split("?")[0]).replace(/^\/+/, "");
-
-  if (
-    filePath.includes("..") ||
-    filePath.includes("\\") ||
-    !PROFILE_PHOTO_PATH_PATTERN.test(filePath)
-  ) {
-    return null;
-  }
-
-  return filePath;
-}
-
-function normalizeUserScopedProfilePhotoUrls(
+/**
+ * Turns the UI's photo list (signed URLs, old public URLs or paths) into the
+ * storage paths saved in profiles.photos.
+ */
+function normalizeUserScopedProfilePhotoPaths(
   photoUrls: string[],
   userId: string,
 ): string[] {
@@ -193,29 +169,25 @@ function normalizeUserScopedProfilePhotoUrls(
     throw new Error("Invalid profile photo list");
   }
 
-  const seenPaths = new Set<string>();
-  const normalizedPhotoUrls: string[] = [];
+  const photoPaths: string[] = [];
 
   for (const photoUrl of photoUrls) {
-    const normalizedPhotoUrl = photoUrl.trim();
-
-    if (!normalizedPhotoUrl) {
+    if (!photoUrl.trim()) {
       continue;
     }
 
-    const filePath = getProfilePhotoStoragePath(normalizedPhotoUrl);
+    const filePath = toProfilePhotoStoragePath(photoUrl);
 
     if (!filePath || !filePath.startsWith(`${userId}/`)) {
       throw new Error("Invalid profile photo owner");
     }
 
-    if (!seenPaths.has(filePath)) {
-      seenPaths.add(filePath);
-      normalizedPhotoUrls.push(normalizedPhotoUrl);
+    if (!photoPaths.includes(filePath)) {
+      photoPaths.push(filePath);
     }
   }
 
-  return normalizedPhotoUrls;
+  return photoPaths;
 }
 
 /**
@@ -241,7 +213,7 @@ export async function getCurrentUserProfile(): Promise<ProfileData | null> {
       return null;
     }
 
-    return data;
+    return data ? await withSignedProfilePhotos(data as ProfileData) : null;
   } catch {
     console.error("Failed to get user profile.");
     return null;
@@ -282,13 +254,23 @@ export async function updateUserProfile(
   }
 }
 
+function getIngestErrorStatus(error: unknown): number | null {
+  const context = (error as { context?: { status?: unknown } } | null)?.context;
+  return typeof context?.status === "number" ? context.status : null;
+}
+
 /**
- * Upload profile photo to Supabase Storage
+ * Upload a profile photo through the profile-photo-ingest Edge Function.
+ *
+ * The function is the only writer to the private profile-photos bucket: it
+ * checks size (10 MB) and the real file type, strips EXIF/GPS and stores the
+ * file in the signed-in member's folder. Returns the storage `path` (what
+ * profiles.photos stores) and a short-lived signed `url` for display.
  */
 export async function uploadProfilePhoto(
   uri: string,
   userId: string,
-): Promise<{ success: boolean; url?: string; error?: string }> {
+): Promise<{ success: boolean; url?: string; path?: string; error?: string }> {
   try {
     if (!USER_ID_PATTERN.test(userId)) {
       return { success: false, error: getSafeProfileError("upload") };
@@ -297,7 +279,7 @@ export async function uploadProfilePhoto(
     const normalizedUri = uri.trim();
 
     // Read file payload
-    let fileBody: any;
+    let fileBody: Blob | ArrayBuffer;
     let webBlob: Blob | undefined;
     if (Platform.OS === "web") {
       const response = await fetch(normalizedUri);
@@ -314,33 +296,42 @@ export async function uploadProfilePhoto(
       fileBody = decode(base64);
     }
 
-    const { extension, contentType } = await assertProfilePhotoUpload(
-      normalizedUri,
-      webBlob,
+    // Client checks are a quick first pass; the Edge Function enforces the rules.
+    const { contentType } = await assertProfilePhotoUpload(normalizedUri, webBlob);
+
+    const { data, error } = await supabase.functions.invoke(
+      PROFILE_PHOTO_INGEST_FUNCTION,
+      {
+        body: fileBody,
+        headers: { "Content-Type": contentType },
+      },
     );
 
-    // Generate unique filename
-    const fileName = assertUserScopedProfilePhotoPath(userId, extension);
-
-    // Upload to Supabase Storage
-    const { error } = await supabase.storage
-      .from(PROFILE_PHOTOS_BUCKET)
-      .upload(fileName, fileBody, {
-        contentType,
-        upsert: true,
-      });
-
     if (error) {
+      const status = getIngestErrorStatus(error);
       console.error("Profile photo upload failed.");
+      return {
+        success: false,
+        error: getSafeProfileError(
+          status === 413 || status === 415 || status === 422
+            ? "uploadRejected"
+            : "upload",
+        ),
+      };
+    }
+
+    const returnedPath = (data as { path?: unknown } | null)?.path;
+    const path =
+      typeof returnedPath === "string" ? toProfilePhotoStoragePath(returnedPath) : null;
+
+    if (!path || !path.startsWith(`${userId}/`)) {
+      console.error("Profile photo upload returned an unexpected path.");
       return { success: false, error: getSafeProfileError("upload") };
     }
 
-    // Get public URL
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from(PROFILE_PHOTOS_BUCKET).getPublicUrl(fileName);
+    const url = (await resolveProfilePhotoUrl(path)) ?? undefined;
 
-    return { success: true, url: publicUrl };
+    return { success: true, url, path };
   } catch {
     console.error("Failed to upload photo.");
     return { success: false, error: getSafeProfileError("upload") };
@@ -348,7 +339,8 @@ export async function uploadProfilePhoto(
 }
 
 /**
- * Update user's photos array in profile
+ * Update user's photos array in profile.
+ * Accepts display URLs or paths; stores storage paths.
  */
 export async function updateProfilePhotos(
   photoUrls: string[],
@@ -361,16 +353,13 @@ export async function updateProfilePhotos(
       return { success: false, error: "Please sign in to update your photos." };
     }
 
-    const normalizedPhotoUrls = normalizeUserScopedProfilePhotoUrls(
-      photoUrls,
-      user.id,
-    );
+    const photoPaths = normalizeUserScopedProfilePhotoPaths(photoUrls, user.id);
 
     const { error } = await supabase
       .from("profiles")
       .update({
-        photos: normalizedPhotoUrls,
-        photos_completed: normalizedPhotoUrls.length > 0,
+        photos: photoPaths,
+        photos_completed: photoPaths.length > 0,
       })
       .eq("id", user.id);
 
@@ -387,13 +376,14 @@ export async function updateProfilePhotos(
 }
 
 /**
- * Delete profile photo from storage
+ * Delete profile photo from storage.
+ * Accepts a path, a signed URL or an old public URL.
  */
 export async function deleteProfilePhoto(
   photoUrl: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const filePath = getProfilePhotoStoragePath(photoUrl);
+    const filePath = toProfilePhotoStoragePath(photoUrl);
 
     if (!filePath) {
       return { success: false, error: getSafeProfileError("delete") };

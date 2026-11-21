@@ -1,0 +1,5 @@
+# 04_safety_smoke_test.sql
+ PASS: production hardening report/block/unmatch/messaging/privacy discovery safety smoke test completed; transaction will roll back
+# 05_release_preflight_audit.sql
+NOTICE:  PASS: storage buckets, launch RPCs, RLS tables, and discovery visibility view are present.
+ PASS: release preflight audit completed; transaction will roll back

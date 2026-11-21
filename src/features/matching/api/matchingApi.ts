@@ -1,5 +1,9 @@
 // src/features/matching/api/matchingApi.ts
 import { supabase } from "@/src/config/supabase";
+import {
+  withSignedProfilePhotos,
+  withSignedProfilePhotosList,
+} from "@/src/features/profile/api/profilePhotoUrls";
 import { Match, Profile, SwipeResult } from "../types";
 
 const MATCHING_PROFILE_SELECT = `
@@ -332,7 +336,9 @@ export const fetchDiscoverProfiles = async (
     scoredProfiles.sort((a, b) => b.matchScore - a.matchScore);
 
     // Take top matches up to limit
-    const topMatches = scoredProfiles.slice(0, limit);
+    const topMatches = await withSignedProfilePhotosList(
+      scoredProfiles.slice(0, limit),
+    );
 
     return { data: topMatches, error: null };
   } catch {
@@ -379,7 +385,9 @@ export const likeProfile = async (
     return {
       success: true,
       isMatch: Boolean(result.is_match),
-      matchedProfile: result.matched_profile || undefined,
+      matchedProfile: result.matched_profile
+        ? await withSignedProfilePhotos(result.matched_profile)
+        : undefined,
     };
   } catch {
     console.error("Error liking profile.");
@@ -459,13 +467,15 @@ export const getMatches = async (
       return { data: null, error: MATCHES_LOAD_ERROR };
     }
 
+    const signedProfiles = await withSignedProfilePhotosList(profiles);
+
     // Combine likes with profiles. If the profile is no longer discoverable
     // because of privacy/blocking/moderation state, omit it instead of
     // returning a broken or misleading match card.
     const matches: Match[] = likes.flatMap((like) => {
       const matchedUserId =
         like.from_user_id === userId ? like.to_user_id : like.from_user_id;
-      const profile = profiles?.find((p) => p.id === matchedUserId);
+      const profile = signedProfiles.find((p) => p.id === matchedUserId);
 
       if (!profile) {
         return [];
@@ -522,7 +532,7 @@ export const getLikesReceived = async (
       return { data: null, error: LIKES_LOAD_ERROR };
     }
 
-    return { data: profiles, error: null };
+    return { data: await withSignedProfilePhotosList(profiles), error: null };
   } catch {
     console.error("Error fetching received likes.");
     return { data: null, error: LIKES_LOAD_ERROR };

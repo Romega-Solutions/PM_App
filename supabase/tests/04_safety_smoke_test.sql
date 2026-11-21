@@ -663,9 +663,12 @@ BEGIN
     SELECT 1
     FROM storage.buckets
     WHERE id = 'profile-photos'
-      AND public = TRUE
+      AND public = FALSE
+      AND file_size_limit = 10485760
+      AND allowed_mime_types @> ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/heic']
+      AND cardinality(allowed_mime_types) = 4
   ) THEN
-    RAISE EXCEPTION 'profile-photos bucket must exist as a public bucket for current profile photo URLs';
+    RAISE EXCEPTION 'profile-photos bucket must be private with a 10 MB limit and JPEG/PNG/WebP/HEIC only';
   END IF;
 
   IF NOT EXISTS (
@@ -677,20 +680,52 @@ BEGIN
     RAISE EXCEPTION 'verification-docs bucket must exist as a private bucket';
   END IF;
 
-  IF (
-    SELECT COUNT(DISTINCT policyname)
+  -- Ticket #46: members cannot write profile photos directly; the
+  -- profile-photo-ingest Edge Function (service role) is the only writer.
+  IF EXISTS (
+    SELECT 1
     FROM pg_policies
     WHERE schemaname = 'storage'
       AND tablename = 'objects'
-      AND policyname IN (
-        'Users can upload own profile photos',
-        'Users can replace own profile photos',
-        'Users can delete own profile photos'
-      )
+      AND cmd IN ('INSERT', 'UPDATE', 'ALL')
+      AND permissive = 'PERMISSIVE'
       AND COALESCE(with_check, qual, '') LIKE '%profile-photos%'
-      AND COALESCE(with_check, qual, '') LIKE '%auth.uid%'
-  ) < 3 THEN
-    RAISE EXCEPTION 'profile photo storage policies must restrict writes to the authenticated user folder';
+  ) THEN
+    RAISE EXCEPTION 'profile photo storage must not allow direct member uploads or overwrites';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'Users can delete own profile photos'
+      AND cmd = 'DELETE'
+      AND COALESCE(qual, '') LIKE '%profile-photos%'
+      AND COALESCE(qual, '') LIKE '%auth.uid%'
+  ) THEN
+    RAISE EXCEPTION 'profile photo deletes must stay limited to the authenticated user folder';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'Members can view visible profile photos'
+      AND cmd = 'SELECT'
+      AND COALESCE(qual, '') LIKE '%can_view_profile_photo%'
+  ) OR EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND cmd IN ('SELECT', 'ALL')
+      AND permissive = 'PERMISSIVE'
+      AND COALESCE(qual, '') LIKE '%profile-photos%'
+      AND policyname <> 'Members can view visible profile photos'
+  ) THEN
+    RAISE EXCEPTION 'profile photo reads must go through can_view_profile_photo';
   END IF;
 
   IF (
