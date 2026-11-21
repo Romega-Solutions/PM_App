@@ -1,0 +1,26 @@
+ profiles_with_photos | profiles_with_url_entries | entries_that_are_not_profile_photo_paths 
+----------------------+---------------------------+------------------------------------------
+                    2 |                         1 |                                        1
+(1 row)
+
+                  id                  |                value                
+--------------------------------------+-------------------------------------
+ <uuid> | https://images.example/old-demo.jpg
+(1 row)
+
+BEGIN
+CREATE TABLE
+ALTER TABLE
+REVOKE
+INSERT 0 2
+UPDATE 1
+ remaining_url_entries 
+-----------------------
+                     0
+(1 row)
+
+COMMIT
+ id | missing_path 
+----+--------------
+(0 rows)
+

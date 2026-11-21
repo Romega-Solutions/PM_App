@@ -1,8 +1,11 @@
 /**
  * Photos API
- * 
+ *
  * Handles profile photo management (add, remove, list).
  * Single Responsibility: Photo operations only.
+ *
+ * profiles.photos stores storage paths; every list returned here is signed
+ * display URLs (see profilePhotoUrls.ts). Inputs may be either.
  */
 
 import { supabase } from "@/src/config/supabase";
@@ -10,6 +13,11 @@ import {
   deleteProfilePhoto,
   uploadProfilePhoto,
 } from "../../profile/api/profileApi";
+import {
+  isOwnProfilePhoto,
+  resolveProfilePhotoUrls,
+  toProfilePhotoStoragePath,
+} from "../../profile/api/profilePhotoUrls";
 
 const PHOTO_SIGN_IN_ERROR = "Please sign in before changing profile photos.";
 const PHOTO_SAVE_ERROR =
@@ -17,6 +25,8 @@ const PHOTO_SAVE_ERROR =
 const PHOTO_REMOVE_ERROR =
   "Profile photo could not be removed. Check your connection and try again.";
 const PHOTO_INPUT_ERROR = "Choose a profile photo and try again.";
+const PHOTO_REJECTED_ERROR =
+  "Photo was not accepted. Use a JPEG, PNG, WebP or HEIC photo under 10 MB.";
 const MAX_PROFILE_PHOTOS = 6;
 
 function normalizePhotoUri(uri: string): string {
@@ -39,34 +49,23 @@ function normalizePhotoList(photos: unknown): string[] {
   );
 }
 
-function getProfilePhotoOwnerPath(photoUrl: string): string | null {
-  const marker = "/profile-photos/";
-  const markerIndex = photoUrl.indexOf(marker);
+/** Own photos only, as unique storage paths, in order. */
+function toOwnPhotoPaths(photos: unknown, userId: string): string[] {
+  const paths: string[] = [];
 
-  if (markerIndex === -1) {
-    return null;
+  for (const photo of normalizePhotoList(photos)) {
+    if (!isOwnProfilePhoto(photo, userId)) continue;
+    const path = toProfilePhotoStoragePath(photo);
+    if (path && !paths.includes(path)) paths.push(path);
   }
 
-  const ownerPath = decodeURIComponent(photoUrl.slice(markerIndex + marker.length).split("?")[0])
-    .replace(/^\/+/, "");
-
-  if (!ownerPath || ownerPath.includes("..") || ownerPath.includes("\\")) {
-    return null;
-  }
-
-  return ownerPath;
-}
-
-function isUserScopedProfilePhoto(photoUrl: string, userId: string): boolean {
-  const ownerPath = getProfilePhotoOwnerPath(photoUrl.trim());
-
-  return Boolean(ownerPath?.startsWith(`${userId}/`));
+  return paths;
 }
 
 export async function saveProfilePhoto(uri: string): Promise<{ ok: true; data: { photos: string[] } }> {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+
     if (userError || !user) {
       throw new Error(PHOTO_SIGN_IN_ERROR);
     }
@@ -81,15 +80,17 @@ export async function saveProfilePhoto(uri: string): Promise<{ ok: true; data: {
       .single();
 
     const uploadResult = await uploadProfilePhoto(normalizedUri, user.id);
-    if (!uploadResult.success || !uploadResult.url) {
-      throw new Error(PHOTO_SAVE_ERROR);
+    if (!uploadResult.success || !uploadResult.path) {
+      throw new Error(
+        uploadResult.error === PHOTO_REJECTED_ERROR ? PHOTO_REJECTED_ERROR : PHOTO_SAVE_ERROR,
+      );
     }
 
-    const existingPhotos = normalizePhotoList(profile?.photos).filter(
-      (photo) =>
-        photo !== uploadResult.url && isUserScopedProfilePhoto(photo, user.id),
+    const newPath = uploadResult.path;
+    const existingPaths = toOwnPhotoPaths(profile?.photos, user.id).filter(
+      (path) => path !== newPath,
     );
-    const newPhotos = [uploadResult.url, ...existingPhotos].slice(0, MAX_PROFILE_PHOTOS);
+    const newPhotos = [newPath, ...existingPaths].slice(0, MAX_PROFILE_PHOTOS);
 
     // Update photos array
     const { error } = await supabase
@@ -101,11 +102,11 @@ export async function saveProfilePhoto(uri: string): Promise<{ ok: true; data: {
       .eq('id', user.id);
 
     if (error) {
-      await deleteProfilePhoto(uploadResult.url).catch(() => undefined);
+      await deleteProfilePhoto(newPath).catch(() => undefined);
       throw new Error(PHOTO_SAVE_ERROR);
     }
 
-    return { ok: true, data: { photos: newPhotos } };
+    return { ok: true, data: { photos: await resolveProfilePhotoUrls(newPhotos) } };
   } catch (error) {
     if (error instanceof Error && error.message === PHOTO_SIGN_IN_ERROR) {
       throw new Error(PHOTO_SIGN_IN_ERROR);
@@ -113,6 +114,10 @@ export async function saveProfilePhoto(uri: string): Promise<{ ok: true; data: {
 
     if (error instanceof Error && error.message === PHOTO_INPUT_ERROR) {
       throw new Error(PHOTO_INPUT_ERROR);
+    }
+
+    if (error instanceof Error && error.message === PHOTO_REJECTED_ERROR) {
+      throw new Error(PHOTO_REJECTED_ERROR);
     }
 
     console.error("Error saving photo.");
@@ -123,7 +128,7 @@ export async function saveProfilePhoto(uri: string): Promise<{ ok: true; data: {
 export async function getProfilePhotos(): Promise<string[]> {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+
     if (userError || !user) {
       return [];
     }
@@ -138,7 +143,7 @@ export async function getProfilePhotos(): Promise<string[]> {
       return [];
     }
 
-    return data.photos || [];
+    return await resolveProfilePhotoUrls(data.photos || []);
   } catch {
     console.error("Error fetching photos.");
     return [];
@@ -148,12 +153,13 @@ export async function getProfilePhotos(): Promise<string[]> {
 export async function removeProfilePhoto(uri: string): Promise<{ ok: true; data: string[] }> {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+
     if (userError || !user) {
       throw new Error(PHOTO_SIGN_IN_ERROR);
     }
 
     const normalizedUri = normalizePhotoUri(uri);
+    const removedPath = toProfilePhotoStoragePath(normalizedUri);
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -161,22 +167,18 @@ export async function removeProfilePhoto(uri: string): Promise<{ ok: true; data:
       .eq('id', user.id)
       .single();
 
-    const existingPhotos = normalizePhotoList(profile?.photos).filter((photo) =>
-      isUserScopedProfilePhoto(photo, user.id),
-    );
+    const existingPaths = toOwnPhotoPaths(profile?.photos, user.id);
 
-    if (!existingPhotos.includes(normalizedUri)) {
-      return { ok: true, data: existingPhotos };
+    if (!removedPath || !existingPaths.includes(removedPath)) {
+      return { ok: true, data: await resolveProfilePhotoUrls(existingPaths) };
     }
 
-    if (normalizedUri.includes("/profile-photos/")) {
-      const deleteResult = await deleteProfilePhoto(normalizedUri);
-      if (!deleteResult.success) {
-        throw new Error(PHOTO_REMOVE_ERROR);
-      }
+    const deleteResult = await deleteProfilePhoto(removedPath);
+    if (!deleteResult.success) {
+      throw new Error(PHOTO_REMOVE_ERROR);
     }
 
-    const newPhotos = existingPhotos.filter((photo) => photo !== normalizedUri);
+    const newPhotos = existingPaths.filter((path) => path !== removedPath);
 
     const { error } = await supabase
       .from('profiles')
@@ -190,7 +192,7 @@ export async function removeProfilePhoto(uri: string): Promise<{ ok: true; data:
       throw new Error(PHOTO_REMOVE_ERROR);
     }
 
-    return { ok: true, data: newPhotos };
+    return { ok: true, data: await resolveProfilePhotoUrls(newPhotos) };
   } catch (error) {
     if (error instanceof Error && error.message === PHOTO_SIGN_IN_ERROR) {
       throw new Error(PHOTO_SIGN_IN_ERROR);

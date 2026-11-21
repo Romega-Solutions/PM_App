@@ -49,6 +49,7 @@ import { useAuthStore } from "@/src/stores/authStore";
 import { useChatStore } from "@/src/stores/chatStore";
 import { useMessageStore } from "@/src/stores/messageStore";
 import { useProfileStore } from "@/src/stores/profileStore";
+import { resolveProfilePhotoUrls } from "../api/profilePhotoUrls";
 import { ProfileHeader } from "../components/ProfileHeader";
 import {
   ProfileMenuList,
@@ -188,8 +189,14 @@ export const ProfileScreen: React.FC = () => {
         }
 
         if (profileFromDB) {
-          const photosArray = cleanPhotos(profileFromDB.photos);
-          const data = createProfileData(profileFromDB);
+          // profile-photos is private: turn stored paths into signed links.
+          const photosArray = await resolveProfilePhotoUrls(
+            cleanPhotos(profileFromDB.photos),
+          );
+          const data = createProfileData({
+            ...profileFromDB,
+            photos: photosArray,
+          });
 
           // Update local state
           setProfileData(data);

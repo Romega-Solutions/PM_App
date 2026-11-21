@@ -30,7 +30,9 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const MAX_DOCUMENT_BYTES = 6 * 1024 * 1024;
+// Same 10 MB cap as profile photos (tickets #45/#46). The OCR provider plan may
+// accept less; larger files then fail at the provider with the generic OCR error.
+const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 const OCR_PROVIDER_URL =
   Deno.env.get("OCR_PROVIDER_URL") || "https://api.ocr.space/parse/image";
 const OCR_LANGUAGE = Deno.env.get("OCR_LANGUAGE") || "eng";
@@ -314,7 +316,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (document.size <= 0 || document.size > MAX_DOCUMENT_BYTES) {
-      return jsonResponse({ error: "Document must be between 1 byte and 6 MB." }, 413);
+      return jsonResponse({ error: "Document must be between 1 byte and 10 MB." }, 413);
     }
 
     await claimOcrAttempt(authToken);

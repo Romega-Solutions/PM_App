@@ -1,0 +1,10 @@
+# dry run
+would   <uuid>/17179<uuid>222222222.jpg  image/jpeg  remove: JPEG APP1 EXIF
+would   <uuid>/17952<uuid>2481f13c2.jpg  image/jpeg  remove: JPEG APP1 EXIF
+{"mode":"dry-run","scanned":3,"clean":1,"stripped":0,"wouldStrip":2,"review":0}
+# --apply
+strip   <uuid>/17179<uuid>222222222.jpg  image/jpeg  removed: JPEG APP1 EXIF
+strip   <uuid>/17952<uuid>2481f13c2.jpg  image/jpeg  removed: JPEG APP1 EXIF
+{"mode":"apply","scanned":3,"clean":1,"stripped":2,"wouldStrip":0,"review":0}
+# re-run (after idempotency fix)
+{"mode":"dry-run","scanned":3,"clean":3,"stripped":0,"wouldStrip":0,"review":0}
