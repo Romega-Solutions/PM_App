@@ -1,0 +1,10 @@
+== GEO_BLOCK_VPN_SIGNUPS=true (error body on HTTP 200)
+jp_vpn           HTTP 403  3494ms user=none {"code":403,"msg":"Sign-up isn't available from this network right now. Please turn off any VPN or proxy and try again."}
+   signal: JP | Tokyo | t | t | f | ok | review_suggested | {vpn_or_proxy,outside_launch_country} | blocked | email | f
+ph_mobile_proxy  HTTP 200   195ms user=created 
+   signal: PH | Cebu | f | t | t | ok | review_suggested | {vpn_or_proxy} | allow | email | t
+   get_my_signup_signal -> 200 [{"soft_flag":"review_suggested","checked_at":"2026-11-21T06:20:32.839579+00:00"}]
+
+== earlier run, hook returned the error object with HTTP status 403 (before the fix)
+jp_vpn           HTTP 500   263ms user=none {"code":500,"msg":"Unexpected status code returned from hook: 403"}
+   signal: JP | Tokyo | t | t | f | ok | review_suggested | {vpn_or_proxy,outside_launch_country} | blocked | email | f

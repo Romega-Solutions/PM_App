@@ -1,0 +1,24 @@
+us_ca            HTTP 200   282ms user=created 
+   signal: US | California | f | f | f | ok | none | {} | allow | email | t
+   get_my_signup_signal -> 200 [{"soft_flag":"none","checked_at":"2026-11-21T06:18:22.729722+00:00"}]
+us_tx            HTTP 200   165ms user=created 
+   signal: US | Texas | f | f | f | ok | review_suggested | {outside_launch_region} | allow | email | t
+   get_my_signup_signal -> 200 [{"soft_flag":"review_suggested","checked_at":"2026-11-21T06:18:23.410801+00:00"}]
+jp_vpn           HTTP 200   179ms user=created 
+   signal: JP | Tokyo | t | t | f | ok | review_suggested | {vpn_or_proxy,outside_launch_country} | allow | email | t
+   get_my_signup_signal -> 200 [{"soft_flag":"review_suggested","checked_at":"2026-11-21T06:18:23.994032+00:00"}]
+ph_mobile_proxy  HTTP 200   272ms user=created 
+   signal: PH | Cebu | f | t | t | ok | review_suggested | {vpn_or_proxy} | allow | email | t
+   get_my_signup_signal -> 200 [{"soft_flag":"review_suggested","checked_at":"2026-11-21T06:18:24.682463+00:00"}]
+quota            HTTP 200   151ms user=created 
+   signal: - | - |  |  |  | quota | unavailable | {lookup_quota} | allow | email | t
+   get_my_signup_signal -> 200 [{"soft_flag":"unavailable","checked_at":"2026-11-21T06:18:25.302699+00:00"}]
+http500          HTTP 200   140ms user=created 
+   signal: - | - |  |  |  | error | unavailable | {lookup_error} | allow | email | t
+   get_my_signup_signal -> 200 [{"soft_flag":"unavailable","checked_at":"2026-11-21T06:18:25.797132+00:00"}]
+slow             HTTP 200  2649ms user=created 
+   signal: - | - |  |  |  | timeout | unavailable | {lookup_timeout} | allow | email | t
+   get_my_signup_signal -> 200 [{"soft_flag":"unavailable","checked_at":"2026-11-21T06:18:28.865792+00:00"}]
+== ph_clean (first run)
+ph_clean         HTTP 200  1748ms user=created
+   signal: PH | Metro Manila | f | f | f | ok | none | {} | allow | email | t

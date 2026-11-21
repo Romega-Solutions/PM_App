@@ -1,0 +1,3 @@
+== edge runtime container stopped (function down)
+ph_clean         HTTP 422  5234ms user=none {"code":422,"msg":"Failed to reach hook within maximum time of 5.000000 seconds"}
+   (no new signal row: the hook never ran; the line the script printed here was the previous run's row)
