@@ -1,0 +1,198 @@
+#
+# Builds every same-repo pull request in GitHub Actions and deploys it as a
+# Vercel *preview* on the pm-app-beta project (never production, never pm-app).
+# The deploy runs with a project-scoped token stored as a repository secret, so the PR author's Vercel role does not
+# matter. Posts one sticky PR comment with the link and a "Preview (Vercel)"
+# commit status.
+#
+# Secrets (Settings -> Secrets and variables -> Actions -> Repository secrets):
+#   VERCEL_TOKEN                     required, project-scoped to pm-app-beta
+#   VERCEL_ORG_ID                    required (team_29VES5HLRYb0VLCx1JgZFz21)
+#   VERCEL_PROJECT_ID                required (pm-app-beta: prj_hnGuJvK01dXKVK9foVsSucy4qIrx)
+#   VERCEL_AUTOMATION_BYPASS_SECRET  optional, enables the smoke check below
+name: Preview (Vercel)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+# Nothing by default; the job asks for exactly what it needs.
+permissions: {}
+
+concurrency:
+  group: vercel-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  VERCEL_CLI_VERSION: "66.6.0"
+  # Production project; this workflow refuses to deploy to it.
+  PM_APP_PRODUCTION_PROJECT_ID: prj_omPYdZaEwoBewno1loAS9lTw2N6a
+  STATUS_CONTEXT: Preview (Vercel)
+  COMMENT_MARKER: "<!-- vercel-preview:pm-app-beta -->"
+
+jobs:
+  preview:
+    name: Preview (Vercel)
+    # Same-repo branches only (forks never get secrets), and not Dependabot
+    # (Dependabot runs without Actions secrets).
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read        # checkout
+      pull-requests: write  # sticky comment
+      statuses: write       # "Preview (Vercel)" commit status
+    env:
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      # IDs are not secret; kept in secrets so they live next to the token.
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Mark preview pending
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: process.env.HEAD_SHA,
+              state: 'pending',
+              context: process.env.STATUS_CONTEXT,
+              description: 'Building preview on pm-app-beta',
+              target_url: process.env.RUN_URL,
+            });
+
+      - name: Check configuration
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Repository secret ${name} is not set. See SETUP.md."
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || exit 1
+          if [ "$VERCEL_PROJECT_ID" = "$PM_APP_PRODUCTION_PROJECT_ID" ]; then
+            echo "::error::VERCEL_PROJECT_ID points at pm-app (production). Use pm-app-beta."
+            exit 1
+          fi
+
+      - name: Checkout PR head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22   # same as PM_App CI, which already proves build:web
+          cache: npm
+
+      - name: Install Vercel CLI
+        run: npm install --global "vercel@${VERCEL_CLI_VERSION}"
+
+      # The token is only given to the two steps that talk to Vercel.
+      - name: Pull preview settings and env vars
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=preview --git-branch="$HEAD_REF"
+
+      - name: Check Supabase preview values exist (names only)
+        run: |
+          set -euo pipefail
+          envfile=.vercel/.env.preview.local
+          for key in EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY; do
+            if ! grep -Eq "^${key}=\"?[^\"[:space:]]+" "$envfile" 2>/dev/null; then
+              echo "::error::${key} has no Preview value on pm-app-beta. scripts/patch-web-export.js will fail without it. See SETUP.md step 4."
+              exit 1
+            fi
+          done
+          echo "Preview Supabase values present (values not printed)."
+
+      # vercel build runs the project's install + "npm run build:web" from vercel.json.
+      # No token here: PR code (npm scripts) runs in this step.
+      - name: Build (Expo web export)
+        run: vercel build
+
+      - name: Deploy prebuilt output as a preview
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+          url="$(vercel deploy --prebuilt --archive=tgz \
+            --meta prNumber="$PR_NUMBER" \
+            --meta prBranch="$HEAD_REF" \
+            --meta prSha="$HEAD_SHA" | tail -n 1)"
+          if ! printf '%s' "$url" | grep -Eq '^https://[a-z0-9.-]+\.vercel\.app/?$'; then
+            echo "::error::Unexpected deploy output: $url"
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Preview: $url"
+
+      # Optional: only runs a real check when Duane has added the bypass secret.
+      # Previews sit behind Vercel Authentication, so without it we skip.
+      - name: Smoke check (optional, needs bypass secret)
+        env:
+          BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BYPASS:-}" ]; then
+            echo "No VERCEL_AUTOMATION_BYPASS_SECRET; skipping smoke check."
+            exit 0
+          fi
+          code="$(curl -s -o /dev/null -w '%{http_code}' \
+            -H "x-vercel-protection-bypass: ${BYPASS}" "$URL")"
+          echo "HTTP $code from preview"
+          [ "$code" = "200" ]
+
+      - name: Update sticky PR comment and status
+        if: always()
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const ok = process.env.JOB_STATUS === 'success' && !!process.env.URL;
+            const cancelled = process.env.JOB_STATUS === 'cancelled';
+            const sha = process.env.HEAD_SHA;
+            const short = sha.slice(0, 7);
+            const when = new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short' });
+
+            await github.rest.repos.createCommitStatus({
+              owner, repo, sha,
+              state: ok ? 'success' : (cancelled ? 'error' : 'failure'),
+              context: process.env.STATUS_CONTEXT,
+              description: ok ? 'Preview ready on pm-app-beta'
+                              : (cancelled ? 'Superseded by a newer push' : 'Preview failed - open the run log'),
+              target_url: ok ? process.env.URL : process.env.RUN_URL,
+            });
+            if (cancelled) return; // the newer run will update the comment
+
+            const marker = process.env.COMMENT_MARKER;
+            const body = ok
+              ? `${marker}\n### Preview (Vercel): ready\n\n| | |\n|---|---|\n| Preview | ${process.env.URL} |\n| Project | pm-app-beta (not production) |\n| Commit | \`${short}\` |\n| Updated | ${when} (Asia/Manila) |\n\nThe link needs a Vercel login with access to the team, or a Shareable Link from Duane. It uses the Preview environment variables on pm-app-beta.`
+              : `${marker}\n### Preview (Vercel): failed\n\nCommit \`${short}\` did not deploy. [Open the run log](${process.env.RUN_URL}).\n\nUpdated ${when} (Asia/Manila).`;
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number: context.issue.number, per_page: 100,
+            });
+            const mine = comments.find(c => c.user?.type === 'Bot' && c.body?.includes(marker));
+            if (mine) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number: context.issue.number, body });
+            }
