@@ -83,6 +83,10 @@ jobs:
       - name: Source and launch contracts
         run: npm run check:source-contracts
 
+      - name: Dependency audit report
+        run: npm audit
+        continue-on-error: true
+
       - name: Dependency audit
         run: npm run check:dependency-audit
 
