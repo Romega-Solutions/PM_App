@@ -3,3 +3,6 @@ verify_jwt = true
 
 [functions.waitlist-signup]
 verify_jwt = false
+
+[functions.profile-photo-ingest]
+verify_jwt = true

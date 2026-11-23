@@ -7,6 +7,7 @@
  */
 
 import { supabase } from "@/src/config/supabase";
+import { withSignedProfilePhotosList } from "@/src/features/profile/api/profilePhotoUrls";
 import type { ConversationWithUser } from "../types/messaging.types";
 
 const CONVERSATIONS_FETCH_ERROR =
@@ -77,7 +78,18 @@ export async function getConversationsForUser(
       };
     });
 
-    return { data: conversationsWithUsers, error: null };
+    // One signing request for every participant's photos (private bucket).
+    const signedUsers = await withSignedProfilePhotosList(
+      conversationsWithUsers.map((conversation) => conversation.other_user),
+    );
+
+    return {
+      data: conversationsWithUsers.map((conversation, index) => ({
+        ...conversation,
+        other_user: signedUsers[index] ?? conversation.other_user,
+      })),
+      error: null,
+    };
   } catch {
     console.error("Failed to fetch conversations.");
     return {
