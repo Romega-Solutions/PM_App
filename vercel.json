@@ -3,6 +3,13 @@
   "outputDirectory": "dist",
   "devCommand": "npm run web",
   "ignoreCommand": "node scripts/vercel-ignore-build.mjs",
+  "git": {
+    "deploymentEnabled": {
+      "**": false,
+      "main": true,
+      "dev": true
+    }
+  },
   "cleanUrls": true,
   "framework": null,
   "rewrites": [
