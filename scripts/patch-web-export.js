@@ -82,14 +82,20 @@ for (const key of [
   }
 }
 
-const runtimeEnvScript = [
-  "<script>",
+// The public env is written to its own file (not an inline <script>) so the
+// Content-Security-Policy can keep `script-src 'self'` without 'unsafe-inline'.
+// It is a plain (non-deferred) script in <head>, so it runs before the
+// deferred Expo entry bundle reads process.env.
+const runtimeEnvFilename = "runtime-env.js";
+const runtimeEnvJs = [
   "globalThis.process=globalThis.process||{};",
   `globalThis.process.env=Object.assign({},globalThis.process.env||{},${JSON.stringify(publicEnv)});`,
-  "</script>",
-].join("");
+  "",
+].join("\n");
+fs.writeFileSync(path.join(path.dirname(indexPath), runtimeEnvFilename), runtimeEnvJs);
 
-if (!html.includes("globalThis.process.env=Object.assign")) {
-  html = html.replace("</head>", `${runtimeEnvScript}</head>`);
+const runtimeEnvTag = `<script src="/${runtimeEnvFilename}"></script>`;
+if (!html.includes(runtimeEnvTag)) {
+  html = html.replace("</head>", `${runtimeEnvTag}</head>`);
   fs.writeFileSync(indexPath, html);
 }

@@ -1,5 +1,6 @@
 import { supabase } from "@/src/config/supabase";
 import { decode } from "base64-arraybuffer";
+import { randomUUID } from "expo-crypto";
 import * as FileSystem from "expo-file-system/legacy";
 import { Platform } from "react-native";
 
@@ -154,7 +155,7 @@ function assertUserScopedProfilePhotoPath(userId: string, extension: string) {
     throw new Error("Invalid profile photo owner");
   }
 
-  return `${userId}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+  return `${userId}/${Date.now()}-${randomUUID()}.${extension}`;
 }
 
 function getProfilePhotoStoragePath(photoUrl: string): string | null {
