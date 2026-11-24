@@ -1,6 +1,7 @@
 import { decode } from "base64-arraybuffer";
 import * as FileSystem from "expo-file-system/legacy";
 import { Platform } from "react-native";
+import { randomUUID } from "expo-crypto";
 import { supabase } from "@/src/config/supabase";
 import {
   deleteProfilePhoto,
@@ -28,6 +29,10 @@ jest.mock("expo-file-system/legacy", () => ({
 
 jest.mock("base64-arraybuffer", () => ({
   decode: jest.fn(),
+}));
+
+jest.mock("expo-crypto", () => ({
+  randomUUID: jest.fn(),
 }));
 
 describe("profileApi", () => {
@@ -88,7 +93,7 @@ describe("profileApi", () => {
 
     beforeEach(() => {
       (Platform as { OS: string }).OS = "ios";
-      jest.spyOn(crypto, "randomUUID").mockReturnValue(
+      (randomUUID as jest.Mock).mockReturnValue(
         "22222222-2222-4222-8222-222222222222",
       );
     });
@@ -124,6 +129,47 @@ describe("profileApi", () => {
           upsert: true,
         },
       );
+    });
+
+    it("uploads native profile photos when the runtime has no global crypto", async () => {
+      const originalCrypto = Object.getOwnPropertyDescriptor(globalThis, "crypto");
+      // Hermes on Android has no Web Crypto global.
+      Object.defineProperty(globalThis, "crypto", {
+        value: undefined,
+        configurable: true,
+        writable: true,
+      });
+
+      try {
+        const upload = jest.fn().mockResolvedValue({ error: null });
+        const getPublicUrl = jest.fn(() => ({
+          data: { publicUrl: "https://project.supabase.co/storage/v1/object/public/profile-photos/photo.jpg" },
+        }));
+        (supabase.storage.from as jest.Mock).mockReturnValue({
+          upload,
+          getPublicUrl,
+        });
+        (FileSystem.getInfoAsync as jest.Mock).mockResolvedValue({
+          exists: true,
+          size: 1024,
+        });
+        (FileSystem.readAsStringAsync as jest.Mock).mockResolvedValue("base64-image");
+        (decode as jest.Mock).mockReturnValue("decoded-image");
+
+        const result = await uploadProfilePhoto("file:///photo.jpg", userId);
+
+        expect(result.success).toBe(true);
+        expect(randomUUID).toHaveBeenCalled();
+        expect(upload).toHaveBeenCalledWith(
+          "11111111-1111-4111-8111-111111111111/1781049600000-22222222-2222-4222-8222-222222222222.jpg",
+          "decoded-image",
+          { contentType: "image/jpeg", upsert: true },
+        );
+      } finally {
+        if (originalCrypto) {
+          Object.defineProperty(globalThis, "crypto", originalCrypto);
+        }
+      }
     });
 
     it("uploads web blob profile photos using blob MIME type when the URI has no extension", async () => {
