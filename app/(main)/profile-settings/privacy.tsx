@@ -453,7 +453,7 @@ export default function PrivacyScreen() {
 
         <View
           style={styles.deletionChecklistSection}
-          accessibilityLabel="Before requesting account deletion, understand that support reviews the request, safety records may be retained when required, and you will receive a status update after review."
+          accessibilityLabel="Before requesting account deletion, understand that support reviews the request, safety records may be retained when required, and you will see a one-time confirmation once the request is sent."
         >
           <Text style={styles.deletionChecklistTitle}>
             Before you request deletion
@@ -461,7 +461,7 @@ export default function PrivacyScreen() {
           {[
             "Support reviews the request before account records change.",
             "Safety, fraud, legal, or verification records may need retention.",
-            "You will see a request status after support receives it.",
+            "You will see a one-time confirmation once the request is sent.",
           ].map((item) => (
             <View key={item} style={styles.deletionChecklistRow}>
               <CheckCircle2 size={16} color="#8CF2C1" strokeWidth={2.4} />
