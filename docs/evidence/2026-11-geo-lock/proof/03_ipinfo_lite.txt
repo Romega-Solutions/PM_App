@@ -1,0 +1,10 @@
+== GEO_SIGNAL_PROVIDER=ipinfo_lite
+ph_clean         HTTP 200   531ms user=created 
+   signal: PH | - |  |  |  | ok | none | {} | allow | email | t
+   get_my_signup_signal -> 200 [{"soft_flag":"none","checked_at":"2026-11-21T06:21:15.835421+00:00"}]
+{
+  scenario: 'ph_clean',
+  path: '/lite/172.19.0.1',
+  hasToken: true,
+  query: 'token'
+}

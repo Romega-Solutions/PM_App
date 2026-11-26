@@ -3,3 +3,8 @@ verify_jwt = true
 
 [functions.waitlist-signup]
 verify_jwt = false
+
+# Ticket #48: Auth "Before User Created" HTTP hook target. No JWT: Supabase Auth
+# signs the call with the Standard Webhooks secret BEFORE_USER_CREATED_HOOK_SECRET.
+[functions.before-user-created]
+verify_jwt = false

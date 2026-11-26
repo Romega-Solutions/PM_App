@@ -1,0 +1,21 @@
+BEGIN
+DO
+psql:/tmp/07.sql:63: NOTICE:  PASS: grants, RLS, and search_path checks
+ record_signup_signal 
+----------------------
+ 
+(1 row)
+
+DO
+psql:/tmp/07.sql:91: NOTICE:  PASS: writer normalisation and orphan purge
+psql:/tmp/07.sql:107: NOTICE:  PASS: get_my_signup_signal is scoped to auth.uid()
+DO
+ROLLBACK
+
+== 04 (PR #28 copy)
+
+ROLLBACK
+== 05
+(1 row)
+
+ROLLBACK
