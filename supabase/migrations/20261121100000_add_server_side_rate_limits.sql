@@ -1,0 +1,412 @@
+-- PinayMate server-side rate limits (ticket #44).
+--
+-- Purpose:
+-- - Cap how fast one signed-in member can send messages, open new chats,
+--   like, pass, report, submit verification, and upload Storage files.
+-- - Enforce the caps in the database so a modified or scripted client cannot
+--   turn them off. The React Native app has no say in these limits.
+--
+-- Pattern (same as public.ocr_usage_events / public.claim_ocr_attempt):
+-- - One locked-down event table, public.rate_limit_events. Each allowed action
+--   adds a row for auth.uid().
+-- - Per-user advisory transaction lock, count rows inside the window, raise if
+--   the count has reached the limit, otherwise insert.
+-- - The limit numbers live in public.rate_limit_rules so Duane can tune the
+--   beta defaults with one UPDATE from the SQL editor (service role only)
+--   instead of shipping a new migration.
+--
+-- Where the checks run:
+-- - BEFORE INSERT triggers on messages, conversations, likes, passes and
+--   user_reports, and a BEFORE UPDATE trigger on the profile verification
+--   columns. These rows are only written by the SECURITY DEFINER RPCs
+--   (send_message, like_profile, pass_profile, submit_user_report,
+--   submit_verification), so the trigger is the RPC limit, without copying
+--   long RPC bodies that other open PRs also touch.
+-- - Storage uploads go straight to the Storage API, not through an RPC, so a
+--   RESTRICTIVE INSERT policy on storage.objects checks recent uploads.
+-- - Calls without auth.uid() (service role, migrations, reviewers' server
+--   tools) are not limited.
+--
+-- What a blocked call looks like:
+-- - SQLSTATE PT429. PostgREST turns PTxxx codes into that HTTP status, so
+--   supabase.rpc() returns HTTP 429 with error.code = 'PT429'.
+-- - error.message = 'Too many requests. Please wait and try again.'
+-- - error.details = JSON text: {"action","limit","window_seconds","retry_after_seconds"}
+-- - error.hint = 'retry_after_seconds=<n>'
+-- - Storage uploads instead fail with HTTP 403, error 'AccessDenied' and
+--   message 'Too many uploads. Please wait and try again. rate_limited
+--   retry_after_seconds=<n>' (Storage API turns PT429 into a 500).
+
+BEGIN;
+
+-- -------------------------------------------------------------------
+-- Rules (beta defaults; Duane to confirm)
+-- -------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.rate_limit_rules (
+  action TEXT NOT NULL,
+  window_seconds INTEGER NOT NULL,
+  max_count INTEGER NOT NULL,
+  enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  note TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT rate_limit_rules_pkey PRIMARY KEY (action, window_seconds),
+  CONSTRAINT rate_limit_rules_action_check
+    CHECK (action ~ '^[a-z_]+(:[a-z0-9-]+)?$'),
+  CONSTRAINT rate_limit_rules_window_check
+    CHECK (window_seconds BETWEEN 1 AND 604800),
+  CONSTRAINT rate_limit_rules_max_check
+    CHECK (max_count BETWEEN 1 AND 100000)
+);
+
+COMMENT ON TABLE public.rate_limit_rules IS
+  'Server-side per-user rate limit rules. Service role / SQL editor only. Rows are beta defaults until confirmed.';
+
+ALTER TABLE public.rate_limit_rules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rate_limit_rules FORCE ROW LEVEL SECURITY;
+
+REVOKE ALL ON public.rate_limit_rules FROM PUBLIC, anon, authenticated;
+
+INSERT INTO public.rate_limit_rules (action, window_seconds, max_count, note)
+VALUES
+  ('message_send', 60, 20, 'beta default: messages per minute per member'),
+  ('message_send', 3600, 200, 'beta default: messages per hour per member'),
+  ('conversation_create', 3600, 10, 'beta default: new chats per hour per member'),
+  ('conversation_create', 86400, 30, 'beta default: new chats per day per member'),
+  ('like', 60, 30, 'beta default: likes per minute per member'),
+  ('like', 86400, 300, 'beta default: likes per day per member'),
+  ('pass', 60, 60, 'beta default: passes per minute per member'),
+  ('pass', 86400, 1000, 'beta default: passes per day per member'),
+  ('report_submit', 3600, 5, 'beta default: new reports per hour per member'),
+  ('report_submit', 86400, 20, 'beta default: new reports per day per member'),
+  ('verification_submit', 86400, 5, 'beta default: verification submissions per day per member'),
+  ('storage_upload:profile-photos', 3600, 20, 'beta default: profile photo uploads per hour per member'),
+  ('storage_upload:chat-images', 60, 10, 'beta default: chat image uploads per minute per member'),
+  ('storage_upload:chat-images', 86400, 100, 'beta default: chat image uploads per day per member'),
+  ('storage_upload:verification-docs', 3600, 10, 'beta default: verification file uploads per hour per member')
+ON CONFLICT (action, window_seconds) DO NOTHING;
+
+-- -------------------------------------------------------------------
+-- Events
+-- -------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.rate_limit_events (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  user_id UUID NOT NULL,
+  action TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE public.rate_limit_events IS
+  'Per-user action log used only for rate limiting. Rows older than the longest rule window are pruned on write. No client access.';
+
+CREATE INDEX IF NOT EXISTS idx_rate_limit_events_user_action_created
+  ON public.rate_limit_events(user_id, action, created_at DESC);
+
+ALTER TABLE public.rate_limit_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rate_limit_events FORCE ROW LEVEL SECURITY;
+
+REVOKE ALL ON public.rate_limit_events FROM PUBLIC, anon, authenticated;
+
+-- -------------------------------------------------------------------
+-- Shared helpers
+-- -------------------------------------------------------------------
+
+-- Raises PT429 when the current member has used up any enabled rule for
+-- p_action. Read-only: does not record anything.
+CREATE OR REPLACE FUNCTION public.assert_rate_limit_available(
+  p_action TEXT,
+  p_user_id UUID,
+  p_count_source TEXT DEFAULT 'events'
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_rule RECORD;
+  v_count INTEGER;
+  v_unblock_at TIMESTAMPTZ;
+  v_retry_after INTEGER;
+  v_bucket_id TEXT;
+BEGIN
+  IF p_user_id IS NULL THEN
+    RETURN;
+  END IF;
+
+  IF p_count_source = 'storage' THEN
+    v_bucket_id := split_part(p_action, ':', 2);
+  END IF;
+
+  FOR v_rule IN
+    SELECT r.window_seconds, r.max_count
+    FROM public.rate_limit_rules r
+    WHERE r.action = p_action
+      AND r.enabled
+    ORDER BY r.window_seconds
+  LOOP
+    IF p_count_source = 'storage' THEN
+      SELECT COUNT(*)::INTEGER
+      INTO v_count
+      FROM storage.objects o
+      WHERE o.bucket_id = v_bucket_id
+        AND o.owner_id = p_user_id::TEXT
+        AND o.created_at >= NOW() - make_interval(secs => v_rule.window_seconds);
+    ELSE
+      SELECT COUNT(*)::INTEGER
+      INTO v_count
+      FROM public.rate_limit_events e
+      WHERE e.user_id = p_user_id
+        AND e.action = p_action
+        AND e.created_at >= NOW() - make_interval(secs => v_rule.window_seconds);
+    END IF;
+
+    IF v_count >= v_rule.max_count THEN
+      -- The call is allowed again once enough old rows leave the window.
+      IF p_count_source = 'storage' THEN
+        SELECT o.created_at
+        INTO v_unblock_at
+        FROM storage.objects o
+        WHERE o.bucket_id = v_bucket_id
+          AND o.owner_id = p_user_id::TEXT
+          AND o.created_at >= NOW() - make_interval(secs => v_rule.window_seconds)
+        ORDER BY o.created_at
+        OFFSET (v_count - v_rule.max_count)
+        LIMIT 1;
+      ELSE
+        SELECT e.created_at
+        INTO v_unblock_at
+        FROM public.rate_limit_events e
+        WHERE e.user_id = p_user_id
+          AND e.action = p_action
+          AND e.created_at >= NOW() - make_interval(secs => v_rule.window_seconds)
+        ORDER BY e.created_at
+        OFFSET (v_count - v_rule.max_count)
+        LIMIT 1;
+      END IF;
+
+      v_retry_after := GREATEST(
+        1,
+        CEIL(
+          EXTRACT(
+            EPOCH FROM (
+              COALESCE(v_unblock_at, NOW())
+              + make_interval(secs => v_rule.window_seconds)
+              - NOW()
+            )
+          )
+        )::INTEGER
+      );
+
+      -- Storage API turns unknown SQLSTATEs (like PT429) into HTTP 500, but
+      -- maps 42501 to 403 AccessDenied and keeps this message. So uploads
+      -- use 42501 with a fixed message prefix; RPCs use PT429 -> HTTP 429.
+      IF p_count_source = 'storage' THEN
+        RAISE EXCEPTION 'Too many uploads. Please wait and try again. rate_limited retry_after_seconds=%',
+          v_retry_after
+          USING
+            ERRCODE = '42501',
+            DETAIL = json_build_object(
+              'action', p_action,
+              'limit', v_rule.max_count,
+              'window_seconds', v_rule.window_seconds,
+              'retry_after_seconds', v_retry_after
+            )::TEXT,
+            HINT = 'retry_after_seconds=' || v_retry_after::TEXT;
+      END IF;
+
+      RAISE EXCEPTION 'Too many requests. Please wait and try again.'
+        USING
+          ERRCODE = 'PT429',
+          DETAIL = json_build_object(
+            'action', p_action,
+            'limit', v_rule.max_count,
+            'window_seconds', v_rule.window_seconds,
+            'retry_after_seconds', v_retry_after
+          )::TEXT,
+          HINT = 'retry_after_seconds=' || v_retry_after::TEXT;
+    END IF;
+  END LOOP;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.assert_rate_limit_available(TEXT, UUID, TEXT)
+  FROM PUBLIC, anon, authenticated;
+
+-- Checks and records one action for auth.uid(). No-op without a signed-in
+-- member (service role, migrations, server-side review tools).
+CREATE OR REPLACE FUNCTION public.consume_rate_limit(p_action TEXT)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_current_user UUID := auth.uid();
+  v_longest_window INTEGER;
+BEGIN
+  IF v_current_user IS NULL THEN
+    RETURN;
+  END IF;
+
+  SELECT MAX(r.window_seconds)
+  INTO v_longest_window
+  FROM public.rate_limit_rules r
+  WHERE r.action = p_action
+    AND r.enabled;
+
+  IF v_longest_window IS NULL THEN
+    RETURN;
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(
+    hashtext('rate-limit:' || p_action || ':' || v_current_user::TEXT)
+  );
+
+  PERFORM public.assert_rate_limit_available(p_action, v_current_user, 'events');
+
+  INSERT INTO public.rate_limit_events (user_id, action)
+  VALUES (v_current_user, p_action);
+
+  DELETE FROM public.rate_limit_events e
+  WHERE e.user_id = v_current_user
+    AND e.action = p_action
+    AND e.created_at < NOW() - make_interval(secs => v_longest_window);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.consume_rate_limit(TEXT)
+  FROM PUBLIC, anon, authenticated;
+
+-- Trigger wrapper: TG_ARGV[0] is the action name.
+CREATE OR REPLACE FUNCTION public.enforce_rate_limit_trigger()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  PERFORM public.consume_rate_limit(TG_ARGV[0]);
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.enforce_rate_limit_trigger()
+  FROM PUBLIC, anon, authenticated;
+
+-- -------------------------------------------------------------------
+-- RPC-backed writes
+-- -------------------------------------------------------------------
+
+-- send_message -> public.messages
+DROP TRIGGER IF EXISTS rate_limit_message_send ON public.messages;
+CREATE TRIGGER rate_limit_message_send
+  BEFORE INSERT ON public.messages
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_rate_limit_trigger('message_send');
+
+-- send_message -> get_or_create_conversation -> public.conversations (new chats)
+DROP TRIGGER IF EXISTS rate_limit_conversation_create ON public.conversations;
+CREATE TRIGGER rate_limit_conversation_create
+  BEFORE INSERT ON public.conversations
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_rate_limit_trigger('conversation_create');
+
+-- like_profile -> public.likes. Counts every like attempt, including a repeat
+-- like after undo_last_swipe, because the event row is not deleted by undo.
+DROP TRIGGER IF EXISTS rate_limit_like ON public.likes;
+CREATE TRIGGER rate_limit_like
+  BEFORE INSERT ON public.likes
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_rate_limit_trigger('like');
+
+-- pass_profile -> public.passes
+DROP TRIGGER IF EXISTS rate_limit_pass ON public.passes;
+CREATE TRIGGER rate_limit_pass
+  BEFORE INSERT ON public.passes
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_rate_limit_trigger('pass');
+
+-- submit_user_report -> public.user_reports. Same-pair repeats inside the
+-- existing 10-minute cooldown update the open report and are not counted.
+DROP TRIGGER IF EXISTS rate_limit_report_submit ON public.user_reports;
+CREATE TRIGGER rate_limit_report_submit
+  BEFORE INSERT ON public.user_reports
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_rate_limit_trigger('report_submit');
+
+-- submit_verification -> public.profiles verification evidence paths.
+-- Only counts when new evidence paths are set (not clears, not reviews).
+DROP TRIGGER IF EXISTS rate_limit_verification_submit ON public.profiles;
+CREATE TRIGGER rate_limit_verification_submit
+  BEFORE UPDATE OF verification_selfie, verification_document ON public.profiles
+  FOR EACH ROW
+  WHEN (
+    NEW.verification_selfie IS NOT NULL
+    AND NEW.verification_document IS NOT NULL
+    AND (
+      OLD.verification_selfie IS DISTINCT FROM NEW.verification_selfie
+      OR OLD.verification_document IS DISTINCT FROM NEW.verification_document
+    )
+  )
+  EXECUTE FUNCTION public.enforce_rate_limit_trigger('verification_submit');
+
+-- -------------------------------------------------------------------
+-- Direct Storage uploads
+-- -------------------------------------------------------------------
+-- Uploads count the member's own objects created in the window. Deleting a
+-- file and uploading again is still bounded by the window, because each new
+-- object has a new created_at; a delete only removes the old row.
+
+CREATE OR REPLACE FUNCTION public.storage_upload_within_rate_limit(
+  p_bucket_id TEXT
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_current_user UUID := auth.uid();
+  v_action TEXT := 'storage_upload:' || COALESCE(p_bucket_id, '');
+BEGIN
+  IF v_current_user IS NULL THEN
+    RETURN TRUE;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.rate_limit_rules r
+    WHERE r.action = v_action
+      AND r.enabled
+  ) THEN
+    RETURN TRUE;
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(
+    hashtext('rate-limit:' || v_action || ':' || v_current_user::TEXT)
+  );
+
+  PERFORM public.assert_rate_limit_available(v_action, v_current_user, 'storage');
+
+  RETURN TRUE;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.storage_upload_within_rate_limit(TEXT)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.storage_upload_within_rate_limit(TEXT)
+  TO authenticated;
+
+DROP POLICY IF EXISTS "Uploads are rate limited per member" ON storage.objects;
+CREATE POLICY "Uploads are rate limited per member"
+ON storage.objects
+AS RESTRICTIVE
+FOR INSERT
+TO authenticated
+WITH CHECK (
+  public.storage_upload_within_rate_limit(bucket_id)
+);
+
+COMMIT;
