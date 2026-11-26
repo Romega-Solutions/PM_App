@@ -43,13 +43,11 @@ async function handleDeepLink(url: string) {
       return; // ✅ STOP HERE
     }
 
-    // ✅ Check for confirmation token (email verification)
-    const hasToken = url.includes("token=");
-    const hasType = url.includes("type=");
-
-    // ✅ ONLY CHECK FOR ACTUAL TOKENS (not "code=" from error_code)
-    const hasAccessToken = url.includes("access_token=");
-    const hasRefreshToken = url.includes("refresh_token=");
+    // Sign-in links only work through the PKCE code exchange below. The code
+    // can only be exchanged on the device that started the flow (it needs the
+    // code verifier stored there), so a link made by someone else cannot sign
+    // this device into their account. Never create a session from tokens
+    // (access_token / refresh_token) found in a URL: that is session fixation.
     const authCode = getDeepLinkParam(url, "code");
     const authType = getDeepLinkParam(url, "type");
     const isPasswordRecovery = authType === "recovery";
@@ -87,71 +85,6 @@ async function handleDeepLink(url: string) {
       }
 
       return;
-    }
-
-    // Handle email confirmation token (this comes first before access/refresh tokens)
-    if (hasToken && hasType) {
-      // Wait a bit for Supabase to process the token exchange
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Check if we now have a session
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (session) {
-        await handleSessionEstablished(session, {
-          mode: isPasswordRecovery ? "password-recovery" : "verification",
-        });
-        return;
-      }
-    }
-
-    const isAuthCallback = hasAccessToken && hasRefreshToken;
-
-    if (isAuthCallback) {
-      try {
-        let accessToken = "";
-        let refreshToken = "";
-
-        // Extract from hash first
-        const hashMatch = url.match(/#(.+)/);
-        if (hashMatch) {
-          const hashParams = new URLSearchParams(hashMatch[1]);
-          accessToken = hashParams.get("access_token") || "";
-          refreshToken = hashParams.get("refresh_token") || "";
-        }
-
-        // Try query params if not in hash
-        if (!accessToken) {
-          const queryMatch = url.match(/\?(.+?)(?:#|$)/);
-          if (queryMatch) {
-            const queryParams = new URLSearchParams(queryMatch[1]);
-            accessToken = queryParams.get("access_token") || "";
-            refreshToken = queryParams.get("refresh_token") || "";
-          }
-        }
-
-        if (accessToken && refreshToken) {
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-
-          if (error) {
-            console.error("Auth session setup failed.");
-            return;
-          }
-
-          if (data?.session) {
-            await handleSessionEstablished(data.session, {
-              mode: isPasswordRecovery ? "password-recovery" : "verification",
-            });
-          }
-        }
-      } catch {
-        console.error("Auth callback processing failed.");
-      }
     }
   } catch {
     console.error("Deep link processing failed.");

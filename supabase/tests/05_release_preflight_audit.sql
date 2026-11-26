@@ -953,6 +953,50 @@ BEGIN
 END;
 $$;
 
+-- Public views must be read-only for app roles. A writable view is a path
+-- around row security, and discoverable_profiles runs as its owner
+-- (security_invoker = false). anon must not read discoverable_profiles.
+DO $$
+DECLARE
+  writable_views TEXT[];
+BEGIN
+  SELECT ARRAY_AGG(
+    FORMAT('%I.%I (%s: %s)', n.nspname, c.relname, r.role_name, p.privilege)
+    ORDER BY c.relname, r.role_name, p.privilege
+  )
+  INTO writable_views
+  FROM pg_class c
+  JOIN pg_namespace n ON n.oid = c.relnamespace
+  CROSS JOIN (VALUES ('public'), ('anon'), ('authenticated')) AS r(role_name)
+  CROSS JOIN (VALUES ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE')) AS p(privilege)
+  WHERE n.nspname = 'public'
+    AND c.relkind IN ('v', 'm')
+    AND has_table_privilege(r.role_name, c.oid, p.privilege);
+
+  IF array_length(writable_views, 1) IS NOT NULL THEN
+    RAISE EXCEPTION
+      'public views must be SELECT-only for PUBLIC, anon and authenticated: %',
+      array_to_string(writable_views, ', ');
+  END IF;
+
+  IF to_regclass('public.discoverable_profiles') IS NOT NULL
+    AND has_table_privilege('anon', 'public.discoverable_profiles', 'SELECT')
+  THEN
+    RAISE EXCEPTION 'anon must not read public.discoverable_profiles';
+  END IF;
+
+  -- reset_unread_count does not check the caller, so app roles must not run it.
+  IF to_regprocedure('public.reset_unread_count(uuid, uuid)') IS NOT NULL
+    AND (
+      has_function_privilege('anon', 'public.reset_unread_count(uuid, uuid)', 'EXECUTE')
+      OR has_function_privilege('authenticated', 'public.reset_unread_count(uuid, uuid)', 'EXECUTE')
+    )
+  THEN
+    RAISE EXCEPTION 'reset_unread_count must not be executable by app clients';
+  END IF;
+END;
+$$;
+
 SELECT 'PASS: release preflight audit completed; transaction will roll back' AS result;
 
 ROLLBACK;
