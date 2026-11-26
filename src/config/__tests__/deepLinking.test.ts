@@ -136,4 +136,77 @@ describe("setupDeepLinking", () => {
       },
     });
   });
+
+  describe("links that carry tokens instead of a PKCE code", () => {
+    beforeEach(() => {
+      // The old handler waited 2 seconds before acting on token links, so
+      // these tests advance the clock past that to prove nothing happens later.
+      jest.useFakeTimers();
+      (supabase.auth.getSession as jest.Mock).mockResolvedValue({
+        data: { session: null },
+      });
+      (supabase.auth.setSession as jest.Mock).mockResolvedValue({
+        data: { session },
+        error: null,
+      });
+    });
+
+    const tokenLinks = [
+      [
+        "hash",
+        "pinaymate://verification-success#access_token=attacker-access&refresh_token=attacker-refresh&type=signup",
+      ],
+      [
+        "query",
+        "pinaymate://verification-success?access_token=attacker-access&refresh_token=attacker-refresh&type=signup",
+      ],
+      [
+        "recovery hash",
+        "pinaymate://reset-password#access_token=attacker-access&refresh_token=attacker-refresh&type=recovery",
+      ],
+      [
+        "legacy token and type",
+        "pinaymate://verification-success?token=legacy-token&type=signup",
+      ],
+    ] as const;
+
+    it.each(tokenLinks)(
+      "does not sign in from a %s link",
+      async (_name, link) => {
+        const consoleError = jest
+          .spyOn(console, "error")
+          .mockImplementation(() => undefined);
+        (Linking.getInitialURL as jest.Mock).mockResolvedValue(link);
+
+        setupDeepLinking();
+        await flushDeepLinkWork();
+        await jest.advanceTimersByTimeAsync(3000);
+
+        expect(supabase.auth.setSession).not.toHaveBeenCalled();
+        expect(supabase.auth.exchangeCodeForSession).not.toHaveBeenCalled();
+        expect(ensureUserProfile).not.toHaveBeenCalled();
+        expect(router.replace).not.toHaveBeenCalled();
+        expect(JSON.stringify(consoleError.mock.calls)).not.toMatch(
+          /attacker|legacy-token/,
+        );
+
+        consoleError.mockRestore();
+      },
+    );
+
+    it("does not sign in from a link event while the app is running", async () => {
+      (Linking.getInitialURL as jest.Mock).mockResolvedValue(null);
+
+      setupDeepLinking();
+      const onUrl = (Linking.addEventListener as jest.Mock).mock.calls[0][1];
+      onUrl({
+        url: "pinaymate://verification-success#access_token=attacker-access&refresh_token=attacker-refresh",
+      });
+      await flushDeepLinkWork();
+      await jest.advanceTimersByTimeAsync(3000);
+
+      expect(supabase.auth.setSession).not.toHaveBeenCalled();
+      expect(router.replace).not.toHaveBeenCalled();
+    });
+  });
 });

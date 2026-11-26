@@ -64,7 +64,7 @@ WHERE p.is_active = TRUE
     )
   );
 
-REVOKE ALL ON public.discoverable_profiles FROM PUBLIC, anon;
+REVOKE ALL ON public.discoverable_profiles FROM PUBLIC, anon, authenticated;
 GRANT SELECT ON public.discoverable_profiles TO authenticated;
 
 COMMIT;
