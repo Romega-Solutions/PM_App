@@ -368,6 +368,10 @@ SET search_path = ''
 AS $$
 DECLARE
   v_current_user UUID := auth.uid();
+  v_reason TEXT := LEFT(BTRIM(COALESCE(p_reason, '')), 120);
+  v_details TEXT := LEFT(BTRIM(COALESCE(p_details, '')), 800);
+  v_source TEXT := LOWER(BTRIM(COALESCE(p_source, 'app')));
+  v_report_id UUID;
 BEGIN
   IF v_current_user IS NULL THEN
     RAISE EXCEPTION 'Authentication required' USING ERRCODE = '42501';
