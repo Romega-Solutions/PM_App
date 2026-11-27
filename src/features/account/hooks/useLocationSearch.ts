@@ -3,6 +3,7 @@ import * as ExpoLocation from "expo-location";
 import { useIsDemoSession } from "@/src/features/auth/demoMode";
 import { ACCOUNT_SETUP_CURRENT_LOCATION_ENABLED } from "../config/locationFeatures";
 import { accountApi, type SavedLocation } from "../api/accountApi";
+import { roundCoordinates } from "@/src/utils/locationPrivacy";
 
 // ✅ Changed: Added city and country properties
 export type Location = {
@@ -156,7 +157,10 @@ export const useLocationSearch = () => {
     : sampleLocations;
 
   const selectLocation = useCallback(async (location: Location) => {
-    setSelectedLocation(location);
+    const privacySafeLocation = location.coordinates
+      ? { ...location, coordinates: roundCoordinates(location.coordinates) }
+      : location;
+    setSelectedLocation(privacySafeLocation);
 
     // Auto-save to database
     setSaving(true);
@@ -167,8 +171,8 @@ export const useLocationSearch = () => {
 
       const payload: SavedLocation = {
         locationType: "manual",
-        locationName: getLocationName(location),
-        coordinates: location.coordinates || null,
+        locationName: getLocationName(privacySafeLocation),
+        coordinates: privacySafeLocation.coordinates || null,
         timestamp: new Date().toISOString(),
       };
 
@@ -186,7 +190,13 @@ export const useLocationSearch = () => {
     }
 
     if (isDemoMode) {
-      const currentLocation = sampleLocations[0];
+      const sampleLocation = sampleLocations[0];
+      const currentLocation = {
+        ...sampleLocation,
+        coordinates: sampleLocation.coordinates
+          ? roundCoordinates(sampleLocation.coordinates)
+          : undefined,
+      };
       setSelectedLocation(currentLocation);
       return currentLocation;
     }
@@ -207,10 +217,12 @@ export const useLocationSearch = () => {
         accuracy: ExpoLocation.Accuracy.Balanced,
       });
 
-      const coordinates = {
+      // Snap immediately: reverse geocoding, React state, and network saves only
+      // receive the privacy-safe point, never the device's exact coordinates.
+      const coordinates = roundCoordinates({
         lat: position.coords.latitude,
         lng: position.coords.longitude,
-      };
+      });
 
       let city = "Current location";
       let country = "";

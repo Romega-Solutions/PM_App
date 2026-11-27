@@ -48,8 +48,8 @@ Fill in the real Supabase values locally. `EXPO_PUBLIC_OCR_ENDPOINT` is optional
 
 ### Native Permissions
 
-- Account setup currently collects location through manual city selection only. Device-location collection is disabled by `ACCOUNT_SETUP_CURRENT_LOCATION_ENABLED` in `src/features/account/config/locationFeatures.ts`.
-- The current-location hook and `expo-location` plugin remain configured for a future approved rounded-coordinate change. Keep the switch false until that work is implemented and validated; the plugin's presence does not mean account setup requests device GPS.
+- Account setup defaults to manual city selection. `Use Current Location` is an optional action controlled by `ACCOUNT_SETUP_CURRENT_LOCATION_ENABLED`; location permission is requested only after the user selects it.
+- Device and curated-city coordinates are snapped on-device to a `0.015°` privacy grid before reverse geocoding, React state, or saving. The grid is about 1.67 km north-south, about 1.61 km east-west in Manila, and about 1.24-1.42 km east-west across California. Only this rounded point is sent to `profiles.location_coordinates`.
 - The native location permission copy remains configured in `app.json`; rebuild the native app after changing it.
 - The camera/photo permission copy for verification selfie and ID document selection is configured through the `expo-image-picker` plugin in `app.json`; rebuild the native app after changing it.
 - ID OCR calls the bundled Supabase OCR Edge Function, deriving the URL from `EXPO_PUBLIC_SUPABASE_URL` unless `EXPO_PUBLIC_OCR_ENDPOINT` is explicitly set, and fails closed when the user is unauthenticated, the endpoint is unavailable, or the response is invalid.

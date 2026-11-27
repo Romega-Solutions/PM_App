@@ -6,6 +6,7 @@
  */
 
 import { supabase } from "@/src/config/supabase";
+import { roundCoordinates } from "@/src/utils/locationPrivacy";
 
 const LOCATION_SIGN_IN_ERROR = "Please sign in before saving your location.";
 const LOCATION_INPUT_ERROR = "Check your location and try again.";
@@ -46,7 +47,7 @@ function normalizeCoordinates(
     throw new Error(LOCATION_INPUT_ERROR);
   }
 
-  return { lat, lng };
+  return roundCoordinates({ lat, lng });
 }
 
 function normalizeLocationPayload(payload: SavedLocation): SavedLocation {

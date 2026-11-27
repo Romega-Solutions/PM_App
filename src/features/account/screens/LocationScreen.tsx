@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/src/stores/authStore";
 import { accountApi, SavedLocation } from "../api/accountApi";
 import { ACCOUNT_SETUP_CURRENT_LOCATION_ENABLED } from "../config/locationFeatures";
+import { roundCoordinates } from "@/src/utils/locationPrivacy";
 import {
   getManualLocationFromQuery,
   useLocationSearch,
@@ -107,7 +108,9 @@ export default function LocationScreen() {
       setUseCurrentLocation(false);
       const locationString = formatLocationLabel(location);
       setSelectedLocation(locationString);
-      setSelectedCoordinates(location.coordinates ?? null);
+      setSelectedCoordinates(
+        location.coordinates ? roundCoordinates(location.coordinates) : null,
+      );
       setLocationNotice(
         location.coordinates
           ? null
@@ -131,7 +134,7 @@ export default function LocationScreen() {
         manualLocationLabel.toLowerCase(),
     );
   const selectedLocationPrivacyLabel = useCurrentLocation
-    ? "Device location selected."
+    ? "Approximate device location selected. Your exact GPS point is not saved."
     : "City selected. Choosing a city does not request your device's GPS.";
 
   const handleNext = useCallback(async () => {
@@ -235,7 +238,7 @@ export default function LocationScreen() {
                 <View style={styles.privacyNote}>
                   <MapPin size={16} color="rgba(255,255,255,0.82)" />
                   <Text style={styles.privacyNoteText}>
-                    You can also search for a city manually.
+                    Optional: your location is rounded to an approximate area before use. You can also search for a city manually.
                   </Text>
                 </View>
               </>

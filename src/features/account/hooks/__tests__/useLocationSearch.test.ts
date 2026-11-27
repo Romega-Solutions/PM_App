@@ -79,7 +79,7 @@ describe("useLocationSearch", () => {
       expect.objectContaining({
         locationType: "manual",
         locationName: "Manila, Philippines",
-        coordinates: { lat: 14.5995, lng: 120.9842 },
+        coordinates: { lat: 14.595, lng: 120.99 },
       }),
     );
     expect(mockPermission).not.toHaveBeenCalled();
@@ -91,7 +91,7 @@ describe("useLocationSearch", () => {
     mockCurrentLocationEnabled = true;
     mockPermission.mockResolvedValue({ status: "granted", canAskAgain: true });
     mockPosition.mockResolvedValue({
-      coords: { latitude: 14.6, longitude: 120.98 },
+      coords: { latitude: 14.6760413, longitude: 121.0437003 },
     });
     mockReverseGeocode.mockResolvedValue([
       { city: "Manila", country: "Philippines" },
@@ -106,20 +106,24 @@ describe("useLocationSearch", () => {
     expect(mockPermission).toHaveBeenCalledTimes(1);
     expect(mockPosition).toHaveBeenCalledTimes(1);
     expect(mockReverseGeocode).toHaveBeenCalledWith({
-      latitude: 14.6,
-      longitude: 120.98,
+      latitude: 14.67,
+      longitude: 121.05,
     });
     expect(mockSaveLocation).toHaveBeenCalledWith(
       expect.objectContaining({
         locationType: "current",
         locationName: "Manila, Philippines",
-        coordinates: { lat: 14.6, lng: 120.98 },
+        coordinates: { lat: 14.67, lng: 121.05 },
       }),
     );
     expect(location).toEqual({
       city: "Manila",
       country: "Philippines",
-      coordinates: { lat: 14.6, lng: 120.98 },
+      coordinates: { lat: 14.67, lng: 121.05 },
+    });
+    expect(result.current.selectedLocation?.coordinates).toEqual({
+      lat: 14.67,
+      lng: 121.05,
     });
   });
 
@@ -150,7 +154,11 @@ describe("useLocationSearch", () => {
     });
 
     expect(location).toEqual(
-      expect.objectContaining({ city: "Manila", country: "Philippines" }),
+      expect.objectContaining({
+        city: "Manila",
+        country: "Philippines",
+        coordinates: { lat: 14.595, lng: 120.99 },
+      }),
     );
     expect(mockPermission).not.toHaveBeenCalled();
     expect(mockPosition).not.toHaveBeenCalled();

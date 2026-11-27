@@ -40,16 +40,82 @@ describe("locationApi", () => {
 
     expect(result.ok).toBe(true);
     expect(result.data.locationName).toBe("Makati ".repeat(30).trim().slice(0, 120));
-    expect(result.data.coordinates).toEqual({ lat: 14.5547, lng: 121.0244 });
+    expect(result.data.coordinates).toEqual({ lat: 14.55, lng: 121.02 });
     expect(supabase.from).toHaveBeenCalledWith("profiles");
     expect(update).toHaveBeenCalledWith({
       location_type: "manual",
       location_name: "Makati ".repeat(30).trim().slice(0, 120),
-      location_coordinates: { lat: 14.5547, lng: 121.0244 },
+      location_coordinates: { lat: 14.55, lng: 121.02 },
       location_timestamp: expect.any(String),
       location_completed: true,
     });
     expect(eq).toHaveBeenCalledWith("id", "user-123");
+  });
+
+  it("rounds coordinates on-device before saving them", async () => {
+    const { update } = mockProfileUpdate();
+
+    const result = await saveLocation({
+      locationType: "current",
+      locationName: "Quezon City, Philippines",
+      coordinates: { lat: 14.6760413, lng: 121.0437003 },
+      timestamp: "client-time",
+    });
+
+    expect(result.data.coordinates).toEqual({ lat: 14.67, lng: 121.05 });
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        location_coordinates: { lat: 14.67, lng: 121.05 },
+      }),
+    );
+  });
+
+  it.each([
+    {
+      label: "negative coordinates",
+      input: { lat: -33.8688, lng: -118.2437 },
+      expected: { lat: -33.87, lng: -118.245 },
+    },
+    {
+      label: "positive longitude boundary",
+      input: { lat: 90, lng: 180 },
+      expected: { lat: 90, lng: 180 },
+    },
+    {
+      label: "negative longitude boundary",
+      input: { lat: -90, lng: -180 },
+      expected: { lat: -90, lng: -180 },
+    },
+  ])("snaps $label safely", async ({ input, expected }) => {
+    const { update } = mockProfileUpdate();
+
+    const result = await saveLocation({
+      locationType: "current",
+      locationName: "Privacy grid test",
+      coordinates: input,
+      timestamp: "client-time",
+    });
+
+    expect(result.data.coordinates).toEqual(expected);
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({ location_coordinates: expected }),
+    );
+  });
+
+  it("keeps missing coordinates null", async () => {
+    const { update } = mockProfileUpdate();
+
+    const result = await saveLocation({
+      locationType: "manual",
+      locationName: "Manila",
+      coordinates: null,
+      timestamp: "client-time",
+    });
+
+    expect(result.data.coordinates).toBeNull();
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({ location_coordinates: null }),
+    );
   });
 
   it("rejects invalid location payloads before updating profiles", async () => {

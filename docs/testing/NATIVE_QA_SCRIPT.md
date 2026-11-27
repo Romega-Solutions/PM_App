@@ -123,28 +123,30 @@ Fail-stop:
 
 ## 3. Location setup
 
-Location section last reviewed: 2026-11-16. Other QA sections retain their existing review dates.
+Location section last reviewed: 2026-11-27. Other QA sections retain their existing review dates.
 
-Account setup currently uses manual city selection only. Device-location collection is disabled by `ACCOUNT_SETUP_CURRENT_LOCATION_ENABLED` in `src/features/account/config/locationFeatures.ts`. The location hook and `expo-location` plugin remain in the app, but must stay disabled until a separate approved change implements and validates rounded-coordinate saving. Do not enable this switch for production QA.
+Account setup defaults to the city picker. `Use Current Location` is optional and requests foreground permission only after it is pressed. Device and curated-city coordinates are snapped on-device to the `0.015°` privacy grid before reverse geocoding, React state, or the network save. This is about 1-2 km in Manila and California.
 
 | Step                                        | Expected result                                                 | Evidence   | Pass |
 | ------------------------------------------- | --------------------------------------------------------------- | ---------- | ---- |
-| Select location from curated search         | City/location saves and displays correctly                      | screenshot |      |
+| Open the location step without pressing GPS | City picker is available; no location permission prompt appears | screenshot/log |      |
+| Select location from curated search         | City/location saves and the stored point is on the `0.015°` grid | screenshot/database check |      |
 | Type an unlisted city and choose manual use | Typed city saves without pretending coordinates are known       | screenshot |      |
-| Open setup when location permission was never granted | GPS option/invitation is absent; no permission prompt appears | screenshot/log |      |
-| Open setup when location permission was previously granted | GPS option remains absent; no device-location read occurs | screenshot/log |      |
+| Press Use Current Location and allow access | Approximate city displays; reverse-geocode input and saved row use the same rounded grid point | screenshot/database check |      |
+| Press Use Current Location and deny access | Safe guidance appears and manual city selection remains available | screenshot |      |
 | Select a city and continue                   | City is saved after Continue and setup advances                 | screenshot/log |      |
 | Use demo account setup                       | City selection advances without backend save or device location | screenshot/log |      |
 | Fail manual location save                    | Safe recovery appears, selection remains, retry is possible     | screenshot/log |      |
 | Restart app after location save             | Location persists                                               | screenshot |      |
 | Fail location save on bad network           | App shows safe recovery copy without backend details            | screenshot/log |      |
 
-Conditional future-path check only: after a separate approved rounded-coordinate implementation, tests may temporarily mock the switch as enabled and verify the retained path. This ticket does not authorize enabling real device GPS in a shipped or production QA build.
-
 Fail-stop:
 
-- city-only location setup is blocked or asks for device GPS
+- opening the screen requests GPS before the user opts in
+- city-only location setup is blocked
 - app saves wrong/blank location as successful
+- reverse geocoding, React state, or the saved row receives the exact device point
+- stored location coordinates are not aligned to the `0.015°` grid
 - app exposes raw coordinates where user-facing city is expected
 - the selected city is described as saved before Continue succeeds
 

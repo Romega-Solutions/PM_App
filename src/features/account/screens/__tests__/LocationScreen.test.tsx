@@ -165,7 +165,7 @@ function visibleText(tree: TestRenderer.ReactTestRenderer) {
 
 describe("LocationScreen", () => {
   beforeEach(() => {
-    mockCurrentLocationEnabled = false;
+    mockCurrentLocationEnabled = true;
     mockHookDemoMode = false;
     mockScreenDemoMode = false;
     mockUserType = "filipina";
@@ -186,7 +186,7 @@ describe("LocationScreen", () => {
     { demo: true, userType: "filipina" },
     { demo: true, userType: "foreigner" },
   ])(
-    "shows only city selection and blocks empty Continue ($userType, demo=$demo)",
+    "keeps GPS opt-in and blocks empty Continue ($userType, demo=$demo)",
     ({ demo, userType }) => {
       mockHookDemoMode = demo;
       mockScreenDemoMode = demo;
@@ -194,12 +194,10 @@ describe("LocationScreen", () => {
       const tree = renderScreen();
       const text = visibleText(tree).join(" ");
 
-      expect(tree.root.findAllByProps({ testID: "location-Use Current Location" })).toHaveLength(0);
-      expect(text).not.toContain("or search for a city");
-      expect(text.toLowerCase()).not.toContain("permission");
-      expect(text.toLowerCase()).not.toContain("gps");
-      expect(text).toContain("Choose your city to continue.");
-      expect(text).toContain("Search for your city below. If it is not listed, you can enter it manually.");
+      expect(tree.root.findByProps({ testID: "location-Use Current Location" })).toBeTruthy();
+      expect(text).toContain("or search for a city");
+      expect(text).toContain("Choose a city or use your device location to continue.");
+      expect(text).toContain("Optional: your location is rounded to an approximate area before use.");
       expect(tree.root.findByProps({ testID: "continue" }).props.disabled).toBe(true);
       expect(mockPermission).not.toHaveBeenCalled();
       expect(mockPosition).not.toHaveBeenCalled();
@@ -222,7 +220,7 @@ describe("LocationScreen", () => {
       expect.objectContaining({
         locationType: "manual",
         locationName: "Manila, Philippines",
-        coordinates: { lat: 14.5995, lng: 120.9842 },
+        coordinates: { lat: 14.595, lng: 120.99 },
       }),
     );
     expect(mockPush).toHaveBeenCalledWith({
@@ -309,8 +307,7 @@ describe("LocationScreen", () => {
     expect(mockPermission).not.toHaveBeenCalled();
   });
 
-  it("restores the GPS row and invokes the guarded hook only when enabled", async () => {
-    mockCurrentLocationEnabled = true;
+  it("invokes device location only after the optional GPS row is pressed", async () => {
     const tree = renderScreen();
 
     expect(tree.root.findByProps({ testID: "location-Use Current Location" })).toBeTruthy();
@@ -319,6 +316,17 @@ describe("LocationScreen", () => {
       await tree.root.findByProps({ testID: "location-Use Current Location" }).props.onPress();
     });
     expect(mockPermission).toHaveBeenCalledTimes(1);
+  });
+
+  it("can still hide the GPS row with the reversible switch", () => {
+    mockCurrentLocationEnabled = false;
+    const tree = renderScreen();
+
+    expect(
+      tree.root.findAllByProps({ testID: "location-Use Current Location" }),
+    ).toHaveLength(0);
+    expect(visibleText(tree).join(" ")).toContain("Choose your city to continue.");
+    expect(mockPermission).not.toHaveBeenCalled();
   });
 
   it("redirects invalid userType to sign-in", () => {
