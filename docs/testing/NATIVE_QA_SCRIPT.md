@@ -123,22 +123,30 @@ Fail-stop:
 
 ## 3. Location setup
 
+Location section last reviewed: 2026-11-16. Other QA sections retain their existing review dates.
+
+Account setup currently uses manual city selection only. Device-location collection is disabled by `ACCOUNT_SETUP_CURRENT_LOCATION_ENABLED` in `src/features/account/config/locationFeatures.ts`. The location hook and `expo-location` plugin remain in the app, but must stay disabled until a separate approved change implements and validates rounded-coordinate saving. Do not enable this switch for production QA.
+
 | Step                                        | Expected result                                                 | Evidence   | Pass |
 | ------------------------------------------- | --------------------------------------------------------------- | ---------- | ---- |
 | Select location from curated search         | City/location saves and displays correctly                      | screenshot |      |
 | Type an unlisted city and choose manual use | Typed city saves without pretending coordinates are known       | screenshot |      |
-| Use current location and accept permission  | App requests foreground permission and stores readable location | screenshot |      |
-| Use current location and deny permission    | App explains denial and allows manual fallback                  | screenshot |      |
-| Return after location permission failure    | Inline notice explains city-only manual entry can continue      | screenshot |      |
+| Open setup when location permission was never granted | GPS option/invitation is absent; no permission prompt appears | screenshot/log |      |
+| Open setup when location permission was previously granted | GPS option remains absent; no device-location read occurs | screenshot/log |      |
+| Select a city and continue                   | City is saved after Continue and setup advances                 | screenshot/log |      |
+| Use demo account setup                       | City selection advances without backend save or device location | screenshot/log |      |
+| Fail manual location save                    | Safe recovery appears, selection remains, retry is possible     | screenshot/log |      |
 | Restart app after location save             | Location persists                                               | screenshot |      |
 | Fail location save on bad network           | App shows safe recovery copy without backend details            | screenshot/log |      |
 
+Conditional future-path check only: after a separate approved rounded-coordinate implementation, tests may temporarily mock the switch as enabled and verify the retained path. This ticket does not authorize enabling real device GPS in a shipped or production QA build.
+
 Fail-stop:
 
-- permission denial blocks all onboarding with no fallback
+- city-only location setup is blocked or asks for device GPS
 - app saves wrong/blank location as successful
 - app exposes raw coordinates where user-facing city is expected
-- selected manual/current location does not explain whether city-level or coordinate-based location is being saved
+- the selected city is described as saved before Continue succeeds
 
 ## 4. Verification and OCR
 
